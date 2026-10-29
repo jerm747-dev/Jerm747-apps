@@ -142,3 +142,34 @@ body:not(.is-admin) { background: #100c17; overflow: auto; }
 .cabinet .cabinet-home-title { font-size: clamp(12px, 1.15vw, 20px); text-transform: uppercase; letter-spacing: .06em; text-shadow: 0 2px 5px #000; }
 
 .player-orientation{font-size:11px;display:flex;gap:6px;align-items:center}.player-orientation select{font:inherit;color:#fff;background:#24202e;border:1px solid #665767;border-radius:5px;padding:6px}.display-notice{position:absolute;top:70px;left:10px;right:10px;z-index:5;background:#211c30f5;color:#ffdda5;border:1px solid #7b617f;padding:9px;margin:0;font-size:12px;display:flex;gap:10px;justify-content:space-between}.display-notice button{background:transparent;color:inherit;border:0;cursor:pointer}
+
+/* Swipeable game details: one full-width page per game in the current section. */
+.sb-slider { position: relative; min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+.sb-slides { display: grid; grid-auto-flow: column; grid-auto-columns: 100%; column-gap: 40px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; min-height: 0; }
+.sb-slides::-webkit-scrollbar { display: none; }
+.sb-slide { scroll-snap-align: start; scroll-snap-stop: always; animation: none !important; min-width: 0; min-height: 0; }
+.cabinet .sb-slide { align-content: start; }
+.sb-step { position: absolute; top: 10px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; border: 1px solid #ffffff3a; background: #0b0c10b3; color: #fff; font: 600 22px/1 system-ui; display: grid; place-items: center; padding: 0 0 3px; cursor: pointer; backdrop-filter: blur(4px); }
+.sb-step-prev { left: 10px; } .sb-step-next { right: 10px; }
+.sb-step:disabled { opacity: 0; pointer-events: none; }
+.sb-step:hover { background: #22252dcc; }
+.sb-dots { display: flex; justify-content: center; gap: 6px; padding: 10px 0 2px; }
+.sb-dots i { width: 6px; height: 6px; border-radius: 50%; background: #ffffff33; transition: background .2s, width .2s; }
+.sb-dots i.is-on { width: 18px; border-radius: 3px; background: var(--focus, #ffd9a0); }
+@media (hover: none) and (pointer: coarse) { .sb-step { display: none; } }
+@media (prefers-reduced-motion: reduce) { .sb-slides { scroll-behavior: auto; } }
+
+/* Slimmer in-game toolbar: still easy to tap, but it leaves more room for the game. */
+.cabinet .player-bar { gap: 8px; padding: 4px 8px; min-height: 0; }
+.cabinet .player-bar .sb-btn { min-height: 28px; padding: 3px 10px; font-size: .78rem; border-radius: 6px; }
+.cabinet .player-bar .player-title { font-size: .85rem; }
+.cabinet .player-bar .hints { font-size: .72rem; }
+.cabinet .player-bar .glyph { transform: scale(.85); }
+.cabinet .player-orientation { font-size: 10px; gap: 4px; }
+.cabinet .player-orientation select { padding: 3px 4px; font-size: 11px; border-radius: 5px; }
+@media (max-width: 760px) {
+  .cabinet .player-bar { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+  .cabinet .player-bar::-webkit-scrollbar { display: none; }
+  .cabinet .player-bar .player-title, .cabinet .player-bar .hints { display: none; }
+  .cabinet .player-orientation > span, .cabinet .player-orientation { white-space: nowrap; }
+}

@@ -109,6 +109,38 @@
     } catch {}
   });
 
+  // Web layout layer (portrait arena + controller panel, translucent landscape pad), loaded after the Android styles.
+  document.addEventListener('DOMContentLoaded', () => {
+    const link = document.createElement('link'); link.rel = 'stylesheet'; link.href = 'gs-web-layout.css?v=2';
+    document.head.append(link);
+  });
+
+  // Top bar: add HIDE (touch controls on/off) and CONTROLLER (mapping), the development-build options.
+  function addRailButtons() {
+    const rail = document.querySelector('.gs-arcade-rail'), menu = rail?.querySelector('.gs-open-menu');
+    if (!rail || !menu || rail.querySelector('.gs-web-hide')) return !!rail?.querySelector('.gs-web-hide');
+    const hide = document.createElement('button'), pad = document.createElement('button');
+    hide.type = pad.type = 'button';
+    hide.className = 'gs-web-hide'; pad.className = 'gs-web-controller';
+    pad.textContent = 'CONTROLLER'; pad.setAttribute('aria-label', 'Controller and keyboard mapping');
+    const sync = () => {
+      const h = document.documentElement.classList.contains('ov-hide-buttons');
+      hide.textContent = h ? 'SHOW PAD' : 'HIDE PAD';
+      hide.setAttribute('aria-pressed', String(h));
+      hide.setAttribute('aria-label', h ? 'Show touch controls' : 'Hide touch controls');
+    };
+    hide.onclick = () => { document.getElementById('gd-ov-hide')?.click(); sync(); };
+    pad.onclick = () => document.getElementById('gd-ov-controller')?.click();
+    rail.insertBefore(hide, menu); rail.insertBefore(pad, menu);
+    new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    sync();
+    return true;
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    let tries = 0;
+    const t = setInterval(() => { if (addRailButtons() || ++tries > 40) clearInterval(t); }, 250);
+  });
+
   const style = document.createElement('style');
   // Online challenges run on jerm747.com accounts, which this site doesn't have.
   style.textContent = 'a[href$="groove-squad-challenge.html"]{display:none!important}'

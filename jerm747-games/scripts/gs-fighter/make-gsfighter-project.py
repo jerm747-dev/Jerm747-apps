@@ -34,6 +34,7 @@ for p in out.rglob('*'):
     n = pat.sub(lambda m: m.group(1) + '../' * depth + m.group(2), t)
     if n != t: p.write_text(n, encoding='utf-8'); changed += 1
 shutil.copy2(here / 'gs-browser-bridge.js', out / 'gs-browser-bridge.js')
+shutil.copy2(here / 'gs-web-layout.css', out / 'gs-web-layout.css')
 pages = 0
 for p in out.glob('*.html'):
     t = p.read_text(encoding='utf-8')

@@ -81,6 +81,12 @@ played games, devices and browsers. Reports go out every 12 or 24 hours (or off)
 cPanel cron job for exact timing (the admin page shows the command). No cookies: visitors are counted
 by a hash that resets daily.
 
+## Shelf
+
+Swipe left or right on a game's page (cover and description) to move through the games in the
+current section; the tiles below follow along. Tap a tile once to show its page, tap again to open
+it. On desktop, the ‹ › arrows on the cover, arrow keys or the controller do the same.
+
 ## Arcade cabinet edition
 
 The home screen now lives inside a responsive arcade cabinet: warm illustrated side panels,
@@ -136,6 +142,11 @@ What the script changes:
   Parallax Run, Sprite/Sound Workshop, Controller setup, Exit to the shelf), and workshop exports
   as normal downloads. The first controller that connects is given to Player 1, like the app.
 - The "Challenge a friend · online beta" link is hidden (it needs jerm747.com accounts).
+- `gs-web-layout.css` (loaded by the bridge) adds the browser layout: in portrait the arena keeps
+  its shape at the top and the touch pad gets its own panel underneath (JUMP · START · DUCK row,
+  then the pad and attack buttons); hiding the pad centers the arena. In landscape the touch
+  controls are mostly transparent until pressed and JUMP / DUCK sit clear of the attack buttons.
+  The top bar adds HIDE PAD and CONTROLLER next to SETUP and GS MENU.
 
 About 449 MB, uploaded once like Get Down.
 

@@ -1,0 +1,60 @@
+/* GS Fighter on jerm747.games: browser layout layer, loaded after the Android styles.
+   - Portrait: the arena keeps a sensible shape at the top (no tall stretched view) and the touch pad
+     gets its own panel underneath, so the controls never cover the fighters.
+   - Landscape: the touch controls sit over the art, so they are mostly transparent until pressed,
+     and JUMP / DUCK are moved clear of the attack buttons.
+   - The top bar gains HIDE (touch controls on/off) and CONTROLLER (button and key mapping). */
+:root { --gsb: 56px; }
+@media (orientation: landscape) and (max-height: 430px) { :root { --gsb: 48px; } }
+@media (min-width: 1000px) and (min-height: 600px) { :root { --gsb: 66px; } }
+
+/* Top bar extras */
+html.gs-android .gs-arcade-rail .gs-web-hide[aria-pressed="true"] { background: #3a2f12; border-color: #ffd27a88; color: #ffe4a0; }
+html.gs-android.gs-lobby .gs-arcade-rail .gs-web-hide { display: none; }
+html.gs-android .gs-arcade-rail { overflow-x: auto; scrollbar-width: none; }
+html.gs-android .gs-arcade-rail::-webkit-scrollbar { display: none; }
+html.ov-hide-buttons .gs-mobility { display: none !important; }
+
+/* JUMP / DUCK: placed individually instead of as a pair glued to the face buttons */
+html.gs-android .gs-mobility { position: fixed !important; inset: 0; right: 0; bottom: 0; pointer-events: none !important; z-index: 7; }
+html.gs-android .gs-mobility button { position: absolute; pointer-events: auto; transform: none !important; }
+
+@media (orientation: landscape) {
+  html.gs-android.ov-mode .gd-ov-pad,
+  html.gs-android.ov-mode .gd-ov-btn,
+  html.gs-android.ov-mode .gd-ov-start,
+  html.gs-android .gs-mobility button { opacity: .42; transition: opacity .12s ease; }
+  html.gs-android.ov-mode .gd-ov-pad:has(.on),
+  html.gs-android.ov-mode .gd-ov-btn.pressed,
+  html.gs-android.ov-mode .gd-ov-btn:active,
+  html.gs-android .gs-mobility button.pressed,
+  html.gs-android .gs-mobility button:active { opacity: .95; }
+  html.gs-android.ov-mode .gd-ov-pad { background: radial-gradient(circle, #1a203355 0, #0b0f1d44 70%); box-shadow: none; }
+  html.gs-android.ov-mode .gd-ov-btn, html.gs-android.ov-mode .gd-ov-dir { box-shadow: 0 2px 0 #05070d88; }
+  /* JUMP above the attack cluster, DUCK to its left, both with clear space around them */
+  html.gs-android .gs-mobility .gs-jump { right: max(14px, env(safe-area-inset-right)); bottom: calc(max(14px, env(safe-area-inset-bottom)) + var(--gsb) * 2.9 + 30px); }
+  html.gs-android .gs-mobility .gs-duck { right: calc(max(14px, env(safe-area-inset-right)) + var(--gsb) * 3.75 + 22px); bottom: max(14px, env(safe-area-inset-bottom)); }
+}
+
+@media (orientation: portrait) {
+  html.gs-android { --gs-stage-h: min(112vw, 60dvh); }
+  html.gs-android.ov-mode:not(.gs-lobby) .app { background: linear-gradient(#0e1424, #070a14) !important; }
+  html.gs-android.ov-mode:not(.gs-lobby) .stage {
+    inset: auto !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: auto !important;
+    height: var(--gs-stage-h) !important; border-bottom: 1px solid #ffffff1f !important;
+  }
+  html.gs-android.ov-mode:not(.gs-lobby) .gd-ov-turn { display: none !important; }
+  /* Pad hidden (playing with a controller or keyboard): keep the arena's shape and center it on screen. */
+  html.gs-android.ov-mode.ov-hide-buttons:not(.gs-lobby) .stage { top: calc((100dvh - var(--gs-stage-h)) / 2) !important; border-top: 1px solid #ffffff1f !important; }
+  /* The touch overlay lives inside the arena box; in portrait it spans the whole screen instead. */
+  html.gs-android.ov-mode:not(.gs-lobby) .gd-ov { position: fixed !important; inset: 0 !important; }
+  /* Pad and attack buttons share the panel under the arena, centered in the space below JUMP / DUCK. */
+  html.gs-android { --gs-ctl-bottom: max(18px, calc((100dvh - var(--gs-stage-h) - 76px - 190px) / 2)); }
+  html.gs-android.ov-mode:not(.gs-lobby) .gd-ov-pad { --pad: min(38vw, 172px); left: max(14px, env(safe-area-inset-left)); bottom: var(--gs-ctl-bottom); }
+  html.gs-android.ov-mode:not(.gs-lobby) .gd-ov-face { --btn: min(12.5vw, 58px); --gap: 7px; right: max(14px, env(safe-area-inset-right)); bottom: calc(var(--gs-ctl-bottom) + 4px); }
+  html.gs-android.ov-mode:not(.gs-lobby) .gd-ov-start { left: 50% !important; transform: translateX(-50%); top: calc(var(--gs-stage-h) + 28px) !important; bottom: auto !important; height: 24px; min-width: 76px; }
+  /* JUMP and DUCK across the top of the controller panel */
+  html.gs-android:not(.gs-lobby) .gs-mobility button { top: calc(var(--gs-stage-h) + 16px); bottom: auto; min-width: 104px; height: 44px; font-size: 12px; }
+  html.gs-android:not(.gs-lobby) .gs-mobility .gs-duck { left: max(16px, env(safe-area-inset-left)); right: auto; }
+  html.gs-android:not(.gs-lobby) .gs-mobility .gs-jump { right: max(16px, env(safe-area-inset-right)); left: auto; }
+}

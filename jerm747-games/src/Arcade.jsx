@@ -146,6 +146,40 @@ export default function Arcade() {
     if (tile && shelf) shelf.scrollTo({ left: tile.offsetLeft - shelf.offsetLeft - (shelf.clientWidth - tile.clientWidth) / 2, behavior: 'smooth' });
   }, [index, cat]);
 
+  // Swipeable details: one full-width page per game in the current section. Swiping picks the game;
+  // picking a game any other way (tiles, arrows, keys, controller) slides the pages to it.
+  const slides = useRef(null);
+  const pointerTile = useRef(-1); // first tap on a tile selects it, a second tap opens it
+  const indexRef = useRef(index);
+  const settle = useRef(0);
+  const lastCat = useRef(cat);
+  indexRef.current = index;
+  const stride = (el) => (el.children[1] ? el.children[1].offsetLeft - el.children[0].offsetLeft : el.clientWidth) || el.clientWidth;
+  useEffect(() => {
+    const el = slides.current;
+    if (!el || !el.clientWidth) return;
+    const target = Math.min(index, shown.length - 1) * stride(el);
+    const jump = lastCat.current !== cat;
+    lastCat.current = cat;
+    if (Math.abs(el.scrollLeft - target) > 2) el.scrollTo({ left: target, behavior: jump ? 'auto' : 'smooth' });
+  }, [index, cat, shown.length]);
+  useEffect(() => {
+    const el = slides.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => { el.scrollTo({ left: indexRef.current * stride(el), behavior: 'auto' }); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [projects, playing]);
+  const onSlidesScroll = () => {
+    clearTimeout(settle.current);
+    settle.current = setTimeout(() => {
+      const el = slides.current;
+      if (!el || !el.clientWidth) return;
+      const i = Math.max(0, Math.min(shown.length - 1, Math.round(el.scrollLeft / stride(el))));
+      if (i !== indexRef.current) { setIndex(i); buzz(); }
+    }, 90);
+  };
+
   const launch = useCallback((p) => {
     if (!p) return;
     track('launch', p.slug);
@@ -231,7 +265,10 @@ export default function Arcade() {
         )}
 
         {current && (
-          <section className="sb-detail" key={current.slug}>
+          <div className="sb-slider">
+          <div className="sb-slides" ref={slides} onScroll={onSlidesScroll} aria-roledescription="carousel" aria-label="Game details · swipe for the next game">
+          {shown.map((current, i) => (
+          <section className="sb-detail sb-slide" key={current.slug} aria-roledescription="slide" aria-label={`${i + 1} of ${shown.length}: ${current.title}`} aria-hidden={i !== index} inert={i !== index}>
             <div className="sb-hero"><Art project={current} big /></div>
             <div className="sb-info">
               <p className="sb-chips">
@@ -255,6 +292,16 @@ export default function Arcade() {
               {current.credit && <p className="sb-credit">{current.credit}</p>}
             </div>
           </section>
+          ))}
+          </div>
+          {shown.length > 1 && (
+            <>
+              <button className="sb-step sb-step-prev" aria-label="Previous game" disabled={index === 0} onClick={() => { setIndex((i) => Math.max(0, i - 1)); buzz(); }}>‹</button>
+              <button className="sb-step sb-step-next" aria-label="Next game" disabled={index === shown.length - 1} onClick={() => { setIndex((i) => Math.min(shown.length - 1, i + 1)); buzz(); }}>›</button>
+              <div className="sb-dots" aria-hidden="true">{shown.map((p, i) => <i key={p.slug} className={i === index ? 'is-on' : ''} />)}</div>
+            </>
+          )}
+          </div>
         )}
 
         <div className="sb-shelf" role="listbox" aria-label="Games">
@@ -266,8 +313,9 @@ export default function Arcade() {
               role="option"
               aria-selected={i === index}
               className={`tile ${i === index ? 'is-on' : ''}`}
-              onClick={() => { if (i === index) launch(p); else setIndex(i); }}
-              onFocus={() => setIndex(i)}
+              onPointerDown={() => { pointerTile.current = i; }}
+              onClick={() => { pointerTile.current = -1; if (i === indexRef.current) launch(p); else { setIndex(i); buzz(); } }}
+              onFocus={() => { if (pointerTile.current !== i) setIndex(i); }}
             >
               <Art project={p} />
               <span className="tile-title">{p.title}</span>
