@@ -107,7 +107,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
 <div id="stage" aria-label="Interactive 3D fighter stage"></div>
 <header class="lab-title"><p>FIGHTER LAB / FIRST IN THE LINEUP</p><h1 id="fighter-name">Akeem</h1><span id="fighter-subtitle">Prince of Fighters</span><small id="motion-status" role="status">Ready stance</small></header>
 <div class="lab-tools"><div class="camera-tools" role="group" aria-label="Camera angles"><button id="cam-front">Front</button><button id="cam-three">¾</button><button id="cam-back">Back</button></div><button id="show-reference">Character art</button></div>
-<dialog id="design-card"><header><div><small>CHARACTER 01 / DESIGN REFERENCE</small><h2>Akeem · Prince of Fighters</h2></div><button id="close-reference">Close</button></header><img src="./akeem-reference.png" alt="Akeem character design: short curls, muscular build, open teal vest and shorts, red sash, ivory wraps and bare feet."><p>Teal fighting kit · cream piping · red sash · short curls · ivory hand and ankle wraps</p><p>Drag the stage to orbit. Pinch or scroll to zoom. The outfit follows the articulated rig through every move.</p></dialog>
+<dialog id="design-card"><header><div><small>CHARACTER 01 / DESIGN REFERENCE</small><h2>Akeem · Prince of Fighters</h2></div><button id="close-reference">Close</button></header><img src="./akeem-reference.png" alt="Akeem character design: short curls, muscular build, open teal vest and shorts, red sash, ivory wraps and bare feet."><p>Teal fighting kit · cream piping · red sash · short curls · ivory hand and ankle wraps</p><p>Drag the stage to orbit. Pinch or scroll to zoom. Articulated fingers and toes, woven wraps, and spring-driven fabric. Hand controls preview gestures; attacks close the hands. Fabric motion is a secondary-motion study, without cloth collision simulation.</p></dialog>
 
 <div class="hud">
   <div class="dock" role="toolbar" aria-label="Viewer controls">
@@ -154,7 +154,9 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
       </div>
     </div>
     <div class="group">
-      <span>Model</span>
+      <span>Hands &amp; fabric · Akeem</span><div class="row" role="group" aria-label="Akeem hand gesture">
+<button id="g-fist" aria-pressed="true">Fist</button><button id="g-open" aria-pressed="false">Open</button><button id="g-point" aria-pressed="false">Point</button><button id="g-beckon" aria-pressed="false">Come here</button><button id="t-cloth" aria-pressed="true">Fabric motion</button></div>
+    </div><div class="group"><span>Detail camera</span><div class="row"><button id="cam-head">Head</button><button id="cam-hands">Hands</button><button id="cam-feet">Feet</button></div></div><div class="group"><span>Model</span>
       <div class="row"><button id="b-glb">Download GLB</button><button id="b-export">Export OBJ</button></div>
     </div>
   </div>
@@ -430,9 +432,11 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
       part(el, mus(0.036 * K), 'skin', S + '_forearm_extensor', [side * 0.018, -0.06, -0.014], null, [0.9, 1.7, 0.9]);
       const wr = joint(S + '_wrist', el, 0, -L_FOREARM, 0);
       part(wr, seg(B.forearm[1] + 0.004, B.forearm[1] + 0.007, 0.085, 8, -1), 'tape', S + '_wrist_tape', [0, 0.05, 0]);
+      if(spec.character !== 'akeem') {
       part(wr, box(0.085 * k, 0.095 * k, 0.09 * k), 'tape', S + '_fist', [0, -0.055 * k, 0]);
       part(wr, box(0.092 * k, 0.03 * k, 0.096 * k), spec.character === 'akeem' ? 'skin' : 'tape', S + '_knuckles', [0, -0.098 * k, 0]);
       part(wr, box(0.028 * k, 0.05 * k, 0.03 * k), spec.character === 'akeem' ? 'skin' : 'tape', S + '_thumb', [-side * 0.02 * k, -0.06 * k, 0.052 * k]);
+      }
       const tip = marker(S + '_fist_tip', wr, 0, -0.115 * k, 0);
       return { sh, el, wr, tip };
     }
@@ -459,9 +463,11 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
       part(knee, mus(0.026 * K), 'skin', S + '_tibialis', [side * 0.012, -0.14, 0.035], null, [0.8, 2.2, 0.8]);
       const ankle = joint(S + '_ankle', knee, 0, -L_SHIN, 0);
       part(ankle, seg(B.calf[2] + 0.008, B.calf[2] + 0.013, 0.075, 8, -1), 'tape', S + '_ankle_tape', [0, 0.05, 0]);
+      if(spec.character !== 'akeem') {
       part(ankle, box(0.085 * k, 0.055, 0.22 * k), 'skin', S + '_foot', [0, -0.047, 0.055 * k]);
       part(ankle, box(0.093 * k, 0.061, 0.075 * k), 'tape', S + '_arch_tape', [0, -0.044, 0.035 * k]);
-      if(spec.character === 'akeem'){for(let toe=0;toe<5;toe++)part(ankle,box(.014,.027,.038-(toe*.003)),'skin',S+'_toe_'+toe,[(toe-2)*.016,-.055,.177-toe*.001]);}else part(ankle, box(0.08 * k, 0.033, 0.045 * k), 'skinDark', S + '_toes', [0, -0.058, 0.185 * k]);
+      part(ankle, box(0.08 * k, 0.033, 0.045 * k), 'skinDark', S + '_toes', [0, -0.058, 0.185 * k]);
+      }
       const toe = marker(S + '_toe', ankle, 0, -0.06, 0.2 * k);
       return { hip, knee, ankle, toe };
     }
@@ -697,7 +703,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
         const pole = poleLocal.clone().applyQuaternion(rigQ).normalize();
         solveIK(arm.sh, arm.el, L_UPARM, L_FOREARM, target, pole, pole.clone().negate());
       });
-      if(details) details.update(clock);
+      if(details) details.update(clock, {action:!!action});
       if (skel.visible) updateSkeleton();
     }
 
@@ -713,7 +719,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
       verts += g.attributes.position.count;
     });
 
-    return { spec, rig, parts, joints, edges, mats, skel, pose, fire, updateSkeleton, tris, verts };
+    return { spec, rig, parts, joints, edges, mats, skel, pose, fire, details, updateSkeleton, tris, verts };
   }
 
   const fighters = { f01: makeFighter(SPECS.f01), f02: makeFighter(SPECS.f02) };
@@ -789,6 +795,16 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     if (e.key === 'p' || e.key === 'P') fire('roundhouse');
   });
 
+  ['fist','open','point','beckon'].forEach(g=>document.getElementById('g-'+g).onclick=()=>{
+    fighters.f01.details.setGesture(g);
+    ['fist','open','point','beckon'].forEach(k=>document.getElementById('g-'+k).setAttribute('aria-pressed',k===g));
+    document.getElementById('motion-status').textContent='Akeem · '+({fist:'Guard fists',open:'Open hands',point:'Pointing',beckon:'Come here'}[g]);
+  });
+  toggle('t-cloth',on=>fighters.f01.details.setCloth(on));
+  function detailCamera(y,z,x=0){setMode('f01');camera.position.set(x,y+.06,z);controls.target.set(x,y,.12);controls.update();}
+  document.getElementById('cam-head').onclick=()=>detailCamera(1.67,1.0);
+  document.getElementById('cam-hands').onclick=()=>detailCamera(1.4,1.25,.12);
+  document.getElementById('cam-feet').onclick=()=>detailCamera(.13,1.25);
   const designCard=document.getElementById('design-card');
   document.getElementById('show-reference').onclick=()=>designCard.showModal();
   document.getElementById('close-reference').onclick=()=>designCard.close();

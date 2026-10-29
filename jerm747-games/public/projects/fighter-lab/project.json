@@ -1,7 +1,7 @@
 {
   "title": "Fighter Lab",
   "tagline": "Akeem \u00b7 Prince of Fighters \u00b7 3D character study",
-  "description": "Akeem joins the geometric 3D Fighter Lab with his teal fighting kit, red sash, curls and wraps. Preview eight moves, orbit the articulated character, compare his design reference, and export GLB or OBJ.",
+  "description": "Akeem detail workshop: fuller head, close fade and coiled curls, woven hand and foot wraps, articulated fingers and toes, gesture previews and spring-driven fabric. Includes eight fight moves and GLB/OBJ export.",
   "kind": "game",
   "status": "prototype",
   "controls": [
@@ -32,5 +32,5 @@
     "LT": "Jump kick",
     "RT": "Roundhouse"
   },
-  "version": "Akeem 0.1"
+  "version": "Akeem 0.2"
 }

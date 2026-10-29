@@ -66,10 +66,11 @@ RB uppercut, A jump, LB jump uppercut, LT jump kick, RT roundhouse.
 
 - **Groove Squad Get Down** (2.3.7): the full game from jerm747.com with all 40 fighters open.
   No subscriptions on jerm747.games. Ranked Run keeps its leaderboard on each device. See below.
+- **GS Fighter 2** (1.0.17): the Android handheld edition in the browser. See below.
 - **Flight Control Deck** (v7): Asteroid Blast, races and free flight.
-- **Fighter Lab** (Akeem 0.1): Akeem, Prince of Fighters, as a geometric 3D character study with
-  eight moves, design reference and GLB/OBJ export. `node scripts/check-fighter-model.mjs` checks the
-  model (needs `npm install` for `three`).
+- **Fighter Lab** (Akeem detail workshop 0.2): Akeem, Prince of Fighters, as a geometric 3D character
+  study with articulated hands and feet, gestures, spring fabric, eight moves and GLB/OBJ export.
+  `node scripts/check-fighter-model.mjs` checks the model (needs `npm install` for `three`).
 - **Controller Check**: test buttons, sticks, triggers and rumble.
 - `cover-square.jpg` in the first two folders: your square cover art, kept as a backup.
 
@@ -117,8 +118,26 @@ What the script changes for jerm747.games:
 
 Upload this folder once. Later site updates can skip it, as long as you don't delete it on the server.
 
-GS Fighter is waiting on its browser game files (GS-Fighter-1.0 or the 1.0.17 APK); the
-Android source kit in the apps repo holds only the wrapper and patches.
+## GS Fighter 2
+
+`projects/gs-fighter-2/` is the Android 1.0.17 build running in the browser, generated from the APK
+(the APK's `assets/` folder is the complete web game with every Android update):
+
+```bash
+python3 scripts/gs-fighter/make-gsfighter-project.py GS-Fighter-Android-1.0.17.apk public/projects/gs-fighter-2
+# then restore cover.jpg and project.json (or rebuild the cover: run scripts/gs-fighter/gs-cover.py
+# from inside the project folder)
+```
+
+What the script changes:
+- root paths become folder-relative; the workshops' "← Fighters" links go to the game's select screen;
+- `gs-browser-bridge.js` stands in for the Android app, so the APK features switch on in a browser:
+  staged Blue/Red select, arcade opening and results, the GS MENU (Resume, Fighter select,
+  Parallax Run, Sprite/Sound Workshop, Controller setup, Exit to the shelf), and workshop exports
+  as normal downloads. The first controller that connects is given to Player 1, like the app.
+- The "Challenge a friend · online beta" link is hidden (it needs jerm747.com accounts).
+
+About 449 MB, uploaded once like Get Down.
 
 For a UI preview without PHP, run `JERM_UI_PREVIEW=1 npm run dev` (macOS/Linux). This reads
 local project metadata and does not collect stats. Production builds still use the PHP backend.
