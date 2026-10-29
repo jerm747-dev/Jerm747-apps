@@ -1,0 +1,18 @@
+# jerm747.dev — force HTTPS and serve the React app
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Games moved to jerm747.games; forward any old sandbox links there
+RewriteRule ^sandbox(/.*)?$ https://jerm747.games/ [L,R=301]
+
+# Never serve project data directly
+RewriteRule ^api/data/ - [F,L]
+
+# Upload size for portal attachments
+<IfModule mod_php.c>
+  php_value upload_max_filesize 12M
+  php_value post_max_size 50M
+</IfModule>
+
+Options -Indexes

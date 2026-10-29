@@ -1,0 +1,17 @@
+{
+  "title": "Flight Control Deck",
+  "tagline": "Asteroid Blast, races and free flight",
+  "description": "A flight and space-shooter deck with chase, cockpit and nose cameras, warp, shields and race modes. Remappable controls with two-stick calibration, mouse mode and on-screen touch controls.",
+  "kind": "game",
+  "status": "in_progress",
+  "version": "v7.1",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "mouse",
+    "touch"
+  ],
+  "credit": "Original Jerm747 project. All rights reserved.",
+  "accent": "#8FA7BF",
+  "order": 10
+}

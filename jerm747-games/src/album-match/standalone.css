@@ -1,0 +1,22 @@
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0c0a16;color:#f7edff;font:15px/1.5 system-ui,sans-serif}button,input{font:inherit;color:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #ffca86;outline-offset:2px}.btn{border:1px solid #b889dd77;border-radius:8px;background:#5d3977;color:#fff;padding:9px 13px;min-height:40px}.btn-ghost{background:#24182f}.game-head-actions{display:flex;gap:8px;align-items:center}.album-match{inset:0}.am-scores p{font-size:13px;color:#d5b3f4}
+/* Keep the complete board and swap pad visible inside a cabinet-sized viewport. */
+.album-match.am-v33{padding:12px clamp(10px,3vw,28px)}
+.am-v33 .match-grid{width:min(100%,480px,max(210px,calc(100dvh - 270px)));margin:10px auto}
+.am-v33 .am-objective{margin:5px auto}.am-v33 .match-status{margin:6px auto}.am-v33 .match-message{margin:6px auto}
+/* Bright colorways retain the original album art beneath flowing marble veins. */
+.am-v33 .match-grid{overflow:hidden;background:#130e22}
+.am-v33 .match-tile{isolation:isolate;background:linear-gradient(135deg,color-mix(in srgb,var(--tile-color) 75%,#fff),color-mix(in srgb,var(--tile-color) 55%,#180e37));box-shadow:inset 0 1px 8px #ffffff55,0 3px 8px #0007}
+.am-v33 .match-tile::before{display:none}
+.am-v33 .match-row:nth-child(even) .match-tile::before{transform:rotate(70deg)}
+.am-v33 .match-tile img{opacity:1;mix-blend-mode:normal}
+.am-v33 .match-tile .am-symbol{z-index:2;color:#fff;text-shadow:0 2px 4px #000,0 0 8px #0008;background:#20152caa;border-radius:8px;padding:0 5px}
+@media(prefers-reduced-motion:reduce){.am-v33 .match-tile{transition:none}}
+@media(max-height:500px) and (orientation:landscape){
+ .album-match.am-v33{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,1fr);grid-auto-rows:max-content;gap:5px 14px;padding:10px}
+ .album-match.am-v33>*{grid-column:2;max-width:100%;margin:0 auto}
+ .album-match.am-v33 .match-grid{grid-column:1;grid-row:1/span 12;width:min(100%,calc(100dvh - 24px));margin:0 auto}
+ .has-display-toolbar .album-match.am-v33 .match-grid{width:min(100%,calc(100dvh - 68px))}
+ .am-v33>header{width:100%}.am-v33 h1{font-size:19px;margin:3px 0}.am-v33 .game-head-actions{gap:4px}.am-v33 .game-head-actions button{font-size:10px;padding:5px;min-height:30px}
+ .am-v33 .am-objective,.am-v33 .match-status,.am-v33 .match-message{font-size:11px}.am-v33 .am-result{grid-column:1/-1}
+ .am-v33 .am-controls,.am-v33 .am-selection,.am-v33 .match-actions,.am-v33 .am-how,.am-v33 .am-scores{margin:3px auto}
+}

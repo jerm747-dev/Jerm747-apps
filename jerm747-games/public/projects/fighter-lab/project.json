@@ -1,0 +1,31 @@
+{
+  "title": "Fighter Lab",
+  "tagline": "Low-poly 3D fighter rig and move tester",
+  "description": "A PS1 and Dreamcast-style 3D fighter mesh lab: build the character, preview strikes, jumps and kicks, and export the model as OBJ. Groundwork for a 3D fighting game.",
+  "kind": "game",
+  "status": "prototype",
+  "controls": ["gamepad", "keyboard", "mouse"],
+  "credit": "Original Jerm747 project. All rights reserved.",
+  "accent": "#A897C9",
+  "order": 20,
+  "gamepad": {
+    "X": "j",
+    "Y": "k",
+    "B": "l",
+    "RB": "u",
+    "A": " ",
+    "LB": "i",
+    "LT": "o",
+    "RT": "p"
+  },
+  "gamepadLabels": {
+    "X": "Jab",
+    "Y": "Cross",
+    "B": "Hook",
+    "RB": "Uppercut",
+    "A": "Jump",
+    "LB": "Jump uppercut",
+    "LT": "Jump kick",
+    "RT": "Roundhouse"
+  }
+}

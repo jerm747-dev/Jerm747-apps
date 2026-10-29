@@ -1,0 +1,11 @@
+{
+  "title": "Controller Check",
+  "tagline": "Test buttons, sticks, triggers and rumble",
+  "description": "Plug in a controller and press anything. Shows every button, stick and trigger live, tests rumble, and logs keyboard keys. Use it before a play session or when mapping a new game.",
+  "kind": "tool",
+  "status": "stable",
+  "controls": ["gamepad", "keyboard"],
+  "credit": "Sandbox utility.",
+  "accent": "#C2AE7E",
+  "order": 90
+}

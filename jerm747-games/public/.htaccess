@@ -1,0 +1,9 @@
+# jerm747.games — force HTTPS and serve the arcade
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Never serve stats data directly
+RewriteRule ^api/data/ - [F,L]
+
+Options -Indexes

@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}body{margin:0}</style>
+<title>Fighter Mesh Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-bleed 3D stage; a HUD floats above it — title + stats on top, control dock along the bottom. */
+:root {
+  --stage-top: #16202a;
+  --stage-mid: #1c2631;
+  --stage-low: #3a2b22;
+  --panel: rgba(13, 19, 26, 0.82);
+  --ink: #ebe5d6;
+  --mute: #8f9ba7;
+  --line: rgba(235, 229, 214, 0.14);
+  --accent: #f26b1d;
+  --accent-ink: #1a0f07;
+  --f-display: "Chakra Petch", "Rajdhani", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: linear-gradient(180deg, var(--stage-top) 0%, var(--stage-mid) 58%, var(--stage-low) 100%);
+  color: var(--ink);
+  font-family: var(--f-body);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+#stage { position: fixed; inset: 0; touch-action: none; }
+#stage canvas { display: block; width: 100%; height: 100%; }
+#stage.retro canvas { image-rendering: pixelated; }
+
+.hud {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--panel); border-top: 1px solid var(--line);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+/* one scrolling strip: label above, one row of buttons below, sections side by side */
+.dock {
+  display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 0;
+  overflow-x: auto; overflow-y: hidden; touch-action: pan-x;
+  overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-block: 8px 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent);
+}
+.dock::-webkit-scrollbar { display: none; }
+.group { flex: none; display: flex; flex-direction: column; gap: 5px; }
+.group + .group { margin-left: 12px; padding-left: 12px; border-left: 1px solid var(--line); }
+.group:last-child { padding-right: 28px; }
+.group > span {
+  font-family: var(--f-display); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--mute);
+}
+.row { display: flex; gap: 4px; flex-wrap: nowrap; }
+button {
+  flex: none; white-space: nowrap;
+  font: 600 13px/1 var(--f-display); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink); background: transparent; border: 1px solid var(--line);
+  padding: 9px 11px; cursor: pointer; min-height: 36px;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+button:hover { border-color: rgba(235, 229, 214, 0.4); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+button[aria-pressed="true"] { background: var(--ink); color: var(--accent-ink); border-color: var(--ink); }
+button.hit { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.hit:active { filter: brightness(1.15); }
+kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4px; }
+
+.sheet {
+  position: fixed; z-index: 5;
+  left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
+  top: calc(16px + env(safe-area-inset-top, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  max-width: 720px; margin: 0 auto;
+  background: #0f151c; border: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 10px; padding: 14px;
+}
+.sheet header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sheet h2 { margin: 0; font: 700 18px/1.1 var(--f-display); text-transform: uppercase; letter-spacing: 0.04em; margin-right: auto; }
+.sheet p { margin: 0; font-size: 13px; color: var(--mute); max-width: 65ch; }
+.sheet textarea {
+  flex: 1; min-height: 0; width: 100%; box-sizing: border-box; resize: none;
+  background: #0a0f14; color: var(--ink); border: 1px solid var(--line);
+  font: 11.5px/1.45 var(--f-mono); padding: 10px;
+}
+.toast { font-family: var(--f-mono); font-size: 12px; color: var(--accent); min-height: 1em; }
+
+</style>
+
+<div id="stage"></div>
+
+<div class="hud">
+  <div class="dock" role="toolbar" aria-label="Viewer controls">
+    <div class="group">
+      <span>Fighter</span>
+      <div class="row">
+        <button id="f-f01" aria-pressed="true">01</button>
+        <button id="f-f02" aria-pressed="false">02</button>
+        <button id="f-both" aria-pressed="false">Versus</button>
+      </div>
+    </div>
+    <div class="group">
+      <span>View</span>
+      <div class="row">
+        <button id="v-shaded" aria-pressed="false">Shaded</button>
+        <button id="v-faces" aria-pressed="true">Faces</button>
+        <button id="v-wire" aria-pressed="false">Wire</button>
+      </div>
+    </div>
+    <div class="group">
+      <span>Overlay</span>
+      <div class="row">
+        <button id="t-skel" aria-pressed="false">Skeleton</button>
+        <button id="t-retro" aria-pressed="false">480p</button>
+      </div>
+    </div>
+    <div class="group">
+      <span>Motion</span>
+      <div class="row">
+        <button id="t-idle" aria-pressed="true">Idle</button>
+        <button id="a-jab" class="hit">Jab<kbd>J</kbd></button>
+        <button id="a-cross" class="hit">Cross<kbd>K</kbd></button>
+        <button id="a-hook" class="hit">Hook<kbd>L</kbd></button>
+        <button id="a-upper" class="hit">Uppercut<kbd>U</kbd></button>
+      </div>
+    </div>
+    <div class="group">
+      <span>Air</span>
+      <div class="row">
+        <button id="a-jump" class="hit">Jump<kbd>Space</kbd></button>
+        <button id="a-jumpUpper" class="hit">Rising Upper<kbd>I</kbd></button>
+        <button id="a-jumpKick" class="hit">Flying Kick<kbd>O</kbd></button>
+        <button id="a-roundhouse" class="hit">Roundhouse<kbd>P</kbd></button>
+      </div>
+    </div>
+    <div class="group">
+      <span>Model</span>
+      <div class="row"><button id="b-export">Export OBJ</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet" hidden role="dialog" aria-labelledby="sheet-title">
+  <header>
+    <h2 id="sheet-title">OBJ Export</h2>
+    <button id="b-copy" class="hit">Copy</button>
+    <button id="b-close">Close</button>
+  </header>
+  <p>Current pose of the fighters on screen, one object per body part (prefixed F01_ or F02_). Meters, Y up. Paste into a file ending in <code>.obj</code> and open it in Blender or any 3D tool.</p>
+  <div class="toast" id="toast" aria-live="polite"></div>
+  <textarea id="obj-text" readonly spellcheck="false" aria-label="OBJ file contents"></textarea>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  const V = THREE.Vector3, Q = THREE.Quaternion;
+
+  // ---------- shared proportions (meters) — both fighters are the same height ----------
+  const L_THIGH = 0.44, L_SHIN = 0.42, L_UPARM = 0.29, L_FOREARM = 0.25, ANKLE_H = 0.0745;
+
+  const SPECS = {
+    f01: {
+      id: 'F01', label: 'Fighter 01',
+      sub: 'Low-poly ready stance on a rigid-segment rig, the way 32/128-bit era fighters were built.',
+      colors: { skin: 0xb07850, skinDark: 0x8a5a3a, kit: 0x22324a, trim: 0xf26b1d, tape: 0xebe5d6, hair: 0x1b1511, eye: 0x120d0a },
+      body: {
+        pelvis: [0.165, 0.178, 0.72], hipX: 0.095,
+        abdomen: [0.14, 0.155, 0.7], absRows: 3, absZ: 0.1,
+        chest: [0.158, 0.23, 0.64], shoulderX: 0.195, deltoid: 0.08, traps: [0.2, 0.08, 0.58], muscle: 1,
+        neck: [0.074, 0.064], upperArm: [0.058, 0.047], forearm: [0.05, 0.037], hand: 1.06,
+        thigh: [0.095, 0.06], shortsLeg: [0.105, 0.098], calf: [0.058, 0.065, 0.036], foot: 1,
+        skull: 0.105, jaw: [0.052, 0.074], build: 'male', hair: 'short'
+      },
+      stance: { footL: [0.10, 0.28], footR: [-0.16, -0.26] },
+      phase: 0
+    },
+    f02: {
+      id: 'F02', label: 'Fighter 02',
+      sub: 'Same height and rig, narrower shoulders, wider hips, lighter limbs. Sports top, shorts, taped hands and feet.',
+      colors: { skin: 0xcf9c74, skinDark: 0xa8714f, kit: 0x6a1f2f, trim: 0xe8b84a, tape: 0xebe5d6, hair: 0x24160f, eye: 0x120d0a },
+      body: {
+        pelvis: [0.172, 0.19, 0.74], hipX: 0.1,
+        abdomen: [0.148, 0.132, 0.68], absRows: 2, absZ: 0.093,
+        chest: [0.14, 0.188, 0.66], shoulderX: 0.172, deltoid: 0.06, traps: [0.155, 0.064, 0.5], muscle: 0.72,
+        neck: [0.052, 0.047], upperArm: [0.048, 0.04], forearm: [0.041, 0.032], hand: 0.92,
+        thigh: [0.094, 0.058], shortsLeg: [0.11, 0.1], calf: [0.054, 0.06, 0.034], foot: 0.94,
+        skull: 0.1, jaw: [0.044, 0.064], build: 'female', hair: 'ponytail'
+      },
+      stance: { footL: [0.09, 0.27], footR: [-0.14, -0.25] },
+      phase: 1.3
+    }
+  };
+
+  // ---------- scene ----------
+  const stageEl = document.getElementById('stage');
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setClearColor(0x000000, 0);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stageEl.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 60);
+  camera.position.set(1.9, 1.35, 2.7);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0.92, 0);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 0.9;
+  controls.maxDistance = 8;
+  controls.maxPolarAngle = Math.PI * 0.52;
+
+  scene.add(new THREE.HemisphereLight(0xcfd8e6, 0x3a2b22, 0.75));
+  const key = new THREE.DirectionalLight(0xfff1de, 0.95);
+  key.position.set(2.2, 3.6, 2.4);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  Object.assign(key.shadow.camera, { left: -2, right: 2, top: 2.4, bottom: -1.2, near: 0.5, far: 10 });
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0xf2a06a, 0.45);
+  rim.position.set(-2.5, 1.8, -2.2);
+  scene.add(rim);
+
+  const stoneMat = new THREE.MeshPhongMaterial({ color: 0x5d6168, flatShading: true, shininess: 4 });
+  const arena = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.85, 0.14, 10), stoneMat);
+  arena.position.y = -0.07; arena.receiveShadow = true;
+  scene.add(arena);
+  const inlay = new THREE.Mesh(new THREE.RingGeometry(1.36, 1.42, 10), new THREE.MeshBasicMaterial({ color: 0xf26b1d }));
+  inlay.rotation.x = -Math.PI / 2; inlay.position.y = 0.002;
+  scene.add(inlay);
+  const grid = new THREE.PolarGridHelper(1.75, 10, 5, 10, 0x80868e, 0x80868e);
+  grid.material.transparent = true; grid.material.opacity = 0.18;
+  grid.position.y = 0.001;
+  scene.add(grid);
+
+  // ---------- geometry helpers ----------
+  // tapered prism hanging from its joint. dir -1 = grows down, +1 = grows up.
+  // rJ is the radius at the joint end, rF at the far end.
+  function seg(rJ, rF, h, sides, dir, sx, sz) {
+    const top = dir < 0 ? rJ : rF, bot = dir < 0 ? rF : rJ;
+    const g = new THREE.CylinderGeometry(top, bot, h, sides, 1);
+    g.translate(0, dir * h / 2, 0);
+    g.scale(sx || 1, 1, sz || 1);
+    return g;
+  }
+  const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
+  const ico = (r) => new THREE.IcosahedronGeometry(r, 0);
+  const mus = (r) => new THREE.SphereGeometry(r, 7, 5);   // rounded muscle mass
+
+  // ---------- IK helpers ----------
+  const _m = new THREE.Matrix4(), _pq = new Q();
+  function boneQuat(along, hint) {      // local -Y along `along`, local +Z leaning toward `hint`
+    const y = along.clone().negate().normalize();
+    const z = hint.clone().addScaledVector(y, -hint.dot(y));
+    if (z.lengthSq() < 1e-8) z.set(0, 0, 1).addScaledVector(y, -y.z);
+    z.normalize();
+    const x = new V().crossVectors(y, z);
+    _m.makeBasis(x, y, z);
+    return new Q().setFromRotationMatrix(_m);
+  }
+  function setWorldQuat(obj, qW) {
+    obj.parent.getWorldQuaternion(_pq);
+    obj.quaternion.copy(_pq.invert().multiply(qW));
+    obj.updateMatrixWorld(true);
+  }
+  function solveIK(upper, lower, L1, L2, target, pole, twist) {
+    const a = upper.getWorldPosition(new V());
+    const d = target.clone().sub(a);
+    const dist = THREE.MathUtils.clamp(d.length(), Math.abs(L1 - L2) + 1e-3, (L1 + L2) * 0.999);
+    const dir = d.normalize();
+    const cosA = THREE.MathUtils.clamp((L1 * L1 + dist * dist - L2 * L2) / (2 * L1 * dist), -1, 1);
+    const axis = new V().crossVectors(dir, pole);
+    if (axis.lengthSq() < 1e-8) axis.set(1, 0, 0);
+    axis.normalize();
+    const upDir = dir.clone().applyAxisAngle(axis, Math.acos(cosA));
+    setWorldQuat(upper, boneQuat(upDir, twist));
+    const mid = a.clone().addScaledVector(upDir, L1);
+    const end = a.clone().addScaledVector(dir, dist);
+    setWorldQuat(lower, boneQuat(end.sub(mid), twist));
+  }
+  const ease = (x) => 1 - Math.pow(1 - x, 3);
+  const easeIO = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  const strike = (p, hold) => p < hold ? ease(p / hold) : 1 - easeIO((p - hold) / (1 - hold));
+  const yawQ = (y) => new Q().setFromAxisAngle(new V(0, 1, 0), y);
+
+  // shared animation clock
+  let clock = 0, idleT = 0;
+  const IDLE_SPEED = 2.7;   // 1 = original bounce rate
+  let idle = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- fighter factory ----------
+  function makeFighter(spec) {
+    const B = spec.body, C = spec.colors, P = spec.id + '_';
+    const mats = {};
+    const mat = (k) => mats[k] || (mats[k] = new THREE.MeshPhongMaterial({
+      color: C[k], flatShading: true, shininess: k === 'kit' ? 30 : 8, specular: 0x1c1c1c
+    }));
+    const parts = [], joints = [];
+    const joint = (name, parent, x, y, z) => {
+      const j = new THREE.Group(); j.name = P + name; j.position.set(x, y, z); parent.add(j); joints.push(j); return j;
+    };
+    const marker = (name, parent, x, y, z) => {
+      const m = new THREE.Object3D(); m.name = P + name; m.position.set(x, y, z); parent.add(m); return m;
+    };
+    const part = (parent, geo, k, name, pos, rot, scl) => {
+      const m = new THREE.Mesh(geo, mat(k)); m.name = P + name;
+      if (pos) m.position.set(pos[0], pos[1], pos[2]);
+      if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
+      if (scl) m.scale.set(scl[0], scl[1], scl[2]);
+      m.castShadow = true; parent.add(m); parts.push(m); return m;
+    };
+
+    const rig = new THREE.Group(); rig.name = P + 'root';
+    scene.add(rig);
+
+    // hips
+    const pelvis = joint('pelvis', rig, -0.03, 0.88, 0.01);
+    part(pelvis, seg(B.pelvis[0], B.pelvis[1], 0.2, 8, -1, 1, B.pelvis[2]), 'kit', 'shorts_hips', [0, 0.06, 0]);
+    part(pelvis, seg(B.pelvis[0] + 0.003, B.pelvis[0] + 0.003, 0.035, 8, -1, 1, B.pelvis[2] + 0.01), 'trim', 'shorts_waistband', [0, 0.078, 0]);
+
+    // torso
+    const spine = joint('spine', pelvis, 0, 0.07, 0);
+    part(spine, seg(B.abdomen[0], B.abdomen[1], 0.2, 8, 1, 1, B.abdomen[2]), 'skin', 'abdomen');
+    for (let r = 0; r < B.absRows; r++) for (let s = -1; s <= 1; s += 2) {
+      part(spine, box(0.04, 0.042, 0.02), 'skin', 'abs_' + r + (s < 0 ? 'R' : 'L'), [s * 0.024, 0.05 + r * 0.05, B.absZ]);
+    }
+    const chest = joint('chest', spine, 0, 0.2, 0);
+    if (B.build === 'male') {
+      part(chest, seg(B.chest[0], B.chest[1], 0.27, 8, 1, 1, B.chest[2]), 'skin', 'chest');
+      part(chest, mus(0.08), 'skin', 'pec_L', [0.07, 0.195, 0.108], [0, 0, -0.14], [1.2, 0.82, 0.52]);
+      part(chest, mus(0.08), 'skin', 'pec_R', [-0.07, 0.195, 0.108], [0, 0, 0.14], [1.2, 0.82, 0.52]);
+    } else {
+      // sports top covers the ribcage; collarbone area stays bare
+      const midR = B.chest[0] + (B.chest[1] - B.chest[0]) * 0.72;
+      part(chest, seg(B.chest[0] + 0.003, midR, 0.195, 8, 1, 1, B.chest[2] + 0.01), 'kit', 'top');
+      part(chest, seg(B.chest[0] + 0.005, B.chest[0] + 0.006, 0.026, 8, 1, 1, B.chest[2] + 0.02), 'trim', 'top_band');
+      part(chest, seg(midR, B.chest[1], 0.075, 8, 1, 1, B.chest[2] - 0.03), 'skin', 'upper_chest', [0, 0.195, 0]);
+      part(chest, ico(0.06), 'kit', 'top_bust_L', [0.05, 0.13, 0.083], null, [1, 0.85, 0.72]);
+      part(chest, ico(0.06), 'kit', 'top_bust_R', [-0.05, 0.13, 0.083], null, [1, 0.85, 0.72]);
+      part(chest, box(0.026, 0.02, 0.16), 'kit', 'strap_L', [0.085, 0.262, -0.005]);
+      part(chest, box(0.026, 0.02, 0.16), 'kit', 'strap_R', [-0.085, 0.262, -0.005]);
+    }
+    part(chest, seg(B.traps[0], B.traps[1], 0.07, 6, 1, 1, B.traps[2]), 'skin', 'traps', [0, 0.25, -0.005]);
+    // muscle masses: lats for the V-taper, upper back, trap mounds, obliques, neck cords
+    const K = B.muscle, backMat = B.build === 'male' ? 'skin' : 'kit', latX = B.chest[1] * 0.74;
+    part(chest, mus(0.075 * K), backMat, 'lat_L', [latX, 0.11, -0.025], [0, 0, 0.25], [0.65, 1.7, 1.05]);
+    part(chest, mus(0.075 * K), backMat, 'lat_R', [-latX, 0.11, -0.025], [0, 0, -0.25], [0.65, 1.7, 1.05]);
+    part(chest, mus(0.09 * K), backMat, 'upper_back', [0, 0.17, -0.07], null, [1.55, 1.05, 0.55]);
+    part(chest, mus(0.06 * K), 'skin', 'trap_L', [0.085, 0.262, -0.025], [0, 0, -0.35], [1.35, 0.75, 1]);
+    part(chest, mus(0.06 * K), 'skin', 'trap_R', [-0.085, 0.262, -0.025], [0, 0, 0.35], [1.35, 0.75, 1]);
+    part(spine, mus(0.05 * K), 'skin', 'oblique_L', [B.abdomen[1] * 0.78, 0.1, 0.012], null, [0.6, 1.5, 0.95]);
+    part(spine, mus(0.05 * K), 'skin', 'oblique_R', [-B.abdomen[1] * 0.78, 0.1, 0.012], null, [0.6, 1.5, 0.95]);
+
+    // neck / head
+    const neck = joint('neck', chest, 0, 0.3, 0.01);
+    part(neck, seg(B.neck[0], B.neck[1], 0.1, 6, 1), 'skin', 'neck');
+    part(neck, mus(0.028 * K), 'skin', 'neck_cord_L', [0.026, 0.045, 0.026], [0.45, 0, -0.35], [0.7, 1.9, 0.7]);
+    part(neck, mus(0.028 * K), 'skin', 'neck_cord_R', [-0.026, 0.045, 0.026], [0.45, 0, 0.35], [0.7, 1.9, 0.7]);
+    const head = joint('head', neck, 0, 0.085, 0);
+    const R = B.skull;
+    part(head, new THREE.SphereGeometry(R, 8, 6), 'skin', 'skull', [0, 0.105, 0], null, [0.86, 1.08, 0.98]);
+    part(head, seg(B.jaw[0], B.jaw[1], 0.075, 6, 1, 1, 1.15), 'skin', 'jaw', [0, 0.015, 0.022]);
+    part(head, new THREE.ConeGeometry(0.016, 0.042, 4), 'skin', 'nose', [0, 0.085, R - 0.001], [Math.PI / 2, 0, 0]);
+    part(head, box(0.026, 0.012, 0.012), 'eye', 'eye_L', [0.035, 0.106, R - 0.007]);
+    part(head, box(0.026, 0.012, 0.012), 'eye', 'eye_R', [-0.035, 0.106, R - 0.007]);
+    part(head, box(0.02, 0.04, 0.03), 'skin', 'ear_L', [R * 0.88, 0.098, 0]);
+    part(head, box(0.02, 0.04, 0.03), 'skin', 'ear_R', [-R * 0.88, 0.098, 0]);
+    let pony = null;
+    if (B.hair === 'short') {
+      part(head, box(0.12, 0.02, 0.03), 'skinDark', 'brow', [0, 0.122, 0.088]);
+      part(head, new THREE.SphereGeometry(R + 0.006, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.46), 'hair', 'hair', [0, 0.112, -0.01], null, [0.88, 1.02, 1.0]);
+    } else {
+      part(head, box(0.025, 0.008, 0.012), 'hair', 'brow_L', [0.034, 0.122, R - 0.008], [0, 0, -0.12]);
+      part(head, box(0.025, 0.008, 0.012), 'hair', 'brow_R', [-0.034, 0.122, R - 0.008], [0, 0, 0.12]);
+      part(head, new THREE.SphereGeometry(R + 0.008, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.52), 'hair', 'hair', [0, 0.105, -0.006], null, [0.9, 1.06, 1.02]);
+      part(head, seg(0.058, 0.07, 0.07, 6, -1, 1, 0.8), 'hair', 'hair_back', [0, 0.1, -0.035]);
+      // ponytail: a two-link chain so it can swing
+      pony = [joint('ponytail_1', head, 0, 0.17, -0.085)];
+      part(pony[0], seg(0.026, 0.026, 0.025, 6, -1), 'trim', 'hair_tie');
+      part(pony[0], seg(0.03, 0.042, 0.11, 6, -1, 1, 0.8), 'hair', 'ponytail_upper', [0, -0.02, 0]);
+      pony.push(joint('ponytail_2', pony[0], 0, -0.13, 0));
+      part(pony[1], seg(0.042, 0.01, 0.15, 6, -1, 1, 0.75), 'hair', 'ponytail_lower');
+      pony.push(marker('ponytail_tip', pony[1], 0, -0.15, 0));
+    }
+    const headTop = marker('head_top', head, 0, 0.22, 0);
+
+    // arms
+    function buildArm(side) {
+      const S = side > 0 ? 'L' : 'R', k = B.hand;
+      const sh = joint(S + '_shoulder', chest, side * B.shoulderX, 0.245, 0);
+      const K = B.muscle;
+      part(sh, mus(B.deltoid), 'skin', S + '_deltoid', [side * 0.014, -0.02, 0], null, [1, 1.25, 1.05]);
+      part(sh, seg(B.upperArm[0], B.upperArm[1], L_UPARM, 8, -1), 'skin', S + '_upperarm');
+      part(sh, mus(0.048 * K), 'skin', S + '_bicep', [0, -0.15, 0.026 * K + 0.008], null, [0.85, 1.65, 0.9]);
+      part(sh, mus(0.05 * K), 'skin', S + '_tricep', [side * 0.006, -0.12, -0.028 * K - 0.006], null, [0.9, 1.75, 0.85]);
+      const el = joint(S + '_elbow', sh, 0, -L_UPARM, 0);
+      part(el, seg(B.forearm[0], B.forearm[1], L_FOREARM, 8, -1, 1.05, 0.95), 'skin', S + '_forearm');
+      part(el, mus(0.044 * K), 'skin', S + '_forearm_flexor', [0, -0.075, 0.012], null, [1.15, 1.75, 0.95]);
+      part(el, mus(0.036 * K), 'skin', S + '_forearm_extensor', [side * 0.018, -0.06, -0.014], null, [0.9, 1.7, 0.9]);
+      const wr = joint(S + '_wrist', el, 0, -L_FOREARM, 0);
+      part(wr, seg(B.forearm[1] + 0.004, B.forearm[1] + 0.007, 0.085, 8, -1), 'tape', S + '_wrist_tape', [0, 0.05, 0]);
+      part(wr, box(0.085 * k, 0.095 * k, 0.09 * k), 'tape', S + '_fist', [0, -0.055 * k, 0]);
+      part(wr, box(0.092 * k, 0.03 * k, 0.096 * k), 'tape', S + '_knuckles', [0, -0.098 * k, 0]);
+      part(wr, box(0.028 * k, 0.05 * k, 0.03 * k), 'tape', S + '_thumb', [-side * 0.02 * k, -0.06 * k, 0.052 * k]);
+      const tip = marker(S + '_fist_tip', wr, 0, -0.115 * k, 0);
+      return { sh, el, wr, tip };
+    }
+    const armL = buildArm(1), armR = buildArm(-1);
+
+    // legs
+    function buildLeg(side) {
+      const S = side > 0 ? 'L' : 'R', k = B.foot;
+      const hip = joint(S + '_hip', pelvis, side * B.hipX, -0.07, 0);
+      part(hip, seg(B.shortsLeg[0], B.shortsLeg[1], 0.16, 8, -1), 'kit', S + '_shorts_leg', [0, 0.02, 0]);
+      part(hip, box(0.012, 0.15, 0.03), 'trim', S + '_shorts_stripe', [side * (B.shortsLeg[0] - 0.001), -0.055, 0]);
+      const K = B.muscle;
+      part(hip, seg(B.thigh[0], B.thigh[1], L_THIGH, 8, -1, 1, 0.92), 'skin', S + '_thigh');
+      part(hip, mus(0.068 * K), 'skin', S + '_quad', [0, -0.22, 0.03], null, [1.05, 2.1, 0.8]);
+      part(hip, mus(0.05 * K), 'skin', S + '_quad_outer', [side * 0.045, -0.2, 0], null, [0.75, 2.2, 1]);
+      part(hip, mus(0.042 * K), 'skin', S + '_teardrop', [-side * 0.035, -0.36, 0.025], null, [0.95, 1.3, 0.85]);
+      part(hip, mus(0.058 * K), 'skin', S + '_hamstring', [0, -0.21, -0.035], null, [1, 2.0, 0.8]);
+      const knee = joint(S + '_knee', hip, 0, -L_THIGH, 0);
+      part(knee, ico(0.032), 'skin', S + '_kneecap', [0, 0, 0.032], null, [1, 1.15, 0.8]);
+      part(knee, seg(B.calf[0], B.calf[1], 0.14, 8, -1), 'skin', S + '_calf_upper', [0, 0, -0.008]);
+      part(knee, seg(B.calf[1], B.calf[2], L_SHIN - 0.14, 8, -1), 'skin', S + '_calf_lower', [0, -0.14, -0.008]);
+      part(knee, mus(0.042 * K), 'skin', S + '_calf_inner', [-side * 0.02, -0.11, -0.03], null, [0.9, 1.7, 1]);
+      part(knee, mus(0.042 * K), 'skin', S + '_calf_outer', [side * 0.022, -0.1, -0.028], null, [0.85, 1.6, 1]);
+      part(knee, mus(0.026 * K), 'skin', S + '_tibialis', [side * 0.012, -0.14, 0.035], null, [0.8, 2.2, 0.8]);
+      const ankle = joint(S + '_ankle', knee, 0, -L_SHIN, 0);
+      part(ankle, seg(B.calf[2] + 0.008, B.calf[2] + 0.013, 0.075, 8, -1), 'tape', S + '_ankle_tape', [0, 0.05, 0]);
+      part(ankle, box(0.085 * k, 0.055, 0.22 * k), 'skin', S + '_foot', [0, -0.047, 0.055 * k]);
+      part(ankle, box(0.093 * k, 0.061, 0.075 * k), 'tape', S + '_arch_tape', [0, -0.044, 0.035 * k]);
+      part(ankle, box(0.08 * k, 0.033, 0.045 * k), 'skinDark', S + '_toes', [0, -0.058, 0.185 * k]);
+      const toe = marker(S + '_toe', ankle, 0, -0.06, 0.2 * k);
+      return { hip, knee, ankle, toe };
+    }
+    const legL = buildLeg(1), legR = buildLeg(-1);
+
+    // face edges
+    const edgeMat = new THREE.LineBasicMaterial({ color: 0x0d1117, transparent: true, opacity: 0.55 });
+    const edges = parts.map(p => { const l = new THREE.LineSegments(new THREE.EdgesGeometry(p.geometry, 1), edgeMat); p.add(l); return l; });
+
+    // skeleton overlay
+    const bonePairs = [
+      [pelvis, spine], [spine, chest], [chest, neck], [neck, head], [head, headTop],
+      [chest, armL.sh], [armL.sh, armL.el], [armL.el, armL.wr], [armL.wr, armL.tip],
+      [chest, armR.sh], [armR.sh, armR.el], [armR.el, armR.wr], [armR.wr, armR.tip],
+      [pelvis, legL.hip], [legL.hip, legL.knee], [legL.knee, legL.ankle], [legL.ankle, legL.toe],
+      [pelvis, legR.hip], [legR.hip, legR.knee], [legR.knee, legR.ankle], [legR.ankle, legR.toe]
+    ];
+    if (pony) bonePairs.push([head, pony[0]], [pony[0], pony[1]], [pony[1], pony[2]]);
+    const boneGeo = new THREE.BufferGeometry();
+    boneGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(bonePairs.length * 6), 3));
+    const boneLines = new THREE.LineSegments(boneGeo, new THREE.LineBasicMaterial({ color: C.trim, depthTest: false, transparent: true }));
+    boneLines.renderOrder = 999; boneLines.frustumCulled = false;
+    const jointGeo = new THREE.BufferGeometry();
+    jointGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(joints.length * 3), 3));
+    const jointPts = new THREE.Points(jointGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 7, sizeAttenuation: false, depthTest: false, transparent: true }));
+    jointPts.renderOrder = 1000; jointPts.frustumCulled = false;
+    const skel = new THREE.Group(); skel.add(boneLines, jointPts); skel.visible = false;
+    scene.add(skel);
+    const _p = new V();
+    function updateSkeleton() {
+      const a = boneGeo.attributes.position.array;
+      bonePairs.forEach(([p, c], i) => {
+        p.getWorldPosition(_p); a.set([_p.x, _p.y, _p.z], i * 6);
+        c.getWorldPosition(_p); a.set([_p.x, _p.y, _p.z], i * 6 + 3);
+      });
+      boneGeo.attributes.position.needsUpdate = true;
+      const b = jointGeo.attributes.position.array;
+      joints.forEach((j, i) => { j.getWorldPosition(_p); b.set([_p.x, _p.y, _p.z], i * 3); });
+      jointGeo.attributes.position.needsUpdate = true;
+    }
+
+    // stance
+    const S = spec.stance;
+    const STANCE = {
+      hipY: 0.88, pelvisYaw: -0.5, chestYaw: 0.12,
+      footL: new V(S.footL[0], ANKLE_H, S.footL[1]), footLYaw: -0.18,
+      footR: new V(S.footR[0], ANKLE_H, S.footR[1]), footRYaw: -0.9,
+      guardL: new V(0.11, 0.31, 0.39), guardR: new V(-0.10, 0.34, 0.26),
+      poleL: new V(0.35, -1, -0.25), poleR: new V(-0.35, -1, -0.2)
+    };
+    // each move: duration (s), hold = share of time spent driving out before the recoil
+    const MOVES = { jab: { dur: 0.2, hold: 0.34 } };
+    // keyframed moves: each key is a body state at time t (0..1 of dur). Missing fields = guard.
+    // viaL / viaR bend the fist's path through a control point on the way into that key.
+    const HOOK_HIT = { lead: new V(-0.16, 0.25, 0.56), viaL: new V(0.56, 0.25, 0.42), poleL: new V(1, -0.15, 0.1),
+      rear: new V(-0.12, 0.35, 0.22), yaw: -0.42, cy: -0.5, hip: -0.035, lean: 0.06, bend: -0.06, pz: 0.08, stepL: 0.06,
+      reachL: 0.04, pivL: -0.6, pivR: -0.45 };
+    const CROSS_HIT = { rear: new V(0.02, 0.35, 0.92), viaR: new V(-0.07, 0.24, 0.52), poleR: new V(-0.25, -1, -0.1),
+      lead: new V(0.14, 0.3, 0.3), yaw: 0.66, cy: 0.45, hip: -0.045, lean: 0.15, pz: 0.2, stepL: 0.07, reachR: 0.08, pivR: 0.6 };
+    const UPPER_HIT = { rear: new V(-0.03, 0.43, 0.44), viaR: new V(-0.07, 0.08, 0.4), poleR: new V(-0.15, -1, 0.35),
+      lead: new V(0.14, 0.31, 0.32), yaw: 0.45, cy: 0.32, hip: 0.015, lean: -0.06, bend: -0.06, pz: 0.06, reachR: 0.04, pivR: 0.45 };
+    const KEYED = {
+      cross: { dur: 0.3, keys: [
+        { t: 0 },
+        // wind-up: elbow and fist drop to the chest, hips coil back, weight sits back
+        { t: 0.22, ease: 'io', rear: new V(-0.13, 0.2, 0.18), poleR: new V(-0.2, -1, -0.35), yaw: -0.12, cy: -0.1, hip: -0.04, lean: 0.04, pz: -0.02 },
+        // lunge: lead foot steps, hips fire, fist rises across the chest to the target
+        { t: 0.42, ease: 'out', ...CROSS_HIT },
+        { t: 0.5, ...CROSS_HIT, viaR: null },
+        { t: 1, ease: 'io' }
+      ] },
+      hook: { dur: 0.32, keys: [
+        { t: 0 },
+        // coil: elbow pulls straight back at shoulder height, torso and both feet turn away
+        { t: 0.22, ease: 'io', lead: new V(0.27, 0.25, 0.14), poleL: new V(0.9, -0.1, -0.6), yaw: 0.18, cy: 0.2, hip: -0.03, bend: 0.06, pivL: 0.2, pivR: 0.15 },
+        // release: step in, glove sweeps around on the shoulder line, hips, torso and feet all turn through
+        { t: 0.44, ease: 'out', ...HOOK_HIT },
+        { t: 0.52, ...HOOK_HIT, viaL: null },
+        { t: 1, ease: 'io' }
+      ] },
+      upper: { dur: 0.36, keys: [
+        { t: 0 },
+        // load: sink, bend toward the rear side, fist drops to the belt line
+        { t: 0.26, ease: 'io', rear: new V(-0.13, -0.17, 0.2), poleR: new V(-0.15, -1, 0.35), yaw: -0.12, cy: -0.1, hip: -0.07, lean: 0.16, bend: 0.2 },
+        // drive: unwind and scoop forward, then straight up under the chin
+        { t: 0.48, ease: 'out', ...UPPER_HIT },
+        { t: 1, ease: 'io' }
+      ] },
+      // ---- air moves. air = lift off the ground; dfL/dfR = foot offsets from the stance spot (rig space);
+      // kneeUp tips the knee toward the sky; pitch points the toes.
+      jump: { dur: 0.7, keys: [
+        { t: 0 },
+        { t: 0.2, ease: 'io', hip: -0.12, lean: 0.1 },
+        { t: 0.45, ease: 'out', air: 0.42, hip: -0.02, dfL: new V(0, 0.2, -0.04), dfR: new V(0, 0.24, 0.1), kneeUpL: 0.9, kneeUpR: 0.9, lean: -0.02, pitchL: 0.4, pitchR: 0.4,
+          lead: new V(0.12, 0.36, 0.36), rear: new V(-0.1, 0.38, 0.24) },
+        { t: 0.55, air: 0.42, hip: -0.02, dfL: new V(0, 0.2, -0.04), dfR: new V(0, 0.24, 0.1), kneeUpL: 0.9, kneeUpR: 0.9, lean: -0.02, pitchL: 0.4, pitchR: 0.4,
+          lead: new V(0.12, 0.36, 0.36), rear: new V(-0.1, 0.38, 0.24) },
+        { t: 0.82, ease: 'in', hip: -0.11, lean: 0.08 },
+        { t: 1, ease: 'io' }
+      ] },
+      jumpUpper: { dur: 0.75, keys: [
+        { t: 0 },
+        // load low like the ground uppercut
+        { t: 0.18, ease: 'io', rear: new V(-0.13, -0.17, 0.2), poleR: new V(-0.15, -1, 0.35), yaw: -0.12, cy: -0.1, hip: -0.1, lean: 0.16, bend: 0.2 },
+        // launch: fist rides straight up past the chin, lead knee drives up, body corkscrews
+        { t: 0.45, ease: 'out', air: 0.5, rear: new V(-0.02, 0.66, 0.3), viaR: new V(-0.06, 0.12, 0.42), poleR: new V(-0.3, -0.2, -1),
+          lead: new V(0.12, 0.18, 0.2), yaw: 0.55, cy: 0.38, lean: -0.12, bend: -0.12, pz: 0.08,
+          dfL: new V(0.02, 0.34, 0.08), kneeUpL: 1.4, dfR: new V(0, 0.06, 0.1), kneeUpR: 0.3, pitchL: 0.5, pitchR: 0.7, pivR: 0.4 },
+        { t: 0.58, air: 0.5, rear: new V(-0.02, 0.66, 0.3), poleR: new V(-0.3, -0.2, -1),
+          lead: new V(0.12, 0.18, 0.2), yaw: 0.55, cy: 0.38, lean: -0.12, bend: -0.12, pz: 0.08,
+          dfL: new V(0.02, 0.34, 0.08), kneeUpL: 1.4, dfR: new V(0, 0.06, 0.1), kneeUpR: 0.3, pitchL: 0.5, pitchR: 0.7, pivR: 0.4 },
+        { t: 0.84, ease: 'in', hip: -0.11, lean: 0.08, pz: 0.04 },
+        { t: 1, ease: 'io' }
+      ] },
+      jumpKick: { dur: 0.8, keys: [
+        { t: 0 },
+        { t: 0.18, ease: 'io', hip: -0.1, lean: 0.08 },
+        // tuck: both knees up
+        { t: 0.4, ease: 'out', air: 0.42, dfL: new V(0, 0.5, 0.06), kneeUpL: 1.6, dfR: new V(0, 0.26, 0.04), kneeUpR: 0.9,
+          lean: -0.04, pitchL: 0.3, pitchR: 0.5, lead: new V(0.12, 0.34, 0.36), rear: new V(-0.1, 0.36, 0.24) },
+        // snap the lead leg out at chest height, lean back behind it
+        { t: 0.55, ease: 'out', air: 0.44, dfL: new V(-0.04, 0.72, 0.6), kneeUpL: 0.4, dfR: new V(0, 0.3, -0.04), kneeUpR: 1,
+          lean: -0.2, yaw: -0.25, cy: 0.1, pitchL: -0.3, pitchR: 0.5, lead: new V(0.16, 0.3, 0.3), rear: new V(-0.14, 0.34, 0.16) },
+        { t: 0.66, air: 0.4, dfL: new V(-0.04, 0.72, 0.6), kneeUpL: 0.4, dfR: new V(0, 0.3, -0.04), kneeUpR: 1,
+          lean: -0.2, yaw: -0.25, cy: 0.1, pitchL: -0.3, pitchR: 0.5, lead: new V(0.16, 0.3, 0.3), rear: new V(-0.14, 0.34, 0.16) },
+        { t: 0.88, ease: 'in', hip: -0.11, lean: 0.08 },
+        { t: 1, ease: 'io' }
+      ] },
+      roundhouse: { dur: 0.9, keys: [
+        { t: 0 },
+        { t: 0.16, ease: 'io', hip: -0.1, lean: 0.06 },
+        // rise and chamber: rear knee up and out, hips start turning over
+        { t: 0.38, ease: 'out', air: 0.45, dfR: new V(-0.09, 0.26, 0.22), kneeUpR: 1, pivR: 0.6, pitchR: 0.6,
+          dfL: new V(0, 0.24, -0.04), kneeUpL: 0.8, pitchL: 0.4, yaw: 0.9, cy: 0.25, bend: -0.25,
+          lead: new V(0.2, 0.3, 0.28), rear: new V(-0.16, 0.34, 0.12) },
+        // whip: foot sweeps around the outside to head height, hips fully over, torso leans away
+        { t: 0.55, ease: 'out', air: 0.45, dfR: new V(0.31, 0.86, 0.96), viaDfR: new V(-0.32, 0.72, 0.62), kneeUpR: 1, pivR: 1.2, pitchR: 0.8,
+          dfL: new V(0.02, 0.2, -0.06), kneeUpL: 0.8, pitchL: 0.4, yaw: 1.55, cy: -0.15, bend: -0.42, lean: -0.08,
+          lead: new V(0.24, 0.24, 0.16), rear: new V(-0.26, 0.24, -0.06) },
+        { t: 0.66, air: 0.4, dfR: new V(0.31, 0.86, 0.96), kneeUpR: 1, pivR: 1.2, pitchR: 0.8,
+          dfL: new V(0.02, 0.2, -0.06), kneeUpL: 0.8, pitchL: 0.4, yaw: 1.55, cy: -0.15, bend: -0.42, lean: -0.08,
+          lead: new V(0.24, 0.24, 0.16), rear: new V(-0.26, 0.24, -0.06) },
+        { t: 0.88, ease: 'in', hip: -0.11, lean: 0.08, yaw: 0.2 },
+        { t: 1, ease: 'io' }
+      ] }
+    };
+    const NUMS = ['yaw', 'cy', 'hip', 'lean', 'bend', 'pz', 'stepL', 'pivL', 'pivR', 'reachL', 'reachR', 'air', 'kneeUpL', 'kneeUpR', 'pitchL', 'pitchR'];
+    const ZERO = new V();
+    function keyedState(move, p, guard) {
+      const ks = move.keys;
+      let i = 0; while (i < ks.length - 2 && p >= ks[i + 1].t) i++;
+      const A = ks[i], Bk = ks[i + 1];
+      const u = THREE.MathUtils.clamp((p - A.t) / (Bk.t - A.t), 0, 1);
+      const t = Bk.ease === 'out' ? ease(u) : Bk.ease === 'io' ? easeIO(u) : Bk.ease === 'in' ? u * u : u;
+      const st = {};
+      NUMS.forEach(n => { st[n] = (A[n] || 0) + ((Bk[n] || 0) - (A[n] || 0)) * t; });
+      ['lead', 'rear'].forEach((f, j) => {
+        const fa = A[f] || guard[f], fb = Bk[f] || guard[f], via = Bk[j ? 'viaR' : 'viaL'];
+        st[f] = via ? bez(fa, via, fb, t) : fa.clone().lerp(fb, t);
+      });
+      ['poleL', 'poleR'].forEach(f => { st[f] = (A[f] || guard[f]).clone().lerp(Bk[f] || guard[f], t); });
+      ['dfL', 'dfR'].forEach(f => {
+        const fa = A[f] || ZERO, fb = Bk[f] || ZERO, via = Bk['via' + f[0].toUpperCase() + f.slice(1)];
+        st[f] = via ? bez(fa, via, fb, t) : fa.clone().lerp(fb, t);
+      });
+      return st;
+    }
+    const bez = (g, c, i, t) => g.clone().multiplyScalar((1 - t) * (1 - t)).addScaledVector(c, 2 * (1 - t) * t).addScaledVector(i, t * t);
+    const shBase = { L: armL.sh.position.clone(), R: armR.sh.position.clone() };
+    let action = null;
+
+    function pose() {
+      const ph = idleT + spec.phase;
+      const bob = Math.sin(ph * 3.4), sway = Math.sin(ph * 1.7);
+      let hipY = STANCE.hipY + bob * 0.016;
+      let pelvisYaw = STANCE.pelvisYaw, chestYaw = STANCE.chestYaw, pelvisZ = 0, e = 0;
+      let lean = 0, bend = 0, reachL = 0, reachR = 0, pivotL = 0, pivotR = 0;
+      let lead = STANCE.guardL.clone().add(new V(0, -bob * 0.012, 0));
+      let rear = STANCE.guardR.clone().add(new V(0, -bob * 0.008, 0));
+
+      let poleL = STANCE.poleL.clone(), poleR = STANCE.poleR.clone(), stepL = 0;
+      let air = 0, dfL = new V(), dfR = new V(), kneeUpL = 0, kneeUpR = 0, pitchL = 0, pitchR = 0;
+      if (action) {
+        const keyed = KEYED[action.type];
+        const p = (clock - action.t0) / (keyed ? keyed.dur : MOVES[action.type].dur);
+        if (p >= 1) action = null;
+        else if (!keyed) {
+          // jab: step into it, hips slide forward, lead shoulder rolls out
+          e = strike(p, MOVES.jab.hold);
+          lead.lerp(new V(0.02, 0.35, 0.8), e);
+          chestYaw -= 0.16 * e; pelvisYaw -= 0.06 * e; pelvisZ += 0.07 * e;
+          lean += 0.05 * e; reachL = 0.05 * e;
+        } else {
+          const st = keyedState(keyed, p, { lead, rear, poleL, poleR });
+          lead = st.lead; rear = st.rear; poleL = st.poleL; poleR = st.poleR;
+          pelvisYaw += st.yaw; chestYaw += st.cy; hipY += st.hip; lean += st.lean; bend += st.bend;
+          pelvisZ += st.pz; stepL = st.stepL; pivotL = st.pivL; pivotR = st.pivR; reachL = st.reachL; reachR = st.reachR;
+          air = st.air; dfL = st.dfL; dfR = st.dfR; kneeUpL = st.kneeUpL; kneeUpR = st.kneeUpR; pitchL = st.pitchL; pitchR = st.pitchR;
+          hipY += air;
+          e = Math.min(1, Math.abs(st.yaw) + Math.abs(st.cy) * 0.5 + air);
+        }
+      }
+
+      armL.sh.position.copy(shBase.L).add(new V(0, 0, reachL));
+      armR.sh.position.copy(shBase.R).add(new V(0, 0, reachR));
+      pelvis.position.set(-0.03 + sway * 0.006, hipY, 0.01 + pelvisZ);
+      pelvis.rotation.set(0.04, pelvisYaw, 0);
+      spine.rotation.set(0.12 + lean, 0, sway * 0.012 + bend);
+      chest.rotation.set(0.05 + lean * 0.5, chestYaw, bend * 0.5);
+      const total = pelvisYaw + chestYaw;
+      neck.rotation.set(-0.05 - lean * 0.6, -total * 0.35, 0);
+      head.rotation.set(0.14 - lean * 0.6, -total * 0.6, 0);
+      if (pony) {
+        // trails behind the head turn and bounces a beat late
+        pony[0].rotation.set(0.6 + Math.sin(ph * 3.4 - 0.9) * 0.07, 0, total * 0.25 - e * 0.25);
+        pony[1].rotation.set(0.2 + Math.sin(ph * 3.4 - 1.6) * 0.1, 0, Math.sin(ph * 1.7 - 0.8) * 0.08 - e * 0.2);
+      }
+      rig.updateMatrixWorld(true);
+
+      const rigQ = rig.getWorldQuaternion(new Q());
+      const lift = new V(0, air, 0);
+      [[legL, STANCE.footL.clone().add(new V(0, 0, stepL)).add(lift).add(dfL), STANCE.footLYaw + pivotL, kneeUpL, pitchL],
+       [legR, STANCE.footR.clone().add(lift).add(dfR), STANCE.footRYaw + pivotR, kneeUpR, pitchR]].forEach(([leg, foot, fy, ku, pitch]) => {
+        const target = rig.localToWorld(foot.clone());
+        const fwd = new V(Math.sin(fy), 0.15 + ku, Math.cos(fy)).normalize().applyQuaternion(rigQ);
+        solveIK(leg.hip, leg.knee, L_THIGH, L_SHIN, target, fwd, fwd);
+        setWorldQuat(leg.ankle, rigQ.clone().multiply(yawQ(fy)).multiply(new Q().setFromAxisAngle(new V(1, 0, 0), pitch)));
+      });
+      const chestPos = chest.getWorldPosition(new V());
+      [[armL, lead, poleL], [armR, rear, poleR]].forEach(([arm, local, poleLocal]) => {
+        const target = local.clone().applyQuaternion(rigQ).add(chestPos);
+        const pole = poleLocal.clone().applyQuaternion(rigQ).normalize();
+        solveIK(arm.sh, arm.el, L_UPARM, L_FOREARM, target, pole, pole.clone().negate());
+      });
+      if (skel.visible) updateSkeleton();
+    }
+
+    function fire(type) {
+      if (action && (clock - action.t0) / (KEYED[action.type] || MOVES[action.type]).dur < 0.7) return;
+      action = { type, t0: clock };
+    }
+
+    let tris = 0, verts = 0;
+    parts.forEach(p => {
+      const g = p.geometry;
+      tris += g.index ? g.index.count / 3 : g.attributes.position.count / 3;
+      verts += g.attributes.position.count;
+    });
+
+    return { spec, rig, parts, joints, edges, mats, skel, pose, fire, updateSkeleton, tris, verts };
+  }
+
+  const fighters = { f01: makeFighter(SPECS.f01), f02: makeFighter(SPECS.f02) };
+  const all = Object.values(fighters);
+
+  // ---------- selection / layout ----------
+  let mode = 'f01', showSkel = false;
+  const fmt = (n) => n.toLocaleString('en-US');
+  const visible = () => mode === 'both' ? all : [fighters[mode]];
+  const CAMS = {
+    single: { pos: [1.9, 1.35, 2.7], target: [0, 0.92, 0] },
+    both: { pos: [3.5, 1.55, 1.1], target: [0, 0.9, 0] }
+  };
+  function setMode(m) {
+    mode = m;
+    ['f01', 'f02', 'both'].forEach(id => document.getElementById('f-' + id).setAttribute('aria-pressed', id === m));
+    all.forEach(f => { f.rig.visible = false; f.skel.visible = false; });
+    if (m === 'both') {
+      fighters.f01.rig.position.set(0, 0, -0.8); fighters.f01.rig.rotation.set(0, 0, 0);
+      fighters.f02.rig.position.set(0, 0, 0.8); fighters.f02.rig.rotation.set(0, Math.PI, 0);
+    } else {
+      fighters[m].rig.position.set(0, 0, 0); fighters[m].rig.rotation.set(0, 0, 0);
+    }
+    visible().forEach(f => { f.rig.visible = true; f.skel.visible = showSkel; });
+    const cam = CAMS[m === 'both' ? 'both' : 'single'];
+    camera.position.set(...cam.pos); controls.target.set(...cam.target);
+
+  }
+  ['f01', 'f02', 'both'].forEach(id => document.getElementById('f-' + id).addEventListener('click', () => setMode(id)));
+
+  // ---------- view modes ----------
+  const viewBtns = { shaded: 'v-shaded', faces: 'v-faces', wire: 'v-wire' };
+  function setView(v) {
+    Object.entries(viewBtns).forEach(([m, id]) => document.getElementById(id).setAttribute('aria-pressed', m === v));
+    all.forEach(f => {
+      Object.values(f.mats).forEach(mt => { mt.wireframe = v === 'wire'; });
+      f.edges.forEach(e => { e.visible = v === 'faces'; });
+    });
+  }
+  Object.entries(viewBtns).forEach(([m, id]) => document.getElementById(id).addEventListener('click', () => setView(m)));
+  setView('faces');
+
+  function toggle(id, fn) {
+    const b = document.getElementById(id);
+    b.addEventListener('click', () => { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', on); fn(on); });
+    return b;
+  }
+  toggle('t-skel', on => { showSkel = on; visible().forEach(f => { f.skel.visible = on; if (on) f.updateSkeleton(); }); });
+  let retro = false;
+  toggle('t-retro', on => { retro = on; stageEl.classList.toggle('retro', on); resize(); });
+  toggle('t-idle', on => { idle = on; }).setAttribute('aria-pressed', idle);
+
+  const fire = (type) => visible().forEach(f => f.fire(type));
+  document.getElementById('a-jab').addEventListener('click', () => fire('jab'));
+  document.getElementById('a-cross').addEventListener('click', () => fire('cross'));
+  document.getElementById('a-hook').addEventListener('click', () => fire('hook'));
+  document.getElementById('a-upper').addEventListener('click', () => fire('upper'));
+  ['jump', 'jumpUpper', 'jumpKick', 'roundhouse'].forEach(m => document.getElementById('a-' + m).addEventListener('click', () => fire(m)));
+  window.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'j' || e.key === 'J') fire('jab');
+    if (e.key === 'k' || e.key === 'K') fire('cross');
+    if (e.key === 'l' || e.key === 'L') fire('hook');
+    if (e.key === 'u' || e.key === 'U') fire('upper');
+    if (e.key === ' ') { e.preventDefault(); fire('jump'); }
+    if (e.key === 'i' || e.key === 'I') fire('jumpUpper');
+    if (e.key === 'o' || e.key === 'O') fire('jumpKick');
+    if (e.key === 'p' || e.key === 'P') fire('roundhouse');
+  });
+
+  // ---------- OBJ export ----------
+  function buildOBJ() {
+    const list = visible();
+    const tris = list.reduce((s, f) => s + f.tris, 0);
+    const out = ['# ' + list.map(f => f.spec.label).join(' + ') + ' — low-poly ready stance',
+      '# units: meters | Y up', '# ' + fmt(tris) + ' triangles', ''];
+    let offset = 1; const v = new V();
+    list.forEach(f => {
+      f.rig.updateMatrixWorld(true);
+      f.parts.forEach(p => {
+        const g = p.geometry, pos = g.attributes.position;
+        out.push('o ' + p.name);
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i).applyMatrix4(p.matrixWorld);
+          out.push('v ' + v.x.toFixed(4) + ' ' + v.y.toFixed(4) + ' ' + v.z.toFixed(4));
+        }
+        const idx = g.index ? g.index.array : null, n = idx ? idx.length : pos.count;
+        for (let i = 0; i < n; i += 3) {
+          const a = idx ? idx[i] : i, b = idx ? idx[i + 1] : i + 1, c = idx ? idx[i + 2] : i + 2;
+          out.push('f ' + (a + offset) + ' ' + (b + offset) + ' ' + (c + offset));
+        }
+        offset += pos.count;
+      });
+    });
+    return out.join('\n');
+  }
+  const sheet = document.getElementById('sheet'), objText = document.getElementById('obj-text'), toast = document.getElementById('toast');
+  document.getElementById('b-export').addEventListener('click', () => { objText.value = buildOBJ(); toast.textContent = ''; sheet.hidden = false; });
+  document.getElementById('b-close').addEventListener('click', () => { sheet.hidden = true; });
+  document.getElementById('b-copy').addEventListener('click', () => {
+    const done = () => { toast.textContent = 'Copied ' + fmt(objText.value.split('\n').length) + ' lines.'; };
+    const fallback = () => { objText.focus(); objText.select(); toast.textContent = 'Text selected. Copy it with your device’s copy command.'; };
+    try { navigator.clipboard.writeText(objText.value).then(done, fallback); } catch (e) { fallback(); }
+  });
+
+  // ---------- loop ----------
+  function resize() {
+    const w = stageEl.clientWidth, h = stageEl.clientHeight;
+    const ratio = retro ? Math.min(1, 480 / h) : Math.min(window.devicePixelRatio || 1, 2);
+    renderer.setPixelRatio(ratio);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.fov = w / h < 0.75 ? 46 : 38;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+  setMode('f01');
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    clock += dt; if (idle) idleT += dt * IDLE_SPEED;
+    visible().forEach(f => f.pose());
+    controls.update();
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  all.forEach(f => f.pose());
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</html>

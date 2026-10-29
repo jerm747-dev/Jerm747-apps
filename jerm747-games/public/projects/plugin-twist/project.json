@@ -1,0 +1,39 @@
+{
+  "title": "Plugin Twist",
+  "tagline": "Twist the plugins. Make room for the session.",
+  "description": "Swap engraved music tokens or rotate an L-shaped corner to match three identical icons. Free 60 storage slots in 25 successful moves for SimCity’s session, with cascades and optional device haptics. A status line shows available matches and remaining turns. If no legal match remains, the board reshuffles without losing a turn.",
+  "order": 40,
+  "accent": "#D7FB88",
+  "gamepad": {
+    "A": "a",
+    "B": "s",
+    "X": "x",
+    "Y": "h",
+    "LB": "z",
+    "UP": "ArrowUp",
+    "DOWN": "ArrowDown",
+    "LEFT": "ArrowLeft",
+    "RIGHT": "ArrowRight"
+  },
+  "gamepadLabels": {
+    "A": "Swap / twist left",
+    "B": "Twist right",
+    "X": "Switch swap / twist",
+    "Y": "Hint",
+    "LB": "Change corner",
+    "UP": "Move up",
+    "DOWN": "Move down",
+    "LEFT": "Move left",
+    "RIGHT": "Move right"
+  },
+  "kind": "game",
+  "status": "playable",
+  "version": "Arcade 1.1",
+  "controls": [
+    "keyboard",
+    "mouse",
+    "touch",
+    "gamepad"
+  ],
+  "credit": "Jerm747 original. All rights reserved."
+}

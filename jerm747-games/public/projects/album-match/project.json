@@ -1,0 +1,16 @@
+{
+  "title": "Album Match",
+  "tagline": "Sort the crate. Chase the cascade.",
+  "description": "The original Groove Squad match-three challenge, adapted for standalone arcade play. Match three identical album symbols in a row or column. Sort the crate in 20 matching swaps; misses cost nothing. Includes touch swipes, remappable letter keys, and local best scores. Bright marbled colorways and slow cascading tile gravity.",
+  "order": 50,
+  "accent": "#FF82BD",
+  "kind": "game",
+  "status": "playable",
+  "version": "Arcade 1.1",
+  "controls": [
+    "keyboard",
+    "mouse",
+    "touch"
+  ],
+  "credit": "Jerm747 original. All rights reserved."
+}
