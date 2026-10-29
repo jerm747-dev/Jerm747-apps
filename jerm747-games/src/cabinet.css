@@ -111,6 +111,13 @@ body:not(.is-admin) { background: #100c17; overflow: auto; }
   .cabinet--playing .cabinet-marquee, .cabinet--playing .cabinet-deck { display: none; }
   .cabinet--playing .cabinet-bezel { min-height: 0; padding: 4px; }
   .cabinet--playing .cabinet-screen { height: 100%; }
+  /* Phones held sideways: the game gets the full width and a single slim toolbar row. */
+  .cabinet--playing { grid-template-columns: 0 minmax(0, 1fr) 0; }
+  .cabinet--playing .cabinet-wing { display: none; }
+  .cabinet--playing .player-bar { flex-wrap: nowrap; gap: 8px; padding: 4px 8px; justify-content: flex-start; }
+  .cabinet--playing .player-bar .sb-btn { min-height: 30px; padding: 4px 10px; font-size: .78rem; }
+  .cabinet--playing .player-bar .player-title, .cabinet--playing .player-bar .hints { display: none; }
+  .cabinet--playing .player-orientation select { padding: 3px 4px; }
 }
 
 /* A stable toolbar sits above gameplay so return and fullscreen stay reachable. */

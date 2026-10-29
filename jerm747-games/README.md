@@ -64,8 +64,12 @@ RB uppercut, A jump, LB jump uppercut, LT jump kick, RT roundhouse.
 
 ## Included
 
+- **Groove Squad Get Down** (2.3.7): the full game from jerm747.com with all 40 fighters open.
+  No subscriptions on jerm747.games. Ranked Run keeps its leaderboard on each device. See below.
 - **Flight Control Deck** (v7): Asteroid Blast, races and free flight.
-- **Fighter Lab**: low-poly 3D fighter rig and move tester.
+- **Fighter Lab** (Akeem 0.1): Akeem, Prince of Fighters, as a geometric 3D character study with
+  eight moves, design reference and GLB/OBJ export. `node scripts/check-fighter-model.mjs` checks the
+  model (needs `npm install` for `three`).
 - **Controller Check**: test buttons, sticks, triggers and rumble.
 - `cover-square.jpg` in the first two folders: your square cover art, kept as a backup.
 
@@ -91,8 +95,30 @@ colors; small captions sit at the bottom. Replace either image in `src/cabinet-a
 Recommended art: 1:3 portrait, with faces inside the middle 60%.
 Game panels automatically use the selected game's cover, falling back to home art if absent.
 
-Get Down Groove Squad and GS Fighter can be added through the existing project-folder flow
-when their playable files are ready. They have not been added as empty or fake game entries.
+## Groove Squad Get Down
+
+`projects/groove-squad-get-down/` is generated from the jerm747.com source (jerm747-player repo),
+so the game itself is never edited by hand here. To refresh it after updating Get Down on jerm747.com:
+
+```bash
+python3 scripts/get-down/make-getdown-project.py ../jerm747-player public/projects/groove-squad-get-down
+cp <cover.jpg> <project.json> back into that folder   # the script recreates the folder
+```
+
+(Keep a copy of `cover.jpg` and `project.json` first, or rebuild the cover with
+`scripts/get-down/gd-cover.py`, run from `jerm747-player/public/images/groove-squad`.)
+
+What the script changes for jerm747.games:
+- copies only the files the game uses (about 725 MB of character art), with paths made relative;
+- swaps the account script for `games-account.js`: everyone has the full squad, nothing syncs;
+- adds `games-shim.js`: /api calls are answered locally, Ranked Run keeps a device leaderboard,
+  Match music buttons are hidden (music lives in the jerm747.com player; the Music panel links there);
+- the game's Close button returns to the shelf, and its Fullscreen button goes full screen directly.
+
+Upload this folder once. Later site updates can skip it, as long as you don't delete it on the server.
+
+GS Fighter is waiting on its browser game files (GS-Fighter-1.0 or the 1.0.17 APK); the
+Android source kit in the apps repo holds only the wrapper and patches.
 
 For a UI preview without PHP, run `JERM_UI_PREVIEW=1 npm run dev` (macOS/Linux). This reads
 local project metadata and does not collect stats. Production builds still use the PHP backend.

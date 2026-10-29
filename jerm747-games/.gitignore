@@ -2,3 +2,7 @@ node_modules
 dist
 public/api/data/*
 !public/api/data/.htaccess
+# Groove Squad Get Down is generated from jerm747-player by scripts/get-down/make-getdown-project.py
+public/projects/groove-squad-get-down/*
+!public/projects/groove-squad-get-down/cover.jpg
+!public/projects/groove-squad-get-down/project.json

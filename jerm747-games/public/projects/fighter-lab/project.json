@@ -1,12 +1,16 @@
 {
   "title": "Fighter Lab",
-  "tagline": "Low-poly 3D fighter rig and move tester",
-  "description": "A PS1 and Dreamcast-style 3D fighter mesh lab: build the character, preview strikes, jumps and kicks, and export the model as OBJ. Groundwork for a 3D fighting game.",
+  "tagline": "Akeem \u00b7 Prince of Fighters \u00b7 3D character study",
+  "description": "Akeem joins the geometric 3D Fighter Lab with his teal fighting kit, red sash, curls and wraps. Preview eight moves, orbit the articulated character, compare his design reference, and export GLB or OBJ.",
   "kind": "game",
   "status": "prototype",
-  "controls": ["gamepad", "keyboard", "mouse"],
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "mouse"
+  ],
   "credit": "Original Jerm747 project. All rights reserved.",
-  "accent": "#A897C9",
+  "accent": "#35b8ae",
   "order": 20,
   "gamepad": {
     "X": "j",
@@ -27,5 +31,6 @@
     "LB": "Jump uppercut",
     "LT": "Jump kick",
     "RT": "Roundhouse"
-  }
+  },
+  "version": "Akeem 0.1"
 }

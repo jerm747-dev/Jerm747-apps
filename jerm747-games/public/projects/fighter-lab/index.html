@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>[hidden]{display:none!important}body{margin:0}</style>
-<title>Fighter Mesh Lab</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<title>Akeem | Fighter Lab · Jerm747.games</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -46,7 +46,7 @@ body {
 }
 /* one scrolling strip: label above, one row of buttons below, sections side by side */
 .dock {
-  display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 0;
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 0;
   overflow-x: auto; overflow-y: hidden; touch-action: pan-x;
   overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -97,25 +97,33 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
 }
 .toast { font-family: var(--f-mono); font-size: 12px; color: var(--accent); min-height: 1em; }
 
+
+.lab-title{position:fixed;left:20px;top:max(16px,env(safe-area-inset-top));pointer-events:none;max-width:55%;text-shadow:0 2px 12px #0009}.lab-title p{font:10px var(--f-mono);letter-spacing:.12em;color:#a1c4c0;margin:0 0 5px}.lab-title h1{font:700 clamp(28px,5vw,46px)/1 var(--f-display);margin:0 0 5px;color:#f4e7cb}.lab-title>span{font:12px var(--f-display);letter-spacing:.08em;color:#e48b74}.lab-title small{display:block;font:10px var(--f-mono);color:#c1ccc9;margin-top:10px}.lab-tools{position:fixed;right:16px;top:max(16px,env(safe-area-inset-top));display:flex;flex-direction:column;gap:8px;align-items:flex-end}.lab-tools button{font-size:10px;background:#101e27c9}.camera-tools{display:flex;gap:4px}#design-card{color:var(--ink);background:#101a24;border:1px solid #8d9f9666;border-radius:14px;width:min(760px,94vw);max-height:90dvh;padding:18px}#design-card::backdrop{background:#050911cc}#design-card header{display:flex;justify-content:space-between;gap:12px;align-items:center}#design-card h2{font:700 22px var(--f-display);margin:4px 0 12px}#design-card small{color:#b3c5b9;font:10px var(--f-mono)}#design-card img{display:block;width:100%;height:auto;border:1px solid #7b9e9855;border-radius:8px}#design-card p{font-size:12px;line-height:1.6;color:#b6c9c5}
+@media(max-width:900px){.dock{flex-wrap:nowrap}}
+@media(max-width:600px){.lab-title{left:12px;top:12px}.lab-title p{font-size:8px;max-width:170px}.lab-title small{font-size:9px;max-width:160px}.lab-tools{right:10px;top:12px}.lab-tools button{font-size:9px;padding:7px 8px;min-height:30px}.dock{padding-left:10px;gap:0}button{font-size:11px;padding:8px}.lab-title h1{font-size:30px}}
+@media(max-height:480px){.lab-title h1{font-size:26px}.lab-title small{margin-top:4px}.lab-tools{flex-direction:row}.dock{padding-block:5px 6px}.group>span{font-size:8px}.dock button{min-height:28px;padding:6px 8px;font-size:10px}}
 </style>
 
-<div id="stage"></div>
+<div id="stage" aria-label="Interactive 3D fighter stage"></div>
+<header class="lab-title"><p>FIGHTER LAB / FIRST IN THE LINEUP</p><h1 id="fighter-name">Akeem</h1><span id="fighter-subtitle">Prince of Fighters</span><small id="motion-status" role="status">Ready stance</small></header>
+<div class="lab-tools"><div class="camera-tools" role="group" aria-label="Camera angles"><button id="cam-front">Front</button><button id="cam-three">¾</button><button id="cam-back">Back</button></div><button id="show-reference">Character art</button></div>
+<dialog id="design-card"><header><div><small>CHARACTER 01 / DESIGN REFERENCE</small><h2>Akeem · Prince of Fighters</h2></div><button id="close-reference">Close</button></header><img src="./akeem-reference.png" alt="Akeem character design: short curls, muscular build, open teal vest and shorts, red sash, ivory wraps and bare feet."><p>Teal fighting kit · cream piping · red sash · short curls · ivory hand and ankle wraps</p><p>Drag the stage to orbit. Pinch or scroll to zoom. The outfit follows the articulated rig through every move.</p></dialog>
 
 <div class="hud">
   <div class="dock" role="toolbar" aria-label="Viewer controls">
     <div class="group">
       <span>Fighter</span>
       <div class="row">
-        <button id="f-f01" aria-pressed="true">01</button>
-        <button id="f-f02" aria-pressed="false">02</button>
+        <button id="f-f01" aria-pressed="true">Akeem</button>
+        <button id="f-f02" aria-pressed="false">Rig 02</button>
         <button id="f-both" aria-pressed="false">Versus</button>
       </div>
     </div>
     <div class="group">
       <span>View</span>
       <div class="row">
-        <button id="v-shaded" aria-pressed="false">Shaded</button>
-        <button id="v-faces" aria-pressed="true">Faces</button>
+        <button id="v-shaded" aria-pressed="true">Shaded</button>
+        <button id="v-faces" aria-pressed="false">Faces</button>
         <button id="v-wire" aria-pressed="false">Wire</button>
       </div>
     </div>
@@ -129,7 +137,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     <div class="group">
       <span>Motion</span>
       <div class="row">
-        <button id="t-idle" aria-pressed="true">Idle</button>
+        <button id="t-idle" aria-pressed="true">Idle</button><button id="t-slow" aria-pressed="false">Slow motion</button><button id="t-hold" aria-pressed="false">Hold pose</button>
         <button id="a-jab" class="hit">Jab<kbd>J</kbd></button>
         <button id="a-cross" class="hit">Cross<kbd>K</kbd></button>
         <button id="a-hook" class="hit">Hook<kbd>L</kbd></button>
@@ -147,7 +155,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     </div>
     <div class="group">
       <span>Model</span>
-      <div class="row"><button id="b-export">Export OBJ</button></div>
+      <div class="row"><button id="b-glb">Download GLB</button><button id="b-export">Export OBJ</button></div>
     </div>
   </div>
 </div>
@@ -158,13 +166,16 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     <button id="b-copy" class="hit">Copy</button>
     <button id="b-close">Close</button>
   </header>
-  <p>Current pose of the fighters on screen, one object per body part (prefixed F01_ or F02_). Meters, Y up. Paste into a file ending in <code>.obj</code> and open it in Blender or any 3D tool.</p>
+  <p>Current pose of the fighters on screen, one object per body part (prefixed AKEEM_ or F02_). Meters, Y up. Paste into a file ending in <code>.obj</code> and open it in Blender or any 3D tool.</p>
   <div class="toast" id="toast" aria-live="polite"></div>
   <textarea id="obj-text" readonly spellcheck="false" aria-label="OBJ file contents"></textarea>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="./vendor/three-r128.min.js"></script>
+<script src="./vendor/OrbitControls-r128.js"></script>
+<script src="./vendor/GLTFExporter-r128.js"></script>
+<script src="./akeem-model.js"></script>
+<script src="./canvas-renderer.js"></script>
 <script>
 (function () {
   const V = THREE.Vector3, Q = THREE.Quaternion;
@@ -174,18 +185,18 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
 
   const SPECS = {
     f01: {
-      id: 'F01', label: 'Fighter 01',
-      sub: 'Low-poly ready stance on a rigid-segment rig, the way 32/128-bit era fighters were built.',
-      colors: { skin: 0xb07850, skinDark: 0x8a5a3a, kit: 0x22324a, trim: 0xf26b1d, tape: 0xebe5d6, hair: 0x1b1511, eye: 0x120d0a },
+      id: 'AKEEM', label: 'Akeem', character: 'akeem',
+      sub: 'Prince of Fighters · First character study',
+      colors: { skin: 0xa55d36, skinDark: 0x7d3d27, kit: 0x167e7b, trim: 0xf0dfbb, cream: 0xf0dfbb, tape: 0xeee5cf, tapeShade: 0xc7bda6, sash: 0xc93332, sashLight: 0xed6c53, hair: 0x181411, hairFade: 0x36241c, eye: 0x17100c, eyeWhite: 0xe9ddc5, lip: 0x663525 },
       body: {
         pelvis: [0.165, 0.178, 0.72], hipX: 0.095,
         abdomen: [0.14, 0.155, 0.7], absRows: 3, absZ: 0.1,
-        chest: [0.158, 0.23, 0.64], shoulderX: 0.195, deltoid: 0.08, traps: [0.2, 0.08, 0.58], muscle: 1,
-        neck: [0.074, 0.064], upperArm: [0.058, 0.047], forearm: [0.05, 0.037], hand: 1.06,
-        thigh: [0.095, 0.06], shortsLeg: [0.105, 0.098], calf: [0.058, 0.065, 0.036], foot: 1,
-        skull: 0.105, jaw: [0.052, 0.074], build: 'male', hair: 'short'
+        chest: [0.158, 0.23, 0.64], shoulderX: 0.215, deltoid: 0.091, traps: [0.2, 0.08, 0.58], muscle: 1.18,
+        neck: [0.074, 0.064], upperArm: [0.066, 0.052], forearm: [0.057, 0.041], hand: 1.06,
+        thigh: [0.112, 0.074], shortsLeg: [0.119, 0.111], calf: [0.066, 0.073, 0.042], foot: 1,
+        skull: 0.108, jaw: [0.056, 0.078], build: 'male', hair: 'short'
       },
-      stance: { footL: [0.10, 0.28], footR: [-0.16, -0.26] },
+      stance: { footL: [0.15, 0.26], footR: [-0.20, -0.23] },
       phase: 0
     },
     f02: {
@@ -207,7 +218,10 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
 
   // ---------- scene ----------
   const stageEl = document.getElementById('stage');
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  let renderer;
+  try { renderer=new THREE.WebGLRenderer({antialias:true,alpha:true}); }
+  catch { renderer=new FighterCanvasRenderer();document.getElementById('motion-status').textContent='Ready stance · basic graphics'; }
+
   renderer.setClearColor(0x000000, 0);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -215,7 +229,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(38, 1, 0.05, 60);
-  camera.position.set(1.9, 1.35, 2.7);
+  camera.position.set(-1.1, 1.30, 3.2);
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.target.set(0, 0.92, 0);
@@ -239,10 +253,10 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
   const stoneMat = new THREE.MeshPhongMaterial({ color: 0x5d6168, flatShading: true, shininess: 4 });
   const arena = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.85, 0.14, 10), stoneMat);
   arena.position.y = -0.07; arena.receiveShadow = true;
-  scene.add(arena);
+  arena.renderOrder=-2; scene.add(arena);
   const inlay = new THREE.Mesh(new THREE.RingGeometry(1.36, 1.42, 10), new THREE.MeshBasicMaterial({ color: 0xf26b1d }));
   inlay.rotation.x = -Math.PI / 2; inlay.position.y = 0.002;
-  scene.add(inlay);
+  inlay.renderOrder=-1; scene.add(inlay);
   const grid = new THREE.PolarGridHelper(1.75, 10, 5, 10, 0x80868e, 0x80868e);
   grid.material.transparent = true; grid.material.opacity = 0.18;
   grid.position.y = 0.001;
@@ -300,7 +314,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
 
   // shared animation clock
   let clock = 0, idleT = 0;
-  const IDLE_SPEED = 2.7;   // 1 = original bounce rate
+  const IDLE_SPEED = 1.15;   // 1 = original bounce rate
   let idle = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------- fighter factory ----------
@@ -308,7 +322,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     const B = spec.body, C = spec.colors, P = spec.id + '_';
     const mats = {};
     const mat = (k) => mats[k] || (mats[k] = new THREE.MeshPhongMaterial({
-      color: C[k], flatShading: true, shininess: k === 'kit' ? 30 : 8, specular: 0x1c1c1c
+      color: C[k], flatShading: true, shininess: k === 'kit' ? 8 : 5, specular: 0x181818, side: k === 'kit' ? THREE.DoubleSide : THREE.FrontSide
     }));
     const parts = [], joints = [];
     const joint = (name, parent, x, y, z) => {
@@ -376,12 +390,14 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     part(head, new THREE.SphereGeometry(R, 8, 6), 'skin', 'skull', [0, 0.105, 0], null, [0.86, 1.08, 0.98]);
     part(head, seg(B.jaw[0], B.jaw[1], 0.075, 6, 1, 1, 1.15), 'skin', 'jaw', [0, 0.015, 0.022]);
     part(head, new THREE.ConeGeometry(0.016, 0.042, 4), 'skin', 'nose', [0, 0.085, R - 0.001], [Math.PI / 2, 0, 0]);
-    part(head, box(0.026, 0.012, 0.012), 'eye', 'eye_L', [0.035, 0.106, R - 0.007]);
-    part(head, box(0.026, 0.012, 0.012), 'eye', 'eye_R', [-0.035, 0.106, R - 0.007]);
+    part(head, box(spec.character === 'akeem' ? 0.015 : 0.026, 0.009, 0.012), 'eye', 'eye_L', [0.035, 0.106, R - 0.007]);
+    part(head, box(spec.character === 'akeem' ? 0.015 : 0.026, 0.009, 0.012), 'eye', 'eye_R', [-0.035, 0.106, R - 0.007]);
     part(head, box(0.02, 0.04, 0.03), 'skin', 'ear_L', [R * 0.88, 0.098, 0]);
     part(head, box(0.02, 0.04, 0.03), 'skin', 'ear_R', [-R * 0.88, 0.098, 0]);
     let pony = null;
-    if (B.hair === 'short') {
+    if (spec.character === 'akeem') {
+      // The close-fade and individual curls are built with the character outfit.
+    } else if (B.hair === 'short') {
       part(head, box(0.12, 0.02, 0.03), 'skinDark', 'brow', [0, 0.122, 0.088]);
       part(head, new THREE.SphereGeometry(R + 0.006, 8, 4, 0, Math.PI * 2, 0, Math.PI * 0.46), 'hair', 'hair', [0, 0.112, -0.01], null, [0.88, 1.02, 1.0]);
     } else {
@@ -415,8 +431,8 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
       const wr = joint(S + '_wrist', el, 0, -L_FOREARM, 0);
       part(wr, seg(B.forearm[1] + 0.004, B.forearm[1] + 0.007, 0.085, 8, -1), 'tape', S + '_wrist_tape', [0, 0.05, 0]);
       part(wr, box(0.085 * k, 0.095 * k, 0.09 * k), 'tape', S + '_fist', [0, -0.055 * k, 0]);
-      part(wr, box(0.092 * k, 0.03 * k, 0.096 * k), 'tape', S + '_knuckles', [0, -0.098 * k, 0]);
-      part(wr, box(0.028 * k, 0.05 * k, 0.03 * k), 'tape', S + '_thumb', [-side * 0.02 * k, -0.06 * k, 0.052 * k]);
+      part(wr, box(0.092 * k, 0.03 * k, 0.096 * k), spec.character === 'akeem' ? 'skin' : 'tape', S + '_knuckles', [0, -0.098 * k, 0]);
+      part(wr, box(0.028 * k, 0.05 * k, 0.03 * k), spec.character === 'akeem' ? 'skin' : 'tape', S + '_thumb', [-side * 0.02 * k, -0.06 * k, 0.052 * k]);
       const tip = marker(S + '_fist_tip', wr, 0, -0.115 * k, 0);
       return { sh, el, wr, tip };
     }
@@ -426,7 +442,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     function buildLeg(side) {
       const S = side > 0 ? 'L' : 'R', k = B.foot;
       const hip = joint(S + '_hip', pelvis, side * B.hipX, -0.07, 0);
-      part(hip, seg(B.shortsLeg[0], B.shortsLeg[1], 0.16, 8, -1), 'kit', S + '_shorts_leg', [0, 0.02, 0]);
+      part(hip, seg(B.shortsLeg[0], B.shortsLeg[1], spec.character === 'akeem' ? 0.225 : 0.16, 10, -1), 'kit', S + '_shorts_leg', [0, 0.02, 0]);
       part(hip, box(0.012, 0.15, 0.03), 'trim', S + '_shorts_stripe', [side * (B.shortsLeg[0] - 0.001), -0.055, 0]);
       const K = B.muscle;
       part(hip, seg(B.thigh[0], B.thigh[1], L_THIGH, 8, -1, 1, 0.92), 'skin', S + '_thigh');
@@ -445,12 +461,13 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
       part(ankle, seg(B.calf[2] + 0.008, B.calf[2] + 0.013, 0.075, 8, -1), 'tape', S + '_ankle_tape', [0, 0.05, 0]);
       part(ankle, box(0.085 * k, 0.055, 0.22 * k), 'skin', S + '_foot', [0, -0.047, 0.055 * k]);
       part(ankle, box(0.093 * k, 0.061, 0.075 * k), 'tape', S + '_arch_tape', [0, -0.044, 0.035 * k]);
-      part(ankle, box(0.08 * k, 0.033, 0.045 * k), 'skinDark', S + '_toes', [0, -0.058, 0.185 * k]);
+      if(spec.character === 'akeem'){for(let toe=0;toe<5;toe++)part(ankle,box(.014,.027,.038-(toe*.003)),'skin',S+'_toe_'+toe,[(toe-2)*.016,-.055,.177-toe*.001]);}else part(ankle, box(0.08 * k, 0.033, 0.045 * k), 'skinDark', S + '_toes', [0, -0.058, 0.185 * k]);
       const toe = marker(S + '_toe', ankle, 0, -0.06, 0.2 * k);
       return { hip, knee, ankle, toe };
     }
     const legL = buildLeg(1), legR = buildLeg(-1);
 
+    const details = spec.character === 'akeem' ? AkeemModel.attach({THREE,part,joint,seg,box,ico,head,chest,spine,pelvis,armL,armR,legL,legR,B}) : null;
     // face edges
     const edgeMat = new THREE.LineBasicMaterial({ color: 0x0d1117, transparent: true, opacity: 0.55 });
     const edges = parts.map(p => { const l = new THREE.LineSegments(new THREE.EdgesGeometry(p.geometry, 1), edgeMat); p.add(l); return l; });
@@ -493,7 +510,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
       hipY: 0.88, pelvisYaw: -0.5, chestYaw: 0.12,
       footL: new V(S.footL[0], ANKLE_H, S.footL[1]), footLYaw: -0.18,
       footR: new V(S.footR[0], ANKLE_H, S.footR[1]), footRYaw: -0.9,
-      guardL: new V(0.11, 0.31, 0.39), guardR: new V(-0.10, 0.34, 0.26),
+      guardL: spec.character === 'akeem' ? new V(.16,.25,.35) : new V(.11,.31,.39), guardR: spec.character === 'akeem' ? new V(-.13,.28,.23) : new V(-.10,.34,.26),
       poleL: new V(0.35, -1, -0.25), poleR: new V(-0.35, -1, -0.2)
     };
     // each move: duration (s), hold = share of time spent driving out before the recoil
@@ -680,6 +697,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
         const pole = poleLocal.clone().applyQuaternion(rigQ).normalize();
         solveIK(arm.sh, arm.el, L_UPARM, L_FOREARM, target, pole, pole.clone().negate());
       });
+      if(details) details.update(clock);
       if (skel.visible) updateSkeleton();
     }
 
@@ -706,11 +724,13 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
   const fmt = (n) => n.toLocaleString('en-US');
   const visible = () => mode === 'both' ? all : [fighters[mode]];
   const CAMS = {
-    single: { pos: [1.9, 1.35, 2.7], target: [0, 0.92, 0] },
+    single: { pos: [-1.1, 1.30, 3.2], target: [0, 0.92, 0] },
     both: { pos: [3.5, 1.55, 1.1], target: [0, 0.9, 0] }
   };
   function setMode(m) {
     mode = m;
+    document.getElementById('fighter-name').textContent=m==='f01'?'Akeem':m==='f02'?'Rig 02':'Versus study';
+    document.getElementById('fighter-subtitle').textContent=m==='f01'?'Prince of Fighters':m==='f02'?'Original lab rig':'Akeem + original lab rig';
     ['f01', 'f02', 'both'].forEach(id => document.getElementById('f-' + id).setAttribute('aria-pressed', id === m));
     all.forEach(f => { f.rig.visible = false; f.skel.visible = false; });
     if (m === 'both') {
@@ -736,7 +756,7 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     });
   }
   Object.entries(viewBtns).forEach(([m, id]) => document.getElementById(id).addEventListener('click', () => setView(m)));
-  setView('faces');
+  setView('shaded');
 
   function toggle(id, fn) {
     const b = document.getElementById(id);
@@ -747,15 +767,18 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
   let retro = false;
   toggle('t-retro', on => { retro = on; stageEl.classList.toggle('retro', on); resize(); });
   toggle('t-idle', on => { idle = on; }).setAttribute('aria-pressed', idle);
+  let playbackRate=1,holdPose=false;
+  toggle('t-slow',on=>{playbackRate=on ? .25 : 1;});
+  toggle('t-hold',on=>{holdPose=on;});
 
-  const fire = (type) => visible().forEach(f => f.fire(type));
+  const fire = (type) => {document.getElementById('motion-status').textContent=({jab:'Jab',cross:'Cross',hook:'Hook',upper:'Uppercut',jump:'Jump',jumpUpper:'Rising uppercut',jumpKick:'Flying kick',roundhouse:'Roundhouse'}[type]||type);visible().forEach(f => f.fire(type));};
   document.getElementById('a-jab').addEventListener('click', () => fire('jab'));
   document.getElementById('a-cross').addEventListener('click', () => fire('cross'));
   document.getElementById('a-hook').addEventListener('click', () => fire('hook'));
   document.getElementById('a-upper').addEventListener('click', () => fire('upper'));
   ['jump', 'jumpUpper', 'jumpKick', 'roundhouse'].forEach(m => document.getElementById('a-' + m).addEventListener('click', () => fire(m)));
   window.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'TEXTAREA') return;
+    if (e.target.tagName === 'TEXTAREA' || document.getElementById('design-card').open || !document.getElementById('sheet').hidden) return;
     if (e.key === 'j' || e.key === 'J') fire('jab');
     if (e.key === 'k' || e.key === 'K') fire('cross');
     if (e.key === 'l' || e.key === 'L') fire('hook');
@@ -765,6 +788,19 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     if (e.key === 'o' || e.key === 'O') fire('jumpKick');
     if (e.key === 'p' || e.key === 'P') fire('roundhouse');
   });
+
+  const designCard=document.getElementById('design-card');
+  document.getElementById('show-reference').onclick=()=>designCard.showModal();
+  document.getElementById('close-reference').onclick=()=>designCard.close();
+  function angle(x,z){camera.position.set(x,1.25,z);controls.target.set(0,.94,0);controls.update();}
+  document.getElementById('cam-front').onclick=()=>angle(0,3.4);
+  document.getElementById('cam-three').onclick=()=>angle(-1.1,3.2);
+  document.getElementById('cam-back').onclick=()=>angle(0,-3.4);
+  document.getElementById('b-glb').onclick=()=>{
+    const exportScene=new THREE.Scene();visible().forEach(f=>{f.rig.updateMatrixWorld(true);exportScene.add(f.rig.clone(true));});
+    try {new THREE.GLTFExporter().parse(exportScene,result=>{const blob=new Blob([result],{type:'model/gltf-binary'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=mode==='f01'?'akeem-fighter-lab.glb':'fighter-lab-study.glb';a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);document.getElementById('motion-status').textContent='GLB download ready · materials + articulated parts';},{binary:true,onlyVisible:true});}
+    catch(error){document.getElementById('motion-status').textContent='GLB export unavailable. OBJ export is still available.';}
+  };
 
   // ---------- OBJ export ----------
   function buildOBJ() {
@@ -812,13 +848,14 @@ kbd { font-family: var(--f-mono); font-size: 10px; opacity: 0.6; margin-left: 4p
     camera.updateProjectionMatrix();
   }
   window.addEventListener('resize', resize);
-  resize();
+  const dockObserver=new ResizeObserver(()=>{stageEl.style.bottom=document.querySelector('.hud').offsetHeight+'px';resize();});dockObserver.observe(document.querySelector('.hud'));
+  stageEl.style.bottom=document.querySelector('.hud').offsetHeight+'px';resize();
   setMode('f01');
 
   let last = performance.now();
   function frame(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    clock += dt; if (idle) idleT += dt * IDLE_SPEED;
+    if(!holdPose){clock += dt*playbackRate;if(idle)idleT += dt*IDLE_SPEED*playbackRate;}
     visible().forEach(f => f.pose());
     controls.update();
     renderer.render(scene, camera);

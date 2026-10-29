@@ -1,0 +1,12 @@
+{
+  "title": "Groove Squad Get Down",
+  "tagline": "Fight for your voice to be heard. All 40 fighters.",
+  "description": "The full Groove Squad fighting game from jerm747.com, with every fighter open. Easy, Medium and Hard ladders, Ranked Run (ten fights, Jimmy Legend last, best times saved on this device), Endless, two-player, outfits and round lengths. Plays with a controller, keyboard or the on-screen touch pad.",
+  "order": 5,
+  "accent": "#F6A93B",
+  "kind": "game",
+  "status": "playable",
+  "version": "2.3.7",
+  "controls": ["gamepad", "keyboard", "touch"],
+  "credit": "Jerm747 original. All rights reserved."
+}

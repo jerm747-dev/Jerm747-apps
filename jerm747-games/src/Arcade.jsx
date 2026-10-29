@@ -335,6 +335,17 @@ function Player({ project, source, onExit }) {
     };
   }, [onExit]);
 
+  // A game's own Close / Exit button can hand control back to the shelf (Get Down sends jerm747-catalog-close).
+  useEffect(() => {
+    const onMessage = (e) => {
+      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
+      const type = e.data && e.data.type;
+      if (type === 'jerm747-catalog-close' || type === 'jerm747-games-exit') onExit();
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [onExit]);
+
   // Controller bridge: presses keys inside keyboard-only projects.
   useEffect(() => {
     if (!hasBridge) return;
