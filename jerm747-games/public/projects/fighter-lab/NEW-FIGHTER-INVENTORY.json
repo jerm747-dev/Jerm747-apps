@@ -1,0 +1,126 @@
+{
+  "date": "2026-10-31",
+  "files": [
+    {
+      "name": "Shadow",
+      "upload": "Meshy_AI_Purple_Sash_Ninja_20261031_image-to-3d-texture_fbx.zip",
+      "format": "FBX",
+      "model_sha256": "f29ddc9a6e10ac347ed3338419902c5b8c0f7761048bab1756150d8859f5de62",
+      "color_sha256": "175da9a61824e47549ccac8d272aeb6972fa6d3e3886551c2c3987dd9a5ba982",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Cyborg",
+      "upload": "Meshy_AI_Faceted_Armored_Warri_1031224251_image-to-3d-texture_fbx.zip",
+      "format": "FBX",
+      "model_sha256": "17e0bf4c8b429fc959f0739712c89e4f8df2f31cef9b75369a8a029f90ee44c1",
+      "color_sha256": "742156efcd3f5a15f4fa8843522a19688ae989f99eac7533c16da8f8347d4675",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Mike",
+      "upload": "Meshy_AI_Orange_Tank_Top_Brawler_20261031_image-to-3d-texture_fbx.zip",
+      "format": "FBX",
+      "model_sha256": "c848dc26ee3776b9585ed24eca89b13d5ac0da154493ac20283ca1fb7017a380",
+      "color_sha256": "a8807b660b80adfe614b22485b41771c86a6d5ee99c9c524822aa8175651e237",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Sheila",
+      "upload": "Female_Boxer.zip",
+      "format": "FBX",
+      "model_sha256": "372f11653abddf442a57c9007f587fd595f5e7bcb850c76def4778baa7ee3313",
+      "color_sha256": "3416f47d5813269c61cb0a10b7d3994652bf4d24ca0799ad8959055f57cc0f66",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Cyon",
+      "upload": "Black_Jacket_Dreadloc.zip",
+      "format": "FBX",
+      "model_sha256": "72406663508b54ab018515a8a88dd0227c3afbc515e001c709589d8c90d3b0c8",
+      "color_sha256": "373051cc392c910e37899ece323d6dad6d5e37db53af6b1462dcffdf0a1f6051",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Major",
+      "upload": "Green_Suit_Fighter.zip",
+      "format": "OBJ",
+      "model_sha256": "cf7f33c69a718a08995d8bdb46c0529e181e2a0c98a681b2ec6941f92baff0c2",
+      "color_sha256": "62c2b6d8147e415184b8a31ad8c6fc7ef793b5f877c647a06040ac577f83f694",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Tank",
+      "upload": "Red_Jacket_Brawler.zip",
+      "format": "FBX",
+      "model_sha256": "4cda7e5349dec9bdfe86bd5da5e60975a05d4b664a40824612f60a48889f2ee4",
+      "color_sha256": "40ba867995dbe0f60ba4f06196846de9cbb57b18e2375a0a1aed58be6cba7735",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Static",
+      "upload": "Blue_Cargo_Female_Fig.zip",
+      "format": "FBX",
+      "model_sha256": "ddbecdbcc3e9c506453aeb36412bd8c710b4dc906f0bd2211473413290fdbbc1",
+      "color_sha256": "5636063d1b2d6e9fb712192e82c3d7d348d3788e7b6c98cfc828a041a0b24ab2",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Rokr",
+      "upload": "Blue_Tracksuit_Fighte.zip",
+      "format": "FBX",
+      "model_sha256": "0231142edf0294f50d24dea59b80b40d3a01ef8c0d04cd2b868d2b719f344412",
+      "color_sha256": "0aeb989bf685f2c44cc532a5d6484fc6f0237c9ad6b556a17bb52a99e40ff598",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    },
+    {
+      "name": "Billie",
+      "upload": "Yellow_Tracksuit_Figh.zip",
+      "format": "FBX",
+      "model_sha256": "47b3292168dabb4fb1439ab6df94452b50b9f45afdc5f0f17a9379285cea7ba1",
+      "color_sha256": "548f624c2e324fdf199f9958d86b9cd729f632a2d4d3e35b833be612119c933b",
+      "skeleton": false,
+      "skinWeights": false,
+      "animations": false,
+      "readyForCombat": false
+    }
+  ],
+  "uniqueModels": 10,
+  "duplicateModels": [],
+  "duplicateTextures": [],
+  "missing": [
+    "Rayburn",
+    "Tye"
+  ],
+  "existingPlayable": [
+    "Akeem",
+    "Nika"
+  ]
+}

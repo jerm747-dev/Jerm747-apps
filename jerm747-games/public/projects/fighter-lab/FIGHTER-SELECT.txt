@@ -1,0 +1,92 @@
+GS FIGHTER III — FIGHTER SELECT — v0.36
+
+OPEN
+Extract the whole ZIP and open fighter-lab/index.html. Press Start opens
+Fighter Select. During the workshop, Fighter select reopens this menu.
+Enter Fighter Lab launches the selected matchup in the existing training lab.
+Opening selection clears active projectiles and finish timing. The menu chooses
+fighter slots; it does not add human P2 combat controls.
+
+TOUCH / MOUSE
+Tap a roster tile: assign that fighter to P1 immediately.
+Hold for about 0.32 seconds: two small P1/P2 circles appear just above the tile.
+Keep holding, slide a little right toward P2, and release to assign P2.
+Hold and release in place: assign P1. Slide back left before release for P1.
+The choice stays at the tile; there is no large dialog or dimmed backdrop.
+Release far outside to cancel. Moving before the hold starts permits scrolling.
+The P1 / P2 shortcut opens the same tiny chooser for the highlighted fighter;
+tap either circle to assign. Tap outside or press Escape to dismiss it.
+Replace either slot at any time; both slots may use the same fighter.
+Tap a large fighter name to browse from that slot's current fighter.
+Back unlocks P2, then P1, then returns to the title. Title returns immediately.
+
+KEYBOARD
+Arrows or W/A/S/D browse without changing confirmed assignments.
+Enter or Space opens the tiny player chooser for the highlighted fighter.
+Left/Right chooses P1/P2; Enter or Space confirms. Escape or Backspace cancels
+without losing assigned fighters. Tab leaves the chooser and continues through
+the menu buttons. Outside the chooser, Escape/Backspace follows Back.
+Activate Enter Fighter Lab after both players are ready. Gameplay input is
+isolated from the menu; held confirmations do not repeat.
+
+STANDARD GAMEPADS
+Left stick browses P1; right stick browses P2 independently.
+D-pad browses the current selection step. A / bottom face button selects the
+current side, or begins when both are ready. LB or left-stick click locks P1;
+RB or right-stick click locks P2. Start begins when both are locked.
+B or Back/Select goes back. Release inputs held when opening the menu first.
+A second standard controller uses its left stick, D-pad and A for P2.
+Within the tiny chooser: sticks choose a circle, A confirms, LB/RB assigns
+P1/P2, and B cancels. Controller 2's A assigns P2.
+These are browser-standard button positions; printed labels can differ.
+
+ARTWORK AND AURAS
+fighter-artwork contains new transparent full-body paintings and separate
+headshots for Akeem/Nika. References were the original guard poses, actual
+game meshes and the GS Fighter III title's broad brushwork. These are new
+dimensional illustrations, not screenshots or a replacement for combat rigs.
+Hands, hair and feet fit the preview. P2 faces inward through CSS mirroring.
+Separate painted spirals sit behind each figure, with an open center and soft
+edge fade: Akeem cyan/teal; Nika gold/amber. The art remains static.
+Selecting P1 sets the corresponding V-Wave aura preset: cyan or solar.
+The charge, flame shell, wisps, glow and impact use that preset. The supplied
+Azure blast core retains its original blue texture. Settings can override the
+aura color; resetting the arena preserves that override. Changing the matchup
+restores the selected fighter's preset.
+Original source sheets are retained unchanged in the same artwork folder.
+See SOURCE.txt and BRUSH-ART-PROMPTS.txt there for provenance and prompts.
+
+LAYOUT
+Wide and compact landscape layouts place the roster between the full poses.
+Portrait puts the roster below them. Touch buttons hide automatically when a
+controller connects; Touch buttons: On/Off overrides this for the menu.
+Roster tiles scroll when needed; keyboard/gamepad focus stays in view.
+Reduced motion disables the brief hold-progress animation.
+
+ADDING A FIGHTER AFTER RIGGING
+See NEW-FIGHTER-IMPORTS.txt and NEW-FIGHTER-MOVE-SETS.json first.
+After validating and retargeting a skinned rig, load its mesh/clip data before
+fighter-roster.js, add FighterDefaults and register a unique id, name, accent
+and data() entry. portrait and headshot metadata each use src, width, height
+and an SVG viewBox ('x y width height'). Optional clip polygons can isolate
+sheet content. Standalone transparent PNGs need no clip polygon. Add spiral
+and wavePalette fields for an approved background and aura preset.
+The registry drives tiles, independent cursors and mirror matches. A raw FBX
+without a skeleton and skin weights is not a playable rig.
+
+VALIDATION
+Passed: selection and controller state checks, 40-entry wrapping, replacing
+slots, mirror matches, hold-slide/back, scroll/outside cancellation and edge
+circle targeting. Source mapping checks cover all 43 planned move mappings.
+Browser: desktop plus 390x844, 844x390 and 320x568 layouts, transparent full-body
+art, tiny chooser, tap assignment, native mouse hold, keyboard selection/cancel
+and launch of an Akeem mirror match. Spiral layout inspected on desktop/phone.
+Lab integration: cyan/solar charge colors, manual override, 24-damage V-Wave,
+launch/get-up reaction and selection cleanup passed with actual rig data.
+The preview browser used the compatibility renderer. Physical Android touch,
+hardware gamepads and WebGL still need device testing.
+
+QUICK DEVICE CHECK
+Tap Nika for P1. Hold Akeem, slide right and release for P2, then enter the lab.
+Reopen, replace either slot, and try mirror matches. Rotate the phone and toggle
+touch buttons. Test independent sticks, LB/RB, Start and a second controller.

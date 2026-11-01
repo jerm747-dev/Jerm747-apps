@@ -77,6 +77,54 @@ function Art({ project, big }) {
   );
 }
 
+// Screenshot strip on a game's page; tapping one opens a full-size viewer (←/→, swipe, Esc to close).
+function Gallery({ shots, title }) {
+  const [open, setOpen] = useState(-1);
+  const dlg = useRef(null);
+  const touchX = useRef(null);
+  useEffect(() => {
+    const d = dlg.current;
+    if (!d) return;
+    if (open >= 0 && !d.open) d.showModal();
+    if (open < 0 && d.open) d.close();
+    document.body.dataset.viewer = open >= 0 ? '1' : '';
+  }, [open]);
+  useEffect(() => () => { document.body.dataset.viewer = ''; }, []);
+  if (!shots?.length) return null;
+  const step = (n) => setOpen((i) => (i + n + shots.length) % shots.length);
+  const onKey = (e) => {
+    if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+  };
+  const shot = shots[Math.max(0, open)];
+  return (
+    <div className="sb-shots">
+      <p className="sb-shots-label">Screenshots</p>
+      <div className="sb-shots-row">
+        {shots.map((s, i) => (
+          <button key={s.src} type="button" className="sb-shot" onClick={() => setOpen(i)} aria-label={`View screenshot ${i + 1}: ${s.caption || title}`}>
+            <img src={s.thumb || s.src} alt="" loading="lazy" width="480" height="270" />
+          </button>
+        ))}
+      </div>
+      <dialog ref={dlg} className="sb-viewer" onClose={() => setOpen(-1)} onKeyDown={onKey}
+        onClick={(e) => { if (e.target === e.currentTarget) setOpen(-1); }}
+        onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - (touchX.current ?? e.changedTouches[0].clientX); if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1); touchX.current = null; }}>
+        {open >= 0 && (
+          <figure>
+            <img src={shot.src} alt={shot.caption || `${title} screenshot`} />
+            <figcaption><span>{shot.caption}</span><span>{open + 1} / {shots.length}</span></figcaption>
+          </figure>
+        )}
+        <button type="button" className="sb-viewer-btn sb-viewer-prev" onClick={() => step(-1)} aria-label="Previous screenshot">‹</button>
+        <button type="button" className="sb-viewer-btn sb-viewer-next" onClick={() => step(1)} aria-label="Next screenshot">›</button>
+        <button type="button" className="sb-viewer-btn sb-viewer-close" onClick={() => setOpen(-1)} aria-label="Close">×</button>
+      </dialog>
+    </div>
+  );
+}
+
 export default function Arcade() {
   const [projects, setProjects] = useState(null);
   const [error, setError] = useState('');
@@ -146,6 +194,40 @@ export default function Arcade() {
     if (tile && shelf) shelf.scrollTo({ left: tile.offsetLeft - shelf.offsetLeft - (shelf.clientWidth - tile.clientWidth) / 2, behavior: 'smooth' });
   }, [index, cat]);
 
+  // Swipeable details: one full-width page per game in the current section. Swiping picks the game;
+  // picking a game any other way (tiles, arrows, keys, controller) slides the pages to it.
+  const slides = useRef(null);
+  const pointerTile = useRef(-1); // first tap on a tile selects it, a second tap opens it
+  const indexRef = useRef(index);
+  const settle = useRef(0);
+  const lastCat = useRef(cat);
+  indexRef.current = index;
+  const stride = (el) => (el.children[1] ? el.children[1].offsetLeft - el.children[0].offsetLeft : el.clientWidth) || el.clientWidth;
+  useEffect(() => {
+    const el = slides.current;
+    if (!el || !el.clientWidth) return;
+    const target = Math.min(index, shown.length - 1) * stride(el);
+    const jump = lastCat.current !== cat;
+    lastCat.current = cat;
+    if (Math.abs(el.scrollLeft - target) > 2) el.scrollTo({ left: target, behavior: jump ? 'auto' : 'smooth' });
+  }, [index, cat, shown.length]);
+  useEffect(() => {
+    const el = slides.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => { el.scrollTo({ left: indexRef.current * stride(el), behavior: 'auto' }); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [projects, playing]);
+  const onSlidesScroll = () => {
+    clearTimeout(settle.current);
+    settle.current = setTimeout(() => {
+      const el = slides.current;
+      if (!el || !el.clientWidth) return;
+      const i = Math.max(0, Math.min(shown.length - 1, Math.round(el.scrollLeft / stride(el))));
+      if (i !== indexRef.current) { setIndex(i); buzz(); }
+    }, 90);
+  };
+
   const launch = useCallback((p) => {
     if (!p) return;
     track('launch', p.slug);
@@ -164,6 +246,7 @@ export default function Arcade() {
   };
 
   const onAction = (action, from) => {
+    if (document.body.dataset.viewer) return; // screenshot viewer handles its own keys
     setSource(from);
     if (action === 'left') { setIndex((i) => Math.max(0, i - 1)); buzz(); }
     if (action === 'right') { setIndex((i) => Math.min(shown.length - 1, i + 1)); buzz(); }
@@ -231,7 +314,10 @@ export default function Arcade() {
         )}
 
         {current && (
-          <section className="sb-detail" key={current.slug}>
+          <div className="sb-slider">
+          <div className="sb-slides" ref={slides} onScroll={onSlidesScroll} aria-roledescription="carousel" aria-label="Game details · swipe for the next game">
+          {shown.map((current, i) => (
+          <section className="sb-detail sb-slide" key={current.slug} aria-roledescription="slide" aria-label={`${i + 1} of ${shown.length}: ${current.title}`} aria-hidden={i !== index} inert={i !== index}>
             <div className="sb-hero"><Art project={current} big /></div>
             <div className="sb-info">
               <p className="sb-chips">
@@ -251,10 +337,27 @@ export default function Arcade() {
                 </button>
                 <button className="sb-btn" onClick={() => copyLink(current)}>{copied === current.slug ? 'Link copied' : 'Copy link'}</button>
                 <a className="sb-btn" href={current.url} target="_blank" rel="noopener">Open in new tab</a>
+                {current.download?.url && (
+                  <a className="sb-btn sb-download" href={current.download.url} target="_blank" rel="noopener">
+                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" /></svg>
+                    {current.download.label || 'Download'}
+                  </a>
+                )}
               </div>
+              <Gallery shots={current.screenshots} title={current.title} />
               {current.credit && <p className="sb-credit">{current.credit}</p>}
             </div>
           </section>
+          ))}
+          </div>
+          {shown.length > 1 && (
+            <>
+              <button className="sb-step sb-step-prev" aria-label="Previous game" disabled={index === 0} onClick={() => { setIndex((i) => Math.max(0, i - 1)); buzz(); }}>‹</button>
+              <button className="sb-step sb-step-next" aria-label="Next game" disabled={index === shown.length - 1} onClick={() => { setIndex((i) => Math.min(shown.length - 1, i + 1)); buzz(); }}>›</button>
+              <div className="sb-dots" aria-hidden="true">{shown.map((p, i) => <i key={p.slug} className={i === index ? 'is-on' : ''} />)}</div>
+            </>
+          )}
+          </div>
         )}
 
         <div className="sb-shelf" role="listbox" aria-label="Games">
@@ -266,8 +369,9 @@ export default function Arcade() {
               role="option"
               aria-selected={i === index}
               className={`tile ${i === index ? 'is-on' : ''}`}
-              onClick={() => { if (i === index) launch(p); else setIndex(i); }}
-              onFocus={() => setIndex(i)}
+              onPointerDown={() => { pointerTile.current = i; }}
+              onClick={() => { pointerTile.current = -1; if (i === indexRef.current) launch(p); else { setIndex(i); buzz(); } }}
+              onFocus={() => { if (pointerTile.current !== i) setIndex(i); }}
             >
               <Art project={p} />
               <span className="tile-title">{p.title}</span>
@@ -333,6 +437,17 @@ function Player({ project, source, onExit }) {
       targets.forEach((t) => { try { t.removeEventListener('keydown', down, true); t.removeEventListener('keyup', up, true); } catch { /* gone */ } });
       iframe?.removeEventListener('load', attach);
     };
+  }, [onExit]);
+
+  // A game's own Close / Exit button can hand control back to the shelf (Get Down sends jerm747-catalog-close).
+  useEffect(() => {
+    const onMessage = (e) => {
+      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
+      const type = e.data && e.data.type;
+      if (type === 'jerm747-catalog-close' || type === 'jerm747-games-exit') onExit();
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
   }, [onExit]);
 
   // Controller bridge: presses keys inside keyboard-only projects.

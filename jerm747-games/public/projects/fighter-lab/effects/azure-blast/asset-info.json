@@ -1,0 +1,36 @@
+{
+  "name": "Azure Singularity V-Wave",
+  "source": "Meshy_AI_Azure_Singularity_20261031_texture_remesh_tri.fbx",
+  "sourceSha256": "6da419afbbf5ec3d52aed53ca281491cdb19b9855d7b0062cbf913b68cc50732",
+  "triangles": 64389,
+  "sourceVertices": 32191,
+  "renderVertices": 55300,
+  "indexType": "uint16",
+  "bounds": [
+    [
+      -4.083435619287972,
+      -1.0,
+      -0.5284744576732952
+    ],
+    [
+      1.0,
+      1.0,
+      0.5284744576732952
+    ]
+  ],
+  "rigRequired": false,
+  "animation": "game-controlled transform, axial roll and emissive pulse",
+  "normalization": {
+    "rotation": "FBX -90 degree X, then 180 degree Y to face +X",
+    "radius": 0.3740369975566864,
+    "headCenter": [
+      0.577329009771347,
+      0.00023099780082702637,
+      0.0003460049629211426
+    ]
+  },
+  "textureDimensions": [
+    2048,
+    2048
+  ]
+}

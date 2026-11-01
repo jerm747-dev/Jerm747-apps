@@ -1,0 +1,28 @@
+GS Fighter III v0.34 — Reaction timing reference
+Source: Meshy_AI_Golden_Valkyrie_biped (6).zip
+Times below are seconds inside the ORIGINAL clip, before playback speed.
+
+Clip                         Start   Normal end   Rapid end   Use
+Face_Punch_Reaction           0.43    1.08         0.86        Head
+Face_Punch_Reaction_1         2.03    2.72         2.49        Head (existing clip)
+Hit_Reaction                 0.43    1.13         0.89        Body / heavy body
+Hit_Reaction_1               0.06    0.85         0.61        Quick body / low
+Hit_Reaction_to_Waist        0.14    1.17         0.86        Waist / low
+Slap_Reaction                0.73    1.37         1.12        Sideways head strike
+BeHit_FlyUp                  0.00    1.17         n/a         Powerful launch
+
+Standing: configured speed (default 2.5), +0.1 heavy, +0.7 rapid, capped at 4.
+Launch: 1.7x, no rapid trimming. All impact sections end before clip end.
+Blend into recoil: 50 ms normal / 35 ms rapid / 55 ms launch; displayed pose
+and velocity are retained by the existing smart-transition system. Return
+blend follows the normal Settle control.
+
+Runtime files:
+reactions/reaction-data.js        Original uploaded six reaction curve sets.
+reactions/reaction-clips.js       Bone-name mapping and hip-height scaling.
+reactions/reaction-controller.js  Logical selection, trims, mirroring and pace.
+
+Nika gains five previously missing clips; Akeem gains six. Full workshop clips
+are preserved. Mirrored runtime variants are hidden from the workshop list so
+it remains readable. Existing Running/Walking and all attack assignments are
+retained; this pack does not contain new punches or kicks.

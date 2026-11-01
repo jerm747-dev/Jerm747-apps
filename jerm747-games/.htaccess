@@ -1,0 +1,18 @@
+# jerm747.games — force HTTPS and serve the arcade
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Never serve stats data directly
+RewriteRule ^api/data/ - [F,L]
+
+Options -Indexes
+
+# Android downloads (jerm747.games/download/...): correct type and save-as for .apk files
+AddType application/vnd.android.package-archive .apk
+<IfModule mod_headers.c>
+  <FilesMatch "\.apk$">
+    Header set Content-Disposition attachment
+    Header set X-Content-Type-Options nosniff
+  </FilesMatch>
+</IfModule>

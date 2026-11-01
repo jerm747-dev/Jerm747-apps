@@ -1,0 +1,83 @@
+{
+  "version": "0.30",
+  "generation": "Built-in image generation: v0.27 outer stone, v0.29 sky, v0.30 giant inner slabs; v0.30 asymmetric scenic joins",
+  "resampling": "Lanczos3, no claim of native 8K source detail",
+  "groundSource": [
+    1254,
+    1254
+  ],
+  "panoramaSource": [
+    1402,
+    1122
+  ],
+  "levels": {
+    "2048": {
+      "ground": [
+        2048,
+        2048
+      ],
+      "panorama": [
+        2048,
+        1638
+      ],
+      "gpuColorTextureMiB": 60,
+      "innerGround": [
+        2048,
+        2048
+      ]
+    },
+    "4096": {
+      "ground": [
+        4096,
+        4096
+      ],
+      "panorama": [
+        4096,
+        3276
+      ],
+      "gpuColorTextureMiB": 239,
+      "innerGround": [
+        4096,
+        4096
+      ]
+    },
+    "8192": {
+      "ground": [
+        8192,
+        8192
+      ],
+      "panorama": [
+        8192,
+        6552
+      ],
+      "gpuColorTextureMiB": 956,
+      "innerGround": [
+        8192,
+        8192
+      ]
+    }
+  },
+  "physicalPanoramaHeightMultiplier": 2,
+  "panoramaSourceFile": "river-v29-sky-source.png",
+  "innerGroundSource": [
+    1254,
+    1254
+  ],
+  "innerGroundSourceFile": "inner-stone-v30-source.png",
+  "innerGroundSurfaceMap": [
+    2048,
+    2048
+  ],
+  "innerGroundSlabSizeMultiplier": 3,
+  "scenicJoin": {
+    "source": [
+      887,
+      1774
+    ],
+    "file": "scenic-join-v30.webp",
+    "sharedCopies": 4,
+    "panelWidthFraction": 0.4,
+    "centerOpacity": 1,
+    "feathered": true
+  }
+}

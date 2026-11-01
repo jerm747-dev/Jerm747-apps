@@ -1,0 +1,88 @@
+GS FIGHTER III — TEXTURE LAB v0.30
+Built for Jeremy / Jerm747 — October 31, 2026
+
+START
+Extract the complete ZIP and open fighter-lab/index.html, or host the folder
+on your usual web server. The embedded assets remain included for offline use.
+No new CDN or runtime dependency was added. Android file-manager access may
+require a browser-accessible local/server URL, as in previous builds.
+
+NEW INNER FLOOR
+A 160-segment disk of radius 11.65 m lies inside the original stone ring.
+It shares the ring's boundary height and sits 1 mm above the existing terrace,
+which continues underneath and outside it. The ring geometry is unchanged.
+The inner floor has its own color texture and packed surface map. Its default
+slabs are mapped at 3x the original outer-stone size, with a separate UV offset
+to keep a reflected tile corner away from the middle of the fighting lane.
+All stone coordinates remain in world space during camera motion.
+
+Settings > Stone & lighting > Inner slab size: 1.5x–5x, default 3.00x.
+Outer stone scale still adjusts the original outer/ring/wall material only.
+Rotation, moisture, key light and relief retain their existing shared controls.
+Foreground shade applies to both floor materials and the ridge; fighters and
+walls remain outside that shading pass. It fades from full strength at 1.45x
+zoom to zero at 3.2x, with a default maximum darkening of 42%.
+
+MOUNTAIN JOINS
+One native-resolution asymmetric scenic insert is shared by four curved bands,
+centered over the reflected panorama boundaries. Each is 40% of one scenic
+panel's width. Its side edges feather to zero; the shore and upper sky also
+fade into the approved panorama. Alternating orientation and slight sampling
+offsets vary the placement. A 2 cm radius inset keeps the inserts clear of the
+underlying panel surface. They follow the same aspect-dependent geometry fit.
+The original scenic panels and sky asset remain unchanged. Water glints are
+masked to the lower blue river pixels. The underlying wings still repeat;
+these are local seam transitions, not a new continuous 360-degree painting.
+
+QUALITY SELECTION
+Settings > Texture quality: 2K / 4K Ultra / 8K Extreme. Fresh launches request
+8K, subject to GPU texture-size support. The selection is remembered; changing
+it reloads and resets the lab. The hardware texture limit is not a guarantee
+of enough GPU memory or sustained frame rate. If 8K is heavy on your device,
+choose 4K or 2K. Recovery links:
+  index.html?quality=balanced&skipintro=1
+  index.html?quality=ultra&skipintro=1
+  index.html?quality=extreme&skipintro=1
+
+RESOLUTION / PROVENANCE
+- Original outer-stone generated source: 1254 x 1254, retained unchanged.
+- New v0.30 inner-slab generated source: 1254 x 1254.
+- Approved v0.29 sky panorama source: 1402 x 1122, retained unchanged.
+- New mountain-join generated source: 887 x 1774, used at native resolution.
+All artwork was made with built-in image generation. Requested 8K output was
+not returned at native 8K. The 2K/4K/8K floor/panorama exports use Lanczos3
+resampling. They are not AI super-resolution or recovered native 8K detail.
+Each stone material has a 2048 x 2048 linear packed map: red = estimated
+height, green = roughness, blue = cavity. These are derived shading estimates,
+not measured physical scans. Procedural grain supplies additional fine detail.
+
+Mode        Inner / outer floor     Panorama       Color textures*
+2K          2048 x 2048 each        2048 x 1638     about 60 MiB
+4K Ultra    4096 x 4096 each        4096 x 3276     about 239 MiB
+8K Extreme  8192 x 8192 each        8192 x 6552     about 956 MiB
+
+* Approximate uncompressed RGBA8 GPU storage including mipmaps for the three
+  large color maps. Also allow about 8 MiB for the shared scenic join and
+  43 MiB for the two surface maps, plus shadows, environment lighting, fighters,
+  framebuffers, decoded CPU images and browser overhead. WebP reduces file
+  size, not the uncompressed GPU allocation. Each scenic map is shared by
+  its copies, rather than uploaded separately for every panel.
+
+FILES
+stage/textures/inner-stone-v30-source.png is the new native slab artwork.
+inner-stone-{2048,4096,8192}.webp and inner-level-*.js supply its exports.
+inner-surface-2048.png and inner-surface-data.js supply its surface channels.
+scenic-join-v30-source.png, scenic-join-v30.webp and scenic-join-data.js supply
+its mountain transition. Existing outer-stone and river exports are retained.
+texture-manifest.json records dimensions and generation details.
+TEXTURE-PROMPTS.txt includes both new generation briefs.
+
+VALIDATION / LIMITS
+Embedded 2K loading and decoding, independent material mapping, disk boundary,
+unchanged ring geometry, retained camera coverage, script syntax and all image
+references passed. Five material shader variants compiled and linked with
+Mesa GLES. The actual panorama and join shaders were rendered to a flat
+comparison preview and inspected. This is not a full mobile rendering or
+performance test; the existing preview browser cannot create a WebGL context.
+The application still uses Three.js r128. Stone relief affects shading, not
+collision or silhouette. The backdrop remains painted curved scenery.

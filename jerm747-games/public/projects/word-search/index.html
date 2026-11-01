@@ -1,11 +1,118 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Word Search | Jerm747.games</title><style>
-:root{color-scheme:dark;--bg:#111422;--panel:#1c2133;--ink:#f5f4fa;--muted:#b5bdd0;--accent:#64dfca;--pink:#f3a0cb}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px system-ui,sans-serif}button{font:inherit;color:inherit;cursor:pointer;background:#30374e;border:1px solid #49536e;border-radius:9px;padding:9px 13px}button:hover{background:#424c66}button:focus-visible,summary:focus-visible{outline:3px solid var(--pink);outline-offset:2px}button:disabled{opacity:.5;cursor:default}.app{height:calc(100dvh - 52px);min-height:520px;max-width:1680px;margin:auto;padding:18px;display:flex;flex-direction:column;gap:12px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.eyebrow{color:var(--accent);font-size:11px;letter-spacing:3px;font-weight:800}h1{font-size:clamp(22px,3vw,32px);margin:3px 0}p{margin:4px 0;color:var(--muted)}.stats{display:flex;gap:14px;align-items:center;font-variant-numeric:tabular-nums}.stats strong{color:var(--accent)}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.primary{background:#285c58;border-color:var(--accent)}.content{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;min-height:0;flex:1}.board-panel,.words-panel{background:var(--panel);border:1px solid #343c53;border-radius:16px;min-height:0;display:flex;flex-direction:column}.board-panel{padding:12px;gap:8px}.grid-scroll{overflow:auto;flex:1;min-height:0;overscroll-behavior:contain}.grid{display:grid;gap:1px;background:#343c53;border:1px solid #343c53;width:100%;min-width:480px;user-select:none;touch-action:none}.cell{padding:0;border:0;border-radius:0;aspect-ratio:1;background:#20273b;font:700 clamp(12px,1.7vw,19px) ui-monospace,monospace;position:relative}.cell.found{background:#285952;color:#b7ffee}.cell.selected{background:var(--pink);color:#1c1930}.cell.hint{box-shadow:inset 0 0 0 3px #ffd477}.cell:focus-visible{outline:3px solid #ffd477;outline-offset:-3px;z-index:1}.words-panel h2{font-size:16px;margin:14px 14px 6px}.words-panel p{margin:0 14px 10px;font-size:12px}.word-list{list-style:none;margin:0;padding:0 12px 12px;display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;overflow:auto}.word-list li{font-size:12px;letter-spacing:.4px;padding:4px 0;color:#e1e5ef;white-space:nowrap}.word-list li.done{color:var(--accent);text-decoration:line-through}.word-list li.done:before{content:'✓ ';text-decoration:none}.status{min-height:22px;color:var(--accent);font-size:13px;margin:0}progress{width:100%;height:5px;accent-color:var(--accent)}.help{font-size:12px;color:var(--muted);max-width:1300px;margin:0 auto;padding:0 18px 12px}.help-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.help-heading h2{font-size:14px;color:var(--ink);margin:0}.help-heading button{font-size:12px;padding:4px 10px}.instructions{padding:12px 14px;margin:0 0 8px;background:var(--panel);border:1px solid #343c53;border-radius:10px;line-height:1.7;overflow-wrap:anywhere}.celebrate{color:#ffd477!important}.small{font-size:12px}.bottom{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}@media(max-width:700px){.app{padding:10px;gap:8px;min-height:640px}.content{grid-template-columns:1fr;grid-template-rows:minmax(280px,1fr) 175px;gap:8px}.words-panel h2{margin:8px 12px 3px}.words-panel p{margin-bottom:5px}.word-list{grid-template-columns:repeat(3,1fr)}.word-list li{font-size:11px}.board-panel{padding:8px}.stats{font-size:13px}button{padding:8px 10px}.cell{font-size:14px}}@media(prefers-reduced-motion:no-preference){.celebrate{animation:glow 1s ease-in-out 3}@keyframes glow{50%{opacity:.5}}}
-/* Fit the whole letter grid in view (Larger letters still zooms in) */.grid-scroll{container-type:size}.grid{width:max(480px,min(100cqw,100cqh));margin:0 auto;container-type:inline-size}.cell{font-size:clamp(14px,2.3cqi,28px)}</style><link rel="stylesheet" href="./theme.css"></head><body>
-<main class="app"><header><div><div class="eyebrow">JERM747 • WORD PLAY</div><h1 id="topic-title">Word Search</h1><p class="small" id="puzzle-subtitle">Find your groove, one word at a time.</p></div><div class="stats"><strong id="count">Loading…</strong><span id="time" aria-label="Elapsed time">00:00</span></div></header>
-<div class="toolbar"><button class="primary" id="new" disabled>New puzzle</button><button id="reset" disabled>Restart</button><button id="hint" disabled>Hint</button><button id="zoom" aria-pressed="false">Expand puzzle</button><button id="pan" aria-pressed="false">Scroll mode</button><button id="help-button">How to play</button></div>
-<div class="focus-bar" hidden><button id="focus-help">How to play</button><button id="exit-focus" aria-label="Exit expanded puzzle">×</button></div>
-<progress id="progress" value="0" max="60" aria-label="Words found"></progress>
-<section class="content"><div class="board-panel"><div class="grid-scroll" id="viewport"><div id="grid" class="grid" role="group" aria-label="Word search letter grid"></div></div><p id="status" class="status" role="status" aria-live="polite">Loading topics…</p><div class="bottom"><span class="small" id="size"></span><span class="small">↔ ↕ ↗ ↘ Forward &amp; backward</span></div></div><aside class="words-panel"><h2>Word bank</h2><p>Spaces are omitted in the grid.</p><ul class="word-list" id="words" aria-label="Words to find"></ul></aside></section></main>
-<dialog id="help" aria-labelledby="help-title"><h2 id="help-title">How to play</h2><p>Drag a straight line across a word, or tap its first and last letters. Words run in eight directions, forward or backward.</p><p>Keyboard: arrow keys move; Enter or Space selects the first and last letters. Escape cancels a selection. Hint reveals the start of a remaining word.</p><p>New puzzle lets you change topic, choose 15, 30 or 60 words, and keep, randomize or pick the word set. Restart clears found words on the same board. Progress saves on this device.</p><p>Expand puzzle gives the board more room. Use Scroll mode if you need to pan.</p><button id="close-help">Back to puzzle</button></dialog>
-<dialog id="setup" aria-labelledby="setup-title"><form id="puzzle-form"><h2 id="setup-title">Find a new groove</h2><p>Choose a topic and challenge, or keep your words and shuffle the grid.</p><div class="setup-fields"><label>Topic <select id="topic-choice"></select></label><label>Challenge <select id="difficulty"><option value="15">15 words · Quick / Easy</option><option value="30">30 words · Medium</option><option value="60">60 words · Hard</option></select></label></div><fieldset><legend>Words to find</legend><label><input type="radio" name="word-mode" value="same" checked> Same words, new grid</label><label><input type="radio" name="word-mode" value="random"> Draw a fresh word set</label><label><input type="radio" name="word-mode" value="custom"> Choose my words</label></fieldset><div id="custom-picker" hidden><p id="selection-count"></p><div class="picker-actions"><button type="button" id="clear-picked">Clear selection</button><button type="button" id="fill-picked">Fill remaining spots randomly</button></div><div id="word-picker"></div></div><p id="setup-error" role="alert"></p><p class="small">Creating a puzzle replaces the current board and resets its timer.</p><div class="dialog-actions"><button type="submit" class="primary">Create puzzle</button><button type="button" id="cancel-setup">Keep playing</button></div></form></dialog>
-<script type="module" src="./game.js"></script><script src="../shared/display-controls.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Word Search | Jerm747.games</title>
+<meta name="theme-color" content="#131529">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- SETUP: theme, word count (difficulty), timed or untimed -->
+<section id="setup" class="screen setup" aria-labelledby="setup-title">
+  <header class="setup-head">
+    <p class="eyebrow">JERM747 · WORD PLAY</p>
+    <h1 id="setup-title">Word Search</h1>
+    <p class="lede">Pick a theme, choose your challenge, and find every word.</p>
+  </header>
+
+  <div id="resume" class="resume" hidden>
+    <div><strong id="resume-title">Puzzle in progress</strong><span id="resume-detail"></span></div>
+    <button type="button" class="btn primary" id="resume-btn">Continue</button>
+  </div>
+
+  <form id="setup-form" class="setup-form">
+    <fieldset>
+      <legend><span class="step">1</span> Theme</legend>
+      <div id="themes" class="themes" role="radiogroup" aria-label="Theme"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend><span class="step">2</span> How many words</legend>
+      <div class="choices three" role="radiogroup" aria-label="How many words">
+        <label class="choice"><input type="radio" name="count" value="15" checked><b>15</b><span>Easy</span></label>
+        <label class="choice"><input type="radio" name="count" value="30"><b>30</b><span>Medium</span></label>
+        <label class="choice"><input type="radio" name="count" value="60"><b>60</b><span>Hard</span></label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><span class="step">3</span> Clock</legend>
+      <div class="choices two" role="radiogroup" aria-label="Clock">
+        <label class="choice"><input type="radio" name="clock" value="untimed" checked><b>Untimed</b><span>Take it easy</span></label>
+        <label class="choice"><input type="radio" name="clock" value="timed"><b>Timed</b><span id="timed-note">5 minutes</span></label>
+      </div>
+    </fieldset>
+
+    <details id="own-words" class="own-words">
+      <summary>Pick the words yourself <span class="muted">(optional)</span></summary>
+      <p class="muted" id="picked-count"></p>
+      <div class="picker-actions"><button type="button" class="btn small" id="clear-picked">Clear</button><button type="button" class="btn small" id="fill-picked">Fill the rest randomly</button></div>
+      <div id="picker" class="picker"></div>
+    </details>
+
+    <p id="setup-error" class="error" role="alert"></p>
+    <button type="submit" class="btn primary start" id="start-btn" disabled>Start puzzle</button>
+  </form>
+</section>
+
+<!-- PLAY: grid fills the width, word list underneath -->
+<section id="play" class="screen play" hidden aria-label="Puzzle">
+  <header class="bar">
+    <button type="button" class="btn icon" id="menu-btn" aria-label="New puzzle or change settings">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="bar-title"><strong id="play-title">Word Search</strong><span id="play-sub"></span></div>
+    <div class="clock" id="clock" aria-live="off"><span id="clock-label">Time</span><b id="clock-value">0:00</b></div>
+    <button type="button" class="btn" id="hint-btn">Hint</button>
+  </header>
+
+  <div class="layout">
+    <div class="board-wrap">
+      <div class="board" id="board">
+        <svg class="marks" id="marks" aria-hidden="true"></svg>
+        <div class="grid" id="grid" role="grid" aria-label="Letter grid"></div>
+      </div>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+    </div>
+
+    <aside class="words" aria-labelledby="words-title">
+      <div class="words-head">
+        <h2 id="words-title">Words</h2>
+        <span id="found-count">0 / 15</span>
+      </div>
+      <div class="meter"><i id="meter"></i></div>
+      <ul id="word-list" class="word-list" aria-label="Words to find"></ul>
+      <p class="muted tip">Drag across a word in any direction, or tap its first and last letters. Spaces are left out of the grid.</p>
+    </aside>
+  </div>
+</section>
+
+<!-- In-game menu -->
+<dialog id="menu" aria-labelledby="menu-title">
+  <h2 id="menu-title">Puzzle menu</h2>
+  <div class="menu-actions">
+    <button type="button" class="btn" id="menu-resume">Back to puzzle</button>
+    <button type="button" class="btn" id="menu-shuffle">Same words, new grid</button>
+    <button type="button" class="btn" id="menu-restart">Restart this grid</button>
+    <button type="button" class="btn primary" id="menu-new">New puzzle (theme, words, clock)</button>
+  </div>
+</dialog>
+
+<!-- Finished / time's up -->
+<dialog id="done" aria-labelledby="done-title">
+  <p class="eyebrow" id="done-eyebrow">PUZZLE COMPLETE</p>
+  <h2 id="done-title">You found them all!</h2>
+  <p id="done-detail"></p>
+  <div class="menu-actions">
+    <button type="button" class="btn primary" id="done-again">Play again: same settings</button>
+    <button type="button" class="btn" id="done-keep" hidden>Keep looking, untimed</button>
+    <button type="button" class="btn" id="done-new">New puzzle</button>
+  </div>
+</dialog>
+
+<script type="module" src="./game.js"></script>
+<script src="../shared/display-controls.js"></script>
+</body>
+</html>

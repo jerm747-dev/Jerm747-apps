@@ -34,6 +34,24 @@ foreach (glob($root . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
         }
     }
 
+    // Optional download link shown on the game's page, e.g. {"label": "Android APK", "url": "/download/gs-fighter-3/"}
+    $download = null;
+    $dl = $m['download'] ?? null;
+    if (is_array($dl) && is_string($dl['url'] ?? null) && preg_match('#^(/[A-Za-z0-9._~/-]*|https://[^\s"<>]{1,300})$#', $dl['url'])) {
+        $download = ['url' => $dl['url'], 'label' => clean((string)($dl['label'] ?? 'Download'), 40) ?: 'Download'];
+    }
+
+    // Optional screenshots: [{"src": "screenshots/01.webp", "thumb": "screenshots/01-thumb.webp", "caption": "..."}]
+    $shots = [];
+    foreach (array_slice((array)($m['screenshots'] ?? []), 0, 12) as $sh) {
+        $src = is_array($sh) ? (string)($sh['src'] ?? '') : (string)$sh;
+        $thumb = is_array($sh) ? (string)($sh['thumb'] ?? '') : '';
+        $ok = fn($f) => preg_match('#^[A-Za-z0-9][A-Za-z0-9._/-]{0,120}\.(webp|png|jpe?g|gif)$#i', $f) && !str_contains($f, '..') && is_file("$dir/$f");
+        if (!$ok($src)) continue;
+        $shots[] = ['src' => "projects/$slug/$src", 'thumb' => $ok($thumb) ? "projects/$slug/$thumb" : "projects/$slug/$src",
+                    'caption' => clean((string)(is_array($sh) ? ($sh['caption'] ?? '') : ''), 120)];
+    }
+
     $out[] = [
         'slug' => $slug,
         'url' => "projects/$slug/index.html",
@@ -50,6 +68,8 @@ foreach (glob($root . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
         'order' => (int)($m['order'] ?? 100),
         'gamepad' => (object)$bridge,
         'gamepadLabels' => (object)$labels,
+        'download' => $download,
+        'screenshots' => $shots,
         'updated' => gmdate('c', $updated),
     ];
 }

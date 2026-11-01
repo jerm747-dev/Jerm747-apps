@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Swap Lab · Plugin Twist</title>
+<meta name="theme-color" content="#25182f">
+<style>
+:root{color-scheme:dark;--ink:#fff5ff;--muted:#d1b5e7;--line:#c48cf655;--panel:#1d1626e6;--amber:#ffb729}
+*{box-sizing:border-box}
+html{background:#25182f}html,body{margin:0;min-height:100%}
+body{font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);
+ background:radial-gradient(ellipse at 18% 0%,#953bbda6,transparent 58%),radial-gradient(ellipse at 96% 40%,#ad40906b,transparent 48%),linear-gradient(145deg,#4b205f,#25182f 62%,#101522) fixed}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:16px 14px 40px;display:grid;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:10px}
+.eyebrow{margin:0;font-size:11px;font-weight:800;letter-spacing:.22em;color:var(--amber)}
+h1{margin:2px 0 0;font-size:clamp(26px,5vw,36px);line-height:1.1}
+header p{margin:4px 0 0;color:var(--muted);max-width:60ch}
+.layout{display:grid;gap:16px}
+@media(min-width:900px){.layout{grid-template-columns:minmax(0,1fr) 400px;align-items:start}.panel{position:sticky;top:12px;max-height:calc(100dvh - 24px);overflow:auto}}
+.stage{display:grid;gap:10px}
+.board{position:relative;width:min(100%,560px);margin:0 auto;aspect-ratio:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);gap:clamp(3px,1vw,7px);padding:clamp(6px,1.4vw,12px);border-radius:16px;touch-action:none;user-select:none;-webkit-user-select:none;
+ background-color:#171b22;background-image:radial-gradient(ellipse at 15% 0%,#c183ff23,transparent 58%),radial-gradient(ellipse at 100% 90%,#b454ae1f,transparent 50%),linear-gradient(135deg,#ffffff0b,transparent 35%);border:1px solid #bd87ff88;box-shadow:inset 0 3px 9px #000b,0 12px 30px #0006}
+.cell{position:relative;display:grid;place-items:center;padding:clamp(2px,.6vw,5px);border:0;background:transparent;border-radius:10px;isolation:isolate;cursor:pointer}
+.cell::before{content:"";position:absolute;inset:7%;border-radius:50%;background:radial-gradient(circle at 50% 65%,#252830,#0b0e12 80%);box-shadow:inset 0 2px 4px #000c;z-index:-1}
+.bubble{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;filter:drop-shadow(0 3px 2px #0009)}
+.stone-face{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;-webkit-user-drag:none}
+.board.old .cell.selected{background:#bd87ff16;box-shadow:inset 0 0 0 1.5px #c9a8ff}
+.actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.btn{min-height:42px;padding:9px 14px;border-radius:11px;border:1px solid var(--line);background:#2a1d36;cursor:pointer;font-weight:650}
+.btn:hover{border-color:#d9a8ff}
+.btn.primary{background:linear-gradient(135deg,#ffd075,#ffb329);color:#22130a;border:0}
+.btn[aria-pressed="true"]{background:#5b3a78;border-color:#d9a8ff}
+.btn:focus-visible,input:focus-visible{outline:2px solid #ffd075;outline-offset:2px}
+.note{margin:0;text-align:center;color:var(--muted);font-size:13px;min-height:1.4em}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.panel h2{margin:14px 0 8px;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber)}
+.panel h2:first-child{margin-top:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:#2a1d36;cursor:pointer;font-size:13px}
+.chip.on{background:#5b3a78;border-color:#d9a8ff}
+.row{display:grid;grid-template-columns:110px minmax(0,1fr) 54px;align-items:center;gap:10px;margin:6px 0}
+.row label{font-size:13.5px;color:var(--muted)}
+.row output{font-variant-numeric:tabular-nums;font-size:13px;text-align:right}
+input[type=range]{width:100%;accent-color:#d6b4ff}
+.colors{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.swatch{width:30px;height:30px;border-radius:50%;border:2px solid #fff3;cursor:pointer}
+.swatch.on{border-color:#fff}
+input[type=color]{width:38px;height:30px;padding:0;border:1px solid var(--line);border-radius:8px;background:none}
+.save{display:grid;gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.save a{color:#ffd075}
+textarea{width:100%;min-height:92px;font:12px/1.4 ui-monospace,monospace;color:#f4e6ff;background:#120d18;border:1px solid var(--line);border-radius:10px;padding:8px}
+.muted{color:var(--muted);font-size:13px;margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="eyebrow">PLUGIN TWIST · WORKSHOP</p>
+      <h1>Swap Lab</h1>
+      <p>Tune the glowing selection and the swap. Tap a token to select it with its neighbor, swipe to swap, or use the demo buttons. Your settings can go straight into the game on this device.</p>
+    </div>
+    <a class="btn" href="index.html" style="text-decoration:none;display:inline-flex;align-items:center">Open Plugin Twist →</a>
+  </header>
+
+  <div class="layout">
+    <section class="stage" aria-label="Preview">
+      <div id="board" class="board" aria-label="Preview board"></div>
+      <div class="actions">
+        <button class="btn primary" id="demo-swap">Swap</button>
+        <button class="btn" id="demo-twist">Twist ↷</button>
+        <button class="btn" id="demo-miss">Miss (returns)</button>
+        <button class="btn" id="auto" aria-pressed="false">Auto-play</button>
+        <button class="btn" id="compare" aria-pressed="false">Show old square</button>
+      </div>
+      <p class="note" id="note" role="status"></p>
+    </section>
+
+    <aside class="panel" aria-label="Settings">
+      <h2>Presets</h2>
+      <div class="chips" id="presets"></div>
+
+      <h2>Selection</h2>
+      <div class="chips" id="styles">
+        <button class="chip" data-style="capsule">Capsule</button>
+        <button class="chip" data-style="rings">Separate ovals</button>
+        <button class="chip" data-style="halo">Soft halo</button>
+      </div>
+      <div class="row"><label>Colors</label>
+        <div class="colors" id="colors"></div><span></span></div>
+      <div id="sliders-sel"></div>
+
+      <h2>Swap motion</h2>
+      <div id="sliders-move"></div>
+
+      <div class="save">
+        <button class="btn primary" id="use">Use in the game on this device</button>
+        <button class="btn" id="reset">Back to the built-in default</button>
+        <p class="muted" id="saved-note"></p>
+        <p class="muted">To make your tuning the default for everyone, copy these settings and send them to me:</p>
+        <textarea id="json" readonly aria-label="Current settings"></textarea>
+        <button class="btn" id="copy">Copy settings</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script src="tokens.js"></script>
+<script src="swap-fx.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id), N = 6, F = PTSwapFX;
+  const board = $('board'), cells = [];
+  let vals = Array.from({ length: N * N }, () => Math.floor(Math.random() * MarbleTypes.length));
+  let sel = [14, 15], busy = false, auto = 0, compare = false;
+  const orb = (t) => `<span class="bubble" aria-hidden="true"><img class="stone-face" src="${t.face}" alt="" draggable="false"></span>`;
+  for (let i = 0; i < N * N; i++) { const b = document.createElement('button'); b.className = 'cell'; b.dataset.i = i; board.append(b); cells.push(b); }
+  const fx = new F.FX(board, F.load());
+  const paint = () => {
+    cells.forEach((c, i) => { c.innerHTML = orb(MarbleTypes[vals[i]]); c.classList.toggle('selected', sel.includes(i)); c.setAttribute('aria-label', MarbleTypes[vals[i]].name); });
+    fx.select(compare ? [] : sel);
+  };
+  const note = (t) => { $('note').textContent = t; };
+  const right = (i) => (i % N < N - 1 ? i + 1 : i - 1);
+  const down = (i) => (Math.floor(i / N) < N - 1 ? i + N : i - N);
+
+  async function run(indices, dir, kind) {
+    if (busy) return; busy = true;
+    sel = indices; paint();
+    await new Promise((r) => setTimeout(r, 160));
+    const before = vals.slice(), next = vals.slice();
+    indices.forEach((from, k) => { next[indices[(k + (dir > 0 ? 1 : indices.length - 1)) % indices.length]] = before[from]; });
+    await fx.animate(indices, dir, { onLand: () => navigator.vibrate?.(8) });
+    vals = next; paint();
+    if (kind === 'miss') {
+      await new Promise((r) => setTimeout(r, 110));
+      await fx.animate(indices, -dir, { returning: true });
+      vals = before; paint();
+    }
+    busy = false;
+  }
+  const randomPair = () => { const a = Math.floor(Math.random() * N * N); return [a, Math.random() < .5 ? right(a) : down(a)]; };
+  const randomL = () => { const r = Math.floor(Math.random() * (N - 1)), c = Math.floor(Math.random() * (N - 1)), q = [r * N + c, r * N + c + 1, (r + 1) * N + c + 1, (r + 1) * N + c]; q.splice(Math.floor(Math.random() * 4), 1); return q; };
+  $('demo-swap').onclick = () => run(sel.length === 2 ? sel : randomPair(), 1, 'swap');
+  $('demo-twist').onclick = () => run(sel.length === 3 ? sel : randomL(), 1, 'twist');
+  $('demo-miss').onclick = () => run(sel.length === 2 ? sel : randomPair(), 1, 'miss');
+  $('auto').onclick = () => {
+    const on = $('auto').getAttribute('aria-pressed') !== 'true';
+    $('auto').setAttribute('aria-pressed', on); clearInterval(auto);
+    if (on) { let k = 0; const step = () => { if (busy) return; const m = k++ % 4; if (m === 0) sel = randomPair(); if (m === 1) run(sel, 1, 'swap'); if (m === 2) sel = randomL(), paint(); if (m === 3) run(sel, 1, Math.random() < .3 ? 'miss' : 'twist'); if (m === 0) paint(); }; step(); auto = setInterval(step, 1100); }
+  };
+  $('compare').onclick = () => { compare = !compare; $('compare').setAttribute('aria-pressed', compare); board.classList.toggle('old', compare); paint(); note(compare ? 'Showing the old square highlight for comparison.' : ''); };
+
+  // Tap: select with right neighbor (tap again on a selected token to flip to its lower neighbor). Swipe: swap.
+  let ptr = null;
+  board.addEventListener('pointerdown', (e) => { const c = e.target.closest('.cell'); if (!c || busy) return; ptr = { i: +c.dataset.i, x: e.clientX, y: e.clientY, id: e.pointerId }; board.setPointerCapture(e.pointerId); e.preventDefault(); });
+  board.addEventListener('pointerup', (e) => {
+    if (!ptr || e.pointerId !== ptr.id) return; const p = ptr; ptr = null;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 14) {
+      sel = sel[0] === p.i && sel.length === 2 && sel[1] === right(p.i) ? [p.i, down(p.i)] : [p.i, right(p.i)];
+      paint(); note('Selected. Swipe a token, or press Swap.'); return;
+    }
+    const r = Math.floor(p.i / N), c = p.i % N, horiz = Math.abs(dx) >= Math.abs(dy);
+    const nr = r + (horiz ? 0 : Math.sign(dy)), nc = c + (horiz ? Math.sign(dx) : 0);
+    if (nr < 0 || nc < 0 || nr >= N || nc >= N) return;
+    run([p.i, nr * N + nc], 1, 'swap');
+  });
+
+  // ---- settings panel ----
+  const SEL = [['ring', 'Ring', 1, 5, .5, 'px'], ['pad', 'Outline size', 1, 1.4, .02, '×'], ['glow', 'Glow', 0, 24, 1, 'px'], ['pulse', 'Pulse speed', .6, 3, .1, 's'], ['pulseDepth', 'Pulse depth', 0, 1, .05, '']];
+  const MOVE = [['duration', 'Duration', 220, 900, 20, 'ms'], ['arc', 'Arc', 0, .7, .02, '×'], ['lift', 'Lift', 0, .3, .01, '×'], ['bounce', 'Bounce', 0, 1, .05, ''], ['squash', 'Squash', 0, .3, .01, ''], ['missBounce', 'Miss bounce', 0, 1, .05, '']];
+  const inputs = {};
+  function sliders(list, host) {
+    for (const [k, label, min, max, step, unit] of list) {
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = `<label for="s-${k}">${label}</label><input id="s-${k}" type="range" min="${min}" max="${max}" step="${step}"><output></output>`;
+      const input = row.querySelector('input'), out = row.querySelector('output');
+      input.oninput = () => { set({ [k]: +input.value }); };
+      inputs[k] = { input, out, unit }; $(host).append(row);
+    }
+  }
+  sliders(SEL, 'sliders-sel'); sliders(MOVE, 'sliders-move');
+  const SW = [['#d6b4ff', '#ffc061'], ['#ffd27a', '#ff9e5e'], ['#7fe7e4', '#a7a3ff'], ['#ff9ec8', '#ffd075'], ['#d7fb88', '#7fe7e4'], ['#ffffff', '#d6b4ff']];
+  SW.forEach(([a, b]) => { const s = document.createElement('button'); s.className = 'swatch'; s.style.background = `linear-gradient(135deg,${a} 50%,${b} 50%)`; s.setAttribute('aria-label', `Colors ${a} and ${b}`); s.onclick = () => set({ color: a, color2: b }); s.dataset.c = a + b; $('colors').append(s); });
+  const ca = document.createElement('input'); ca.type = 'color'; ca.setAttribute('aria-label', 'Ring color'); ca.oninput = () => set({ color: ca.value });
+  const cb = document.createElement('input'); cb.type = 'color'; cb.setAttribute('aria-label', 'Second color'); cb.oninput = () => set({ color2: cb.value });
+  $('colors').append(ca, cb);
+  for (const name of Object.keys(F.PRESETS)) { const b = document.createElement('button'); b.className = 'chip'; b.textContent = name; b.onclick = () => set({ ...F.DEFAULTS, ...F.PRESETS[name] }); $('presets').append(b); }
+  document.querySelectorAll('[data-style]').forEach((b) => { b.onclick = () => set({ style: b.dataset.style }); });
+
+  function set(patch) { fx.set(patch); sync(); }
+  function sync() {
+    const c = fx.cfg;
+    for (const k in inputs) { inputs[k].input.value = c[k]; inputs[k].out.textContent = (+c[k]).toFixed(inputs[k].unit === 'ms' || inputs[k].unit === 'px' ? 0 : 2).replace(/\.?0+$/, (m) => (m.includes('.') ? '' : m)) + inputs[k].unit; }
+    document.querySelectorAll('[data-style]').forEach((b) => b.classList.toggle('on', b.dataset.style === c.style));
+    document.querySelectorAll('.swatch').forEach((s) => s.classList.toggle('on', s.dataset.c === c.color + c.color2));
+    ca.value = c.color; cb.value = c.color2;
+    const diff = Object.fromEntries(Object.entries(c).filter(([k, v]) => F.DEFAULTS[k] !== v));
+    $('json').value = JSON.stringify(Object.keys(diff).length ? diff : { note: 'built-in default' }, null, 1);
+    document.querySelectorAll('#presets .chip').forEach((b) => { const p = { ...F.DEFAULTS, ...F.PRESETS[b.textContent] }; b.classList.toggle('on', Object.keys(p).every((k) => p[k] === c[k])); });
+  }
+  $('use').onclick = () => { F.save(fx.cfg); $('saved-note').innerHTML = 'Saved. <a href="index.html">Open Plugin Twist</a> on this device to play with it.'; };
+  $('reset').onclick = () => { F.clear(); set({ ...F.DEFAULTS }); $('saved-note').textContent = 'The game is back on the built-in default on this device.'; };
+  $('copy').onclick = async () => { try { await navigator.clipboard.writeText($('json').value); $('copy').textContent = 'Copied'; } catch { $('json').select(); } setTimeout(() => { $('copy').textContent = 'Copy settings'; }, 1500); };
+  sync(); paint();
+})();
+</script>
+</body>
+</html>

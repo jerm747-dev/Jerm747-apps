@@ -1,0 +1,701 @@
+{
+  "version": 1,
+  "status": "prepared_only_not_loaded_by_game",
+  "seed": 363147,
+  "purpose": "Fixed, varied starting move assignments, to be retargeted and verified after rigged exports arrive.",
+  "prerequisites": [
+    "Skinned humanoid FBX with skeleton and textures for every fighter.",
+    "Verify bone mapping, bind pose, axes, scale and feet before copying clips.",
+    "Retarget clips by the target bind pose; matching bone names alone is not sufficient for an unverified rig.",
+    "Check each chosen move at its contact frames, then tune hit level and direction to actual motion."
+  ],
+  "limitations": [
+    "Only Akeem and Nika are playable in v0.36. This file is not a live roster.",
+    "Assignments are randomized once with a fixed seed, never on every button press.",
+    "Low-kick slots use the existing Nika knee strike as a temporary move; no dedicated shin kick was supplied.",
+    "Low-punch slots follow the existing jab/hook choices and can strike the head. Hit reactions must follow visible contact, not the button label.",
+    "All new fighters share the existing trimmed sweep. New kick clips can replace these assignments later.",
+    "Blast colors and artwork for new fighters await individual approval; existing cyan/gold presets apply only to Akeem/Nika."
+  ],
+  "bank": {
+    "Akeem:idle": {
+      "source": "Akeem",
+      "clip": "Idle_10",
+      "speed": 1.5
+    },
+    "Nika:idle": {
+      "source": "Nika",
+      "clip": "Idle_5",
+      "speed": 1.5
+    },
+    "Akeem:walk": {
+      "source": "Akeem",
+      "clip": "Walking",
+      "speed": 1.5
+    },
+    "Nika:walk": {
+      "source": "Nika",
+      "clip": "Walking",
+      "speed": 1.5
+    },
+    "Akeem:run": {
+      "source": "Akeem",
+      "clip": "Running",
+      "speed": 1.5
+    },
+    "Nika:run": {
+      "source": "Nika",
+      "clip": "Running",
+      "speed": 1.5
+    },
+    "Akeem:crouch": {
+      "source": "Akeem",
+      "clip": "CrouchLookAroundBow",
+      "speed": 2
+    },
+    "Nika:crouch": {
+      "source": "Nika",
+      "clip": "CrouchLookAroundBow",
+      "speed": 2
+    },
+    "Akeem:jump": {
+      "source": "Akeem",
+      "clip": "Backflip",
+      "speed": 2
+    },
+    "Nika:jump": {
+      "source": "Nika",
+      "clip": "Backflip_Jump",
+      "speed": 1.5
+    },
+    "Akeem:up": {
+      "source": "Akeem",
+      "clip": "Regular_Jump",
+      "speed": 2
+    },
+    "Nika:up": {
+      "source": "Nika",
+      "clip": "Regular_Jump",
+      "speed": 1.5
+    },
+    "Akeem:hk": {
+      "source": "Akeem",
+      "clip": "Roundhouse_Kick",
+      "speed": 2
+    },
+    "Nika:hk": {
+      "source": "Nika",
+      "clip": "High_Kick",
+      "speed": 2
+    },
+    "Akeem:mk": {
+      "source": "Akeem",
+      "clip": "Double_kick_forward",
+      "speed": 2
+    },
+    "Nika:mk": {
+      "source": "Nika",
+      "clip": "Double_kick_forward",
+      "speed": 2
+    },
+    "Akeem:hp": {
+      "source": "Akeem",
+      "clip": "Right_Uppercut_from_Guard",
+      "speed": 2
+    },
+    "Nika:hp": {
+      "source": "Nika",
+      "clip": "Boxing_Guard_Prep_Straight_Punch",
+      "speed": 2
+    },
+    "Akeem:mp": {
+      "source": "Akeem",
+      "clip": "Left_Jab_from_Guard",
+      "speed": 2
+    },
+    "Nika:mp": {
+      "source": "Nika",
+      "clip": "Left_Jab_from_Guard",
+      "speed": 2
+    },
+    "Akeem:lp": {
+      "source": "Akeem",
+      "clip": "Left_Hook_from_Guard",
+      "speed": 2
+    },
+    "Nika:lp": {
+      "source": "Nika",
+      "clip": "Right_Jab_from_Guard",
+      "speed": 2
+    },
+    "Akeem:block": {
+      "source": "Akeem",
+      "clip": "Block2",
+      "speed": 2
+    },
+    "Nika:block": {
+      "source": "Nika",
+      "clip": "Block5",
+      "speed": 2
+    },
+    "Akeem:hit": {
+      "source": "Akeem",
+      "clip": "Face_Punch_Reaction_1",
+      "speed": 2
+    },
+    "Nika:hit": {
+      "source": "Nika",
+      "clip": "Face_Punch_Reaction",
+      "speed": 2
+    },
+    "Akeem:fall": {
+      "source": "Akeem",
+      "clip": "Knock_Down",
+      "speed": 2
+    },
+    "Nika:fall": {
+      "source": "Nika",
+      "clip": "Knock_Down_1",
+      "speed": 2
+    },
+    "Akeem:recover": {
+      "source": "Akeem",
+      "clip": "Stand_Up1",
+      "speed": 2
+    },
+    "Nika:recover": {
+      "source": "Nika",
+      "clip": "Stand_Up1",
+      "speed": 2
+    },
+    "Akeem:jumpkick": {
+      "source": "Akeem",
+      "clip": "Rising_Flying_Kick",
+      "speed": 2
+    },
+    "Nika:jumpkick": {
+      "source": "Nika",
+      "clip": "Rising_Flying_Kick",
+      "speed": 2
+    },
+    "Akeem:airpunch": {
+      "source": "Akeem",
+      "clip": "Jumping_Punch",
+      "speed": 2
+    },
+    "Nika:airpunch": {
+      "source": "Nika",
+      "clip": "Jumping_Punch",
+      "speed": 2
+    },
+    "Akeem:sweep": {
+      "source": "Akeem",
+      "clip": "Kung_Fu_Punch",
+      "speed": 2
+    },
+    "Nika:sweep": {
+      "source": "Nika",
+      "clip": "Kung_Fu_Punch",
+      "speed": 2
+    },
+    "Akeem:stepback": {
+      "source": "Akeem",
+      "clip": "Step_Back",
+      "speed": 2
+    },
+    "Nika:stepback": {
+      "source": "Nika",
+      "clip": "Step_Back",
+      "speed": 2
+    },
+    "Akeem:back": {
+      "source": "Akeem",
+      "clip": "Walk_Backward",
+      "speed": 1.5
+    },
+    "Nika:back": {
+      "source": "Nika",
+      "clip": "Walk_Backward",
+      "speed": 1.5
+    },
+    "Akeem:backrun": {
+      "source": "Akeem",
+      "clip": "Walk_Backward",
+      "speed": 1.5
+    },
+    "Nika:backrun": {
+      "source": "Nika",
+      "clip": "Walk_Backward",
+      "speed": 1.5
+    },
+    "Nika:lk": {
+      "source": "Nika",
+      "clip": "Boxing_Guard_Step_Knee_Strike",
+      "speed": 2
+    }
+  },
+  "fighters": [
+    {
+      "id": "Shadow",
+      "name": "Shadow",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Meshy_AI_Purple_Sash_Ninja_20261031_image-to-3d-texture_fbx.zip",
+      "actions": {
+        "idle": "Nika:idle",
+        "walk": "Akeem:walk",
+        "run": "Nika:run",
+        "crouch": "Akeem:crouch",
+        "jump": "Nika:jump",
+        "up": "Nika:up",
+        "hk": "Akeem:hk",
+        "mk": "Nika:mk",
+        "hp": "Nika:hp",
+        "mp": "Nika:mp",
+        "lp": "Nika:lp",
+        "block": "Akeem:block",
+        "hit": "Nika:hit",
+        "fall": "Nika:fall",
+        "recover": "Akeem:recover",
+        "jumpkick": "Nika:jumpkick",
+        "airpunch": "Akeem:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Akeem:stepback",
+        "back": "Akeem:back",
+        "backrun": "Nika:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    },
+    {
+      "id": "Cyborg",
+      "name": "Cyborg",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Meshy_AI_Faceted_Armored_Warri_1031224251_image-to-3d-texture_fbx.zip",
+      "actions": {
+        "idle": "Akeem:idle",
+        "walk": "Akeem:walk",
+        "run": "Nika:run",
+        "crouch": "Nika:crouch",
+        "jump": "Nika:jump",
+        "up": "Nika:up",
+        "hk": "Akeem:hk",
+        "mk": "Akeem:mk",
+        "hp": "Nika:hp",
+        "mp": "Akeem:mp",
+        "lp": "Akeem:lp",
+        "block": "Nika:block",
+        "hit": "Akeem:hit",
+        "fall": "Akeem:fall",
+        "recover": "Nika:recover",
+        "jumpkick": "Nika:jumpkick",
+        "airpunch": "Akeem:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Nika:stepback",
+        "back": "Nika:back",
+        "backrun": "Akeem:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": [
+        "Cyborg is a provisional display name; confirm final name before roster registration."
+      ]
+    },
+    {
+      "id": "Mike",
+      "name": "Mike",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Meshy_AI_Orange_Tank_Top_Brawler_20261031_image-to-3d-texture_fbx.zip",
+      "actions": {
+        "idle": "Akeem:idle",
+        "walk": "Akeem:walk",
+        "run": "Nika:run",
+        "crouch": "Akeem:crouch",
+        "jump": "Nika:jump",
+        "up": "Akeem:up",
+        "hk": "Nika:hk",
+        "mk": "Akeem:mk",
+        "hp": "Nika:hp",
+        "mp": "Nika:mp",
+        "lp": "Akeem:lp",
+        "block": "Nika:block",
+        "hit": "Akeem:hit",
+        "fall": "Nika:fall",
+        "recover": "Nika:recover",
+        "jumpkick": "Akeem:jumpkick",
+        "airpunch": "Nika:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Akeem:stepback",
+        "back": "Akeem:back",
+        "backrun": "Nika:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    },
+    {
+      "id": "Sheila",
+      "name": "Sheila",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Female_Boxer.zip",
+      "actions": {
+        "idle": "Akeem:idle",
+        "walk": "Nika:walk",
+        "run": "Akeem:run",
+        "crouch": "Nika:crouch",
+        "jump": "Nika:jump",
+        "up": "Nika:up",
+        "hk": "Akeem:hk",
+        "mk": "Nika:mk",
+        "hp": "Nika:hp",
+        "mp": "Akeem:mp",
+        "lp": "Akeem:lp",
+        "block": "Nika:block",
+        "hit": "Akeem:hit",
+        "fall": "Nika:fall",
+        "recover": "Akeem:recover",
+        "jumpkick": "Akeem:jumpkick",
+        "airpunch": "Nika:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Nika:stepback",
+        "back": "Nika:back",
+        "backrun": "Akeem:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    },
+    {
+      "id": "Cyon",
+      "name": "Cyon",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Black_Jacket_Dreadloc.zip",
+      "actions": {
+        "idle": "Nika:idle",
+        "walk": "Nika:walk",
+        "run": "Nika:run",
+        "crouch": "Akeem:crouch",
+        "jump": "Akeem:jump",
+        "up": "Akeem:up",
+        "hk": "Akeem:hk",
+        "mk": "Akeem:mk",
+        "hp": "Nika:hp",
+        "mp": "Akeem:mp",
+        "lp": "Nika:lp",
+        "block": "Nika:block",
+        "hit": "Nika:hit",
+        "fall": "Akeem:fall",
+        "recover": "Nika:recover",
+        "jumpkick": "Akeem:jumpkick",
+        "airpunch": "Akeem:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Akeem:stepback",
+        "back": "Nika:back",
+        "backrun": "Nika:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    },
+    {
+      "id": "Major",
+      "name": "Major",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Green_Suit_Fighter.zip",
+      "actions": {
+        "idle": "Nika:idle",
+        "walk": "Akeem:walk",
+        "run": "Akeem:run",
+        "crouch": "Nika:crouch",
+        "jump": "Akeem:jump",
+        "up": "Akeem:up",
+        "hk": "Nika:hk",
+        "mk": "Nika:mk",
+        "hp": "Akeem:hp",
+        "mp": "Akeem:mp",
+        "lp": "Akeem:lp",
+        "block": "Akeem:block",
+        "hit": "Akeem:hit",
+        "fall": "Nika:fall",
+        "recover": "Akeem:recover",
+        "jumpkick": "Nika:jumpkick",
+        "airpunch": "Akeem:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Nika:stepback",
+        "back": "Nika:back",
+        "backrun": "Akeem:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    },
+    {
+      "id": "Tank",
+      "name": "Tank",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Red_Jacket_Brawler.zip",
+      "actions": {
+        "idle": "Akeem:idle",
+        "walk": "Nika:walk",
+        "run": "Nika:run",
+        "crouch": "Akeem:crouch",
+        "jump": "Akeem:jump",
+        "up": "Akeem:up",
+        "hk": "Nika:hk",
+        "mk": "Nika:mk",
+        "hp": "Akeem:hp",
+        "mp": "Akeem:mp",
+        "lp": "Nika:lp",
+        "block": "Nika:block",
+        "hit": "Nika:hit",
+        "fall": "Nika:fall",
+        "recover": "Nika:recover",
+        "jumpkick": "Nika:jumpkick",
+        "airpunch": "Nika:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Akeem:stepback",
+        "back": "Nika:back",
+        "backrun": "Nika:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    },
+    {
+      "id": "Static",
+      "name": "Static",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Blue_Cargo_Female_Fig.zip",
+      "actions": {
+        "idle": "Akeem:idle",
+        "walk": "Nika:walk",
+        "run": "Akeem:run",
+        "crouch": "Akeem:crouch",
+        "jump": "Nika:jump",
+        "up": "Nika:up",
+        "hk": "Akeem:hk",
+        "mk": "Nika:mk",
+        "hp": "Nika:hp",
+        "mp": "Akeem:mp",
+        "lp": "Akeem:lp",
+        "block": "Akeem:block",
+        "hit": "Akeem:hit",
+        "fall": "Akeem:fall",
+        "recover": "Akeem:recover",
+        "jumpkick": "Nika:jumpkick",
+        "airpunch": "Akeem:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Akeem:stepback",
+        "back": "Nika:back",
+        "backrun": "Akeem:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    },
+    {
+      "id": "Rokr",
+      "name": "Rokr",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Blue_Tracksuit_Fighte.zip",
+      "actions": {
+        "idle": "Nika:idle",
+        "walk": "Nika:walk",
+        "run": "Akeem:run",
+        "crouch": "Akeem:crouch",
+        "jump": "Nika:jump",
+        "up": "Akeem:up",
+        "hk": "Akeem:hk",
+        "mk": "Akeem:mk",
+        "hp": "Akeem:hp",
+        "mp": "Nika:mp",
+        "lp": "Nika:lp",
+        "block": "Nika:block",
+        "hit": "Nika:hit",
+        "fall": "Akeem:fall",
+        "recover": "Nika:recover",
+        "jumpkick": "Akeem:jumpkick",
+        "airpunch": "Nika:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Akeem:stepback",
+        "back": "Akeem:back",
+        "backrun": "Nika:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    },
+    {
+      "id": "Billie",
+      "name": "Billie",
+      "status": "awaiting_rigged_fbx",
+      "sourceUpload": "Yellow_Tracksuit_Figh.zip",
+      "actions": {
+        "idle": "Nika:idle",
+        "walk": "Nika:walk",
+        "run": "Nika:run",
+        "crouch": "Akeem:crouch",
+        "jump": "Akeem:jump",
+        "up": "Akeem:up",
+        "hk": "Akeem:hk",
+        "mk": "Akeem:mk",
+        "hp": "Nika:hp",
+        "mp": "Nika:mp",
+        "lp": "Nika:lp",
+        "block": "Akeem:block",
+        "hit": "Nika:hit",
+        "fall": "Akeem:fall",
+        "recover": "Akeem:recover",
+        "jumpkick": "Akeem:jumpkick",
+        "airpunch": "Akeem:airpunch",
+        "sweep": "Akeem:sweep",
+        "stepback": "Nika:stepback",
+        "back": "Nika:back",
+        "backrun": "Nika:backrun",
+        "lk": "Nika:lk"
+      },
+      "inheritMoveRules": true,
+      "overrides": {
+        "sweep": {
+          "kind": "strike",
+          "root": "anchored",
+          "window": [
+            3.25,
+            3.5
+          ],
+          "end": 4,
+          "active": 3.8
+        }
+      },
+      "timingBase": "Akeem v0.36",
+      "reactionProfile": "directional-adaptive-v0.34",
+      "notes": []
+    }
+  ]
+}

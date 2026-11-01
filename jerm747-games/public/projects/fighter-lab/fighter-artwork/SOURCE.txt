@@ -1,0 +1,27 @@
+GS Fighter III — Fighter Artwork — v0.36
+Created for Jeremy / Jerm747, October 31, 2026.
+
+New image-generated artwork applied to Fighter Select:
+- akeem-body-brush.png: transparent full-body guard pose, 1024x1536.
+- nika-body-brush.png: transparent full-body guard pose, 1024x1536.
+- akeem-head-brush.png: separate transparent headshot, 1254x1254.
+- nika-head-brush.png: separate transparent headshot, 1254x1254.
+- spiral-cyan.png: transparent broad brush spiral behind Akeem.
+- spiral-gold.png: transparent broad brush spiral behind Nika.
+
+The original fighting poses and costumes, snapshots rendered from the current
+3D game rigs, and the GS Fighter III title logo supplied the references.
+The logo guides brushwork only; the portraits contain no title lettering.
+These are new dimensional paintings, not literal captures of the 3D models.
+The spiral assets are separate layers so future fighters can use their own
+approved blast colors. PNG pixels and transparency are kept as generated;
+positioning, mirroring, scale and soft edge blending happen in the select UI.
+
+Original uploaded sheets retained unchanged in the game build:
+akeem-original.png — source 42884.png, 1536x1024.
+nika-original.png — source 42885.png, 1536x1024.
+
+The standalone Fighter Artwork ZIP contains the six finished new PNGs and
+these source/prompt notes. It excludes discarded drafts and original meshes.
+Preserve PNG alpha when importing or reusing the artwork.
+BRUSH-ART-PROMPTS.txt records the prompts for extending this style.

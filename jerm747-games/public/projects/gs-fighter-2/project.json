@@ -1,0 +1,20 @@
+{
+  "title": "GS Fighter II",
+  "tagline": "Fourteen featured fighters. The handheld edition, in the browser.",
+  "description": "GS Fighter II, the Android 1.0.17 build, running in the browser: fourteen featured fighters with HD portraits and cinematic intros, V-wave orbs, momentum and short stops, the critical-health camera and survival recovery, Parallax Run with destructible boxes, the in-game music deck, plus the Sprite, Sound, Jump and V-wave workshops. Use GS MENU for runs, workshops and controller setup.",
+  "order": 6,
+  "accent": "#3D63D8",
+  "kind": "game",
+  "status": "playable",
+  "version": "1.0.17",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "touch"
+  ],
+  "credit": "Jerm747 original. All rights reserved.",
+  "download": {
+    "label": "Android APK",
+    "url": "/download/gs-fighter-2/"
+  }
+}

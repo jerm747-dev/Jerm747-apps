@@ -1,0 +1,40 @@
+{
+  "source": "Meshy_AI_Golden_Valkyrie_biped (6).zip",
+  "sourceSha256": "b83501e476032c80ac4c8f1689c426d08867a0d2f27218ed5a712e3aaf2e6a8c",
+  "sourceClips": [
+    {
+      "name": "BeHit_FlyUp",
+      "duration": 1.5
+    },
+    {
+      "name": "Face_Punch_Reaction",
+      "duration": 2.8333334922770583
+    },
+    {
+      "name": "Hit_Reaction",
+      "duration": 1.6333333253872298
+    },
+    {
+      "name": "Hit_Reaction_1",
+      "duration": 1.1999999284850669
+    },
+    {
+      "name": "Hit_Reaction_to_Waist",
+      "duration": 1.6333333253872298
+    },
+    {
+      "name": "Slap_Reaction",
+      "duration": 4.833333492277059
+    }
+  ],
+  "retargeting": "Named Mixamo bone rotations; recipient bone lengths retained; hips translation scaled by bind hip height",
+  "preservedExisting": [
+    "Running",
+    "Walking",
+    "Nika Face_Punch_Reaction",
+    "Face_Punch_Reaction_1 on both fighters"
+  ],
+  "normalSpeed": 2.5,
+  "rapidSpeedBonus": 0.7,
+  "rapidWindow": 0.46
+}

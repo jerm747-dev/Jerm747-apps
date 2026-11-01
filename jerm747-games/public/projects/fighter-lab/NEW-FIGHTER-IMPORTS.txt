@@ -1,0 +1,50 @@
+GS Fighter III — New fighter intake — October 31, 2026
+
+TEN UNIQUE NEW MODELS RECEIVED
+Shadow — Meshy_AI_Purple_Sash_Ninja_20261031_image-to-3d-texture_fbx.zip — FBX
+Cyborg — Meshy_AI_Faceted_Armored_Warri_1031224251_image-to-3d-texture_fbx.zip — FBX
+Mike — Meshy_AI_Orange_Tank_Top_Brawler_20261031_image-to-3d-texture_fbx.zip — FBX
+Sheila — Female_Boxer.zip — FBX
+Cyon — Black_Jacket_Dreadloc.zip — FBX
+Major — Green_Suit_Fighter.zip — OBJ + MTL + color texture
+Tank — Red_Jacket_Brawler.zip — FBX
+Static — Blue_Cargo_Female_Fig.zip — FBX
+Rokr — Blue_Tracksuit_Fighte.zip — FBX
+Billie — Yellow_Tracksuit_Figh.zip — FBX
+
+Static is present once. The black-jacket fighter is Cyon, not a second Static.
+No exact model or color-texture duplicates were found by SHA-256 comparison.
+Rayburn and Tye are not in this batch. With existing Akeem and Nika, twelve
+distinct fighter designs are represented; the intended fourteen needs those two.
+Cyborg is a provisional display name pending the final character name.
+
+RIGGING NEEDED
+All nine FBX files are textured static meshes (FBX 7400). They contain no limb
+skeleton, skin/cluster deformers or animation stack. Major's OBJ cannot carry
+skin weights or a skeleton. None of these ten can use the combat motions yet.
+Rigging in Meshy using the same humanoid workflow as Akeem/Nika would help.
+Please export each as a skinned FBX with skeleton, skin weights and textures.
+A neutral T-pose or one idle animation is enough for the first retargeting pass;
+there is no need to export the whole animation library for each fighter.
+Keep originals. These exports are dense, roughly 0.46 to 2.95 million triangles;
+an optimized game mesh is useful before mobile integration. We still need to
+validate skeleton axes, bind pose, proportions and deformation on arrival.
+
+MOVE STARTING POINT PREPARED
+NEW-FIGHTER-MOVE-SETS.json assigns a fixed varied set to each of the ten using
+the existing Akeem/Nika motions. The random selection is performed once with a
+recorded seed, so a fighter's button response stays consistent. Every planned
+source mapping was checked against an actual loaded clip.
+Only matching categories share candidates. The existing sweep is shared.
+The low-kick starting point is Nika's knee strike; no dedicated shin kick was
+supplied. Some low-punch choices are still jabs/hooks that visibly hit higher.
+After retargeting, reaction choice must follow actual hit location/direction.
+The existing short, adaptive reaction families can then be reused on each rig.
+Source rigs, clip names, playback rates and sweep trim are recorded in JSON.
+
+STATUS
+The plan is prepared, not wired into gameplay. Akeem and Nika remain the two
+playable fighters in v0.36. New tiles will be enabled after skinned rigs and
+their motions pass visual/contact checks. No raw million-triangle model ZIPs
+are bundled into the game; the user's source uploads remain unchanged.
+NEW-FIGHTER-INVENTORY.json records the inspected source names and hashes.

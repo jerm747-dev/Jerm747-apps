@@ -1,0 +1,89 @@
+/* Adapted from Jerm747-build182 / public/groove-squad-get-down.html. */
+/* D-pad: circular base, four round buttons on the cardinal directions */
+.gd-ov-pad{position:absolute;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));width:var(--pad,158px);height:var(--pad,158px);border-radius:50%;background:radial-gradient(circle,#1a2033cc 0,#0b0f1db3 70%);border:2px solid #ffffff2e;box-shadow:inset 0 2px 10px #0008,0 4px 14px #0007}
+.gd-ov-dir{position:absolute;width:34%;height:34%;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;line-height:1;color:#fff2df;background:radial-gradient(circle at 40% 35%,#3d4766,#1d2338);border:1px solid #ffffff3a;box-shadow:0 3px 0 #05070d}
+.gd-ov-dir small{font-size:7px;letter-spacing:.08em;margin-top:2px;color:#ffe4a0}
+.gd-ov-dir.up{top:3%;left:33%}.gd-ov-dir.down{bottom:3%;left:33%}
+.gd-ov-dir.left{left:3%;top:33%}.gd-ov-dir.right{right:3%;top:33%}
+.gd-ov-hub{position:absolute;left:39%;top:39%;width:22%;height:22%;border-radius:50%;background:#0b0f1d;border:1px solid #ffffff22}
+.gd-ov-dir.on{transform:translateY(2px);box-shadow:0 1px 0 #05070d;background:radial-gradient(circle at 40% 35%,#ffcf7d,#c77818);color:#1d1200}
+/* Face buttons: 3 x 2, each row rising to the right like a Genesis pad */
+.gd-ov-face{position:absolute;right:max(14px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+.gd-ov-row{display:flex;align-items:flex-end;gap:var(--gap,9px);padding-left:4px}
+.gd-ov-row.punch{margin-right:calc(var(--btn,56px) * .32)}
+.gd-ov-tag{align-self:center;font-size:8px;font-weight:800;letter-spacing:.14em;color:#ffffffaa;writing-mode:vertical-rl;transform:rotate(180deg);text-shadow:0 1px 2px #000}
+.gd-ov-btn{width:var(--btn,56px);height:var(--btn,56px);border-radius:50%;padding:0;font-size:10px;font-weight:800;letter-spacing:.04em;color:#fff6e6;border:2px solid #ffffff40;box-shadow:0 4px 0 #05070d,0 6px 14px #0007;text-shadow:0 1px 1px #0009}
+.gd-ov-row .c0{transform:translateY(10px)}.gd-ov-row .c1{transform:translateY(4px)}.gd-ov-row .c2{transform:translateY(-3px)}
+.punch .gd-ov-btn{background:radial-gradient(circle at 38% 32%,#5f86c9e6,#22355ee6);border-color:#9cc8ff8c}
+.kick .gd-ov-btn{background:radial-gradient(circle at 38% 32%,#d98a3ee6,#7a3a10e6);border-color:#ffc27a8c}
+.gd-ov-small{display:flex;gap:10px;margin-right:calc(var(--btn,56px) * .65)}
+.gd-ov-mini{width:calc(var(--btn,56px) * .78);height:calc(var(--btn,56px) * .78);font-size:8.5px;background:radial-gradient(circle at 38% 32%,#4a5272e6,#1d2338e6)}
+.gd-ov-mini.wave{background:radial-gradient(circle at 38% 32%,#8a5fc9e6,#3b2266e6);border-color:#d2b0ff8c}
+.gd-ov-btn.pressed,.gd-ov-btn:active{box-shadow:0 1px 0 #05070d;filter:brightness(1.35)}
+.gd-ov-row .c0.pressed{transform:translateY(13px)}.gd-ov-row .c1.pressed{transform:translateY(7px)}.gd-ov-row .c2.pressed{transform:translateY(0)}
+
+#touch-controller{position:relative}.pad-layout{display:block;position:relative;height:calc(100% - 45px);max-width:1050px;margin:auto}.gd-ov-pad{--pad:clamp(120px,31vh,230px);left:2%;bottom:14px}.gd-ov-face{--btn:clamp(42px,10.5vh,76px);right:2%;bottom:14px;gap:8px}.gd-ov-dir,.gd-ov-btn{min-height:0!important}.gd-ov-small{margin-right:0;gap:12px}.gd-ov-mini.extra{background:radial-gradient(circle at 38% 32%,#a77be1,#503071);border-color:#d2b0ff8c}.gd-ov-btn small{display:block;font-size:8px;font-weight:400;letter-spacing:0}.gd-ov-btn:disabled{opacity:.35;cursor:default}.gd-ov-hub{display:grid;place-items:center;font-size:10px;color:#ffda87}.pad-layout button.pressed{filter:brightness(1.35)}.controller-toolbar{padding:0 4px}.pad-hint{display:none}@media(max-width:600px){.gd-ov-pad{--pad:120px;left:0;bottom:30px}.gd-ov-face{--btn:43px;--gap:5px;right:0;bottom:28px}.gd-ov-small{gap:8px}.pad-layout{height:calc(100% - 55px)}}
+@media(max-height:450px) and (min-width:600px){.pad-layout{height:calc(100% - 25px)}.gd-ov-pad{--pad:132px;bottom:4px}.gd-ov-face{--btn:40px;--gap:9px;gap:5px;bottom:8px}.gd-ov-small{gap:12px}.gd-ov-mini{width:31px;height:31px;font-size:7px}.gd-ov-btn{font-size:9px}.gd-ov-btn small{font-size:6px}}
+/* v0.14: 8-way gate marks on the circular pad (diagonals are live: slide the thumb between arrows). */
+.gd-ov-pad::before{content:"";position:absolute;inset:6%;border-radius:50%;pointer-events:none;background:conic-gradient(from 45deg,#ffda8755 0 2deg,transparent 2deg 88deg,#ffda8755 88deg 92deg,transparent 92deg 178deg,#ffda8755 178deg 182deg,transparent 182deg 268deg,#ffda8755 268deg 272deg,transparent 272deg 358deg,#ffda8755 358deg 360deg);-webkit-mask:radial-gradient(circle,transparent 78%,#000 79%);mask:radial-gradient(circle,transparent 78%,#000 79%)}
+/* v0.17: size to available viewport width AND height, never content width. */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+body.controller-open{grid-template-columns:minmax(0,1fr)}
+header,main,#touch-controller,.viewport,.pad-layout{min-width:0;max-width:100%}
+header{overflow-x:auto;flex-wrap:nowrap}
+header>*{flex-shrink:0}
+header .sky[hidden]{display:none}
+#touch-controller{display:flex;flex-direction:column;padding:5px max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom))}
+.controller-toolbar{flex:none;min-height:28px;position:relative;flex-wrap:nowrap}
+.controller-toolbar strong{font-size:8px}
+#input-state{max-width:38%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.controller-settings{margin-left:auto}
+.controller-settings summary{cursor:pointer;padding:5px 8px;border:1px solid #59617a;border-radius:5px}
+.controller-settings[open] .settings-panel{position:absolute;right:0;bottom:100%;z-index:20;width:min(340px,90vw);display:flex;flex-wrap:wrap;gap:12px;background:#171e30;padding:14px;border:1px solid #79819c;border-radius:8px;box-shadow:0 5px 20px #0008}
+.settings-panel{display:none}
+.pad-layout{flex:1;min-height:0;height:auto!important;width:100%;display:grid;grid-template-columns:40% 60%;align-items:center;gap:0}
+.gd-ov-pad{--pad:min(33vw,34dvh,190px);position:relative;left:auto;bottom:auto;justify-self:center}
+.gd-ov-face{--btn:min(10.8vw,10dvh,64px);--gap:min(1.5vw,9px);position:relative;right:auto;bottom:auto;justify-self:center;gap:min(1.5dvh,8px);max-width:100%;padding-bottom:10px}
+.gd-ov-small{gap:var(--gap)}
+.gd-ov-mini{width:calc(var(--btn)*.85);height:calc(var(--btn)*.85);font-size:7px}
+.gd-ov-btn{font-size:9px}
+.gd-ov-dir{padding:0}
+.gd-ov-tag{letter-spacing:0;font-size:7px}
+.gd-ov-btn small{font-size:6px}
+#env[hidden]{display:none}
+#stage{touch-action:none}
+#fight-health{position:absolute;top:34px;left:12px;right:12px;display:flex;gap:24%;justify-content:space-between;pointer-events:none}
+#fight-health label{width:38%;font-size:0}
+#fight-health meter{width:100%;height:12px;accent-color:#8ad09c}
+.stage-info{top:52px}
+body.demo-active #fight-health{display:none}
+@media(max-height:450px){#fight-health{top:25px}.stage-info{top:40px}.controller-toolbar{min-height:24px}.controller-toolbar strong{display:none}.gd-ov-face{--btn:9dvh}.gd-ov-pad{--pad:30dvh}}
+
+/* Stage workshop remains scrollable above the controller on smaller phones. */
+.controller-settings[open] .settings-panel{max-height:min(62dvh,420px);overflow-y:auto;touch-action:pan-y}
+.surface-controls{width:100%;border:1px solid #536079;border-radius:6px;margin:0;padding:8px}
+.surface-controls legend{color:#e9c891}
+.surface-controls label{display:grid;grid-template-columns:80px minmax(70px,1fr) 40px;margin:5px 0}
+.surface-controls input[type=range]{width:100%;min-width:0}
+
+.surface-controls select{grid-column:2 / -1;min-width:0;max-width:100%;font-size:10px}
+.surface-controls label:has(input[type=checkbox]){display:flex;white-space:normal}
+
+/* Texture Lab */
+.graphics-controls p{font-size:10px;line-height:1.5;white-space:normal;margin:7px 0;color:#c2cce0}
+#graphics-status{color:#f3d89d}
+#graphics-fps{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* v0.31: four auxiliary controls fit within the same face-button footprint. */
+.gd-ov-small{gap:calc(var(--gap)*.7)}
+.gd-ov-small .gd-ov-mini{width:calc(var(--btn)*.78);height:calc(var(--btn)*.78);font-size:clamp(6px,1.5vw,8px)}
+#vwave-button{background:radial-gradient(circle at 35% 28%,#69d7eb,#4253b1 50%,#41225c);border-color:#a0eaff}
+#vwave-button[aria-disabled=true]{filter:saturate(.5);opacity:.72}
+#finish-indicator{position:absolute;left:50%;top:65px;transform:translateX(-50%);padding:5px 12px;background:#161324bb;border:1px solid #d6b0ff77;border-radius:20px;color:#eee2ff;font-size:10px;letter-spacing:.12em;pointer-events:none}
+#finish-indicator[hidden]{display:none}
+.combat-controls p{font-size:10px;line-height:1.5;white-space:normal;color:#c2cce0}
+.combat-controls a{font-size:10px;color:#9feafa}
+.combat-controls output{font-size:9px;white-space:nowrap}
+/* Let the settings popover rise over the arena instead of clipping at the controller edge. */
+#touch-controller{overflow:visible;z-index:5}
+.controller-settings[open] .settings-panel{max-height:min(calc(50dvh - 52px),420px)}

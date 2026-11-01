@@ -64,8 +64,17 @@ RB uppercut, A jump, LB jump uppercut, LT jump kick, RT roundhouse.
 
 ## Included
 
+- **Groove Squad Get Down** (2.3.7): the full game from jerm747.com with all 40 fighters open.
+  No subscriptions on jerm747.games. Ranked Run keeps its leaderboard on each device. See below.
+- **GS Fighter III** (1.2.0): the 3D fighter in the browser, plus its Android APK on a shareable
+  download page. See below.
+- **GS Fighter II** (1.0.17): the Android handheld edition in the browser, now branded GS Fighter II,
+  plus its APK download page. See below.
 - **Flight Control Deck** (v7): Asteroid Blast, races and free flight.
-- **Fighter Lab**: low-poly 3D fighter rig and move tester.
+- **Fighter Lab** (GS Fighter III Lab 0.36 · Brush Fighters): Akeem and Nika on their rigs with the
+  move workshop, V-Wave, reactions and the brush-painted fighter select. The lab has its own controller
+  support, so the old keyboard bridge in `project.json` was removed. (`scripts/check-fighter-model.mjs`
+  was for the old Akeem 0.2 study and no longer applies.)
 - **Controller Check**: test buttons, sticks, triggers and rumble.
 - `cover-square.jpg` in the first two folders: your square cover art, kept as a backup.
 
@@ -75,6 +84,12 @@ The admin page shows visitors, page views per day, traffic by hour, where visito
 played games, devices and browsers. Reports go out every 12 or 24 hours (or off); add an hourly
 cPanel cron job for exact timing (the admin page shows the command). No cookies: visitors are counted
 by a hash that resets daily.
+
+## Shelf
+
+Swipe left or right on a game's page (cover and description) to move through the games in the
+current section; the tiles below follow along. Tap a tile once to show its page, tap again to open
+it. On desktop, the ‹ › arrows on the cover, arrow keys or the controller do the same.
 
 ## Arcade cabinet edition
 
@@ -91,8 +106,56 @@ colors; small captions sit at the bottom. Replace either image in `src/cabinet-a
 Recommended art: 1:3 portrait, with faces inside the middle 60%.
 Game panels automatically use the selected game's cover, falling back to home art if absent.
 
-Get Down Groove Squad and GS Fighter can be added through the existing project-folder flow
-when their playable files are ready. They have not been added as empty or fake game entries.
+## Groove Squad Get Down
+
+`projects/groove-squad-get-down/` is generated from the jerm747.com source (jerm747-player repo),
+so the game itself is never edited by hand here. To refresh it after updating Get Down on jerm747.com:
+
+```bash
+python3 scripts/get-down/make-getdown-project.py ../jerm747-player public/projects/groove-squad-get-down
+cp <cover.jpg> <project.json> back into that folder   # the script recreates the folder
+```
+
+(Keep a copy of `cover.jpg` and `project.json` first, or rebuild the cover with
+`scripts/get-down/gd-cover.py`, run from `jerm747-player/public/images/groove-squad`.)
+
+What the script changes for jerm747.games:
+- copies only the files the game uses (about 725 MB of character art), with paths made relative;
+- swaps the account script for `games-account.js`: everyone has the full squad, nothing syncs;
+- adds `games-shim.js`: /api calls are answered locally, Ranked Run keeps a device leaderboard,
+  Match music buttons are hidden (music lives in the jerm747.com player; the Music panel links there);
+- the game's Close button returns to the shelf, and its Fullscreen button goes full screen directly.
+
+Upload this folder once. Later site updates can skip it, as long as you don't delete it on the server.
+
+## GS Fighter II
+
+`projects/gs-fighter-2/` is the Android 1.0.17 build running in the browser, generated from the APK
+(the APK's `assets/` folder is the complete web game with every Android update):
+
+```bash
+python3 scripts/gs-fighter/make-gsfighter-project.py GS-Fighter-Android-1.0.17.apk public/projects/gs-fighter-2
+# then restore cover.jpg and project.json (or rebuild the cover: run scripts/gs-fighter/gs-cover.py
+# from inside the project folder)
+```
+
+What the script changes:
+- root paths become folder-relative; the workshops' "← Fighters" links go to the game's select screen;
+- `gs-browser-bridge.js` stands in for the Android app, so the APK features switch on in a browser:
+  staged Blue/Red select, arcade opening and results, the GS MENU (Resume, Fighter select,
+  Parallax Run, Sprite/Sound Workshop, Controller setup, Exit to the shelf), and workshop exports
+  as normal downloads. The first controller that connects is given to Player 1, like the app.
+- The "Challenge a friend · online beta" link is hidden (it needs jerm747.com accounts).
+- Branding: `gs-fighter-ii-brand.png` replaces `brand/gs-fighter.png`, so the splash, lobby title,
+  select-screen corner logo and matchup card all show the GS Fighter II logo; the bridge also renames
+  the tab title and logo alt text. The APK itself is untouched (see Downloads).
+- `gs-web-layout.css` (loaded by the bridge) adds the browser layout: in portrait the arena keeps
+  its shape at the top and the touch pad gets its own panel underneath (JUMP · START · DUCK row,
+  then the pad and attack buttons); hiding the pad centers the arena. In landscape the touch
+  controls are mostly transparent until pressed and JUMP / DUCK sit clear of the attack buttons.
+  The top bar adds HIDE PAD and CONTROLLER next to SETUP and GS MENU.
+
+About 449 MB, uploaded once like Get Down.
 
 For a UI preview without PHP, run `JERM_UI_PREVIEW=1 npm run dev` (macOS/Linux). This reads
 local project metadata and does not collect stats. Production builds still use the PHP backend.
@@ -168,3 +231,78 @@ Upload the **contents of `dist/`** over the existing site files (merge folders).
 `api/data/` and any game folders added on the live site. Upload the new root `index.html` and
 `assets/` too: the orientation toolbar is part of the arcade shell. Upload complete puzzle folders
 and `projects/shared/`; Word Search now needs its JSON, JS and CSS alongside its HTML.
+
+## GS Fighter III, Fighter Lab 0.36 and downloads (November 2026)
+
+**GS Fighter III** lives in `projects/gs-fighter-3/`: the v1.2.0 web build copied as-is (it already uses
+folder-relative paths). Shareable link: `jerm747.games/#/play/gs-fighter-3`. About 195 MB.
+
+**Fighter Lab** (`projects/fighter-lab/`) is replaced with GS Fighter III Lab v0.36 (about 305 MB). Delete
+the old folder's files first or upload over it; nothing from the Akeem 0.2 study is needed.
+
+As with Get Down and GS Fighter II, the source keeps only `cover.jpg` and `project.json` for these two;
+the game files come from their own ZIPs.
+
+**Download pages** (static HTML, outside `projects/` so they don't appear on the shelf):
+
+| Link to share | APK file to upload beside its `index.html` |
+|---|---|
+| `jerm747.games/download/gs-fighter-3/` | `GS-Fighter-III-v1.2.0.apk` |
+| `jerm747.games/download/gs-fighter-2/` | `GS-Fighter-Android-1.0.17.apk` |
+| `jerm747.games/download/` | (lists both) |
+
+Each page has Download APK, Play in browser, Share (phone share sheet, or copies the link), install steps
+and the SHA-256. Shared links preview with the cover art. The root `.htaccess` serves `.apk` with the
+Android type as a download. A game's shelf page shows an **Android APK** button when its `project.json`
+has `"download": {"label": "Android APK", "url": "/download/<name>/"}`.
+
+The APKs are not modified. Changing the logo or icon inside an APK means re-signing it; with a different
+key, Android refuses to install it over the existing app. The GS Fighter II download page and shelf use
+the II artwork instead.
+
+**Art:** the covers and download-page images were made with the scripts in `scripts/gs-fighter/art/`
+(Pillow; the input paths at the top of each script point to the unpacked builds). GS Fighter III and
+Fighter Lab covers use the game's own title art and the v0.36 brush paintings.
+
+**Build without Vite:** if `npm install` can't reach the registry, `node scripts/build-esbuild.mjs`
+(with `react`, `react-dom` and `esbuild` available) produces the same `dist/` layout.
+
+## November 1 update: GS Fighter III 1.3, Word Search setup, Plugin Twist swap effect
+
+**GS Fighter III 1.3.0** (Player Menu v8): `projects/gs-fighter-3/` now holds the v8 build. `index.html`
+forwards to `game/index.html`; `Fighter-Select.html` and `select-art/` sit beside it. Left out of the web copy:
+`source/`, `tests/`, `rebuild.py`, the notes files and `Compare-layouts.html`. The title shows "1.3".
+`game/intro.html` had its title art split out (`intro-img-1.png`) so GoDaddy serves it.
+
+Shelf pages can show **screenshots**: add `"screenshots": [{"src": "...", "thumb": "...", "caption": "..."}]`
+to `project.json` (paths inside the game folder). GS Fighter III has five in `screenshots/`. Tap one to view it
+full size; arrows or swipe move through them.
+
+**APK 1.3.0** was built with `scripts/gs-fighter/apk/build_apk.py`: it takes the 1.2.0 APK's native WebView
+launcher (`com.jerm747.gsfighter3`), swaps in the new web build as `assets/`, sets the version (1.3.0 / 130),
+signs it (v1/JAR, like 1.2.0) and aligns it. The 1.2.0 signing key wasn't available, so 1.3.0 uses a new key,
+`gsfighter3-release.jks`. Keep that file and its password: every future update must use the same key, or Android
+won't install it over the previous version. Anyone who has 1.2.0 must uninstall it once before installing 1.3.0.
+
+```bash
+python3 scripts/gs-fighter/apk/build_apk.py GS-Fighter-III-v1.3.0.apk <web folder> out.apk 1.4.0 140 gsfighter3-release.jks gsfighter3 <password>
+```
+(versionName must stay 5 characters, like 1.4.0.)
+
+**Word Search** (Arcade 1.2) was rebuilt around the same engine and themes:
+- setup screen first: theme, 15 / 30 / 60 words (Easy / Medium / Hard), Untimed or Timed (5 / 10 / 20 minutes),
+  plus an optional "pick the words yourself";
+- the grid fills the screen width; phones held upright get a tall grid (e.g. 9×11 for Easy), so letters are
+  about 50% bigger than before; letter size follows the real cell size;
+- found words get a colored highlight drawn across them, and the word list sits under the grid with each
+  found word crossed off in the same color;
+- in-progress puzzles carry over (same save key); time's up offers "keep looking, untimed".
+Files: `index.html`, `style.css`, `game.js`, `engine.js`, `topics.json`. The old `theme.css`,
+`word-search-focus.*` and `legacy-words.json` are no longer used.
+
+**Plugin Twist**: `swap-fx.js` draws the selection as a glowing, pulsing rounded outline (a capsule for a
+pair, a rounded L for a twist) and animates swaps on an arc with a spring landing and a slight squash. The token
+art moved out of `index.html` into `tokens.js`. **Swap Lab** (`projects/plugin-twist/swap-lab.html`) is the
+workshop: presets, three selection styles, colors, glow/pulse and motion sliders, demo buttons, a comparison
+with the old square, "Use in the game on this device", and a settings box to copy. Send those settings back to
+bake them in as the default (`DEFAULTS` in `swap-fx.js`).

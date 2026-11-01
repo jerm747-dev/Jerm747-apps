@@ -2,3 +2,11 @@ node_modules
 dist
 public/api/data/*
 !public/api/data/.htaccess
+# Groove Squad Get Down is generated from jerm747-player by scripts/get-down/make-getdown-project.py
+public/projects/groove-squad-get-down/*
+!public/projects/groove-squad-get-down/cover.jpg
+!public/projects/groove-squad-get-down/project.json
+# GS Fighter 2 is generated from the 1.0.17 APK by scripts/gs-fighter/make-gsfighter-project.py
+public/projects/gs-fighter-2/*
+!public/projects/gs-fighter-2/cover.jpg
+!public/projects/gs-fighter-2/project.json
