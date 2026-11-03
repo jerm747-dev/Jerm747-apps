@@ -2,7 +2,7 @@
 // Helpers for the Sites area: sites in development, with a live preview, comments,
 // a shared document, shared files and a slide deck.
 // Data: api/data/sites/<slug>.json and api/data/site-files/<slug>/.
-// Builds:  /sites/<slug>/  (upload each site's build there; it shows in the preview).
+// Builds:  /sites/<folder>/ (the web address unless set otherwise; upload each build there).
 
 declare(strict_types=1);
 
@@ -52,8 +52,39 @@ function site_build_dir(string $slug): string {
     return dirname(__DIR__) . '/sites/' . $slug;
 }
 
+// The server folder that holds a site's build: sites/<folder>/. Usually the web address, but it
+// can point at a folder made by hand (say the address is "returnity" and the upload is in "nige-hood").
+function site_folder(array $s): string {
+    return site_slug($s['folder'] ?? '') ?: $s['slug'];
+}
+
 function site_has_build(array $s): bool {
-    return is_file(site_build_dir($s['slug']) . '/index.html');
+    return is_file(site_build_dir(site_folder($s)) . '/index.html');
+}
+
+function site_default_preview(array $s): string {
+    return '/sites/' . site_folder($s) . '/';
+}
+
+// Every folder in sites/, and whether it has an index.html, so the admin page can show
+// where builds actually are.
+function server_site_folders(string $exceptSlug = ''): array {
+    $usedBy = [];
+    foreach (glob(data_dir('sites') . '/*.json') ?: [] as $file) {
+        $o = json_decode((string)file_get_contents($file), true);
+        if (is_array($o) && ($o['slug'] ?? '') !== $exceptSlug) $usedBy[site_folder($o)] = $o['title'] ?? $o['slug'];
+    }
+    $out = [];
+    foreach (glob(dirname(__DIR__) . '/sites/*', GLOB_ONLYDIR) ?: [] as $dir) {
+        $name = basename($dir);
+        if (!site_slug($name)) {
+            $out[] = ['name' => $name, 'has_build' => is_file("$dir/index.html"), 'usable' => false, 'used_by' => ''];
+            continue;
+        }
+        $out[] = ['name' => $name, 'has_build' => is_file("$dir/index.html"), 'usable' => true, 'used_by' => $usedBy[$name] ?? ''];
+    }
+    usort($out, fn($a, $b) => strcmp($a['name'], $b['name']));
+    return $out;
 }
 
 // Non-fatal admin check: Jeremy's browser sends the admin password header on every Sites call.
@@ -89,8 +120,15 @@ function site_view(array $s, string $access): array {
     }
     $out['revision_log'] = array_map(fn($r) => ['v' => $r['v'], 'by' => $r['by'], 'at' => $r['at'], 'chars' => mb_strlen($r['body'])], array_reverse($s['revisions'] ?? []));
     $out['has_build'] = site_has_build($s);
-    $out['preview_url'] = $s['preview_url'] ?: '/sites/' . $s['slug'] . '/';
+    $out['preview_url'] = $s['preview_url'] ?: site_default_preview($s);
     $out['access'] = $access;
+    if ($access === 'admin') {
+        $out['folder'] = site_folder($s);
+        $out['server_folders'] = server_site_folders($s['slug']);
+        $out['preview_setting'] = $s['preview_url'] ?? ''; // what was typed (preview_url above has the default filled in)
+    } else {
+        unset($out['folder']);
+    }
     return $out;
 }
 
@@ -99,12 +137,13 @@ function site_summary(array $s, bool $admin): array {
         'slug' => $s['slug'], 'title' => $s['title'], 'client' => $s['client'], 'summary' => $s['summary'],
         'status' => $s['status'], 'public' => !empty($s['public']), 'updated' => $s['updated'],
         'comments' => count(array_filter($s['comments'], fn($c) => empty($c['hidden']))),
-        'preview_url' => $s['preview_url'] ?: '/sites/' . $s['slug'] . '/',
+        'preview_url' => $s['preview_url'] ?: site_default_preview($s),
         'has_build' => site_has_build($s),
         'doc_by' => $s['doc']['edited_by'] ?? '', 'doc_at' => $s['doc']['edited_at'] ?? '',
     ];
     if ($admin) {
         $out['token'] = $s['token'];
+        $out['folder'] = site_folder($s);
         $out['open'] = count(array_filter($s['comments'], fn($c) => empty($c['resolved']) && empty($c['hidden']) && $c['from'] !== 'jeremy'));
     }
     return $out;

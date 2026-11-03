@@ -16,6 +16,8 @@
 // POST action=comment_flag slug id resolved|hidden (0/1)
 // POST action=file_delete  slug id
 // POST action=deck     slug id ('' to clear)     -> which PDF the slide viewer shows
+// POST action=set_public slug public (0/1)       -> show on / hide from the public Sites page
+// POST action=set_folder slug folder             -> which sites/<folder>/ holds the build (made if missing)
 // POST action=new_token slug                     -> new review link (old one stops working)
 // POST action=delete   slug confirm=slug         -> remove the site record and its shared files
 require __DIR__ . '/sites_lib.php';
@@ -160,7 +162,7 @@ switch ($action) {
         $s['project_key'] = normalize_key($in['project_key'] ?? '');
         $s['notes'] = clean($in['notes'] ?? '', 4000);
         save_site($s);
-        @mkdir(site_build_dir($s['slug']), 0755, true);
+        @mkdir(site_build_dir(site_folder($s)), 0755, true);
         respond(['ok' => true, 'site' => site_view($s, 'admin')]);
 
     case 'comment_flag':
@@ -192,6 +194,21 @@ switch ($action) {
             fail('The slide viewer shows PDFs. In PowerPoint use File > Save As > PDF, then share that file.');
         }
         $s['deck'] = $id;
+        save_site($s);
+        respond(['ok' => true, 'site' => site_view($s, 'admin')]);
+
+    case 'set_public':
+        $s = load_site(site_slug($in['slug'] ?? '')) ?? fail('Site not found.', 404);
+        $s['public'] = in_array((string)($in['public'] ?? ''), ['1', 'true'], true);
+        save_site($s);
+        respond(['ok' => true, 'site' => site_view($s, 'admin')]);
+
+    case 'set_folder':
+        $s = load_site(site_slug($in['slug'] ?? '')) ?? fail('Site not found.', 404);
+        $folder = site_slug($in['folder'] ?? '');
+        if ($folder === '') fail('Folder names use lowercase letters, numbers and dashes, like nige-hood.');
+        @mkdir(site_build_dir($folder), 0755, true);
+        $s['folder'] = $folder === $s['slug'] ? '' : $folder;
         save_site($s);
         respond(['ok' => true, 'site' => site_view($s, 'admin')]);
 
