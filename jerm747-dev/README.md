@@ -13,8 +13,10 @@ GoDaddy/cPanel hosting with no database or extra services.
 | `jerm747.dev` | Landing page, packages, quote engine, contact form |
 | `jerm747.dev/#/project` | Clients type their project key to open their project page |
 | `jerm747.dev/#/project/J747-XXXX-XXXX` | A project page directly (linked from every email) |
+| `jerm747.dev/#/sites` | Sites in development (the gold **Sites** button, first in the menu) |
+| `jerm747.dev/#/sites/<address>/<code>` | A site's private review link: preview, comments, shared doc, files, slides |
 | `jerm747.dev/#/about` | About page |
-| `jerm747.dev/#/admin` | Your admin page: Projects and Traffic tabs (not linked on the public site) |
+| `jerm747.dev/#/admin` | Your admin page: Projects, Sites and Traffic tabs (not linked on the public site) |
 
 ## Build
 
@@ -53,6 +55,40 @@ Back it up now and then (download `api/data` from File Manager).
 GoDaddy's PHP `mail()` sends from the server. Make sure the `admin@jerm747.dev` mailbox exists in
 cPanel → Email Accounts, since emails are sent *from* that address. If they land in spam, ask
 GoDaddy to turn on SPF/DKIM for jerm747.dev (cPanel → Email Deliverability → Repair).
+
+## Sites in development
+
+A place to show sites while you build them and collect feedback in one spot.
+
+1. Admin → **Sites** → **New site**. Pick a web address (like `bellas-bakery`).
+2. Upload that site's build into `sites/bellas-bakery/` on the server (next to `index.html` of this
+   site). The preview shows it right away, with Desktop / Tablet / Phone sizes. For a Vite site build
+   with `npx vite build --base=/sites/bellas-bakery/` so its links work from that folder.
+3. Copy the **client review link** at the top of the site page and send it to the client.
+
+Each site page has:
+
+- **Preview**: the live build in a frame, plus "open in a new tab".
+- **Comments**: a permanent history. Clients can tag which page they mean. You can mark comments
+  resolved or hide them. You get an email for every client comment.
+- **Shared doc**: one document everyone with the review link can edit. Shows who edited it last
+  and when, keeps the last 15 versions (view or restore), and won't let two people overwrite each
+  other: if someone saved first, you're told and can load their version.
+- **Files**: shared both ways, 25 MB each.
+- **Slides**: the first PDF shared becomes the slide deck (switch with "Use as slides"). View 1, 2 or
+  4 slides at a time, arrow keys, full screen. For PowerPoint, use File → Save As → PDF and share
+  that; the .pptx can sit in Files for download.
+
+**Private or public.** New sites are private: only the review link opens them. Tick "Show on the
+public Sites page" to list it at `#/sites` for anyone to see and comment on. Public visitors never
+see the shared files, the review link or your notes, and can't edit the doc. "Make a new link"
+replaces the review link if one gets passed around.
+
+When a site launches on its own domain, upload the same build there. The comments and doc stay
+here as the project record. Build folders are marked noindex so search engines skip them.
+
+Data: `api/data/sites/<address>.json` and `api/data/site-files/<address>/` (keep `api/data/`
+when uploading new builds, same as always). The slide viewer uses pdf.js, stored in `vendor/pdfjs/`.
 
 ## Games
 
@@ -100,6 +136,8 @@ projects/J747-XXXX-XXXX.json   one file per project
 analytics/YYYY-MM-DD.jsonl     visit counts, one file per day
 settings.json                  report schedule
 files/J747-XXXX-XXXX/          uploaded files
+sites/<address>.json           one file per site in development
+site-files/<address>/          files shared on a site
 admin.json                     your password hash (delete this file to reset the password)
 ratelimit/                     temporary counters
 ```

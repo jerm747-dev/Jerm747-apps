@@ -9,10 +9,10 @@ RewriteRule ^sandbox(/.*)?$ https://jerm747.games/ [L,R=301]
 # Never serve project data directly
 RewriteRule ^api/data/ - [F,L]
 
-# Upload size for portal attachments
+# Upload size for portal attachments and Sites files (decks can be big)
 <IfModule mod_php.c>
-  php_value upload_max_filesize 12M
-  php_value post_max_size 50M
+  php_value upload_max_filesize 26M
+  php_value post_max_size 60M
 </IfModule>
 
 Options -Indexes

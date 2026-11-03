@@ -1,0 +1,5 @@
+# Work-in-progress client sites: keep them out of search results.
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+Options -Indexes

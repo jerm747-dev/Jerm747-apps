@@ -1,0 +1,160 @@
+{
+  "ok": true,
+  "projects": [
+    {
+      "slug": "highway-encore",
+      "url": "projects/highway-encore/index.html",
+      "title": "Highway Encore",
+      "tagline": "Run the highway with Nige Hood",
+      "description": "Flip the road crew, catch the Encore Disc and raise the flag at the mansion. A side-scroller from Returnity. The title and pause screens have a Music button for the site's songs.",
+      "kind": "game",
+      "status": "prototype",
+      "version": "v3",
+      "controls": [
+        "gamepad",
+        "keyboard",
+        "touch"
+      ],
+      "credit": "Nige Hood · Returnity. Game workshop.",
+      "accent": "#e2ad4f",
+      "cover": "",
+      "order": 1,
+      "gamepad": {},
+      "gamepadLabels": {},
+      "download": null,
+      "screenshots": [],
+      "updated": "2026-11-03T04:57:12.000Z",
+      "actions": [
+        {
+          "id": "left",
+          "label": "Move left",
+          "key": "ArrowLeft",
+          "pad": "LEFT"
+        },
+        {
+          "id": "right",
+          "label": "Move right",
+          "key": "ArrowRight",
+          "pad": "RIGHT"
+        },
+        {
+          "id": "jump",
+          "label": "Jump",
+          "key": " ",
+          "pad": "A"
+        },
+        {
+          "id": "duck",
+          "label": "Duck",
+          "key": "ArrowDown",
+          "pad": "DOWN"
+        },
+        {
+          "id": "speed",
+          "label": "Speed",
+          "key": "Shift",
+          "pad": "RB"
+        },
+        {
+          "id": "lift",
+          "label": "Lift / throw",
+          "key": "x",
+          "pad": "X"
+        },
+        {
+          "id": "pause",
+          "label": "Pause",
+          "key": "p",
+          "pad": "START"
+        },
+        {
+          "id": "music",
+          "label": "Music",
+          "key": "m",
+          "pad": "SELECT"
+        }
+      ],
+      "controllerMode": ""
+    },
+    {
+      "slug": "flight-control-deck",
+      "url": "projects/flight-control-deck/index.html",
+      "title": "Flight Control Deck",
+      "tagline": "Asteroid Blast, races and free flight",
+      "description": "A flight and space-shooter deck with chase, cockpit and nose cameras, warp, shields and race modes. Remappable controls with two-stick calibration, mouse mode and on-screen touch controls.",
+      "kind": "game",
+      "status": "in_progress",
+      "version": "v7.1",
+      "controls": [
+        "gamepad",
+        "keyboard",
+        "mouse",
+        "touch"
+      ],
+      "credit": "Original Jerm747 project. All rights reserved.",
+      "accent": "#8FA7BF",
+      "cover": "projects/flight-control-deck/cover.jpg?v=1793682090000",
+      "order": 10,
+      "gamepad": {},
+      "gamepadLabels": {},
+      "download": null,
+      "screenshots": [],
+      "updated": "2026-11-03T05:01:30.000Z",
+      "actions": [
+        {
+          "id": "up",
+          "label": "Move up",
+          "key": "w"
+        },
+        {
+          "id": "down",
+          "label": "Move down",
+          "key": "s"
+        },
+        {
+          "id": "left",
+          "label": "Move left",
+          "key": "a"
+        },
+        {
+          "id": "right",
+          "label": "Move right",
+          "key": "d"
+        },
+        {
+          "id": "fire",
+          "label": "Fire",
+          "key": " ",
+          "pad": "A"
+        },
+        {
+          "id": "aim-up",
+          "label": "Aim up",
+          "key": "ArrowUp"
+        },
+        {
+          "id": "aim-down",
+          "label": "Aim down",
+          "key": "ArrowDown"
+        },
+        {
+          "id": "aim-left",
+          "label": "Aim left",
+          "key": "ArrowLeft"
+        },
+        {
+          "id": "aim-right",
+          "label": "Aim right",
+          "key": "ArrowRight"
+        },
+        {
+          "id": "start",
+          "label": "Start / confirm",
+          "key": "Enter",
+          "pad": "START"
+        }
+      ],
+      "controllerMode": "native"
+    }
+  ]
+}

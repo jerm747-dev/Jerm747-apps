@@ -3,6 +3,7 @@ import Home from './pages/Home.jsx';
 import Portal from './pages/Portal.jsx';
 import Admin from './pages/Admin.jsx';
 import About from './pages/About.jsx';
+import Sites from './pages/Sites.jsx';
 
 function trackView(path) {
   try {
@@ -18,6 +19,10 @@ function parse(hash) {
   if (hash.startsWith('#/project')) return { page: 'project', key: decodeURIComponent(hash.split('/')[2] || '') };
   if (hash.startsWith('#/admin')) return { page: 'admin' };
   if (hash.startsWith('#/about')) return { page: 'about' };
+  if (hash.startsWith('#/sites')) {
+    const [, , slug = '', token = ''] = hash.split('/');
+    return { page: 'sites', slug: decodeURIComponent(slug), token: decodeURIComponent(token) };
+  }
   return { page: 'home', anchor: hash.replace('#', '') };
 }
 
@@ -40,7 +45,9 @@ export default function App() {
     } else if (route.page !== 'home') {
       window.scrollTo(0, 0);
     }
+    if (route.page === 'sites' && route.slug) return; // the site page sets its own title
     document.title = route.page === 'about' ? 'About | jerm747.dev'
+      : route.page === 'sites' ? 'Sites in development | jerm747.dev'
       : route.page === 'project' ? 'Your project | jerm747.dev'
       : route.page === 'admin' ? 'Admin | jerm747.dev'
       : 'jerm747.dev | Custom software and web development';
@@ -53,6 +60,7 @@ export default function App() {
         <div className="wrap topbar-inner">
           <a className="wordmark" href="#">jerm747<span>.dev</span></a>
           <nav aria-label="Main">
+            <a className={`nav-sites ${route.page === 'sites' ? 'is-on' : ''}`} href="#/sites" aria-current={route.page === 'sites' ? 'page' : undefined}>Sites</a>
             <a href="#services">Services</a>
             <a href="#packages">Packages</a>
             <a href="#quote">Estimate</a>
@@ -67,12 +75,14 @@ export default function App() {
         {route.page === 'project' && <Portal routeKey={route.key} />}
         {route.page === 'admin' && <Admin />}
         {route.page === 'about' && <About />}
+        {route.page === 'sites' && <Sites slug={route.slug} token={route.token} />}
       </div>
       <footer className="footer">
         <div className="wrap footer-inner">
           <p className="wordmark">jerm747<span>.dev</span></p>
           <p>Freelance development and consulting, Charlotte, NC</p>
           <p><a href="mailto:admin@jerm747.dev">admin@jerm747.dev</a></p>
+          <p><a href="#/sites">Sites in development</a></p>
           <p><a href="#/about">About</a></p>
           <p><a href="#/project">Check your project</a></p>
           <p className="copy">© {new Date().getFullYear()} Jeremy Currence</p>
