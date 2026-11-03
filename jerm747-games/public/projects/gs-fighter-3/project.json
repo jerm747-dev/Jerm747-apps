@@ -1,12 +1,12 @@
 {
   "title": "GS Fighter III",
-  "tagline": "Fourteen fighters in full 3D. Arcade, Training and a full Player Menu.",
-  "description": "GS Fighter III in the browser: Akeem, Nika and twelve newcomers on the painted Diamond Crest fighter select, each with their own V-Wave color (Cyborg fires the Arc Lance). New in 1.3: the Player Menu pauses the match with fighter info, a Move Guide that plays each move's real animation beside its inputs, and full Options for controls, gameplay, audio and video. Training mode gives you a passive dummy and an endless clock. Arcade is best of three against a CPU from Easy to Ferocious. Touch, keyboard or controller with rumble.",
+  "tagline": "Fourteen fighters in full 3D. Aura mode, cinematic victories and a full Player Menu.",
+  "description": "GS Fighter III in the browser: Akeem, Nika and twelve newcomers on the painted Diamond Crest fighter select, each with their own V-Wave color, and Cyborg fires the fast Arc Lance. New in 1.3: painted ROUND, FIGHT! and arcade timer art, a corrected daylight arena (no more washed-out floor), and the Player Menu pauses the match with fighter info, a Move Guide that plays each move's real animation beside its inputs, and full Options for controls, gameplay, audio and video. Training mode gives you a passive dummy and an endless clock. Arcade is best of three against the CPU: Normal by default, up to Ferocious, and your choice sticks. New in 1.4: Aura mode (when you're down to your last 10%, tap AURA READY or press Mid and High punch together for 9 seconds of slowed-down opponent, tougher skin and a flame shield), a letterboxed victory cinematic that glides past the fallen fighter and up to the winner, and quicker recovery after landings and get-ups. Every fighter moves at a brisk 2x, and controller and keyboard can be remapped in Options. Touch, keyboard or controller with rumble; on fighter select the left stick picks you and the right stick picks the CPU.",
   "order": 4,
   "accent": "#F2A33A",
   "kind": "game",
   "status": "playable",
-  "version": "1.3.0",
+  "version": "1.4.1",
   "controls": [
     "gamepad",
     "keyboard",
@@ -22,6 +22,11 @@
       "src": "screenshots/01-title.webp",
       "thumb": "screenshots/01-title-thumb.webp",
       "caption": "Title screen"
+    },
+    {
+      "src": "screenshots/06-round-1.webp",
+      "thumb": "screenshots/06-round-1-thumb.webp",
+      "caption": "Round 1 at the river arena: Tank vs Cyon"
     },
     {
       "src": "screenshots/02-fighter-select.webp",

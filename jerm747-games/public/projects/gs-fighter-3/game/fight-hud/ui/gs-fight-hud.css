@@ -1,0 +1,9 @@
+/* Scoped display styles. Host game owns the arena, controls, rules and time. */
+.gsfh-announcer{position:absolute;inset:0;z-index:var(--gsfh-overlay-z,70);display:grid;place-items:center;pointer-events:none;overflow:hidden;user-select:none;-webkit-user-select:none}
+.gsfh-announcer[hidden],.gsfh-announcer [hidden]{display:none!important}
+.gsfh-announcer-frame{width:var(--gsfh-announcement-width,76%);max-width:var(--gsfh-announcement-max,900px);line-height:0;text-align:center;transform-origin:center}
+.gsfh-announcement-art{display:block;width:100%;height:auto;max-height:var(--gsfh-announcement-max-height,62vh);object-fit:contain;filter:drop-shadow(0 3px 3px #0008)}
+.gsfh-fallback{font:900 italic clamp(40px,8vw,110px)/1.1 Impact,'Arial Black',sans-serif;color:#ffe28a;text-shadow:3px 3px #ec560d,-2px -2px #073155,4px 4px #06101b;letter-spacing:.02em}
+.gsfh-clock{display:inline-flex;align-items:center;justify-content:center;gap:0;width:var(--gsfh-timer-width,clamp(72px,10vw,132px));line-height:0;vertical-align:middle;filter:drop-shadow(0 2px 2px #0007)}
+.gsfh-clock img{display:block;width:50%;height:auto;min-width:0;pointer-events:none;user-select:none}
+.gsfh-round-label{display:block;font:900 10px/1.2 'Arial Black',Arial,sans-serif;letter-spacing:.08em;color:#ffe3a2;text-shadow:1px 1px 0 #070c16;white-space:nowrap;text-align:center}

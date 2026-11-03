@@ -2,6 +2,7 @@ import { useState } from 'react';
 import CircuitBoard from '../components/CircuitBoard.jsx';
 import QuoteEngine from '../components/QuoteEngine.jsx';
 import ContactForm from '../components/ContactForm.jsx';
+import SiteRibbons from '../components/SiteRibbons.jsx';
 
 const BUILD = [
   ['Websites', 'Business sites, portfolios and landing pages that load fast and are easy to update.'],
@@ -136,6 +137,9 @@ export default function Home() {
       </section>
 
       <section className="section contact" id="contact">
+        <div className="wrap contact-ribbons">
+          <SiteRibbons current="dev" />
+        </div>
         <div className="wrap contact-wrap">
           <div className="contact-intro">
             <h2>Start a project</h2>

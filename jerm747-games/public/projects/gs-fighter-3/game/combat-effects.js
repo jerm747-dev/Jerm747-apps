@@ -22,7 +22,7 @@ window.createFinishClock=function(){
  };
 };
 window.createVWaveSystem=function(T,scene){
- const config={radius:.48,speed:7,palette:'cyan',damage:24,cooldown:2.4,glow:.7,pulse:true};
+ const config={variant:'orb',arcSpeed:1.45,arcDamage:18,radius:.48,speed:7,palette:'cyan',damage:24,cooldown:2.4,glow:.7,pulse:true};
  const azure=window.createAzureBlastAsset?createAzureBlastAsset(T):{status:'error',error:'Mesh data unavailable'};
  const palettes={cyan:[0x0675f9,0x54faff,0xc151ff],solar:[0xff4c10,0xffdc76,0xff913e],rose:[0xaf167f,0xffb0ed,0xa787ff],jade:[0x009c78,0xb7ffe1,0x54ee9d]};
  const root=new T.Group();root.name='V-Wave effects';scene.add(root);
@@ -46,9 +46,13 @@ window.createVWaveSystem=function(T,scene){
  function makeGlow(color,opacity=.5){return new T.Sprite(new T.SpriteMaterial({map:glowMap,color,transparent:true,opacity,depthWrite:false,blending:T.AdditiveBlending}));}
  function clearCharge(owner){const group=charges.get(owner);if(group){disposeGroup(group);charges.delete(owner);}}
  function energyColors(owner){return config.resolveColors?.(owner)||palettes[config.palette]||palettes.cyan;}
- function charge({owner=0,x,y=1.05,progress=0}){
-  let group=charges.get(owner);if(!group){group=new T.Group();group.name='V-Wave charge';const glow=makeGlow(0x89efff,.5);group.add(glow);root.add(group);charges.set(owner,group);}
+ function charge({owner=0,x,y=1.05,progress=0,variant=config.variant}){
+  if(charges.get(owner)?.userData.variant!==variant)clearCharge(owner);
+  let group=charges.get(owner);if(!group){group=new T.Group();group.name=variant==='arc'?'Arc Lance charge':'V-Wave charge';group.userData.variant=variant;const glow=makeGlow(energyColors(owner)[1],.5);group.add(glow);root.add(group);charges.set(owner,group);
+   if(variant==='arc'){const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(new Float32Array(72),3));const arcs=new T.LineSegments(g,new T.LineBasicMaterial({color:0xb5faff,transparent:true,depthWrite:false,blending:T.AdditiveBlending}));arcs.userData.ownGeometry=true;arcs.frustumCulled=false;group.add(arcs);}
+  }
   group.children[0].material.color.setHex(energyColors(owner)[1]);group.position.set(x,y,.05);group.children[0].scale.setScalar(.15+.55*clamp(progress,0,1));group.children[0].material.opacity=(.3+.35*clamp(progress,0,1))*config.glow;
+  if(variant==='arc'){const arcs=group.children[1],a=arcs.geometry.attributes.position;for(let i=0;i<24;i++){const angle=i*Math.PI/6+progress*19,r=(i%2?.18:.09)*(.3+progress);a.setXYZ(i,Math.cos(angle)*r,Math.sin(angle)*r,.06);}a.needsUpdate=true;arcs.material.opacity=.35+.65*progress;}
  }
 
  function flameMaterial(colors,isTail=false){
@@ -86,23 +90,27 @@ window.createVWaveSystem=function(T,scene){
   material.customProgramCacheKey=()=> 'gs-vwave-flame-31';material.userData.waveUniforms=uniforms;return material;
  }
  function disposeGroup(group){group.traverse(o=>{if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}if(o.userData.ownGeometry)o.geometry.dispose();});root.remove(group);}
- function burst(x,y,color,power=1){
+ function burst(x,y,color,power=1,electric=false){
   if(bursts.length>=6)disposeGroup(bursts.shift().group);
-  const group=new T.Group();group.position.set(x,y,0);root.add(group);
+  const group=new T.Group();group.name=electric?'Arc Lance electrical impact':'V-Wave impact';group.position.set(x,y,0);root.add(group);
   const sparks=[];for(let i=0;i<24;i++){const m=new T.Mesh(moteGeo,new T.MeshBasicMaterial({color:i%3?color:0xffffff,transparent:true,depthWrite:false}));m.scale.setScalar(.025+(i%3)*.015);group.add(m);sparks.push({mesh:m,velocity:new T.Vector3(Math.cos(i*2.4)*(1.2+i*.07),Math.sin(i*2.4)*(1.2+i*.07),Math.sin(i*1.7)*.65)});}
   const vertices=[];for(let i=0;i<7;i++){const a=i*Math.PI*2/7;for(let j=0;j<3;j++){let r=.12+j*.16,r2=r+.16;vertices.push(Math.cos(a)*r,Math.sin(a)*r,0,Math.cos(a+.22*(j%2?1:-1))*r2,Math.sin(a+.22*(j%2?1:-1))*r2,0);}}
   const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(vertices,3));
   const arcs=new T.LineSegments(geo,new T.LineBasicMaterial({color:0xcffbff,transparent:true,depthWrite:false}));arcs.userData.ownGeometry=true;group.add(arcs);
   const flash=makeGlow(color,.8*config.glow);flash.scale.setScalar(1.1);group.add(flash);
   const ring=new T.Mesh(new T.RingGeometry(.88,1,48),new T.MeshBasicMaterial({color,transparent:true,opacity:.65,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending}));ring.userData.ownGeometry=true;ring.position.z=.07;ring.scale.setScalar(.2);group.add(ring);
-  bursts.push({group,sparks,arcs,flash,ring,power,age:0});
+  bursts.push({group,sparks,arcs,flash,ring,power,electric,age:0});
  }
- function launch({owner=0,x,y=1.05,direction=1}){
-  if(azure.status==='loading'||cooldowns[owner]>0||shots.length>=2)return false;
+ function launch({owner=0,x,y=1.05,direction=1,variant=config.variant}){
+  if((variant!=='arc'&&azure.status==='loading')||cooldowns[owner]>0||shots.length>=2)return false;
   clearCharge(owner);
   cooldowns[owner]=config.cooldown;
   const colors=energyColors(owner),group=new T.Group(),body=new T.Group();
   group.position.set(x,y,0);group.rotation.y=direction<0?Math.PI:0;group.scale.setScalar(config.radius);group.add(body);root.add(group);
+  if(variant==='arc'){
+   const arcVisual=createArcLanceVisual(makeGlow);arcVisual.group.scale.x=.08;body.add(arcVisual.group);
+   shots.push({id:++serial,owner,variant,group,body,arcVisual,x,y,previousX:x,direction,radius:config.radius,speed:config.speed*(config.arcSpeed||1.45),damage:config.arcDamage??18,powerful:true,color:0x68eaff,age:0});return true;
+  }
   const azureMesh=azure.createMesh?.(colors)||null;let coreMat=null,tailMat=null;
   if(azureMesh)body.add(azureMesh);
   else{coreMat=flameMaterial(colors);tailMat=flameMaterial(colors,true);body.add(new T.Mesh(sphere,coreMat),new T.Mesh(tail,tailMat));}
@@ -112,11 +120,17 @@ window.createVWaveSystem=function(T,scene){
   const wisps=wispGeometries.map((g,i)=>{const m=new T.Mesh(g,new T.MeshBasicMaterial({color:i%2?colors[1]:colors[2],transparent:true,opacity:.4*config.glow,depthWrite:false,blending:T.AdditiveBlending}));m.name='Flame wisp';group.add(m);return m;});
 
   const motes=[];for(let i=0;i<12;i++){const m=new T.Mesh(moteGeo,new T.MeshBasicMaterial({color:i%3?colors[1]:0xffffff}));m.scale.setScalar(.04+(i%3)*.018);body.add(m);motes.push(m);}
-  shots.push({id:++serial,owner,group,body,shell,coreMat,tailMat,azureMesh,glow,wisps,motes,x,y,previousX:x,direction,radius:config.radius,speed:config.speed,damage:config.damage,powerful:true,color:colors[1],age:0});return true;
+  shots.push({id:++serial,owner,variant,group,body,shell,coreMat,tailMat,azureMesh,glow,wisps,motes,x,y,previousX:x,direction,radius:config.radius,speed:config.speed,damage:config.damage,powerful:true,color:colors[1],age:0});return true;
  }
  function update(dt,targets=[],onHit=()=>{}){
   for(let i=0;i<2;i++)cooldowns[i]=Math.max(0,cooldowns[i]-dt);
   for(let i=shots.length-1;i>=0;i--){const p=shots[i];p.age+=dt;p.previousX=p.x;p.x+=p.direction*p.speed*dt;p.group.position.x=p.x;
+   if(p.arcVisual){
+    // Grow the trail behind its leading tip, keeping it clear of the firing arm.
+    p.arcVisual.group.scale.x=clamp((p.speed*p.age+.2)/(4.8*p.radius),.08,1);
+    p.arcVisual.update(p.age,config.glow,config.pulse?.5+.5*Math.sin(p.age*Math.PI*4):.5);
+   }
+   else {
    if(p.coreMat)p.coreMat.userData.waveUniforms.uWaveTime.value=p.age;if(p.tailMat)p.tailMat.userData.waveUniforms.uWaveTime.value=p.age;
    const pulse=config.pulse ? .5+.5*Math.sin(p.age*Math.PI*4) : .5;
    p.body.rotation.x=Math.sin(p.age*2.1)*.13; // Small roll preserves the sculpted blast's broad side.
@@ -126,15 +140,16 @@ window.createVWaveSystem=function(T,scene){
    p.glow.scale.setScalar(3.6+.45*pulse);p.glow.material.opacity=config.glow*(.4+.25*pulse);
    p.wisps.forEach((w,j)=>{w.rotation.x=p.age*(1.4+j*.07);w.scale.setScalar(1.08+.035*Math.sin(p.age*5+j));w.material.opacity=config.glow*(.25+.25*pulse);});
    p.motes.forEach((m,j)=>{const u=(p.age*.75+j/12)%1,a=j*2.4+p.age*2;m.position.set(-u*4.5,Math.cos(a)*(.9-u*.65),Math.sin(a)*(.9-u*.65));m.scale.setScalar((1-u)*(.04+(j%3)*.018));});
+   }
    const target=targets.find(t=>t.owner!==p.owner&&t.alive&&Math.abs((t.y??1.05)-p.y)<.6+p.radius&&Math.min(p.previousX,p.x)-p.radius<=t.x+.28&&Math.max(p.previousX,p.x)+p.radius>=t.x-.28);
-   if(target){burst(target.x,p.y,p.color,1.5);onHit(p,target);disposeGroup(p.group);shots.splice(i,1);}
+   if(target){burst(target.x,p.y,p.color,1.5,p.variant==='arc');onHit(p,target);disposeGroup(p.group);shots.splice(i,1);}
    else if(p.age>5||Math.abs(p.x)>22){disposeGroup(p.group);shots.splice(i,1);}
   }
-  for(let i=bursts.length-1;i>=0;i--){const b=bursts[i];b.age+=dt;const fade=Math.max(0,1-b.age/.8);b.sparks.forEach(s=>{s.mesh.position.addScaledVector(s.velocity,dt);s.mesh.material.opacity=fade;});b.arcs.scale.setScalar(1+b.age*3);b.arcs.material.opacity=fade;b.arcs.visible=b.age<.28;b.flash.scale.setScalar(.5+b.age*3.5);b.flash.material.opacity=fade*fade*.8*config.glow;b.ring.scale.setScalar(.2+b.age*1.8*b.power);b.ring.material.opacity=fade*.6*config.glow;if(b.age>=.8){disposeGroup(b.group);bursts.splice(i,1);}}
+  for(let i=bursts.length-1;i>=0;i--){const b=bursts[i];b.age+=dt;const fade=Math.max(0,1-b.age/.8);b.sparks.forEach(s=>{s.mesh.position.addScaledVector(s.velocity,dt);s.mesh.material.opacity=fade;});b.arcs.scale.setScalar(1+b.age*3);b.arcs.material.opacity=fade;b.arcs.visible=b.age<(b.electric?.38:.28);if(b.electric){b.arcs.rotation.z=Math.floor(b.age*30)*.17;b.arcs.material.opacity=fade*(.55+.45*Math.abs(Math.sin(b.age*90)));}b.flash.scale.setScalar(.5+b.age*3.5);b.flash.material.opacity=fade*fade*.8*config.glow;b.ring.scale.setScalar(.2+b.age*1.8*b.power);b.ring.material.opacity=fade*.6*config.glow;if(b.age>=.8){disposeGroup(b.group);bursts.splice(i,1);}}
  }
- return {config,root,azure,charge,clearCharge,launch,update,ready:(owner=0)=>azure.status!=='loading'&&cooldowns[owner]<=0&&shots.length<2,
+ return {config,root,azure,charge,clearCharge,launch,update,ready:(owner=0)=>(config.variant==='arc'||azure.status!=='loading')&&cooldowns[owner]<=0&&shots.length<2,
   reset(){for(const owner of [...charges.keys()])clearCharge(owner);shots.forEach(p=>disposeGroup(p.group));bursts.forEach(b=>disposeGroup(b.group));shots.length=bursts.length=0;cooldowns.fill(0);},
-  get state(){return {asset:azure.status,charges:charges.size,cooldowns:[...cooldowns],shots:shots.map(p=>({id:p.id,owner:p.owner,x:p.x,y:p.y,direction:p.direction,age:p.age,damage:p.damage,mesh:!!p.azureMesh})),bursts:bursts.length};}
+  get state(){return {asset:azure.status,charges:charges.size,cooldowns:[...cooldowns],shots:shots.map(p=>({id:p.id,owner:p.owner,x:p.x,y:p.y,direction:p.direction,age:p.age,variant:p.variant,damage:p.damage,mesh:!!p.azureMesh})),bursts:bursts.length};}
  };
 };
 })();

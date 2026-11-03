@@ -5,10 +5,11 @@ const L=window.FighterLab,$=id=>document.getElementById(id),body=document.body;
 const isAPK=/GSFighterAPK/.test(navigator.userAgent);if(isAPK)body.classList.add('is-apk');
 body.classList.add('game');
 // ---------- settings ----------
-const DEF={touch:'auto',padStyle:'arcade',padSize:100,padOpacity:100,padSwap:false,padFade:true,haptics:true,keyboard:'arrows',autoFull:true,menuSounds:true,menuEffects:'standard',reducedMotion:false};
+const DEF={touch:'auto',padStyle:'arcade',padSize:100,padOpacity:100,padSwap:false,padFade:true,haptics:true,keyboard:'arrows',autoFull:true,menuSounds:true,menuEffects:'standard',reducedMotion:false,winSound:'fanfare',quickRecover:true};
 let S={...DEF};try{S={...DEF,...JSON.parse(localStorage.getItem('gsf-settings')||'{}')};}catch{}
 function save(){try{localStorage.setItem('gsf-settings',JSON.stringify(S));}catch{}}
-const crestParams=new URLSearchParams(location.search);if(crestParams.get('crest')==='1'&&crestParams.has('haptics'))S.haptics=crestParams.get('haptics')!=='0';
+window.GSFQuickRecover=S.quickRecover!==false;document.addEventListener('input',e=>{if(e.target?.dataset?.setting==='quickRecover')window.GSFQuickRecover=e.target.checked;});
+const crestParams=new URLSearchParams(location.search);if(crestParams.get('crest')==='1'&&crestParams.has('haptics')){S.haptics=crestParams.get('haptics')!=='0';save();}
 $('haptics').checked=S.haptics;
 // ---------- keyboard presets ----------
 const PRESETS={
@@ -17,7 +18,9 @@ const PRESETS={
  wasd:{label:'WASD + numpad style',map:{a:'left',d:'right',w:'up',s:'down',' ':'jump',j:'lp',k:'mp',l:'hp',u:'lk',i:'mk',o:'hk',shift:'block',e:'vwave',c:'duck',arrowleft:'left',arrowright:'right',arrowup:'up',arrowdown:'down'},
   show:[['Move','A D'],['Jump','W'],['Crouch','S / C'],['Backflip','Space'],['Low punch','J'],['Mid punch','K'],['High punch','L'],['Low kick','U'],['Mid kick','I'],['High kick','O'],['Block','Shift'],['V-Wave','E'],['Pause','Esc / Enter']]}
 };
-function applyKeys(){const k=L.keys;for(const key of Object.keys(k))delete k[key];Object.assign(k,PRESETS[S.keyboard]?.map||PRESETS.arrows.map);}
+function applyKeys(){const k=L.keys;for(const key of Object.keys(k))delete k[key];Object.assign(k,PRESETS[S.keyboard]?.map||PRESETS.arrows.map);
+ // 1.3.3 Keyboard setup: per-action overrides on top of the chosen layout.
+ for(const [act,key] of Object.entries(S.keyBinds||{})){if(!key)continue;for(const [kk,v] of Object.entries(k))if(v===act&&!/^arrow/.test(kk))delete k[kk];k[key]=act;}}
 applyKeys();
 const PAD_SHOW=[['Move','D-pad / Left stick'],['Low punch','LB'],['Mid punch','X / □'],['High punch','Y / △'],['Low kick','LT'],['Mid kick','A / ✕'],['High kick','B / ○'],['Block','RB'],['V-Wave','RT'],['Backflip','Left stick click'],['Camera','Right stick'],['Pause','Start']];
 // ---------- layout ----------
@@ -46,17 +49,20 @@ const FS_ICON='<svg viewBox="0 0 24 24"><path d="M3 9V3h6v2H5v4H3zm12-6h6v6h-2V5
 const viewport=document.querySelector('.viewport');
 const hud=document.createElement('div');hud.id='game-hud';hud.hidden=true;
 hud.innerHTML='<div class="hud-side p1"><div class="hud-name"><span id="hud-n1">P1</span><small>P1</small></div><div class="hud-bar" id="hud-b1"><b></b><i></i></div><div class="hud-pips" id="hud-w1"><span></span><span></span></div></div>'+
- '<div class="hud-mid"><div class="hud-timer" id="hud-time">60</div><div class="hud-round" id="hud-round">ROUND 1</div><div class="hud-btns"><button class="hud-btn" id="hud-pause" aria-label="Pause menu"><svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button><button class="hud-btn fs-btn" aria-label="Fullscreen">'+FS_ICON+'</button></div></div>'+
+ '<div class="hud-mid"><div class="hud-timer" id="hud-time">60</div><div class="hud-timer-art" id="hud-time-art"></div><div class="hud-round" id="hud-round">ROUND 1</div><div class="hud-btns"><button class="hud-btn" id="hud-pause" aria-label="Pause menu"><svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button><button class="hud-btn fs-btn" aria-label="Fullscreen">'+FS_ICON+'</button></div></div>'+
  '<div class="hud-side p2"><div class="hud-name"><small>CPU</small><span id="hud-n2">CPU</span></div><div class="hud-bar" id="hud-b2"><b></b><i></i></div><div class="hud-pips" id="hud-w2"><span></span><span></span></div></div>';
 viewport.append(hud);
 const ann=document.createElement('div');ann.id='announce';ann.innerHTML='<span></span>';viewport.append(ann);
+// Fight HUD Kit v1 (1.3.1): painted ROUND 1 / ROUND 2 / FIGHT! art and arcade timer digits. The match clock and
+// round flow stay in charge; the kit only displays. Round 3, K.O., TIME and Training keep the text announcer.
+let fightHUD=null;try{if(window.GSFightHUD){fightHUD=GSFightHUD.create({stage:viewport,timerHost:$('hud-time-art')});viewport.classList.add('has-fight-hud');}}catch(e){console.warn('Fight HUD unavailable',e);fightHUD=null;}
 function announce(text,cls='',sound){const s=ann.firstChild;s.className='';void s.offsetWidth;s.textContent=text;s.className='go '+cls;if(sound)GSFAudio[sound]?.();}
-const titleExtras=document.createElement('div');titleExtras.className='title-extras';titleExtras.innerHTML='<span class="build-label">1.3</span><button id="title-options">OPTIONS</button><button class="fs-btn" aria-label="Fullscreen">⛶ FULL</button>';$('title-screen').append(titleExtras);
+const titleExtras=document.createElement('div');titleExtras.className='title-extras';titleExtras.innerHTML='<span class="build-label">1.4.1</span><button id="title-options">OPTIONS</button><button class="fs-btn" aria-label="Fullscreen">⛶ FULL</button>';$('title-screen').append(titleExtras);
 const menu=document.createElement('div');menu.id='start-menu';menu.className='gs-overlay';menu.hidden=true;menu.setAttribute('role','dialog');menu.setAttribute('aria-modal','true');
 menu.innerHTML=`<div class="gs-panel"><button class="gs-close" id="menu-close">✕</button><h2 id="menu-title">PAUSED</h2><p class="sub" id="menu-sub">GS Fighter III · Player Menu v8</p>
 <div class="gs-tabs" role="tablist"><button role="tab" data-tab="game" aria-selected="true">GAME</button><button role="tab" data-tab="controls">CONTROLS</button><button role="tab" data-tab="video">VIDEO &amp; SOUND</button></div>
 <section data-page="game"><div class="gs-list" id="menu-actions"><button data-act="resume">RESUME</button><button data-act="restart">RESTART MATCH</button><button data-act="select">FIGHTER SELECT</button><button data-act="title">QUIT TO TITLE</button></div>
-<div class="gs-row"><span>CPU difficulty<small>Ferocious chases and punishes</small></span><div class="gs-seg" data-set="level"></div></div>
+<div class="gs-row"><span>CPU difficulty<small>Normal is the default · Ferocious chases and punishes</small></span><div class="gs-seg" data-set="level"></div></div>
 <div class="gs-row"><span>Round time</span><div class="gs-seg" data-set="rounds"><button data-v="30">30s</button><button data-v="60">60s</button><button data-v="99">99s</button></div></div></section>
 <section data-page="controls" hidden>
 <div class="gs-row"><span>Touch buttons<small>Auto shows them on phones and tablets</small></span><div class="gs-seg" data-set="touch"><button data-v="auto">Auto</button><button data-v="on">On</button><button data-v="off">Off</button></div></div>
@@ -169,7 +175,7 @@ function padTick(dt){
  prevButtons=p.buttons.map(x=>x.pressed);
 }
 function releasePad(){padNeedsNeutral=true;for(const id of padHeld)L.inputUp('gp-'+id);padHeld.clear();}
-window.GSFGameShell={get:getVal,set(key,value){if(key==='volume'){GSFAudio.setVolume(Number(value)/100);return;}if(['padSize','padOpacity'].includes(key)){S[key]=Number(value);save();layout();return;}setVal(key,String(value));},keyboardMap:preset=>(PRESETS[preset||S.keyboard]||PRESETS.arrows).show,padMap:PAD_SHOW,fullscreen:toggleFull,activity:padActivity,releasePad};
+window.GSFGameShell={get:getVal,set(key,value){if(key==='volume'){GSFAudio.setVolume(Number(value)/100);return;}if(['padSize','padOpacity'].includes(key)){S[key]=Number(value);save();layout();return;}setVal(key,String(value));},keyboardMap:preset=>keyShow(preset),get padMap(){return padShow();},fullscreen:toggleFull,activity:padActivity,releasePad};
 const menuChime=GSFAudio.ui;GSFAudio.ui=(...args)=>{if(S.menuSounds!==false)menuChime(...args);};
 // ---------- HUD loop ----------
 let lastState='',lastRound=0,trail=[100,100],lastShots=0;
@@ -182,15 +188,15 @@ function hudTick(dt){
   const hp=L.health,[n1,n2]=names();$('hud-n1').textContent=n1.toUpperCase();$('hud-n2').textContent=n2.toUpperCase();
   for(let i=0;i<2;i++){const bar=$('hud-b'+(i+1));bar.querySelector('i').style.transform='scaleX('+hp[i]/100+')';if(hp[i]>=trail[i]||m.state==='intro')trail[i]=hp[i];bar.querySelector('b').style.transform='scaleX('+hp[i]/100+')';bar.classList.toggle('low',hp[i]>0&&hp[i]<=25);
    $('hud-w'+(i+1)).querySelectorAll('span').forEach((s,k)=>s.classList.toggle('won',m.wins[i]>k));}
-  const t=Math.ceil(m.time);$('hud-time').textContent=m.training?'∞':String(t);$('hud-time').classList.toggle('urgent',!m.training&&m.state==='fight'&&t<=10);$('hud-round').textContent=m.training?'TRAINING':'ROUND '+m.round;hud.querySelector('.p2 .hud-name small').textContent=m.training?'DUMMY':'CPU';
+  const t=Math.ceil(m.time);$('hud-time').textContent=m.training?'∞':String(t);$('hud-time').classList.toggle('urgent',!m.training&&m.state==='fight'&&t<=10);$('hud-round').textContent=m.training?'TRAINING':'ROUND '+m.round;hud.classList.toggle('hud-training',!!m.training);if(fightHUD&&!m.training)fightHUD.setTime(Math.max(0,Math.min(99,t)));hud.querySelector('.p2 .hud-name small').textContent=m.training?'DUMMY':'CPU';
   const shots=L.vwave.state.shots.length;if(shots>lastShots)GSFAudio.wave();lastShots=shots;
  }
  const key=m.state+':'+m.round;
  if(key!==lastState){lastState=key;
-  if(m.state==='intro'){results.hidden=true;setTimeout(()=>{if(L.match.state==='intro')announce(m.round>=3&&m.wins[0]===1&&m.wins[1]===1?'FINAL ROUND':'ROUND '+m.round,'small','bell');},150);}
-  else if(m.state==='fight')announce(m.training?'TRAINING':'FIGHT!',m.training?'small':'','fight');
-  else if(m.state==='ko'){const perfect=m.roundWinner!=null&&L.health[m.roundWinner]===100;setTimeout(()=>announce(perfect?'PERFECT':'K.O.','ko','ko'),350);}
-  else if(m.state==='time')announce(m.roundWinner==null?'DRAW':'TIME','small','bell');
+  if(m.state==='intro'){results.hidden=true;setTimeout(()=>{if(L.match.state==='intro'){if(fightHUD&&!m.training&&m.round<=2){GSFAudio.bell?.();fightHUD.showRound(m.round,1100);}else announce(m.round>=3&&m.wins[0]===1&&m.wins[1]===1?'FINAL ROUND':'ROUND '+m.round,'small','bell');}},150);}
+  else if(m.state==='fight'){if(fightHUD&&!m.training){GSFAudio.fight?.();fightHUD.showFight(900);}else announce(m.training?'TRAINING':'FIGHT!',m.training?'small':'','fight');}
+  else if(m.state==='ko'){fightHUD?.cancel();const perfect=m.roundWinner!=null&&L.health[m.roundWinner]===100;setTimeout(()=>announce(perfect?'PERFECT':'K.O.','ko','ko'),350);}
+  else if(m.state==='time'){fightHUD?.cancel();announce(m.roundWinner==null?'DRAW':'TIME','small','bell');}
   else if(m.state==='over')showResults();
  }
 }
@@ -202,4 +208,85 @@ let last=performance.now();function loop(now){const dt=Math.min(.1,(now-last)/10
 layout();padActivity();
 // Branding: the packaged game title.
 document.title='GS Fighter III · Player Menu v8';
+// ---------- 1.3.3 Controller setup + Keyboard setup (Options › Controls) ----------
+const BIND_ACTIONS=[['lp','Low punch'],['mp','Mid punch'],['hp','High punch'],['lk','Low kick'],['mk','Mid kick'],['hk','High kick'],['block','Block'],['vwave','V-Wave'],['jump','Backflip']];
+const BTN_DEFAULT={...BTN};
+const PAD_NAMES={0:'A / ✕',1:'B / ○',2:'X / □',3:'Y / △',4:'LB',5:'RB',6:'LT',7:'RT',8:'Select',10:'Left stick click',11:'Right stick click'};
+const PAD_RESERVED=new Set([9,12,13,14,15,16]); // Start (pause), D-pad (move), Home
+const keyName=k=>k===' '?'Space':k.startsWith('arrow')?{arrowleft:'←',arrowright:'→',arrowup:'↑',arrowdown:'↓'}[k]:k.length===1?k.toUpperCase():k[0].toUpperCase()+k.slice(1);
+function applyPad(){for(const i of Object.keys(BTN))delete BTN[i];Object.assign(BTN,BTN_DEFAULT);
+ for(const [act,idx] of Object.entries(S.padBinds||{})){if(idx==null)continue;for(const [i,v] of Object.entries(BTN))if(v===act)delete BTN[i];BTN[idx]=act;}}
+function padShow(){const label=act=>{const i=Object.entries(BTN).find(([,v])=>v===act)?.[0];return i==null?'—':PAD_NAMES[i]||'Button '+i;};
+ return [['Move','D-pad / Left stick'],...BIND_ACTIONS.map(([a,n])=>[n,label(a)]),['Camera','Right stick'],['Pause','Start']];}
+function keyShow(preset){const base=(PRESETS[preset||S.keyboard]||PRESETS.arrows);if(preset&&preset!==S.keyboard)return base.show;
+ const keyFor=act=>Object.entries(L.keys).filter(([,v])=>v===act).map(([k])=>keyName(k)).join(' / ')||'—';
+ return [['Move',keyFor('left').split(' / ')[0]+' '+keyFor('right').split(' / ')[0]],['Jump',keyFor('up')],['Crouch',keyFor('down')+(keyFor('duck')!=='—'?' / '+keyFor('duck'):'')],
+  ...BIND_ACTIONS.map(([a,n])=>[n,keyFor(a)]),['Pause','Esc / Enter']];}
+applyPad();applyKeys();
+let binding=null; // {kind:'pad'|'key',act,btn,armed}
+function bindLabel(kind,act){if(kind==='pad'){const i=Object.entries(BTN).find(([,v])=>v===act)?.[0];return i==null?'—':PAD_NAMES[i]||'Button '+i;}
+ const ks=Object.entries(L.keys).filter(([k,v])=>v===act&&!/^arrow/.test(k)).map(([k])=>keyName(k));return ks.join(' / ')||'—';}
+function renderBinds(){for(const b of document.querySelectorAll('.gs-bind')){const [kind,act]=b.dataset.bind.split(':');b.textContent=binding&&binding.btn===b?(kind==='pad'?'Press a button…':'Press a key…'):bindLabel(kind,act);b.classList.toggle('is-listening',binding?.btn===b);}}
+function finishBind(){binding=null;renderBinds();try{window.GSFPlayerMenu?.refreshMap?.();}catch{}const map=document.getElementById('gs-control-map');if(map&&window.GSFGameShell){map.replaceChildren();const keys=keyShow(),pads=padShow();for(const [a,key] of keys){const pad=pads.find(([n])=>n===a)?.[1]||'—';const row=document.createElement('span');row.textContent=a;const bb=document.createElement('b');bb.textContent=key+' · '+pad;row.append(bb);map.append(row);}}}
+function setPadBind(act,idx){const binds={...(S.padBinds||{})};const prev=Object.entries(BTN).find(([,v])=>v===act)?.[0];const other=BTN[idx];
+ if(other&&other!==act&&prev!=null)binds[other]=Number(prev); // swap so nothing is lost
+ binds[act]=idx;S.padBinds=binds;save();applyPad();GSFAudio.ui?.();}
+function setKeyBind(act,key){const binds={...(S.keyBinds||{})};const prevKey=Object.entries(L.keys).find(([k,v])=>v===act&&!/^arrow/.test(k))?.[0];const other=L.keys[key];
+ if(other&&other!==act&&prevKey&&!['left','right','up','down'].includes(other))binds[other]=prevKey;
+ binds[act]=key;S.keyBinds=binds;save();applyKeys();GSFAudio.ui?.();}
+function installBindUI(){const panel=document.getElementById('gs-controls');if(!panel||panel.querySelector('.gs-binds'))return!!panel;
+ const box=document.createElement('div');box.className='gs-binds';
+ const section=(kind,title,note)=>`<div class="gs-bind-head"><strong>${title}</strong><small>${note}</small></div>`+BIND_ACTIONS.map(([a,n])=>`<div class="gs-setting gs-bind-row"><span>${n}</span><button type="button" class="gs-small-button gs-bind" data-bind="${kind}:${a}"></button></div>`).join('')+`<button type="button" class="gs-small-button gs-bind-reset" data-reset="${kind}">Reset ${kind==='pad'?'controller':'keyboard'} to default</button>`;
+ box.innerHTML=section('pad','Controller setup','Select an action, then press a controller button. Start, D-pad and sticks stay fixed.')+section('key','Keyboard setup','Select an action, then press a key. Esc cancels. Arrow keys stay for movement.');
+ const map=panel.querySelector('.gs-mapping');panel.insertBefore(box,map||null);renderBinds();return true;}
+document.addEventListener('click',e=>{const b=e.target.closest?.('.gs-bind');if(b){const [kind,act]=b.dataset.bind.split(':');binding=binding?.btn===b?null:{kind,act,btn:b,armed:false};renderBinds();return;}
+ const r=e.target.closest?.('.gs-bind-reset');if(r){if(r.dataset.reset==='pad'){S.padBinds={};applyPad();}else{S.keyBinds={};applyKeys();}save();finishBind();}});
+window.addEventListener('keydown',e=>{if(!binding||binding.kind!=='key')return;e.preventDefault();e.stopImmediatePropagation();const k=e.key.toLowerCase();if(k==='escape'){finishBind();return;}
+ if(['enter','tab','meta','alt','control'].includes(k))return;if(['arrowleft','arrowright','arrowup','arrowdown'].includes(k))return;setKeyBind(binding.act,k);finishBind();},true);
+// Controller capture runs before the menu's own navigation; wait for all buttons to be released first.
+const _padTick=padTick;padTick=function(dt){if(binding?.kind==='pad'){const p=firstPad();if(p){const pressed=p.buttons.map((x,i)=>(x.pressed||x.value>.5)?i:-1).filter(i=>i>=0);
+ if(!binding.armed){if(!pressed.length)binding.armed=true;}else{const i=pressed.find(i=>!PAD_RESERVED.has(i));if(i!=null){setPadBind(binding.act,i);finishBind();padNeedsNeutral=true;}else if(pressed.includes(9)){finishBind();}}
+ prevButtons=p.buttons.map(x=>x.pressed);}return;}return _padTick(dt);};
+(function waitPanel(){if(!installBindUI())setTimeout(waitPanel,400);else{new MutationObserver(()=>{if(!document.querySelector('#gs-controls .gs-binds'))installBindUI();renderBinds();}).observe(document.body,{childList:true,subtree:false});}})();
+// ---------- 1.4 Aura mode: glow, halo light, flame shield bar, prompt and call-outs ----------
+(function auraFX(){
+ const T=window.THREE,FX=[0,1].map(()=>({light:null,halo:null,color:'#ffffff'}));
+ const energy=id=>(window.FighterRoster?.find(f=>f.id===String(id).replace('__P2',''))?.energy?.color)||'#7fe7e4';
+ // HUD: shield bar under each health bar, and the P1 prompt.
+ for(const side of ['p1','p2']){const host=hud.querySelector('.hud-side.'+side);if(!host)continue;const bar=document.createElement('div');bar.className='hud-aura';bar.innerHTML='<i></i><b></b><span>AURA</span>';host.querySelector('.hud-bar').after(bar);}
+ const prompt=document.createElement('button');prompt.type='button';prompt.className='aura-prompt';prompt.hidden=true;prompt.setAttribute('aria-label','Activate Aura');prompt.innerHTML='<strong>AURA READY</strong><span></span><em></em>';viewport.append(prompt);
+ // 1.4.1: the prompt is also a tap button (touch, mouse or pen) — same as pressing Mid + High punch together.
+ const tapAura=e=>{e.preventDefault();e.stopPropagation();if((L.aura?.[0]?.prompt||0)>0&&L.auraStart?.(0))GSFUI?.rumble?.(120,.5);};
+ prompt.addEventListener('pointerdown',tapAura);prompt.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();});
+ function haloTexture(){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,4,64,64,64);r.addColorStop(0,'rgba(255,255,255,.95)');r.addColorStop(.35,'rgba(255,255,255,.45)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,128,128);return new T.CanvasTexture(c);}
+ let ready=false;
+ function setup(){if(ready||!T||!L.scene||!L.playerGroup)return ready;try{const tex=haloTexture();
+  // Lights and halos live on the scene (fighter groups are rebuilt when rigs load) and follow each fighter every frame.
+  [L.playerGroup,L.opponentGroup].forEach((group,i)=>{const light=new T.PointLight(0xffffff,0,4.2,2);L.scene.add(light);
+   const halo=new T.Sprite(new T.SpriteMaterial({map:tex,color:0xffffff,transparent:true,opacity:0,depthWrite:false,blending:T.AdditiveBlending}));halo.scale.set(2.3,3.2,1);halo.renderOrder=-1;L.scene.add(halo);
+   FX[i].light=light;FX[i].halo=halo;});
+  }catch(e){console.error('Aura FX setup',e);}return ready=true;}
+ function label(){const padOn=padConnected();if(padOn)return bindLabel('pad','mp')+' + '+bindLabel('pad','hp');if(body.classList.contains('is-touch'))return 'TAP HERE · or MID + HIGH PUNCH';return bindLabel('key','mp')+' + '+bindLabel('key','hp');}
+ window.addEventListener('gsf:aura',e=>{const {side,on,id}=e.detail;FX[side].color=energy(id);
+  if(on){const name=String(id).replace('__P2','').toUpperCase();announce(side===0?'AURA!':name+' AURA!','small aura','aura');GSFUI?.rumble?.(side===0?260:140,side===0?.7:.35);}
+ });
+ let t=0;
+ function tick(now){requestAnimationFrame(tick);if(!L.match)return;setup();t+=.016;const st=L.aura||[];
+  [0,1].forEach(i=>{const a=st[i]||{},lvl=a.level||0,f=FX[i],rig=i===0?L.playerRig:L.opponentRig,id=i===0?L.PLAYER:L.PARTNER;
+   const g=i===0?L.playerGroup:L.opponentGroup;if(f.light&&g){const wp=g.getWorldPosition(new T.Vector3());f.light.position.set(wp.x,wp.y+1.1,wp.z+.6);f.halo.position.set(wp.x,wp.y+1.05,wp.z-.25);}
+   if(lvl>0||f.on){const c=energy(id);f.color=c;const pulse=.82+.18*Math.sin(t*7+i);GSFX.setAura(rig,lvl*.7*pulse,c);
+    if(f.light){f.light.color.set(c);f.light.intensity=lvl*2.2*pulse;}if(f.halo){f.halo.material.color.set(c);f.halo.material.opacity=lvl*.6*pulse;f.halo.scale.set(2.3+.15*Math.sin(t*5),3.2+.2*Math.sin(t*4),1);}}
+   f.on=lvl>0;
+   const bar=hud.querySelector('.hud-side.p'+(i+1)+' .hud-aura');if(bar){const show=a.active||lvl>.02;bar.classList.toggle('on',show);bar.style.setProperty('--aura',f.color);bar.querySelector('i').style.transform='scaleX('+Math.max(0,Math.min(1,(a.time||0)/(L.AURA?.duration||9)))+')';bar.style.opacity=String(Math.min(1,lvl*1.4));}
+  });
+  const p=st[0]||{},show=(p.prompt||0)>0&&L.match.state==='fight';prompt.hidden=!show;
+  if(show){prompt.style.setProperty('--aura',energy(L.PLAYER));prompt.querySelector('span').textContent=label();prompt.querySelector('em').style.transform='scaleX('+(p.prompt/(L.AURA?.prompt||3))+')';}
+ }
+ requestAnimationFrame(tick);
 })();
+})();
+
+// 1.3.3: Victory sound workshop. Picking an option (or the button) plays it.
+document.addEventListener('input',e=>{if(e.target?.dataset?.setting==='winSound')setTimeout(()=>GSFAudio.win(e.target.value),60);});
+document.addEventListener('click',e=>{if(e.target.closest?.('#gs-win-test')){const v=document.querySelector('[data-setting=winSound]')?.value;GSFAudio.win(v);}});
+

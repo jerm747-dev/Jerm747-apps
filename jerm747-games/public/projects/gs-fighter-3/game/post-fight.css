@@ -60,3 +60,28 @@ body.game.post-fight-on #touch-controller,body.post-fight-on #game-hud,body.post
  .pf-journey{padding:48px 24px 12px;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto 1fr;column-gap:34px;align-content:center;justify-items:center}.pf-journey .pf-eyebrow{grid-column:1/-1;font-size:8px;margin-bottom:4px}.pf-journey h2{grid-column:1/-1;font-size:24px;margin-bottom:12px}.pf-pair{grid-column:1;grid-row:3/6;grid-template-columns:1fr 25px 1fr;gap:10px;width:100%;max-width:330px}.pf-contender .pf-diamond{max-width:115px;margin:auto}.pf-contender>small{font-size:8px;margin-bottom:5px}.pf-contender>strong{font-size:15px;margin-top:5px}.pf-route span{font-size:12px}.pf-journey-note{grid-column:2;font-size:10px;margin:0 0 10px}.pf-actions{grid-column:2;grid-template-columns:1fr;gap:6px;max-width:280px}.pf-actions button{min-height:42px!important;font-size:10px!important}.pf-actions .pf-quiet{min-height:25px!important;padding:4px!important}#pf-error{grid-column:2;font-size:10px;margin:0}
 }
 @media(prefers-reduced-motion:reduce){#post-fight *,#post-fight *:before,#post-fight *:after{animation:none!important;transition:none!important}.pf-sparks{display:none}#pf-word:after{display:none}.pf-score{transform:none}}
+
+/* 1.3.3: quote appears right away with a soft rise */
+#pf-quote-text.pf-quote-in{animation:pfQuoteIn .55s cubic-bezier(.2,.9,.3,1) both}
+@keyframes pfQuoteIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#pf-quote-text.pf-quote-in{animation:none}}
+/* 1.4 Victory cinematic: CinemaScope bars (2.39:1) slide in, the shot plays, result and quote sit inside the frame. */
+.pf-letterbox{position:absolute;inset:0;pointer-events:none;z-index:6}
+.pf-letterbox i{position:absolute;left:0;right:0;height:max(0px,calc((100% - 100vw / 2.39) / 2));background:#000;transform:scaleY(0);transition:transform .7s cubic-bezier(.3,.8,.3,1)}
+.pf-letterbox i:first-child{top:0;transform-origin:top}.pf-letterbox i:last-child{bottom:0;transform-origin:bottom}
+@media (max-aspect-ratio:3/2){.pf-letterbox i{height:11%}}
+#post-fight.pf-cine .pf-letterbox i{transform:none}
+#post-fight.pf-cine .pf-shade{opacity:.35}
+#post-fight.pf-cine[data-phase=cine] .pf-header,#post-fight.pf-cine[data-phase=cine] .pf-score,#post-fight.pf-cine[data-phase=cine] .pf-quote{opacity:0;pointer-events:none}
+#post-fight.pf-cine .pf-header,#post-fight.pf-cine .pf-footer,#post-fight.pf-cine .pf-score,#post-fight.pf-cine .pf-result,#post-fight.pf-cine .pf-quote{z-index:7}
+#post-fight.pf-cine .pf-result{left:4%;right:52%;top:50%;transform:translateY(-50%)}
+#post-fight.pf-cine .pf-quote{left:4%;right:54%;top:auto;bottom:calc(max(0px,(100% - 100vw / 2.39) / 2) + 14px);padding:18px 22px 22px}
+#post-fight.pf-cine .pf-quote blockquote{font-size:clamp(17px,1.8vw,26px);margin-top:12px}
+#post-fight.pf-cine[data-phase=quote] .pf-result{opacity:0;transition:opacity .4s}
+#post-fight.pf-cine .pf-score{top:calc(max(0px,(100% - 100vw / 2.39) / 2) + 14px)}
+#post-fight.pf-cine .pf-header{opacity:.85}
+@media (max-aspect-ratio:3/2){
+ #post-fight.pf-cine .pf-result{left:5%;right:5%;top:14%;transform:none}
+ #post-fight.pf-cine .pf-quote{left:5%;right:5%;bottom:calc(11% + 12px)}
+ #post-fight.pf-cine .pf-score{top:calc(11% + 70px)}
+}

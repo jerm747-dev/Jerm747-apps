@@ -58,7 +58,8 @@ window.createCourtyard=function(T,scene){
   // The sky is infinitely distant scenery; keep the camera inside its dome.
   dome.position.copy(camera.position);
   // Preserve the original fog on fighters/walls when only camera depth changes.
-  scene.fog.near=42+view.depthOffset;scene.fog.far=75+view.depthOffset;
+  // 1.3.3: the post-fight scene turns fog off; writing to null fog crashed the frame loop (stuck quote, Next Fight froze).
+  if(scene.fog){scene.fog.near=42+view.depthOffset;scene.fog.far=75+view.depthOffset;}
  };
  return group;
 };

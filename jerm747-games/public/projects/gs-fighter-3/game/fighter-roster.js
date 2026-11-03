@@ -5,7 +5,7 @@ window.FighterRoster=[
  {id:'Akeem',name:'Akeem',accent:'#ffbe69',subtitle:'Stand your ground',portrait:{body:'select-art/akeem-body-brush.png',head:'select-art/akeem-head-brush.png',spiral:'select-art/spiral-cyan.png'},data:()=>window.AkeemMeshData},
  {id:'Nika',name:'Nika',accent:'#b7a1ff',subtitle:'Move with purpose',portrait:{body:'select-art/nika-body-brush.png',head:'select-art/nika-head-brush.png',spiral:'select-art/spiral-gold.png'},data:()=>window.NikaMeshData}
 ].concat((window.GSFNewcomers?.list||[]).map(f=>({id:f.id,name:f.name,accent:f.accent,subtitle:f.subtitle,
- portrait:{body:'select-art/painted/'+f.id.toLowerCase()+'-body.webp',head:'select-art/painted/'+f.id.toLowerCase()+'-head.webp',spiral:'select-art/spiral-cyan.png'},
+ waveVariant:f.id==='Cyborg'?'arc':'orb',portrait:{body:'select-art/painted/'+f.id.toLowerCase()+'-body.webp',head:'select-art/painted/'+f.id.toLowerCase()+'-head.webp',spiral:'select-art/spiral-cyan.png'},
  data:()=>window[f.id+'MeshData']})));
 FighterRoster.forEach(f=>{
  const colors=f.id==='Akeem'?[0x0675f9,0x54faff,0xc151ff]:f.id==='Nika'?[0xff4c10,0xffdc76,0xff913e]:null;

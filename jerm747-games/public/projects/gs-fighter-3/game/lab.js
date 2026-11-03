@@ -6,7 +6,9 @@ const camera=new T.OrthographicCamera(-9,9,4,-4,.1,100);let zoom=1,zoomBias=1,pa
 let renderer;try{renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:"high-performance"});renderer.isWebGLRenderer=true;renderer.setClearColor(0x000000,0);renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.outputEncoding=T.sRGBEncoding;renderer.shadowMap.enabled=true;}catch{renderer=new FighterCanvasRenderer();$('render-mode').textContent='Compatibility graphics';}stage.appendChild(renderer.domElement);GSFQuality.init(renderer);
 const hemi=new T.HemisphereLight(0xe8efff,0x4d3e37,1.5);scene.add(hemi);const light=new T.DirectionalLight(0xffe9ce,2);light.position.set(-2,7,5);scene.add(light,light.target);const courtyard=createCourtyard(T,scene);const stageWalls=createStageWalls(T,scene),wallFocus=new T.Vector3();const riverScene=createRiverScenery(T,scene,renderer.capabilities?.maxTextureSize||4096);
 light.castShadow=true;light.shadow.mapSize.set(Math.min(GSFQuality.profile.shadow,GSFQuality.maxTextureSize),Math.min(GSFQuality.profile.shadow,GSFQuality.maxTextureSize));light.shadow.bias=-.00015;light.shadow.normalBias=.02;Object.assign(light.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:.5,far:20});light.shadow.radius=4;
-try{const surface=courtyard.userData.surface;surface.environment=GSFQuality.makeStoneEnvironment(T,renderer);for(const m of surface.materials){m.envMap=surface.environment?.texture||null;m.needsUpdate=true;}}catch(e){console.warn('Stone environment lighting unavailable',e);}
+/* 1.3.1: the stone environment reflection (with its built-in sun) blew the floor out to white-yellow once the
+   renderer flag enabled it. It stays available but off by default; ?stoneenv=0.3 turns it on at that strength. */
+try{const envI=Number(new URLSearchParams(location.search).get('stoneenv')||0);const surface=courtyard.userData.surface;surface.environment=envI>0?GSFQuality.makeStoneEnvironment(T,renderer):null;for(const m of surface.materials){m.envMap=surface.environment?.texture||null;m.envMapIntensity=envI||1;m.needsUpdate=true;}}catch(e){console.warn('Stone environment lighting unavailable',e);}
 // Training grid (lane line, metre marks, start marks): hidden by default now that the stage is painted; toggle with Grid.
 const grid=new T.Group();grid.visible=false;scene.add(grid);
 function box(w,h,d,x,y,z,color){const m=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color,roughness:1}));m.position.set(x,y,z);m.renderOrder=-10;grid.add(m);return m;}
@@ -38,6 +40,8 @@ const combatRules=FighterCombatRules;
 // Sweeps stay anchored so a linked punch cannot snap the fighter back along the lane.
 rules.sweep.root='anchored';
 const finishClock=createFinishClock(),vwave=createVWaveSystem(T,scene),reactions=createReactionController(T);let waveCast=null,reactionTests=[];
+// 1.3.2: Cyborg fires the Arc Lance (restored from 1.1.0/1.2.0); everyone else fires the V-Wave orb.
+function waveVar(id){return FighterRoster.find(f=>f.id===String(id).replace('__P2',''))?.waveVariant||'orb';}
 vwave.config.resolveColors=owner=>FighterRoster.find(f=>f.id===(owner===1?PARTNER:PLAYER))?.energy.colors;
 function beginVWave(){
  if(air||AIR_MOVES.includes(mode)||['fall','recover','hit','bind','preview'].includes(mode)||!vwave.ready()||waveCast)return;
@@ -57,7 +61,7 @@ function waveHit(p,t){
  }else if(match.active&&t.owner===0){hitPlayer('vwave',p.damage,true);
  }else{
   if(!$('hit-test').checked||health[1]<=0)return;
-  hitCount++;health[1]=Math.max(0,health[1]-p.damage);
+  hitCount++;health[1]=Math.max(0,health[1]-auraDmg(0,1,p.damage));
   reactOpponent(health[1]===0||p.powerful?'fall':'hit',{move:'vwave',height:'mid',heavy:true,damage:p.damage,knockdown:health[1]===0||p.powerful,side:0});if(health[1]===0){rhythmQueue.length=0;buffered=null;finishClock.impact();}updateHealth();
  }
 }
@@ -164,7 +168,12 @@ function settle(){const next=desired();if(mode!==next)action(next);}
 function bindRigCallbacks(){active.onFinished(()=>{if(demoPlaying)return;pending=returnIdle;hud();});opponent.onFinished(()=>{if(demoPlaying)return;enemyPending=true;});}
 bindRigCallbacks();
 function updateDirection(){const ids=[...held.values()],next=ids.includes('right')?1:ids.includes('left')?-1:0;if(next!==direction){direction=next;running=false;runAt=Infinity;if(next>=0)backFast=false;}}
-function inputDown(id,token,now=performance.now()){if(window.GSFPostFight?.active||selection?.isOpen||held.has(token)||window.GSFPaused)return;held.set(token,id);if(['fall','recover'].includes(mode))return;if(match.active&&(match.state!=='fight'||health[0]<=0)&&!['left','right','up','down'].includes(id))return;if(match.active&&match.state!=='fight')return;if(mode==='hit'&&!['left','right','up','down','block'].includes(id))return;if(id==='left'||id==='right'){updateDirection();const twice=now-lastTap[id]<=320;lastTap[id]=now;
+// 1.4 Quick recovery: once feet are back on the floor after a jump/backflip, or a get-up is ~70% done, movement,
+// block and attacks may cut the rest of the pose. Attack timing is unchanged. Options › Gameplay › Quick recovery.
+function tailFree(){if(window.GSFQuickRecover===false||!active.current)return false;
+ if(AIR_MOVES.includes(mode)&&!air&&landed)return true;
+ if(mode==='recover'&&health[0]>0&&active.time>=(active.clipEnd??active.duration)*.7)return true;return false;}
+function inputDown(id,token,now=performance.now()){if(window.GSFPostFight?.active||selection?.isOpen||held.has(token)||window.GSFPaused)return;held.set(token,id);if(id==='mp'||id==='hp')auraInput(id,now);if(tailFree()){mode='finished';settle();}if(['fall','recover'].includes(mode))return;if(match.active&&(match.state!=='fight'||health[0]<=0)&&!['left','right','up','down'].includes(id))return;if(match.active&&match.state!=='fight')return;if(mode==='hit'&&!['left','right','up','down','block'].includes(id))return;if(id==='left'||id==='right'){updateDirection();const twice=now-lastTap[id]<=320;lastTap[id]=now;
   if(id==='left'){backFast=twice&&direction<0;if(MOVABLE.includes(mode)){if(!backFast&&direction<0&&['idle','walk','run'].includes(mode)){backStart=now;action('stepback',now);}else settle();}}
   else{if(twice){running=false;runAt=now+500;}if(MOVABLE.includes(mode))settle();}}
  else if(['down','duck','block'].includes(id))action(id==='block'?'block':'crouch',now);else action(id,now);}
@@ -191,7 +200,7 @@ function placeStage(){if(!envOK)return;const W=envCanvas.width,H=envCanvas.heigh
  let s=Math.max(W/1000,H/563)*(1+(zoom-1)*.08);s=Math.max(s,floorY/FLOOR_ROW,(H-floorY)/(563-FLOOR_ROW));
  const pan=camX*pxPerM*.25/s;let ox=W/2-(500+pan)*s;ox=Math.min(0,Math.max(W-1000*s,ox));env.setView(s,ox,floorY-FLOOR_ROW*s);}
 // Smooth distance-based framing: prefer 3x in mid-range and 5x toe-to-toe.
-function zoomTarget(){const gap=Math.abs(nikaX-x);return T.MathUtils.clamp(17/(gap+2.4)*zoomBias,1,5);}
+function zoomTarget(){const gap=Math.abs(nikaX-x);return T.MathUtils.clamp(15/(gap+2.4)*zoomBias,1,5);}
 let frameWidth=0,frameHeight=0,camLift=0; // camLift: eased jump height so airborne fighters stay in frame
 function fitCamera(){if(selection?.isOpen)return;const w=stage.clientWidth,h=Math.max(1,stage.clientHeight),aspect=w/h;riverScene.setViewAspect(aspect);if(w!==frameWidth||h!==frameHeight){renderer.setSize(w,h);frameWidth=w;frameHeight=h;const r=Math.min(devicePixelRatio||1,1.5);envCanvas.width=Math.round(w*r);envCanvas.height=Math.round(h*r);}const centerX=(x+nikaX)/2,view=frameArenaView(T,camera,{aspect,zoom,lift:camLift,yaw:cameraYaw,pitch:cameraPitch,centerX});courtyard.userData.updateForeground(camera,centerX,view);camera.updateMatrixWorld(true);courtyard.userData.surface.updateView(camera,centerX,zoom,renderer.domElement.width,renderer.domElement.height);$('zoom-label').textContent='Auto '+zoom.toFixed(1)+'×';}
 function adjustZoom(delta){zoomBias=T.MathUtils.clamp(zoomBias+delta,.4,1.5);}
@@ -275,7 +284,7 @@ function testReactions(flurry=false){
 $('reaction-test').onclick=()=>testReactions();$('reaction-flurry').onclick=()=>testReactions(true);
 
 const strikes=['hp','mp','lp','hk','mk','lk','jumpkick','sweep','airpunch'];
-function step(dt,now){
+function step(dt,now,dtOpp=dt){
  while(reactionTests.length&&reactions.time>=reactionTests[0]){reactionTests.shift();reactionTestHit();}
 if($('hit-test').checked&&health[1]>0&&health[1]<=12&&nikaX-x<1.9&&strikes.includes(mode)&&!hitDone)finishClock.anticipate();
 if(buffered&&now-bufferedAt>(MY.input?.bufferMax??.3)*1000){buffered=null;$('status').textContent='Late press dropped';}
@@ -285,6 +294,7 @@ if(rhythmQueue.length&&(!active.playing||!strikes.includes(mode)||active.time>=t
 }
 if(buffered&&linkReady(buffered)){const b=buffered;buffered=null;pending=false;action(b);}if(pending){pending=false;if(mode==='fall'){if(!(match.active&&health[0]<=0))action('recover');}else{mode='finished';updateDirection();settle();}}if(direction>0&&!running&&now>=runAt){running=true;if(mode==='walk')settle();}
 if(mode==='stepback'&&direction<0&&now-backStart>250)settle(); // still holding ← after the first step: walk backward
+if(direction&&tailFree()){mode='finished';settle();}
 if(direction&&['walk','run','back','backrun'].includes(mode)&&active.playing)x+=direction*dt*WORLD_SPEED[mode];
 // Air time: start the arc at the clip's own takeoff frame, stretch the airborne frames, land on the clip's landing frame.
 const airCfg=MY.air?.[mode],ci=active.clipInfo;
@@ -301,11 +311,11 @@ if(waveCast&&mode==='vwave'&&active.current?.name===waveCast.clip){
  player.updateMatrixWorld(true);let handX=x+.55,handY=1.05;
  for(const b of active.bones)if(/LeftHand|RightHand/.test(b.name)){b.getWorldPosition(contactPoint);if(contactPoint.x>handX){handX=contactPoint.x;handY=contactPoint.y;}}
  const spawnX=Math.min(nikaX-.3,handX+.12),spawnY=T.MathUtils.clamp(handY,.85,1.3);
- if(active.time>=waveCast.release||pending){vwave.launch({owner:0,x:spawnX,y:spawnY,direction:1});waveCast=null;$('status').textContent='Azure V-Wave · blast released';}
- else vwave.charge({owner:0,x:spawnX,y:spawnY,progress:(active.time-waveCast.start)/Math.max(.01,waveCast.release-waveCast.start)});
+ if(active.time>=waveCast.release||pending){vwave.launch({owner:0,x:spawnX,y:spawnY,direction:1,variant:waveVar(PLAYER)});waveCast=null;$('status').textContent='Azure V-Wave · blast released';}
+ else vwave.charge({owner:0,x:spawnX,y:spawnY,variant:waveVar(PLAYER),progress:(active.time-waveCast.start)/Math.max(.01,waveCast.release-waveCast.start)});
 }
 if(active.playing||pending){if(!['walk','run','idle','preview','bind','block','crouch','back','backrun'].includes(mode))x+=active.rootDelta.z;}x=T.MathUtils.clamp(x,-8,nikaX-.85);player.position.x=x;target.position.x=nikaX;if(enemyPending){enemyPending=false;if(match.active&&enemyMode==='fall'&&health[1]<=0){}else if(enemyMode==='fall'&&health[1]>0)reactOpponent('recover');else if(health[1]>0){enemyMode='idle';enemyReact=false;opponent.setBlend(Number($('blend').value));enemySpeed=THEIRS.idle[1];opponent.play(THEIRS.idle[0],{loop:true,entry:'cycle',root:'pinned'});}}
-if(match.active)cpuThink(dt,now);opponent.update(dt,enemySpeed);if(match.active)cpuAfterUpdate(dt);plantFeet(dt);
+if(match.active)cpuThink(dtOpp,now);opponent.update(dtOpp,enemySpeed);if(match.active)cpuAfterUpdate(dt);plantFeet(dt);
 if(!match.active&&health[1]<=0){koWait+=dt;if(koWait>3)reset();}
 updateHealth();
 const hitAt=active.smart&&active.clipInfo?((curRule??rules[mode])?.active??active.clipInfo.activeAt):active.duration*.45;
@@ -320,8 +330,9 @@ if($('hit-test').checked&&strikes.includes(mode)&&!hitDone&&health[1]>0&&enemyMo
    // Hand bones sit at the wrist; include 4 cm of fist beyond the joint.
    b.getWorldPosition(contactPoint);reach=Math.max(reach,contactPoint.x+(kicking?0:.04));
   }
+  reach=Math.max(reach,x+(window.FighterReach?.[mode]??-9)); // 1.4.1 equal contact box per button
   const hurtX=nikaX-opponent.sway;
-  if(reach>=hurtX-.38&&!(match.active&&match.state!=='fight')){strikeWindows.add(contact);hitDone=strikeWindows.size===tempo.contacts(hitRule,hitAt).length;hitCount++;if(match.active&&enemyMode==='block'&&mode!=='sweep'){health[1]=Math.max(1,health[1]-1);nikaX=Math.min(8,nikaX+.18);GSFX.block(contactPoint);updateHealth();}else{const damage=tempo.damageAt(mode==='sweep'?12:kicking?8:5,hitRule,contact);health[1]=Math.max(0,health[1]-damage);const knockdown=mode==='sweep'||health[1]===0;GSFX.impact(damage,false,{move:mode,knockdown});const hit=reactions.impact(active,PLAYER,mode,opponent,damage,health[1]===0,knockdown);reactOpponent(knockdown?'fall':'hit',hit);if(health[1]===0){rhythmQueue.length=0;buffered=null;finishClock.impact();}updateHealth();}}
+  if(reach>=hurtX-.38&&!(match.active&&match.state!=='fight')){strikeWindows.add(contact);hitDone=strikeWindows.size===tempo.contacts(hitRule,hitAt).length;hitCount++;if(match.active&&enemyMode==='block'&&mode!=='sweep'){health[1]=Math.max(1,health[1]-1);nikaX=Math.min(8,nikaX+.18);GSFX.block(contactPoint);updateHealth();}else{const damage=auraDmg(0,1,tempo.damageAt(mode==='sweep'?12:kicking?8:5,hitRule,contact));health[1]=Math.max(0,health[1]-damage);const knockdown=mode==='sweep'||health[1]===0;GSFX.impact(damage,false,{move:mode,knockdown});const hit=reactions.impact(active,PLAYER,mode,opponent,damage,health[1]===0,knockdown);reactOpponent(knockdown?'fall':'hit',hit);if(health[1]===0){rhythmQueue.length=0;buffered=null;finishClock.impact();}updateHealth();}}
  }
 }
 $('distance').textContent=(nikaX-x).toFixed(1)+' m apart';$('position').textContent=PLAYER+' '+x.toFixed(2)+' m · '+PARTNER+' '+nikaX.toFixed(1)+' m';$('hits').textContent='Range hits: '+hitCount;$('time').textContent=active.time.toFixed(2)+' / '+active.duration.toFixed(2)+' s';$('timeline').value=active.time;zoom+=(zoomTarget()-zoom)*(1-Math.exp(-dt*4));camLift+=((air?air.H:0)-camLift)*(1-Math.exp(-dt*(air?10:3)));camLift=Math.max(camLift,reactionCameraLift());fitCamera();}
@@ -362,16 +373,51 @@ refreshFighterLabels();$('swap').onclick=swapFighter;
 reset();fitCamera();Promise.all([active.ready,opponent.ready]).catch(()=>{$('status').textContent='Texture unavailable · rig remains usable';});
 // Shadows follow the fighters; the stage is drawn first, then the fighters on top.
 function frameShadows(){const cx=(x+nikaX)/2;light.position.set(cx-2,7,5);light.target.position.set(cx,0,0);const span=Math.max(3,Math.abs(nikaX-x)/2+2);Object.assign(light.shadow.camera,{left:-span,right:span});light.shadow.camera.updateProjectionMatrix();}
+
+// ---- 1.4 Aura mode: a last-stand power-up near the end of a fight. ----
+// At 10% health or less, a 3 s window opens (it reopens after each hit taken while still unused). Mid + High punch
+// together (one held while the other is pressed, or within 350 ms) ignites it, once per match. For 9 s the fighter takes 50% damage and deals 75%; the
+// opponent slows to 0.75x. Each hit taken drains an extra 1 s. Both in Aura at once: the slowdowns cancel.
+// CPU uses it once per match on Hard and Ferocious. ?aura=test opens the window at once for tuning.
+const AURA={threshold:10,prompt:3,duration:9,hitDrain:1,slow:.75,take:.5,deal:.75,ease:.5,combo:.35,cpuLevels:['hard','ferocious']};
+const aura=[{},{}];let auraScale=[1,1],auraLast={mp:-1e9,hp:-1e9};
+const auraParam=new URLSearchParams(location.search).get('aura'),auraTest=auraParam==='test',auraCpuTest=auraParam==='cpu';
+// Test switches: ?aura=test keeps Aura ready for P1 at any health; ?aura=cpu makes the CPU ignite it within a second.
+if(auraTest||auraCpuTest)AURA.threshold=100;if(auraCpuTest)AURA.cpuLevels=['easy','normal','hard','ferocious'];
+function auraReset(full){for(const a of aura){a.active=false;a.prompt=0;a.time=0;a.cpuAt=null;a.lastHp=100;if(full){a.used=false;a.level=0;}}if(full)auraScale=[1,1];}
+auraReset(true);
+function auraEmit(side,on,instant=false){window.dispatchEvent(new CustomEvent('gsf:aura',{detail:{side,on,instant,id:side===0?PLAYER:PARTNER}}));}
+function auraStart(side){const a=aura[side];if(!match.active||match.training||match.state!=='fight'||a.used||a.active||health[side]<=0)return false;
+ a.used=true;a.active=true;a.prompt=0;a.time=AURA.duration;auraEmit(side,true);return true;}
+function auraEnd(side,instant=false){const a=aura[side];if(!a.active)return;a.active=false;a.time=0;auraEmit(side,false,instant);}
+function auraInput(id,now){auraLast[id]=now;const other=id==='mp'?'hp':'mp';if(aura[0].prompt>0&&([...held.values()].includes(other)||now-auraLast[other]<=AURA.combo*1000))auraStart(0);}
+function auraDmg(att,tgt,d){if(!match.active||!d)return d;let k=1;if(aura[att]?.active)k*=AURA.deal;if(aura[tgt]?.active){k*=AURA.take;aura[tgt].time-=AURA.hitDrain;}return k===1?d:Math.max(1,Math.round(d*k));}
+function auraTick(dt){
+ if(!match.active||match.training||demoPlaying){for(let i=0;i<2;i++)auraEnd(i,true);auraScale=[1,1];for(const a of aura)a.level=Math.max(0,a.level-dt/AURA.ease);return;}
+ for(let i=0;i<2;i++){const a=aura[i],hp=health[i];
+  const eligible=match.state==='fight'&&!a.used&&!a.active&&hp>0&&hp<=AURA.threshold;
+  if(eligible&&(hp<a.lastHp||(auraTest&&i===0&&a.prompt<=0)||(auraCpuTest&&i===1))){ // newly eligible, or hit again while unused
+   if(i===0)a.prompt=AURA.prompt;
+   else if(a.cpuAt==null&&AURA.cpuLevels.includes(match.level))a.cpuAt=.35+Math.random()*.9;}
+  a.lastHp=hp;
+  if(a.prompt>0){a.prompt=Math.max(0,a.prompt-dt);if(!eligible)a.prompt=0;}
+  if(a.cpuAt!=null){a.cpuAt-=dt;if(a.cpuAt<=0){a.cpuAt=null;auraStart(i);}}
+  if(a.active){a.time-=dt;if(hp<=0)auraEnd(i,true);else if(a.time<=0||match.state!=='fight')auraEnd(i);}
+  a.level=T.MathUtils.clamp(a.level+(a.active?1:-1)*dt/AURA.ease,0,1);}
+ // The opponent of an Aura fighter slows; when both burn, the effects cancel.
+ const want=[aura[1].active&&!aura[0].active?AURA.slow:1,aura[0].active&&!aura[1].active?AURA.slow:1];
+ for(let i=0;i<2;i++)auraScale[i]+=(want[i]-auraScale[i])*Math.min(1,dt/(AURA.ease*.5));
+}
 let last=performance.now();function frame(now){
  const realDt=document.hidden?0:Math.min((now-last)/1000,.1);last=now;
- if(window.GSFPostFight?.active){window.GSFPostFight.tick(realDt);requestAnimationFrame(frame);return;}
+ if(window.GSFPostFight?.active){requestAnimationFrame(frame);try{window.GSFPostFight.tick(realDt);}catch(e){console.error('Post-fight frame',e);}return;}
  if(window.GSFPaused){if(!window.GSFPlayerMenu?.isOpen)GSFX.render(renderer,scene,camera,0);requestAnimationFrame(frame);return;}
  if(selection?.isOpen){selection.tick(realDt,now);requestAnimationFrame(frame);return;}
  updateCameraPad(realDt);attractTick(realDt);matchTick(realDt);
  const dt=realDt*finishClock.update(realDt)*GSFX.timeScale(realDt);
  // Keep queued inputs alive for the same simulation interval during a finish.
  const extra=(realDt-dt)*1000;bufferedAt+=extra;rhythmQueue.forEach(q=>q.at+=extra);
- if(demoPlaying)demoStep(dt);else step(dt,now);
+ auraTick(realDt);if(demoPlaying)demoStep(dt);else step(dt*auraScale[0],now,dt*auraScale[1]);
  updateCombatEffects(dt);
  if(envOK){env.update(dt);placeStage();env.draw();}riverScene.update(dt);frameShadows();stageWalls.update(realDt,camera,wallFocus.set((x+nikaX)/2,0,0),Math.abs(nikaX-x)/2);GSFX.render(renderer,scene,camera,realDt);GSFQuality.tick(now);requestAnimationFrame(frame);
 }requestAnimationFrame(frame);
@@ -506,7 +552,7 @@ const AI_LEVELS={
  hard:{label:'Hard',think:.24,aggro:.76,block:.5,react:.18,wave:.16,run:.6,breath:.16},
  ferocious:{label:'Ferocious',think:.13,aggro:.93,block:.66,react:.1,wave:.22,run:.9,breath:.08}
 };
-const match={active:false,state:'off',round:1,wins:[0,0],time:60,roundSeconds:60,stateAge:0,winner:null,roundWinner:null,koBy:null,level:'ferocious',lastResult:''};
+const match={active:false,state:'off',round:1,wins:[0,0],time:60,roundSeconds:60,stateAge:0,winner:null,roundWinner:null,koBy:null,level:'normal',lastResult:''};
 try{const lv=localStorage.getItem('gsf-ai-level');if(AI_LEVELS[lv])match.level=lv;const rs=Number(localStorage.getItem('gsf-round-seconds'));if([30,60,99].includes(rs))match.roundSeconds=rs;}catch{}
 const cpu={think:0,hitDone:false,windows:new Set(),rule:null,activeAt:null,blockUntil:0,backUntil:0,wave:null,combo:0,lastAttack:'',moveAge:0};
 const CPU_STRIKES=['mp','hp','lp','mk','hk','lk','jumpkick','airpunch','sweep'];
@@ -570,8 +616,8 @@ function cpuAfterUpdate(dt){
   if(enemyMode!=='vwave'){cpu.wave=null;vwave.clearCharge(1);}
   else{target.updateMatrixWorld(true);let hx=nikaX-.55,hy=1.05;for(const b of opponent.bones)if(/LeftHand|RightHand/.test(b.name)){b.getWorldPosition(contactPoint);if(contactPoint.x<hx){hx=contactPoint.x;hy=contactPoint.y;}}
    const sx=Math.max(x+.3,hx-.12),sy=T.MathUtils.clamp(hy,.85,1.3);
-   if(opponent.time>=cpu.wave.release||!opponent.playing){vwave.launch({owner:1,x:sx,y:sy,direction:-1});cpu.wave=null;}
-   else vwave.charge({owner:1,x:sx,y:sy,progress:(opponent.time-cpu.wave.start)/Math.max(.01,cpu.wave.release-cpu.wave.start)});}
+   if(opponent.time>=cpu.wave.release||!opponent.playing){vwave.launch({owner:1,x:sx,y:sy,direction:-1,variant:waveVar(PARTNER)});cpu.wave=null;}
+   else vwave.charge({owner:1,x:sx,y:sy,variant:waveVar(PARTNER),progress:(opponent.time-cpu.wave.start)/Math.max(.01,cpu.wave.release-cpu.wave.start)});}
  }
  if(enemyMode==='vwave'&&!opponent.playing){enemyPlay('idle');}
  // Strike contact at the clip's measured active frame, using the attacking limb's real reach.
@@ -581,6 +627,7 @@ function cpuAfterUpdate(dt){
   if(contact>=0){
    const kicking=['hk','mk','lk','jumpkick','sweep'].includes(enemyMode);target.updateMatrixWorld(true);player.updateMatrixWorld(true);let reach=Infinity;
     for(const b of opponent.bones)if((kicking?/LeftFoot|RightFoot/:/LeftHand|RightHand/).test(b.name)){b.getWorldPosition(contactPoint);reach=Math.min(reach,contactPoint.x-(kicking?0:.04));}
+    reach=Math.min(reach,nikaX-(window.FighterReach?.[enemyMode]??-9)); // 1.4.1 equal contact box per button
     const hurtX=x+active.sway;
     if(reach<=hurtX+.38&&!['fall','recover'].includes(mode)){cpu.windows.add(contact);cpu.hitDone=cpu.windows.size===frames.length;
      if(mode==='crouch'&&HIGH.includes(enemyMode)){GSFX.whiff();}
@@ -599,7 +646,7 @@ function hitPlayer(move,damage,knockdown){
  if(health[0]<=0||['fall','recover'].includes(mode))return;
  const unblockable=move==='sweep'||move==='vwave'&&false;
  if(mode==='block'&&!unblockable){health[0]=Math.max(1,health[0]-(move==='vwave'?3:1));x=Math.max(-8.6,x-.2);GSFX.block(null);updateHealth();return;}
- cpu.combo++;health[0]=Math.max(0,health[0]-damage);const ko=health[0]===0;knockdown=knockdown||ko||move==='vwave';
+ cpu.combo++;damage=auraDmg(1,0,damage);health[0]=Math.max(0,health[0]-damage);const ko=health[0]===0;knockdown=knockdown||ko||move==='vwave';
  GSFX.impact(damage,true,{move,knockdown});
  const hit=move==='vwave'?{...reactions.profile(PARTNER,'vwave',damage),side:0,heavy:true,knockdown:true}:reactions.impact(opponent,PARTNER,move,active,damage,ko,knockdown);
  waveCast=null;vwave.clearCharge(0);buffered=null;rhythmQueue.length=0;queuedAirPunch=false;airAttackDone=false;
@@ -618,12 +665,12 @@ function hitPlayer(move,damage,knockdown){
 }
 function matchSet(state){match.state=state;match.stateAge=0;}
 function startMatch(training=false){
- match.training=training===true;
+ match.training=training===true;auraReset(true);
  window.GSFPostFight?.close();
  match.active=true;match.wins=[0,0];match.round=1;match.winner=null;cpu.combo=0;startRound();
 }
 function startRound(){
- reset();health=[100,100];updateHealth();cameraReset();match.time=match.roundSeconds;match.roundWinner=null;match.koBy=null;
+ auraReset(false);reset();health=[100,100];updateHealth();cameraReset();match.time=match.roundSeconds;match.roundWinner=null;match.koBy=null;
  cpu.think=.8;cpu.wave=null;cpu.combo=0;x=-2.6;nikaX=2.6;player.position.x=x;target.position.x=nikaX;enemyPlay('idle');fitCamera();matchSet(match.training?'fight':'intro');
 }
 function endMatch(){window.GSFPostFight?.close();match.active=false;match.training=false;matchSet('off');resetEffects();}
@@ -680,5 +727,5 @@ $('select-btn').onclick=()=>{closeTitle(false);selection.open([PLAYER,PARTNER]);
 // The intro only loads when the title screen is shown (skipped after Play as …).
 if(new URLSearchParams(location.search).has('skipintro'))closeTitle(!new URLSearchParams(location.search).has('skipselect'));else{$('intro').src=$('intro').dataset.src;$('press-start').focus();}
 for(const f of Object.values(fighters))GSFX.decorate(f);
-window.FighterLab={clearInput,get playerRig(){return active;},get opponentRig(){return opponent;},playerGroup:player,opponentGroup:target,match,AI_LEVELS,startMatch,endMatch,startRound,ensureRig,keys,openTitle,get titleOpen(){return titleOpen;},get demoPlaying(){return demoPlaying;},prepDemo,hitPlayer,get enemy(){return enemyMode;},reactions,testReactions,get enemyMode(){return enemyMode;},selection,configureMatchup,renderer,finishClock,vwave,get waveCast(){return waveCast;},courtyard,quality:GSFQuality,scenery:riverScene,walls:stageWalls,surface:courtyard.userData.surface,get health(){return [...health];},get cameraYaw(){return cameraYaw;},get queue(){return rhythmQueue.slice();},combatRules,demoConfig,startDemo,get attract(){return {phase:attractPhase,index:demoIndex,time:attractTime,playing:demoPlaying,roundOver,winner:roundWinner,hp:cpus.map(c=>c.hp),moves:cpus.map(c=>c.move),positions:[x,nikaX]};},padRead:e=>padRead(e),padSet:d=>padSet(d),get env(){return env;},get envOK(){return envOK;},closeTitle,swapFighter,get PLAYER(){return PLAYER;},get PARTNER(){return PARTNER;},planters,get buffered(){return buffered;},rules,fighters,defaults,scene,camera,inputDown,inputUp,reset,step,action,get zoom(){return zoom;},get zoomTarget(){return zoomTarget();},get mode(){return mode;},get position(){return x;},get running(){return running;},get air(){return air;},get playSpeed(){return playSpeed;},get hits(){return hitCount;}};
+window.FighterLab={clearInput,get aura(){return aura.map(a=>({used:a.used,active:a.active,prompt:a.prompt,time:a.time,level:a.level}));},get auraScale(){return [...auraScale];},AURA,auraStart,auraEnd,get playerRig(){return active;},get opponentRig(){return opponent;},playerGroup:player,opponentGroup:target,match,AI_LEVELS,startMatch,endMatch,startRound,ensureRig,keys,openTitle,get titleOpen(){return titleOpen;},get demoPlaying(){return demoPlaying;},prepDemo,hitPlayer,get enemy(){return enemyMode;},reactions,testReactions,get enemyMode(){return enemyMode;},selection,configureMatchup,renderer,finishClock,vwave,get waveCast(){return waveCast;},courtyard,quality:GSFQuality,scenery:riverScene,walls:stageWalls,surface:courtyard.userData.surface,get health(){return [...health];},get cameraYaw(){return cameraYaw;},get queue(){return rhythmQueue.slice();},combatRules,demoConfig,startDemo,get attract(){return {phase:attractPhase,index:demoIndex,time:attractTime,playing:demoPlaying,roundOver,winner:roundWinner,hp:cpus.map(c=>c.hp),moves:cpus.map(c=>c.move),positions:[x,nikaX]};},padRead:e=>padRead(e),padSet:d=>padSet(d),get env(){return env;},get envOK(){return envOK;},closeTitle,swapFighter,get PLAYER(){return PLAYER;},get PARTNER(){return PARTNER;},planters,get buffered(){return buffered;},rules,fighters,defaults,scene,camera,inputDown,inputUp,reset,step,action,get zoom(){return zoom;},get zoomTarget(){return zoomTarget();},get mode(){return mode;},get position(){return x;},get running(){return running;},get air(){return air;},get playSpeed(){return playSpeed;},get hits(){return hitCount;}};
 })();

@@ -145,6 +145,11 @@ footer output{justify-self:end}.ready-transition{position:fixed;inset:0;z-index:
 @keyframes ready-reveal{0%,24%{opacity:0}42%,100%{opacity:1}}
 
 .select-menu-links{display:flex;gap:6px;margin-left:auto}.select-menu-links button{min-height:44px;border:0;background:transparent;color:#c2d8e0;font:italic 800 11px system-ui;padding:8px 10px;cursor:pointer}.select-menu-links button:hover{color:#f5d08a}.select-menu-links button:focus-visible{outline:2px solid #f5d08a}@media(max-width:500px){.masthead{flex-wrap:wrap;gap:6px}.select-menu-links{margin-left:0}.select-menu-links button{padding-left:0;padding-right:18px}}
+
+/* 1.3.1 controller: P2 (CPU) cursor from the right stick */
+.pad-on .fighter-tile.is-p2-focus{z-index:5;filter:drop-shadow(0 0 7px #b594ee88)}
+.pad-on .fighter-tile.is-p2-focus .tile-frame{background:var(--purple)}
+.pad-on .fighter-tile.is-focus.is-p2-focus .tile-frame{background:linear-gradient(125deg,#ffdfa0 45%,var(--purple) 55%)}
 </style></head>
 <body>
 <div class="workshop" id="workshop">
@@ -276,6 +281,49 @@ window.addEventListener('pageshow',e=>{if(e.persisted){clearTimeout(readyTimer);
 function spatialNeighbor(dx,dy){const pts=layouts[currentLayout].points,p=pts[focusIndex];let best=focusIndex,score=Infinity;pts.forEach((q,i)=>{const x=q[0]-p[0],y=q[1]-p[1],forward=x*dx+y*dy;if(forward<=0)return;const lateral=Math.abs(x*dy-y*dx),s=Math.hypot(x,y)+lateral*1.3;if(s<score){score=s;best=i;}});return best;}
 window.addEventListener('keydown',e=>{const keys={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1],a:[-1,0],d:[1,0],w:[0,-1],s:[0,1]};if(touch.opened&&touch.committed&&!touch.panel.contains(document.activeElement))touch.close(true);if(touch.opened){if(e.key==='Tab'){e.preventDefault();touch.keep();const next=document.activeElement===touch.buttons[0]?1:0;touch.buttons[next].focus();return;}if(e.key==='Escape'){e.preventDefault();touch.close();return;}if(keys[e.key]){e.preventDefault();touch.keep();touch.select(keys[e.key][0]<0||keys[e.key][1]<0?0:1);return;}if(e.key==='Enter'||e.key===' '){e.preventDefault();if(e.repeat)return;touch.select(touch.side??preferredSide);touch.confirm();touch.arm();}return;}if(!tiles.includes(document.activeElement))return;if(keys[e.key]){e.preventDefault();browse(spatialNeighbor(...keys[e.key]),true);}else if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!e.repeat)touch.open(focusIndex);}});
 const returnParams=new URLSearchParams(location.search);if(order.includes(returnParams.get('p1'))&&order.includes(returnParams.get('p2'))){chosen=[returnParams.get('p1'),returnParams.get('p2')];locked=/^[01]{2}$/.test(returnParams.get('locks')||'')?[...returnParams.get('locks')].map(v=>v==='1'):[true,true];}if(returnParams.has('haptics'))$('#haptics').checked=returnParams.get('haptics')!=='0';const requestedLayout=returnParams.get('layout');setLayout(layouts[requestedLayout]?requestedLayout:'crest');render();
+// 1.3.1 vibration setting is shared with the game's Options (gsf-settings), so it sticks between screens.
+(()=>{const box=$('#haptics');const read=()=>{try{return JSON.parse(localStorage.getItem('gsf-settings')||'{}');}catch{return{};}};
+ if(!returnParams.has('haptics')){const s=read();if(typeof s.haptics==='boolean')box.checked=s.haptics;}
+ box.addEventListener('change',()=>{const s=read();s.haptics=box.checked;try{localStorage.setItem('gsf-settings',JSON.stringify(s));}catch{}});})();
+// 1.3.1 controller support. Left stick / D-pad: P1 cursor. Right stick (or a second controller's left stick): P2, the CPU.
+// A walks the flow: lock P1 → (left stick now moves P2) → lock P2 → fight. LB locks P1, RB/R3 lock P2,
+// Start locks both picks and fights, B unlocks the last pick.
+(()=>{
+ let p2Index=Math.max(0,order.indexOf(chosen[1])),padOn=false;const prevButtons={},stickState={};
+ const DEAD=.5,FIRST=260,REPEAT=150,hint=document.getElementById('instruction'),hintText=hint?.innerHTML;
+ function markP2(){tiles.forEach((t,i)=>t.classList.toggle('is-p2-focus',padOn&&i===p2Index));}
+ function step(side,dx,dy){
+  if(matchStarting)return;if(touch.opened)touch.close(true);
+  if(side===0){const next=spatialNeighbor(dx,dy);if(next===focusIndex)return;browse(next,true);locked[0]=false;chosen[0]=records[focusIndex].id;}
+  else{if(records[p2Index]?.id!==chosen[1]&&order.includes(chosen[1]))p2Index=order.indexOf(chosen[1]);
+   const keep=focusIndex;focusIndex=p2Index;const next=spatialNeighbor(dx,dy);focusIndex=keep;if(next===p2Index)return;p2Index=next;locked[1]=false;chosen[1]=records[p2Index].id;}
+  render();markP2();pulse(6);
+ }
+ function lock(side){if(matchStarting)return;if(side===1&&records[p2Index]?.id!==chosen[1]&&order.includes(chosen[1]))p2Index=order.indexOf(chosen[1]);commit(side===0?focusIndex:p2Index,side);markP2();pulse(14);}
+ function stick(key,side,x,y,now){
+  const dx=Math.abs(x)>DEAD?Math.sign(x):0,dy=Math.abs(y)>DEAD?Math.sign(y):0,st=stickState[key]||(stickState[key]={dir:'0,0',next:0});const dir=dx+','+dy;
+  if(dir==='0,0'){st.dir=dir;return;}
+  if(dir!==st.dir){st.dir=dir;st.next=now+FIRST;step(side,dx,dy);}else if(now>=st.next){st.next=now+REPEAT;step(side,dx,dy);}
+ }
+ function loop(now){
+  const pads=Array.from(navigator.getGamepads?.()||[]).filter(p=>p&&p.connected);
+  if(!!pads.length!==padOn){padOn=!!pads.length;document.body.classList.toggle('pad-on',padOn);if(hint)hint.innerHTML=padOn?'<span class="touch-symbol" aria-hidden="true">◎</span> A: pick P1, then P2, then fight · Right stick: P2 (CPU) · B: back':hintText;markP2();}
+  if(!document.hidden&&!matchStarting){
+   pads.forEach((p,n)=>{
+    const b=p.buttons.map(x=>x.pressed),was=prevButtons[p.index]||[];prevButtons[p.index]=b;const tap=i=>b[i]&&!was[i];
+    const dpx=(b[15]?1:0)-(b[14]?1:0),dpy=(b[13]?1:0)-(b[12]?1:0);
+    if(n===0){const lside=locked[0]&&!locked[1]?1:0;stick('l0',lside,dpx||p.axes[0]||0,dpy||p.axes[1]||0,now);stick('r0',1,p.axes[2]||0,p.axes[3]||0,now);
+     if(tap(0)){if(!locked[0])lock(0);else if(!locked[1])lock(1);else beginMatch();}if(tap(4))lock(0);if(tap(5)||tap(11))lock(1);
+     if(tap(1)){if(touch.opened)touch.close();else if(locked[1]){locked[1]=false;render();}else if(locked[0]){locked[0]=false;render();}}
+     if(tap(9)){if(!locked[0])lock(0);if(!locked[1])lock(1);beginMatch();}}
+    else if(n===1){stick('l1',1,dpx||p.axes[0]||0,dpy||p.axes[1]||0,now);if(tap(0)||tap(5))lock(1);if(tap(9)){if(!locked[0])lock(0);if(!locked[1])lock(1);beginMatch();}}
+   });
+  }
+  requestAnimationFrame(loop);
+ }
+ requestAnimationFrame(loop);
+ window.addEventListener('gamepadconnected',()=>pulse(10));
+})();
 // Small read-only surface for deterministic input tests and integration.
 window.GSMatrixWorkshop={layouts,get state(){return {layout:currentLayout,chosen:[...chosen],locked:[...locked],focus:focusIndex,nextSide:preferredSide,starting:matchStarting,open:touch.opened,side:touch.side};},touch,trace};
 })();

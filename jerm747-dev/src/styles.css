@@ -429,3 +429,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--m
 .about-work p { max-width: 60ch; }
 .about-contact { margin-top: 28px; padding-top: 20px; border-top: 2px solid var(--ink); }
 .about-contact a[href^="mailto"] { font: 600 1.3rem var(--display); }
+
+/* jerm747.com and jerm747.games ribbons, top of the Start a project section */
+.contact-ribbons { margin-bottom: clamp(36px, 6vw, 56px); }
+.contact-ribbons .site-ribbons { margin-top: 0; }
+.contact-ribbons .j747-ribbons-heading { font-family: var(--display); font-size: 1.9rem; font-weight: 600; letter-spacing: .005em; }

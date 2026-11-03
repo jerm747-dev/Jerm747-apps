@@ -108,3 +108,30 @@ for(const [name,set] of Object.entries(FighterCombatRules)){
  const fighter=FighterDefaults[name];fighter.rules={...fighter.rules};
  for(const [id,rule] of Object.entries(set))fighter.rules[id]={...fighter.rules[id],...rule};
 }
+
+/* 1.3.3 (Jeremy): every fighter at a brisk 2x — idle and all moves including walk, run, back steps, jumps and backflip.
+ * Ground speeds and air drift scale with it (feet stay planted); hang time is 15% shorter so jumps keep pace.
+ * Newcomers inherit all of this through their Akeem/Nika move sources. */
+for(const fighter of Object.values(FighterDefaults)){
+ for(const [id,preset] of Object.entries(fighter))if(Array.isArray(preset)&&typeof preset[0]==='string')preset[1]=Math.max(preset[1],2); // idle included
+ if(fighter.speeds)for(const id of Object.keys(fighter.speeds))fighter.speeds[id]*=4/3;
+ if(fighter.air)for(const cfg of Object.values(fighter.air)){if(typeof cfg.time==='number')cfg.time*=.85;if(cfg.drift)for(const id of Object.keys(cfg.drift))cfg.drift[id]*=4/3;}
+}
+
+/* 1.4.1 (Jeremy): "take the front part of the punch". Every ground strike starts close to its hit frame, so a press
+ * turns into contact quickly instead of playing the whole wind-up. STARTUP is real seconds from button to contact
+ * (at the move's play rate). Entry keeps a short pose-matched range just before that point.
+ * Newcomers inherit these through their Akeem/Nika move sources (newcomers.js copies the rules). */
+window.FighterStartup={lp:.08,mp:.08,hp:.1,lk:.12,mk:.13,hk:.14,sweep:.16};
+for(const name of ['Akeem','Nika']){
+ const f=FighterDefaults[name];
+ for(const [id,target] of Object.entries(FighterStartup)){
+  const r=f.rules?.[id],pre=f[id];if(!r||!r.window||r.active==null||!pre)continue;
+  const rate=pre[1]||2,start=Math.max(r.window[0],r.active-target*rate),width=Math.min(.06,Math.max(0,r.active-start-.02));
+  r.window=[+start.toFixed(3),+(start+width).toFixed(3)];
+ }
+}
+/* 1.4.1 contact boxes: the same reach for every fighter on each button (metres from the fighter's spot), used as a
+ * floor under the real hand/foot position during the hit frames. Long-limbed animations can still reach further;
+ * short ones (hooks, uppercuts, knees, the sweep) no longer whiff where an opponent's jab lands. */
+window.FighterReach={lp:1.1,mp:1.2,hp:1.15,lk:1.15,mk:1.2,hk:1.35,sweep:1.2};

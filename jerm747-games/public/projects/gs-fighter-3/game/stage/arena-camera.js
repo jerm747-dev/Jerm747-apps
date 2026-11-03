@@ -7,7 +7,8 @@ window.frameArenaView=function(T,camera,{aspect,zoom,lift=0,yaw=0,pitch=.08,cent
  const upY=Math.sqrt(1-ny*ny),floorY=-.025;
  // A grounded fighter's feet sit at 2/3 of the scene height. Extra headroom at
  // close range keeps standing fighters in frame; jumps retain a gentle lift.
- const half=Math.max(1.4+lift*.7,Math.max(2,8.5/aspect)/zoom);
+ // 1.3.3: at least ~2.5 m of view above the floor, so heads clear the health bars even when zoomed in close.
+ const half=Math.max(1.9+lift*.7,Math.max(2,8.5/aspect)/zoom);
  const targetY=half/(3*upY)+lift*.35;
  // The lowest near-plane ray must start ABOVE the floor. Otherwise its ground
  // intersection is behind the camera and leaves a solid background strip.
