@@ -44,7 +44,7 @@ function Preview({ site }) {
       <div className="preview-empty">
         <p><strong>No build uploaded yet.</strong></p>
         <p>{site.access === 'admin'
-          ? <>Upload the site's build into <code>sites/{site.slug}/</code> on the server and it shows here.</>
+          ? <>Upload the site's build into <code>sites/{site.folder || site.slug}/</code> on the server and it shows here.</>
           : 'Jeremy hasn\'t posted a preview yet. Check back soon, or leave a comment.'}</p>
       </div>
     );

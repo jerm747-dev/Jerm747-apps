@@ -147,3 +147,7 @@ ratelimit/                     temporary counters
 - Client logins (email + password or magic link) on top of the same project keys.
 - Move storage to MySQL (GoDaddy includes it) once there are many projects.
 - Invoices and signed proposals attached to a project.
+
+## Returnity Site Admin
+
+The music site in `public/sites/nige-hood/` now has an integrated admin prototype for songs, albums/playlists, explicit/listening choices, separate administrator accounts, and scheduled site-update reports. See [RETURNITY-ADMIN.md](RETURNITY-ADMIN.md) for deployment, first sign-in, Nige account activation, and cPanel scheduling.

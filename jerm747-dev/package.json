@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/integrate-returnity-admin.mjs",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node src/quote.test.js"
+    "test": "node src/quote.test.js",
+    "test:admin": "python3 tests/site-admin.integration.py"
   },
   "dependencies": {
     "react": "^19.2.0",

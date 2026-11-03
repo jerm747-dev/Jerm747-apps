@@ -1,0 +1,9 @@
+Options -Indexes
+<FilesMatch "^(instance|cron)\.php$">
+  Require all denied
+</FilesMatch>
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow"
+  Header set Referrer-Policy "no-referrer"
+  Header set X-Frame-Options "DENY"
+</IfModule>
