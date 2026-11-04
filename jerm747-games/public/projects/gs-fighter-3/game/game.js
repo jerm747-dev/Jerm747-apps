@@ -88,8 +88,7 @@ body.append(menu);
 const results=document.createElement('div');results.id='results';results.className='gs-overlay';results.hidden=true;
 results.innerHTML='<div class="gs-panel"><p class="sub" id="res-sub">MATCH OVER</p><h2 id="res-title">YOU WIN</h2><div class="score" id="res-score"></div><div class="gs-list"><button data-res="rematch">REMATCH</button><button data-res="select">FIGHTER SELECT</button><button data-res="title">TITLE SCREEN</button></div></div>';
 body.append(results);
-const loading=document.createElement('div');loading.id='loading';loading.className='gs-overlay';loading.hidden=true;loading.innerHTML='<div class="gs-panel"><p class="sub">GET READY</p><h2 id="load-title">LOADING</h2><div class="spinner"></div><p class="gs-note" id="load-note"></p></div>';body.append(loading);
-window.GSFUI={loading(on,ids,err){loading.hidden=!on&&!err;if(on){$('load-title').textContent=ids.join(' VS ').toUpperCase();$('load-note').textContent='Loading fighters…';}if(err){$('load-title').textContent='LOAD ERROR';$('load-note').textContent=err;setTimeout(()=>loading.hidden=true,2500);}},
+window.GSFUI={loading(on,ids,err){if(err){window.GSFLoading.fail(new Error(err));return;}return on?window.GSFLoading.show({instant:true}):window.GSFLoading.hide();},
  rumble(ms,mag){if(!S.haptics)return;try{navigator.vibrate?.(Math.min(120,ms*.6));}catch{}for(const p of navigator.getGamepads?.()||[])p?.vibrationActuator?.playEffect?.('dual-rumble',{duration:ms,strongMagnitude:mag,weakMagnitude:mag*.6}).catch?.(()=>{});}};
 // ---------- menu logic ----------
 const LEVELS=['easy','normal','hard','ferocious','training'];
@@ -100,7 +99,7 @@ function setVal(key,v){
  switch(key){case 'level':L.match.level=v;try{localStorage.setItem('gsf-ai-level',v);}catch{}break;
   case 'rounds':L.match.roundSeconds=Number(v);try{localStorage.setItem('gsf-round-seconds',v);}catch{}break;
   case 'postfx':GSFX.setLevel(v);break;case 'rim':GSFX.setRim(v==='true');break;
-  case 'quality':if(v!==GSFQuality.key){try{localStorage.setItem('gsf-quality-v27',v);}catch{}const url=new URL(location.href);url.searchParams.set('quality',v);location.assign(url.href);}return;
+  case 'quality':if(v!==GSFQuality.key){try{localStorage.setItem('gsf-quality-v27',v);}catch{}const url=new URL(location.href);url.searchParams.set('quality',v);window.GSFLoading.navigate(url.href);}return;
   default:S[key]=v==='true'?true:v==='false'?false:v;save();if(key==='haptics')$('haptics').checked=S.haptics;if(key==='keyboard')applyKeys();if(key==='padFade')padActivity();}
  layout();refreshMenu();GSFAudio.ui();
 }
@@ -150,6 +149,7 @@ addEventListener('gamepadconnected',()=>{padSeen=true;layout();});addEventListen
 const BTN={2:'mp',3:'hp',4:'lp',0:'mk',1:'hk',6:'lk',5:'block',7:'vwave',10:'jump'};
 const padHeld=new Set();let prevButtons=[],navCool=0,padNeedsNeutral=false;
 function padTick(dt){
+ if(window.GSFLoading?.busy){releasePad();return;}
  if(window.GSFPostFight?.active){for(const id of padHeld)L.inputUp('gp-'+id);padHeld.clear();return;}
  const p=firstPad();if(!p){if(padHeld.size){for(const id of padHeld)L.inputUp('gp-'+id);padHeld.clear();}return;}
  if(!padSeen){padSeen=true;layout();}

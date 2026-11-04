@@ -23,7 +23,7 @@
   api.ready.catch(()=>{});
   select.onchange=()=>{
    try{localStorage.setItem('gsf-quality-v27',select.value);}catch{}
-   const u=new URL(location.href);u.searchParams.set('quality',select.value);u.searchParams.set('skipintro','1');location.href=u.href;
+   const u=new URL(location.href);u.searchParams.set('quality',select.value);u.searchParams.set('skipintro','1');window.GSFLoading?window.GSFLoading.navigate(u.href):location.assign(u.href);
   };
   renderer.domElement?.addEventListener('webglcontextlost',e=>{e.preventDefault();api.error='Graphics memory was exhausted. Try 4K or 2K.';api.report();});
   renderer.domElement?.addEventListener('webglcontextrestored',()=>{api.error=null;api.report();});

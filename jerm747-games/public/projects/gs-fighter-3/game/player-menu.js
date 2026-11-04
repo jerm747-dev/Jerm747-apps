@@ -8,6 +8,7 @@ const root=host.firstElementChild;document.body.append(root);delete window.GSFPl
 const $=s=>root.querySelector(s), $$=s=>[...root.querySelectorAll(s)],shell=$('.gs-console');
 const params=new URLSearchParams(location.search),roster=window.GSFPostFightRoster||[];
 let opened=false,screen='fighter',context='match',backTarget='fighter',savedFocus=null,wasPaused=false,inerted=[],draft={},preview=null,previewToken=0,currentMove='mp',returnTitle=false;
+const carousel=window.createGSFMenuCarousel?.(root,roster);
 let padPrevious=[],padNeutral=false,padRepeat=0,lastFrame=performance.now();
 const movement=[
  ['mp','Mid punch','A quick punch from guard.','X / □','Mid punch'],['hp','High punch','A high strike. Finish the motion before linking another attack.','Y / △','High punch'],['lp','Low punch','A compact punch from guard.','LB','Low punch'],
@@ -33,24 +34,24 @@ function show(view){if(!opened)return;screen=view;shell.dataset.screen=view;$$('
  $('#gs-screen-title').textContent=view==='title'?'CHOOSE YOUR MODE':view==='moves'?'MOVE GUIDE':view==='options'?'OPTIONS':'PLAYER MENU';
  $('#gs-state').textContent=context==='match'?'MATCH PAUSED':context==='select'?'FIGHTER SELECT':'READY TO FIGHT';
  if(view==='options'){readSettings();}if(view==='moves'){buildMoves();playMove(currentMove);}else previewToken++;
- root.scrollTop=0;requestAnimationFrame(focusFirst);
+ carousel?.sync(view==='title');root.scrollTop=0;requestAnimationFrame(focusFirst);
 }
 function open(view,origin){if(window.GSFPostFight?.active)return;if(opened){if(view)show(view);return;}
  opened=true;context=origin||(L.match.active?'match':'title');backTarget=context==='match'?'fighter':'title';returnTitle=L.titleOpen;
  savedFocus=document.activeElement;wasPaused=!!window.GSFPaused;window.GSFPaused=true;L.clearInput();S.releasePad();padNeutral=false;padPrevious=[];
  root.hidden=false;shell.dataset.context=context;document.body.classList.add('player-menu-open');
- inerted=[...document.body.children].filter(e=>e!==root&&!['SCRIPT','STYLE','LINK'].includes(e.tagName)).map(e=>[e,e.inert]);for(const [e]of inerted)e.inert=true;
+ inerted=[...document.body.children].filter(e=>e!==root&&e.id!=='gsf-loading'&&!['SCRIPT','STYLE','LINK'].includes(e.tagName)).map(e=>[e,e.inert]);for(const [e]of inerted)e.inert=true;
  theme();effects();show(view||(context==='match'?'fighter':'options'));sound();
 }
-function close(){if(!opened)return;opened=false;previewToken++;root.hidden=true;document.body.classList.remove('player-menu-open');for(const [e,prev]of inerted)e.inert=prev;inerted=[];L.clearInput();S.releasePad();window.GSFPaused=wasPaused;S.activity();savedFocus?.focus?.({preventScroll:true});sound();}
+function close(){if(!opened)return;carousel?.sync(false);opened=false;previewToken++;root.hidden=true;document.body.classList.remove('player-menu-open');for(const [e,prev]of inerted)e.inert=prev;inerted=[];L.clearInput();S.releasePad();window.GSFPaused=wasPaused;S.activity();savedFocus?.focus?.({preventScroll:true});sound();}
 function select(mode=L.match.training?'training':'arcade'){
- close();L.endMatch();const q=new URLSearchParams({p1:L.PLAYER,p2:L.PARTNER,mode,haptics:S.get('haptics')==='true'?'1':'0'});location.assign('../Fighter-Select.html?'+q);
+ const q=new URLSearchParams({p1:L.PLAYER,p2:L.PARTNER,mode,haptics:S.get('haptics')==='true'?'1':'0'});window.GSFLoading.navigate('../Fighter-Select.html?'+q,{before:()=>{close();L.endMatch();}});
 }
-function title(){close();window.GSFPaused=false;L.openTitle();}
+function title(){window.GSFLoading.run(()=>{close();window.GSFPaused=false;L.openTitle();});}
 function back(){if(context==='select'){returnSelect();return;}if(screen==='moves'){show('fighter');return;}if(screen==='options'){
  if(context==='match'){show('fighter');return;}if(returnTitle){close();return;}show('title');return;
  }if(screen==='title'){title();return;}close();}
-function returnSelect(){close();const q=new URLSearchParams();for(const key of ['p1','p2','mode','layout','locks'])if(params.has(key))q.set(key,params.get(key));q.set('haptics',S.get('haptics')==='true'?'1':'0');location.assign('../Fighter-Select.html?'+q);}
+function returnSelect(){const q=new URLSearchParams();for(const key of ['p1','p2','mode','layout','locks'])if(params.has(key))q.set(key,params.get(key));q.set('haptics',S.get('haptics')==='true'?'1':'0');window.GSFLoading.navigate('../Fighter-Select.html?'+q,{before:()=>{close();L.endMatch();}});}
 function readSettings(){draft={};$$('[data-setting]').forEach(e=>{const key=e.dataset.setting,v=S.get(key);draft[key]=v;if(e.type==='checkbox')e.checked=v==='true';else e.value=v;const o=e.closest('label').querySelector('output');if(o)o.textContent=v+'%';});const quality=$('[data-setting=quality]');for(const option of quality.options)option.disabled=GSFQuality.presets[option.value].size>GSFQuality.maxTextureSize;$('#gs-settings-status').textContent='Settings ready';renderMap();}
 function renderMap(){const keys=S.keyboardMap(draft.keyboard),pads=S.padMap;$('#gs-control-map').replaceChildren();for(const[a,key]of keys){const pad=pads.find(([n])=>n===a)?.[1]||'—';const row=document.createElement('span');row.textContent=a;const b=document.createElement('b');b.textContent=key+' · '+pad;row.append(b);$('#gs-control-map').append(row);}}
 function apply(){const oldQuality=S.get('quality');for(const[key,v]of Object.entries(draft))if(key!=='quality'&&S.get(key)!==v)S.set(key,v);effects();$('#gs-settings-status').textContent='Options applied';sound();if(draft.quality!==oldQuality)S.set('quality',draft.quality);}
@@ -138,5 +139,6 @@ requestAnimationFrame(frame);
 $$('.gs-logo').forEach(im=>im.src='menu-logo.png');
 window.GSFPlayerMenu={open,close,back,showModes:()=>open('title','title'),padTick,get isOpen(){return opened;},get screen(){return screen;},get preview(){return preview;},get moves(){return movement.map(m=>m[0]);}};
 L.selection.open=()=>select(L.match.training?'training':'arcade');
+if(params.get('menu')==='modes'){L.closeTitle(false);open('title','title');}
 if(params.get('menu')==='options')open('options',params.get('return')==='select'?'select':'title');
 })();
