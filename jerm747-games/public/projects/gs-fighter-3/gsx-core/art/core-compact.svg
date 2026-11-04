@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="GSX Core">
+  <title>GSX Core · cyan circuit crest</title>
+  <!-- The two open frames, four cube faces and central spark of the HUD artwork.
+       Wider gaps and a single orbit keep the mark readable at menu size. -->
+  <g fill="none" stroke="#72e6e4" stroke-linecap="round">
+    <path d="M13 64C-1 47 18 21 52 10M60 9C88 0 97 17 79 35M88 45C100 65 64 89 35 88" stroke-width="2.5"/>
+  </g>
+  <path d="m13 32 47-26 13 8-46 27v29l13 8-10 6-17-10z" fill="#62d9d9"/>
+  <path d="m82 44 8 5v25L55 94l-20-12 10-5 10 6 27-16z" fill="#4ac0c4"/>
+  <g stroke="#143940" stroke-width="1.45" stroke-linejoin="round">
+    <g transform="translate(54 6)"><path d="m0 12 16-9 15 9-16 10z" fill="#85efea"/><path d="m0 12 15 10v18L0 31z" fill="#4fc6cb"/><path d="m15 22 16-10v19l-16 9z" fill="#358e99"/></g>
+    <g transform="translate(29 21)"><path d="m0 12 14-8 14 8-14 9z" fill="#82e9e4"/><path d="m0 12 14 9v15L0 28z" fill="#48bdc4"/><path d="m14 21 14-9v16l-14 8z" fill="#348e99"/></g>
+    <g transform="translate(54 43)"><path d="m0 11 15-9 15 9-15 10z" fill="#89eee9"/><path d="m0 11 15 10v17L0 29z" fill="#4fc4c8"/><path d="m15 21 15-10v18l-15 9z" fill="#39949c"/></g>
+    <g transform="translate(32 58)"><path d="m0 9 13-7 14 8-14 8z" fill="#76e1df"/><path d="m0 9 13 9v15L0 25z" fill="#4ec4c5"/><path d="m13 18 14-8v15l-14 8z" fill="#36939b"/></g>
+  </g>
+  <path d="m49 39 3 10 12-7-8 11 11 1-13 4-5 12 1-13-12 6 9-10-11-1 13-3z" fill="#ecffff"/>
+</svg>

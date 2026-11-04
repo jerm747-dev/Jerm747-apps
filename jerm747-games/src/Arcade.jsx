@@ -345,6 +345,9 @@ export default function Arcade() {
                 )}
               </div>
               <Gallery shots={current.screenshots} title={current.title} />
+              {current.slug === 'gs-fighter-3' && (
+                <div className="gsx-shelf"><a className="gsx-shelf-link" href="/projects/gs-fighter-3/gsx-core/" aria-label="About GSX Core, the custom JavaScript engine by Jerm747"><span className="gsx-shelf-type"><span>Powered by</span><strong>GSX Core</strong><small>by Jerm747</small><span className="gsx-shelf-sub">Custom JavaScript engine</span></span><img src="/projects/gs-fighter-3/gsx-core/art/core-badge.png" alt="" width="640" height="872" loading="lazy" /></a></div>
+              )}
               {current.credit && <p className="sb-credit">{current.credit}</p>}
             </div>
           </section>

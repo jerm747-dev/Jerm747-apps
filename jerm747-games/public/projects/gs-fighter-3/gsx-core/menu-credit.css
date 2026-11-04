@@ -1,0 +1,16 @@
+/* Shared GSX Core signature. Keep this separate for game shelf reuse. */
+.gsx-engine-credit{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-align:center;position:relative;z-index:2;line-height:1.35;color:#c1cbd0}
+.gsx-engine-credit a{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:44px;padding:3px 8px;color:inherit;text-decoration:none;font-size:11px;letter-spacing:.025em;border-radius:3px}
+.gsx-engine-credit img{display:block;width:34px;height:34px;flex:none}
+.gsx-engine-credit strong{color:#a6eff0;font-size:13px;letter-spacing:.06em;font-weight:800}
+.gsx-engine-credit small{display:block;font-size:9px;color:#a7b6bf;letter-spacing:.015em;line-height:1.5;padding-inline:8px}
+.gsx-engine-credit a:hover{color:white;background:#8de2e40a}
+.gsx-engine-credit a:focus-visible{outline:2px solid #e1bc74;outline-offset:3px}
+.title-extras.gsx-title-credit{top:auto;right:auto;bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);display:block;width:max-content;max-width:calc(100% - 32px);padding:0 10px 3px;background:#000b;border-radius:4px}
+#title-screen #press-start{bottom:max(17%,104px)}
+#gs-menu-study .gsx-engine-credit{margin:0 auto;max-width:100%}
+@media(max-width:600px){.gsx-engine-credit small{font-size:8px}.title-extras.gsx-title-credit{bottom:max(8px,env(safe-area-inset-bottom))}}
+
+.gsx-engine-credit .gsx-creator{margin-top:3px;color:#d6dfe4;font-size:9px;letter-spacing:.06em}
+
+.gsx-engine-credit a>span{display:block;text-align:left}.gsx-engine-credit a .gsx-creator{padding:0;margin-top:2px;text-align:right}

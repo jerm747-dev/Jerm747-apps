@@ -1,0 +1,6 @@
+
+.gsx-shelf{display:flex;justify-content:flex-end;margin:18px 0 4px;padding:12px 0 0;border-top:1px solid #81939950}
+.gsx-shelf-link{display:inline-flex;align-items:center;justify-content:flex-end;gap:clamp(12px,2vw,22px);max-width:100%;color:inherit;text-decoration:none;border-radius:3px}
+.gsx-shelf-link img{display:block;width:clamp(108px,10vw,145px);height:auto;flex:none;border:1px solid #fff;box-sizing:border-box}
+.gsx-shelf-type{display:grid;text-align:right;font:12px/1.4 system-ui,sans-serif;color:#b6c5cb}.gsx-shelf-type strong{color:#eff6f5;font-size:21px;line-height:1.15}.gsx-shelf-type small{font-size:11px}.gsx-shelf-type .gsx-shelf-sub{margin-top:8px}
+.gsx-shelf-link:hover strong{text-decoration:underline;text-underline-offset:3px}.gsx-shelf-link:focus-visible{outline:3px solid #8de2e4;outline-offset:4px}
