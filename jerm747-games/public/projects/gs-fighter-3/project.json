@@ -6,7 +6,7 @@
   "accent": "#F2A33A",
   "kind": "game",
   "status": "playable",
-  "version": "1.4.1",
+  "version": "1.4.3",
   "controls": [
     "gamepad",
     "keyboard",

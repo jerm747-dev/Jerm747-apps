@@ -1,0 +1,15 @@
+{
+  "title": "Encore",
+  "tagline": "Nige Hood \u00b7 Returnity",
+  "description": "Run the neighborhood and climb to the rooftop party.",
+  "order": 11,
+  "kind": "game",
+  "status": "playable",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "touch"
+  ],
+  "credit": "Jerm747 original.",
+  "version": "Arcade 1.0.7"
+}

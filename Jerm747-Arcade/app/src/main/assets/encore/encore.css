@@ -1,0 +1,126 @@
+:root { --pine:#102820; --ink:#0b1c17; --ivory:#f8edcf; --sand:#d9c8a4; --sun:#ffab4a; }
+html,body { height:100%; background:var(--ink); }
+#game,#game:fullscreen { position:fixed; inset:0; width:100%; height:100%; height:100dvh; max-width:none; max-height:none; border:0; border-radius:0; display:block; }
+#game .cabinet { position:relative; width:100%; height:100%; max-height:none; }
+#game .viewport { flex:1 1 0; height:auto; min-height:0; }
+#game .keyline { display:none; }
+#game:not([data-screen="game"]) :is(.deck,.gamebar) {display:none}
+#game:not([data-screen="game"]) :is(.hud,.meter,.route-label,#toast,.merch-tracker,#reaction,#area-transition,#night-intro,#collection-banner,#talk-prompt) {visibility:hidden}
+#game[data-screen="game"] #front {display:none}
+#front {position:absolute;inset:0;background:var(--pine);color:var(--ivory);z-index:9;container-type:size;overflow:hidden}
+#front button {touch-action:manipulation}
+#sleeve {display:grid;grid-template-rows:minmax(0,1fr) auto;height:100%}
+.cover-art {overflow:hidden;background:#10251c;position:relative}
+.cover-art img {width:100%;height:100%;display:block;object-fit:cover;object-position:50% 12%}
+.sleeve-foot {background:var(--ink);border-top:1px solid #af995f77;padding:clamp(8px,2.1cqh,22px) max(3cqw,env(safe-area-inset-right)) max(9px,2cqh,env(safe-area-inset-bottom)) max(3cqw,env(safe-area-inset-left));display:flex;align-items:center;justify-content:space-between;gap:15px}
+.imprint {display:flex;align-items:center;gap:14px}
+.imprint b,.folio {font:700 clamp(9px,1.5cqh,12px)/1.3 Arial,sans-serif;letter-spacing:.18em}
+.imprint span {color:var(--sand);font:14px Georgia,serif;border-left:1px solid #bba98777;padding-left:14px}
+#press-start {display:flex;align-items:center;justify-content:space-between;gap:26px;background:var(--ivory);color:var(--ink);font:700 clamp(15px,2.4cqh,21px)/1.2 system-ui,sans-serif;border-radius:2px;padding:9px 15px;min-height:42px}
+#press-start i,#mode-list i {font:normal 1.15em/1.2 system-ui,sans-serif}
+#front button:focus-visible,.overlay button:focus-visible {outline:2px solid var(--sun);outline-offset:3px}
+#selector {height:100%;display:grid;grid-template-columns:48% 52%;background:var(--pine)}
+.select-body {display:flex;flex-direction:column;justify-content:center;min-height:0;padding:clamp(12px,3.2cqh,38px) max(4cqw,env(safe-area-inset-left));overflow-y:auto}
+#selector h1 {font:normal clamp(32px,min(6.2cqw,10.5cqh),82px)/1.05 Georgia,'Times New Roman',serif;letter-spacing:-.055em;color:var(--ivory);margin:.12em 0 .34em}
+#selector .folio,#loader .folio {color:#e8b671}
+#mode-list {border-block:1px solid #ebd7a94a}
+#mode-list button {width:100%;color:var(--ivory);background:transparent;display:flex;align-items:center;justify-content:space-between;text-align:left;gap:12px;padding:clamp(6px,2.65cqh,28px) .3em;font:normal clamp(20px,min(3.4cqw,5.8cqh),46px)/1.12 Georgia,serif;border-bottom:1px solid #ebd7a94a}
+#mode-list button:last-child{border-bottom:0}
+#mode-list button.previewing {background:var(--ivory);color:var(--ink);padding-inline:.6em}
+#mode-list button:focus-visible {outline-offset:-4px;outline-color:#af591c}
+.select-tools {display:flex;gap:clamp(6px,1.55cqw,22px);flex-wrap:wrap;margin-top:clamp(5px,1.8cqh,22px)}
+.select-tools button {background:transparent;color:var(--sand);padding:5px 0;min-height:35px;font:600 clamp(11px,1.75cqh,15px) system-ui,sans-serif}
+#route-art {margin:0;display:flex;flex-direction:column;min-width:0;min-height:0;border-left:1px solid #ebd7a944;background:#081a15}
+.route-window {flex:1;min-height:0;overflow:hidden}
+#mode-image {width:100%;height:100%;object-fit:cover}
+#route-art figcaption {border-top:3px solid #c99154;padding:clamp(10px,3.7cqh,33px) max(3cqw,env(safe-area-inset-right))}
+#mode-blurb {font:normal clamp(15px,min(2.3cqw,4cqh),29px)/1.22 Georgia,serif;max-width:33ch;color:var(--ivory);margin:.4em 0 0}
+#loader {position:absolute;inset:0;display:flex;gap:18px;align-items:center;justify-content:center;background:var(--ink)}
+#load-caption {margin:4px 0 0;font:normal clamp(21px,4cqw,40px)/1.15 Georgia,serif}
+.loader-record {width:clamp(39px,8cqw,72px);aspect-ratio:1;border-radius:50%;border:1px solid #ab986e;background:radial-gradient(circle,#13231e 0 3%,#d79950 4% 23%,transparent 24%),repeating-radial-gradient(circle,transparent 0 3px,#d8bd8326 3px 4px),conic-gradient(from 30deg,#10281f,#4b5542 18%,#10281f 32% 65%,#53604b 78%,#10281f 94%);animation:turn 1.8s linear infinite}
+@keyframes turn {to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.loader-record{animation:none}}
+#game[data-deck="hidden"] .deck {display:none}
+#game .overlay {background:#102820ed;color:var(--ivory);z-index:8}
+#game .overbox h2,.collection-banner strong,.reaction-copy strong {font-family:Georgia,serif;font-weight:normal;letter-spacing:-.035em;text-shadow:none}
+#game .overbox .links{gap:12px}
+#mode-return{margin:12px auto 0;display:block}
+#game .start,.manual .start {background:var(--ivory);color:var(--ink);box-shadow:none}
+#game[data-screen="error"] #front{display:none}
+#game .gamebar{padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+@media(orientation:landscape) {
+ #game .gamebar {position:absolute;top:0;right:0;z-index:4;min-height:0;padding:max(4px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 0 0;background:transparent}
+ #game .gamebrand {display:none}
+ #game .tools button {background:#10271ee8;color:var(--ivory)}
+ #game .meter {left:47%;right:auto;width:11%;top:10px}
+ #game .route-label {left:47%;right:auto;top:18px}
+ #game .merch-tracker {top:42px;right:max(8px,env(safe-area-inset-right))}
+ #game .deck {--pad:min(29vh,150px);--actions:min(43vh,230px);position:absolute;bottom:0;left:0;right:0;z-index:3;background:none;box-shadow:none;border:0;pointer-events:none;padding:0 max(14px,env(safe-area-inset-right)) max(7px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+ #game .deck::before,#game .deck-mark,#game .deck-label {display:none}
+ #game .direction-control,#game .action-control {pointer-events:auto;opacity:.86}
+}
+@media(max-aspect-ratio:5/4){
+ .cover-art {background:linear-gradient(#132c22,#0b2019)}
+ .cover-art img{object-fit:contain;object-position:center}
+ #selector {grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+ .select-body {padding:clamp(16px,4cqh,38px) 6cqw 10px;justify-content:flex-start}
+ #route-art{border-left:0;border-top:1px solid #ebd7a944}
+ #route-art figcaption {padding:9px 6cqw}
+}
+.cover-art img {object-position:50% 0}
+#press-start {white-space:nowrap}
+@media(orientation:landscape) {
+ #game[data-deck="shown"] #night-intro {left:50%;transform:translateX(-50%);bottom:4%;width:min(40%,360px)}
+ #game[data-deck="shown"] #night-intro .night-head {flex-basis:35px;height:40px}
+ #game[data-deck="shown"] #night-intro p {font-size:clamp(10px,2.85vh,14px)}
+}
+@media(max-aspect-ratio:5/4){
+ .cover-art {display:grid;grid-template-rows:minmax(0,1fr) minmax(0,28%);background:#10251c}
+ .cover-art img{object-fit:cover;object-position:95% 20%;min-height:0}
+ .cover-art::after{content:"";background:#10251c url('assets/encore-wordmark.webp') no-repeat center / contain;border-top:1px solid #998557}
+ .imprint{display:grid;gap:2px}
+ .imprint span{border:0;padding:0;font-size:12px}
+ .sleeve-foot{padding:12px max(18px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left))}
+ #press-start{font-size:16px;gap:18px}
+}
+@font-face{font-family:"Encore Sleeve";src:url("assets/encore-caps.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+.sleeve-actions,.pause-routes {display:flex;align-items:center;gap:clamp(8px,1.6vw,20px)}
+.sleeve-actions .arcade-link,.return-title {background:transparent;border:1px solid #ac9566;color:var(--ivory);border-radius:2px;padding:8px 14px;min-height:40px}
+.sleeve-actions .arcade-link i {font:normal 1em system-ui;margin-left:5px}
+.sleeve-actions .arcade-link,.return-title,#mode-list button>span {font:400 clamp(18px,3.4cqh,26px)/1.15 "Encore Sleeve",serif;text-transform:uppercase;letter-spacing:.035em}
+#selector{grid-template-columns:49% 51%}
+.select-body{justify-content:center;padding:clamp(8px,2.6cqh,26px) max(3cqw,env(safe-area-inset-left))}
+.selector-heading {display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:clamp(6px,1.8cqh,16px)}
+.sleeve-seal{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none}
+.seal-head{height:clamp(38px,13.5cqh,100px);width:auto;border-radius:50%}
+.seal-type{width:clamp(70px,21cqh,150px);height:auto}
+#selector h1 {font:600 clamp(10px,1.8cqh,15px)/1.2 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;margin:0;color:var(--sand)}
+#mode-list button{padding:clamp(7px,1.75cqh,20px) 10px;gap:5px;min-height:40px}
+#mode-list button>span{font-size:clamp(22px,min(3.8cqw,6.8cqh),53px);line-height:1.07;letter-spacing:.023em}
+#mode-list button.previewing{padding-inline:10px}
+#mode-list small{font:650 clamp(8px,1.55cqh,12px)/1.15 system-ui,sans-serif;text-align:right;margin-left:auto;margin-right:5px}
+#mode-list i{font-size:clamp(15px,3.3cqh,28px)}
+.select-tools{margin-top:2px}
+#mode-blurb,#load-caption{font:500 clamp(14px,2.8cqh,23px)/1.35 system-ui,sans-serif}
+.loading-type{width:clamp(110px,16vw,195px);height:auto}
+#ending .end-mast {position:sticky;z-index:2;top:0;background:#13141f}
+.return-title{font-size:18px;line-height:1;letter-spacing:.05em;white-space:nowrap}
+.pause-routes{justify-content:center;margin-top:10px}
+#mode-return{margin:0}
+@media(max-aspect-ratio:5/4){
+ #selector{grid-template-columns:1fr}
+ .select-body{padding:12px 6cqw 5px}
+ .selector-heading{margin-bottom:8px}
+ .seal-head{height:clamp(36px,6.5cqh,70px)}
+ .seal-type{width:clamp(68px,11cqh,98px)}
+ #mode-list button{padding-block:7px;min-height:42px}
+ #mode-list button>span{font-size:clamp(22px,6.5cqw,34px)}
+ .imprint{flex-shrink:1}
+ .sleeve-actions{gap:6px}
+ #press-start,.sleeve-actions .arcade-link{padding:8px 10px;min-height:42px;gap:5px;font-size:15px}
+ .sleeve-actions .arcade-link i{display:none}
+}
+@media(max-width:370px) and (orientation:portrait){.sleeve-foot{padding-inline:9px}.imprint b{letter-spacing:.08em}.imprint span{font-size:10px}}
+@media(max-height:315px) and (orientation:landscape){.selector-heading .seal-head{height:22px}.seal-type{width:41px}#mode-list button{min-height:32px;padding-block:3px}}
+
+#press-start {font-family:"Encore Sleeve",serif;font-weight:400;font-size:clamp(17px,3.4cqh,26px);letter-spacing:.035em;text-transform:uppercase}

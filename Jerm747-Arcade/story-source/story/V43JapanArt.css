@@ -1,0 +1,5 @@
+
+/* V43 · Level 8 illustrated cutscenes; full artwork remains visible on mobile. */
+.journey-scene--illustrated{background:#080b14!important;min-height:120px;isolation:isolate}
+.journey-chapter-art{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain;object-position:center;user-select:none;-webkit-user-drag:none}
+@media(max-width:760px){.journey-scene--illustrated{min-height:150px}.journey-game:has(.journey-scene--illustrated) .journey-dialogue{padding:12px 14px}.journey-game:has(.journey-scene--illustrated) .journey-dialogue p{font-size:16px;line-height:1.4}}

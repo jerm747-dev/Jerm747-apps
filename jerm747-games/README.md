@@ -11,7 +11,7 @@ Runs on regular GoDaddy/cPanel hosting with no database.
 | Address | What it is |
 |---|---|
 | `jerm747.games` | The arcade |
-| `jerm747.games/#/play/<folder>` | Opens one game directly, e.g. `#/play/fighter-lab`. Use the **Copy link** button to share. |
+| `jerm747.games/#/play/<folder>` | Opens one game directly, e.g. `#/play/cyborg-coliseum`. Use the **Copy link** button to share. |
 | `jerm747.games/#/admin` | Your admin page: visitors, plays and email report settings (not linked anywhere) |
 
 ## Build
@@ -38,6 +38,12 @@ Local development: `php -S localhost:8000 -t public` in one terminal, `npm run d
 **When uploading a new build, never delete `api/data/` (your stats) or game folders you added in
 `projects/`.**
 
+## Integration Build · Arcade 1.0.3
+
+Beat Room is on the web shelf at `/#/play/beat-room` and in Jerm747 Arcade for Android. Its editable project is in `beat-room-source/`. The playable build and shelf art live in `public/projects/beat-room/`.
+
+The shelf footer links to `/download/`. Deploy the signed installers beside their cover images at `download/arcade/Jerm747-Arcade-1.0.3-Integration-Build.apk` and `download/encore/Encore-1.2.0.apk`. The GoDaddy integration ZIP includes both binaries and the changed public files. Extract its contents into the existing jerm747.games document root and merge the folders.
+
 ## Adding a game
 
 Upload a folder with an `index.html` to `projects/` in cPanel File Manager. It shows up on the shelf
@@ -59,8 +65,7 @@ In a game: **hold Select + Start for 1.5 seconds** (or press Home, or hold Esc) 
 shelf. Browser Back also returns to the shelf.
 
 **Controller bridge:** keyboard-only games can get controller support by adding a `"gamepad"` map to
-`project.json`; the arcade presses the mapped keys. Fighter Lab uses it: X jab, Y cross, B hook,
-RB uppercut, A jump, LB jump uppercut, LT jump kick, RT roundhouse.
+`project.json`; the arcade presses the mapped keys. Cyborg Coliseum uses its native controller mapping.
 
 ## Included
 
@@ -71,10 +76,7 @@ RB uppercut, A jump, LB jump uppercut, LT jump kick, RT roundhouse.
 - **GS Fighter II** (1.0.17): the Android handheld edition in the browser, now branded GS Fighter II,
   plus its APK download page. See below.
 - **Flight Control Deck** (v7): Asteroid Blast, races and free flight.
-- **Fighter Lab** (GS Fighter III Lab 0.36 · Brush Fighters): Akeem and Nika on their rigs with the
-  move workshop, V-Wave, reactions and the brush-painted fighter select. The lab has its own controller
-  support, so the old keyboard bridge in `project.json` was removed. (`scripts/check-fighter-model.mjs`
-  was for the old Akeem 0.2 study and no longer applies.)
+- **Cyborg Coliseum** (v0.2 Flight Systems) brings close combat, free flight and the rapid-fire chest cannon into the arena.
 - **Controller Check**: test buttons, sticks, triggers and rumble.
 - `cover-square.jpg` in the first two folders: your square cover art, kept as a backup.
 
@@ -232,16 +234,12 @@ Upload the **contents of `dist/`** over the existing site files (merge folders).
 `assets/` too: the orientation toolbar is part of the arcade shell. Upload complete puzzle folders
 and `projects/shared/`; Word Search now needs its JSON, JS and CSS alongside its HTML.
 
-## GS Fighter III, Fighter Lab 0.36 and downloads (November 2026)
+## GS Fighter III and downloads (November 2026)
 
 **GS Fighter III** lives in `projects/gs-fighter-3/`: the v1.2.0 web build copied as-is (it already uses
 folder-relative paths). Shareable link: `jerm747.games/#/play/gs-fighter-3`. About 195 MB.
 
-**Fighter Lab** (`projects/fighter-lab/`) is replaced with GS Fighter III Lab v0.36 (about 305 MB). Delete
-the old folder's files first or upload over it; nothing from the Akeem 0.2 study is needed.
-
-As with Get Down and GS Fighter II, the source keeps only `cover.jpg` and `project.json` for these two;
-the game files come from their own ZIPs.
+The full GS Fighter web titles can also be installed from their existing game packages.
 
 **Download pages** (static HTML, outside `projects/` so they don't appear on the shelf):
 
@@ -261,8 +259,7 @@ key, Android refuses to install it over the existing app. The GS Fighter II down
 the II artwork instead.
 
 **Art:** the covers and download-page images were made with the scripts in `scripts/gs-fighter/art/`
-(Pillow; the input paths at the top of each script point to the unpacked builds). GS Fighter III and
-Fighter Lab covers use the game's own title art and the v0.36 brush paintings.
+(Pillow; the input paths at the top of each script point to the unpacked builds). GS Fighter III uses its game artwork. Cyborg Coliseum uses its arena and Cyborg character artwork.
 
 **Build without Vite:** if `npm install` can't reach the registry, `node scripts/build-esbuild.mjs`
 (with `react`, `react-dom` and `esbuild` available) produces the same `dist/` layout.
@@ -306,3 +303,17 @@ art moved out of `index.html` into `tokens.js`. **Swap Lab** (`projects/plugin-t
 workshop: presets, three selection styles, colors, glow/pulse and motion sliders, demo buttons, a comparison
 with the old square, "Use in the game on this device", and a settings box to copy. Send those settings back to
 bake them in as the default (`DEFAULTS` in `swap-fx.js`).
+
+## Arcade 1.0.4 · Visor Launcher
+
+The original Cabinet component renders the panels, marquee and game artwork. The new screen controls add a compact List view and shared visor. Cyborg Coliseum v0.2 Flight Systems is playable from the shelf or the visor. Controller Check uses the 747 controller art. The original CC arrangement and scan-line treatment are saved in public/art-archive/controller-check-old-cover-with-crt-filter.html.
+
+Preserve game state is optional and applies to the running arcade tab. Open games lists current and paused titles and lets the user close a paused title to release memory. Bundled HTML games load the clock before their game code. On HTTPS, the projects-scoped worker also supplies the clock to older same-origin game pages with a head element, when the site has no existing competing service worker. The HUD marks an incompatible game's current session as restarting on exit. Games continue to own their own saved progress. Run the site on its existing PHP hosting to use its live game registry, controller mappings and admin.
+
+## Arcade 1.0.5
+
+Tap or drag anywhere on the larger map under Visor settings > Move HUD icon. The icon moves on contact and its position saves throughout the drag. Placing it from the cabinet sets the cabinet and default game position. Placing it inside a game sets that game’s position. Controller Check appears last on the shelf, in the list, and in the visor game launcher.
+
+
+Arcade 1.0.6
+The List/Grid slider accepts taps, drags, and arrow keys. Play game is a solid button. In portrait, the Beat Room turntable has a separate transport strip, and the record picker has its own row on phones.

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head><script src="../../hud/game-clock.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controller Check</title>
+<style>
+  :root { --bg:#17181c; --panel:#202227; --line:#30333a; --text:#d8d9dc; --muted:#8b8f98; --on:#c2ae7e; --on-ink:#17181c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; font-weight: 600; }
+  p.lead { color: var(--muted); margin: 0 0 20px; }
+  .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  select, button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-height: 40px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  .grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .panel h2 { font-size: .95rem; font-weight: 600; color: var(--muted); margin: 0 0 12px; }
+  .buttons { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+  .b { position: relative; height: 52px; border-radius: 8px; border: 1px solid var(--line); display: grid; place-items: center; font-weight: 600; overflow: hidden; }
+  .b .fill { position: absolute; inset: auto 0 0 0; background: var(--on); opacity: .9; height: 0; }
+  .b span { position: relative; }
+  .b.on { border-color: var(--on); }
+  .b.on span { color: var(--on-ink); }
+  .b small { position: absolute; top: 3px; left: 6px; font-weight: 400; font-size: 10px; color: var(--muted); }
+  .sticks { display: flex; gap: 20px; flex-wrap: wrap; }
+  .stick { width: 140px; height: 140px; border-radius: 50%; border: 1px solid var(--line); position: relative; background: radial-gradient(circle, transparent 21%, var(--line) 22%, transparent 23%); }
+  .dot { position: absolute; width: 22px; height: 22px; border-radius: 50%; background: var(--on); left: 59px; top: 59px; }
+  .stick-label { text-align: center; color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .axes { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; margin-top: 12px; }
+  .empty { color: var(--muted); padding: 30px 0; text-align: center; }
+  ol.log { list-style: none; margin: 0; padding: 0; max-height: 220px; overflow: auto; font-variant-numeric: tabular-nums; }
+  ol.log li { display: flex; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 5px 0; }
+  ol.log li span:last-child { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Controller Check</h1>
+  <p class="lead">Press any button. If nothing shows up, press a button once so the browser wakes the controller.</p>
+  <div class="bar">
+    <select id="pads" aria-label="Controller"></select>
+    <button id="rumble">Test rumble</button>
+    <span id="mapping" class="axes"></span>
+  </div>
+  <div class="grid">
+    <section class="panel">
+      <h2>Buttons</h2>
+      <div id="buttons" class="buttons"><p class="empty">No controller connected</p></div>
+      <h2 style="margin-top:18px">Sticks</h2>
+      <div class="sticks">
+        <div><div class="stick"><div class="dot" id="ls"></div></div><div class="stick-label">Left stick</div></div>
+        <div><div class="stick"><div class="dot" id="rs"></div></div><div class="stick-label">Right stick</div></div>
+      </div>
+      <div class="axes" id="axes"></div>
+    </section>
+    <section class="panel">
+      <h2>Keyboard</h2>
+      <ol class="log" id="keys"><li><span>Press a key</span><span></span></li></ol>
+    </section>
+  </div>
+</main>
+<script>
+  const NAMES = ['A','B','X','Y','LB','RB','LT','RT','Select','Start','L3','R3','Up','Down','Left','Right','Home'];
+  const $ = (s) => document.querySelector(s);
+  let selected = null, sig = '';
+  function pads() { try { return Array.from(navigator.getGamepads() || []).filter(Boolean); } catch { return []; } }
+  function frame() {
+    const list = pads();
+    const s = list.map(p => p.index + p.id).join('|');
+    if (s !== sig) {
+      sig = s;
+      $('#pads').replaceChildren(...(list.length ? list.map(p => new Option(p.id, p.index)) : [new Option('No controller connected', '')]));
+      if (!list.some(p => p.index === selected)) selected = list[0]?.index ?? null;
+      if (selected !== null) $('#pads').value = selected;
+      $('#buttons').innerHTML = list.length ? '' : '<p class="empty">No controller connected</p>';
+    }
+    const p = list.find(x => x.index === selected);
+    if (p) {
+      $('#mapping').textContent = p.mapping === 'standard' ? 'Standard layout' : 'Non-standard layout: button names may differ';
+      const box = $('#buttons');
+      if (box.children.length !== p.buttons.length) {
+        box.replaceChildren(...p.buttons.map((_, i) => {
+          const d = document.createElement('div'); d.className = 'b';
+          d.innerHTML = `<small>${i}</small><div class="fill"></div><span>${NAMES[i] || 'B' + i}</span>`; return d;
+        }));
+      }
+      p.buttons.forEach((b, i) => {
+        const el = box.children[i];
+        el.classList.toggle('on', b.pressed);
+        el.querySelector('.fill').style.height = (b.pressed ? Math.max(b.value, 1) : b.value) * 100 + '%';
+      });
+      const a = p.axes;
+      const place = (el, x = 0, y = 0) => { el.style.transform = `translate(${x * 59}px, ${y * 59}px)`; };
+      place($('#ls'), a[0], a[1]); place($('#rs'), a[2], a[3]);
+      $('#axes').textContent = a.map((v, i) => `Axis ${i}: ${v.toFixed(2)}`).join('   ');
+    }
+    requestAnimationFrame(frame);
+  }
+  $('#pads').onchange = (e) => { selected = Number(e.target.value); $('#buttons').innerHTML = ''; };
+  $('#rumble').onclick = () => {
+    const p = pads().find(x => x.index === selected);
+    p?.vibrationActuator?.playEffect?.('dual-rumble', { duration: 400, strongMagnitude: .8, weakMagnitude: .5 }).catch(() => {});
+  };
+  window.addEventListener('keydown', (e) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${e.key === ' ' ? 'Space' : e.key}</span><span>${e.code}</span>`;
+    const log = $('#keys'); if (log.firstChild?.textContent === 'Press a key') log.replaceChildren();
+    log.prepend(li); while (log.children.length > 40) log.lastChild.remove();
+  });
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

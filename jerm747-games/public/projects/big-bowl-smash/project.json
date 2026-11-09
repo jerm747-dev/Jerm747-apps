@@ -1,0 +1,16 @@
+{
+  "title": "Big Bowl Smash",
+  "version": "1.0.0",
+  "tagline": "Get your crew through all four quarters.",
+  "description": "Hurdle passing fans, dive through openings, and ride empty carts as you guide your crew from the field to the parking lot. Time each crossing before the clock runs out.",
+  "kind": "game",
+  "status": "playable",
+  "controls": [
+    "touch",
+    "mouse",
+    "keyboard",
+    "gamepad"
+  ],
+  "credit": "Jerm747",
+  "accent": "#F4BA57"
+}

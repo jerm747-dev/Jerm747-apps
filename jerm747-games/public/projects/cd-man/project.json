@@ -1,0 +1,15 @@
+{
+  "title": "CD Man",
+  "tagline": "Returnity \u00b7 Platformer",
+  "description": "Chase the flag from the highway into the subway.",
+  "order": 12,
+  "kind": "game",
+  "status": "playable",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "touch"
+  ],
+  "credit": "Jerm747 original.",
+  "version": "Arcade 1.0.7"
+}

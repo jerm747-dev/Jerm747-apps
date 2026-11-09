@@ -1,0 +1,20 @@
+/* build190: arcade touch controls stay close to regular-mode mobile sizes. */
+@media (pointer:coarse), (max-width:900px), (max-height:600px) {
+ html.ov-mode { --arcade-button-size:44px; --arcade-pad-size:120px; }
+ html.ov-mode .gd-ov-pad { --pad:var(--arcade-pad-size); }
+ html.ov-mode .gd-ov-face { --btn:var(--arcade-button-size); --gap:7px; gap:16px; }
+ html.ov-mode .gd-ov-start { bottom:calc(max(6px,calc(var(--arcade-thumb-space,40px) - 38px)) + var(--soundtrack-clearance,0px) + env(safe-area-inset-bottom,0px))!important; }
+ html.ov-mode .gd-ov-row { padding-left:0; }
+ html.ov-mode .gd-ov-btn { flex:0 0 auto; min-width:0; min-height:0; line-height:1.05; }
+ /* A smaller Genesis arc keeps the rows apart, even while a button is pressed. */
+ html.ov-mode .gd-ov-row .c0 { transform:translateY(6px); }
+ html.ov-mode .gd-ov-row .c1 { transform:translateY(2px); }
+ html.ov-mode .gd-ov-row .c2 { transform:translateY(-2px); }
+ html.ov-mode .gd-ov-row .c0.pressed { transform:translateY(9px); }
+ html.ov-mode .gd-ov-row .c1.pressed { transform:translateY(5px); }
+ html.ov-mode .gd-ov-row .c2.pressed { transform:translateY(1px); }
+}
+@media (max-width:359px), (orientation:landscape) and (max-height:360px) {
+ html.ov-mode { --arcade-button-size:40px; --arcade-pad-size:108px; }
+ html.ov-mode .gd-ov-face { --gap:6px; }
+}

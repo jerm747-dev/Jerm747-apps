@@ -1,0 +1,15 @@
+/* v129 · Only the stage, gameplay meters and in-game menus occupy the mirrored view. */
+html.game-presentation,html.game-presentation body{background:#000;overflow:hidden;width:100%;height:100%;margin:0}
+html.game-presentation .app{position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;height:100%!important;max-width:none!important;padding:0!important;gap:0!important;background:#000}
+html.game-presentation .app>.toolbar,html.game-presentation .app>.setlist,html.game-presentation .app>.status,html.game-presentation .app>.controller,html.game-presentation .game-console-row,html.game-presentation .gd-ov,html.game-presentation .slot-touch-wrap,html.game-presentation #tp-host,html.game-presentation .tp-host,html.game-presentation #tp-flash,html.game-presentation .gd-tagline,html.game-presentation .stage-message{display:none!important}
+html.game-presentation .app>:not(.stage):not(.hud):not(.arcade-scoreline){display:none!important}
+html.game-presentation .stage{position:absolute!important;inset:0!important;flex:1 1 auto!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important}
+html.game-presentation .stage>canvas{width:100%!important;height:100%!important;display:block}
+html.game-presentation .app>.hud,html.game-presentation .app>.arcade-scoreline{display:flex!important;position:absolute!important;left:max(14px,env(safe-area-inset-left))!important;right:max(14px,env(safe-area-inset-right))!important;z-index:4!important;pointer-events:none!important;text-shadow:0 2px 4px #000}
+html.game-presentation .app>.hud{top:max(12px,env(safe-area-inset-top))!important;gap:clamp(20px,8vw,140px)!important;padding:8px 12px!important;border-radius:12px;background:linear-gradient(#0a101bdd,#0a101b88)}
+html.game-presentation .fighter-hud>div{font-size:clamp(11px,1.2vw,18px)!important}
+html.game-presentation .meter{height:clamp(8px,1.1vh,14px)!important;box-shadow:0 1px 3px #000}
+html.game-presentation .energy{height:clamp(5px,.7vh,9px)!important}
+html.game-presentation .app>.arcade-scoreline{top:calc(max(12px,env(safe-area-inset-top)) + clamp(60px,8vh,82px))!important;font-size:clamp(10px,1vw,15px)!important;padding:0 12px!important}
+html.game-presentation .presentation-exit[hidden]{display:none!important}
+html.game-presentation .presentation-exit{margin:8px;min-height:44px}

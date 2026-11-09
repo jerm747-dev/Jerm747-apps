@@ -1,0 +1,47 @@
+.j747-hotkey-bounds{
+  position:absolute;pointer-events:none;z-index:2;
+  left:calc(env(safe-area-inset-left,0px) + 28px);
+  right:calc(env(safe-area-inset-right,0px) + 24px + var(--arcade-menu-right-clearance,12px));
+  top:calc(env(safe-area-inset-top,0px) + 24px + var(--arcade-menu-top-clearance,6px));
+  bottom:calc(env(safe-area-inset-bottom,0px) + 28px);
+}
+@media(pointer:coarse),(max-width:680px),(max-height:530px) and (orientation:landscape){
+  .j747-hotkey-bounds{right:calc(env(safe-area-inset-right,0px) + 24px + var(--arcade-menu-right-clearance,45px))}
+}
+.j747-hotkey{position:absolute;top:calc(100% * var(--hud-y,0));left:calc(100% * var(--hud-x,1));transform:translate(-50%,-50%);pointer-events:auto;touch-action:manipulation;display:grid;place-items:center;background:transparent;border:0;border-radius:10px;padding:0;width:48px;height:48px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.j747-hotkey img{width:29px;height:23px;pointer-events:none;filter:drop-shadow(0 1px 1px #081018) drop-shadow(0 0 2px #071019)}
+.j747-hotkey[data-gear="true"] img{width:16px;height:16px}
+.j747-hotkey:hover img{filter:brightness(1.18) drop-shadow(0 1px 2px #081018)}
+.j747-hotkey:active img{transform:translateY(1px)}
+.j747-hotkey:focus-visible{outline:2px solid #a2f6ff;outline-offset:1px}
+.j747-hotkey[hidden],.j747-hotkey-bounds[hidden]{display:none}
+
+.j747-scene-frost{position:absolute;inset:12% 7%;pointer-events:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);mask-image:radial-gradient(ellipse at 50% 52%,#000 18%,#000b 45%,transparent 66%);-webkit-mask-image:radial-gradient(ellipse at 50% 52%,#000 18%,#000b 45%,transparent 66%)}
+.j747-scene-frost[hidden]{display:none}
+
+/* Give the movable button its own hit area above composited game frames. */
+.j747-hotkey-direct{
+ --left:calc(env(safe-area-inset-left,0px) + 28px);
+ --right:calc(env(safe-area-inset-right,0px) + 24px + var(--arcade-menu-right-clearance,12px));
+ --top:calc(env(safe-area-inset-top,0px) + 24px + var(--arcade-menu-top-clearance,6px));
+ --bottom:calc(env(safe-area-inset-bottom,0px) + 28px);
+ left:calc(var(--left) + var(--hud-x,1) * (100% - var(--left) - var(--right)));
+ top:calc(var(--top) + var(--hud-y,0) * (100% - var(--top) - var(--bottom)));
+ z-index:10001;transform:translate3d(-50%,-50%,0);pointer-events:auto;
+}
+@media(pointer:coarse),(max-width:680px),(max-height:530px) and (orientation:landscape){
+ .j747-hotkey-direct{--right:calc(env(safe-area-inset-right,0px) + 24px + var(--arcade-menu-right-clearance,45px))}
+}
+.j747-hotkey-direct:active{transform:translate3d(-50%,-50%,0)}
+
+.j747-cabinet-positioned :is(#cabinet-hud,.web-visor-open){visibility:hidden}
+.j747-placement-preview{pointer-events:none!important;opacity:.78}
+.j747-placement-preview img{filter:drop-shadow(0 1px 2px #031018) drop-shadow(0 0 3px #81f7ed)}
+
+.j747-hotkey-direct { touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.j747-hotkey-direct.is-moving { cursor:grabbing; background:#14242ddd; outline:2px solid #b1fff1; box-shadow:0 0 18px #75e9db77; }
+.j747-scene-frost { background:#10141c38; }
+@media(prefers-reduced-motion:no-preference){
+ .j747-scene-frost:not([hidden]){animation:scene-fade 240ms ease-out both}
+ @keyframes scene-fade {from{opacity:0}to{opacity:1}}
+}

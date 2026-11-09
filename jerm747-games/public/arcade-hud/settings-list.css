@@ -1,0 +1,60 @@
+/* A single scroll surface keeps actions within the visor at phone and tablet sizes. */
+.visor-controls .menu-content{width:min(75%,510px);height:76%;top:52%;grid-template-rows:auto minmax(0,1fr);align-content:stretch;gap:11px;pointer-events:auto}
+.menu-content>.hud-heading{align-self:center}
+.visor-controls .hud-heading h2{font-size:clamp(23px,3.8vmin,38px);line-height:1.09}
+.settings-list{overflow:auto;min-height:0;width:100%;padding:3px 6px 10px;overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:thin;scrollbar-color:#65919c65 transparent;outline:none}
+.settings-list>*:not([hidden]){margin:0 auto 6px;}
+.settings-list :is(.main-actions,.hud-tools,#cabinet-options,#overlay-panel,#host-actions){display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;width:100%;max-width:none;gap:5px;padding:0;border:0}
+.settings-list :is(.hud-tool,.overlay-row,#sensor,.glass-button),.settings-list #pad-rumble{
+ display:flex;align-items:center;justify-content:flex-start;gap:10px;position:relative;isolation:isolate;overflow:hidden;
+ flex:none;width:100%;min-width:0;max-width:none;min-height:44px;height:auto;
+ padding:8px 18px 12px;text-align:left;border:1px solid #86cbd347;border-radius:17px 17px 22px 22px;background:linear-gradient(180deg,#172f3be6,#0a2531ed);
+ color:#eefbff;font:600 clamp(13px,1.9vmin,16px)/1.18 system-ui,sans-serif;letter-spacing:0;
+}
+.settings-list #host-actions .glass-button,.settings-list #host-actions .glass-button:only-child,.settings-list .main-actions .glass-button{max-width:none;width:100%;height:auto;min-height:44px}
+.settings-list .glass-button__label{justify-content:flex-start;text-align:left;white-space:normal;font:inherit;letter-spacing:inherit}
+.settings-list .glass-button__shell{opacity:.65;z-index:-1}
+.settings-list .hud-tool .icon,.settings-list .overlay-row>.icon,.settings-list #sensor>.icon{flex:none;width:18px;height:18px;color:#a9dde3}
+.settings-list :is(.hud-tool,.overlay-row,.glass-button,#sensor):focus-visible{outline:2px solid #a3fff4;outline-offset:-2px}
+.settings-list #sensor .pref-value,.settings-list .overlay-row .pref-value{margin-left:auto;color:#c2e1e6}
+.settings-list .corner-presets button{position:relative;isolation:isolate;overflow:hidden;border-radius:14px;}
+.settings-list .corner-presets .glass-button__shell{pointer-events:none}
+.settings-list #controller-panel{max-width:none;gap:9px}
+#pad-pressure{display:flex;flex-wrap:wrap;justify-content:center;gap:4px}
+#pad-pressure span{border:1px solid #517283;border-radius:5px;background:linear-gradient(to top,#458b88 var(--pressure),#172934 var(--pressure));padding:4px 6px;color:#cddee2}
+#pad-pressure .on{border-color:#91ffeb;color:white}
+#rumble-status:empty{display:none}
+@media(max-height:550px) and (orientation:landscape){.embedded-visor .menu-content{top:52%;height:80%;gap:5px;width:min(66%,470px)}.hud-heading .hud-brand{font-size:8px}}
+@media(max-width:590px) and (orientation:portrait){.embedded-visor #rig{height:clamp(325px,79%,680px)}.visor-controls .menu-content{width:79%;height:78%}}
+
+.settings-list [hidden]{display:none!important}
+.settings-list .session-row{display:flex;gap:5px;margin-bottom:5px;align-items:stretch}
+.settings-list .session-row>.glass-button{flex:1;min-width:0}
+.settings-list .session-row small{margin-left:auto;font:500 11px system-ui;color:#a4d9df}
+.settings-list .session-row>.session-close{width:auto;max-width:67px;font-size:12px;padding-inline:12px}
+#session-note,#session-rows p{font:500 13px/1.4 system-ui;color:#bcd7db;text-align:left;margin:5px 8px 10px}
+.settings-list .glass-button__shell{pointer-events:none}
+
+.visor-controls>.panel-back{position:absolute;left:5%;top:5%;z-index:3;display:flex;align-items:center;justify-content:center;gap:3px;
+ min-height:36px;min-width:62px;padding:4px 9px;isolation:isolate;overflow:hidden;pointer-events:auto;background:#102631dc;
+ border:1px solid #70c1c65c;border-radius:13px 13px 18px 18px;color:#d5ecef;font:600 12px system-ui}
+.visor-controls>.panel-back .glass-button__shell{z-index:-1;opacity:.7;pointer-events:none}
+.visor-controls>.panel-back .icon{width:14px;height:14px}
+.visor-controls>.panel-back[hidden]{display:none}
+
+#session-rows .session-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px;width:100%;align-items:stretch}
+#session-rows .session-row:has(>:only-child){grid-template-columns:minmax(0,1fr)}
+#session-rows .session-close{width:auto;min-width:53px;max-width:68px;text-align:center;padding:8px;justify-content:center}
+#session-rows .session-row .glass-button{width:100%;min-width:0}
+
+.position-layout{max-width:100%;gap:10px}
+#position-map{flex:0 1 var(--map-w);min-width:0;user-select:none;-webkit-user-select:none}
+@media(max-height:530px) and (orientation:landscape){
+ .position-layout .corner-presets{grid-template-columns:repeat(2,44px)}
+}
+
+#tools-back { left:18px; top:18px; }
+@media(prefers-reduced-motion:no-preference){
+ .visor-enter #visor-controls { animation:visor-open 280ms cubic-bezier(.2,.7,.25,1) both; }
+ @keyframes visor-open {from{opacity:0;clip-path:inset(0 48% 0 48%);transform:scale(.97)}to{opacity:1;clip-path:inset(0);transform:scale(1)}}
+}

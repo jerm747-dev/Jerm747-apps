@@ -1,0 +1,16 @@
+{
+  "title": "Sumi Sudoku",
+  "version": "1.4.4",
+  "tagline": "Ink-brush Sudoku with a watercolor park to rest in.",
+  "description": "Classic Sudoku with Japanese ink-brush styling. Take a break in a living watercolor park inspired by Maruyama Park in Kyoto: 12 painted plants, seasons that turn every 5 minutes, day and night every 12, and tap-to-glow plants with fireflies and info cards.",
+  "accent": "#cf3b26",
+  "kind": "game",
+  "status": "playable",
+  "controls": [
+    "touch",
+    "keyboard",
+    "mouse",
+    "gamepad"
+  ],
+  "credit": "Jerm747"
+}

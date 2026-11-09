@@ -1,0 +1,38 @@
+/* Full-height arena and controls laid transparently over the scene. */
+html.gs-android.ov-mode .app{inset:0!important;height:100dvh!important}
+html.gs-android.ov-mode .stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important}
+html.gs-android #gs-boot[hidden]{display:none!important}
+html.gs-android .setlist{display:none!important}
+html.gs-android #lobby .vs-p2 .vs-art img{transform:translateX(-50%) scaleX(-1)!important}
+html.gs-android:not(.gs-lobby) .gs-arcade-rail{background:transparent!important;border:0!important;pointer-events:none;box-shadow:none!important}
+html.gs-android:not(.gs-lobby) .gs-arcade-rail button{pointer-events:auto;opacity:.65;background:#14203666;border-color:#b9c9d344;text-shadow:0 1px 3px #000;color:#fff2df}
+html.gs-android:not(.gs-lobby) .gs-arcade-rail button:hover,html.gs-android:not(.gs-lobby) .gs-arcade-rail button:focus-visible,html.gs-android:not(.gs-lobby) .gs-arcade-rail button:active{opacity:1}
+html.gs-android:not(.gs-lobby) .gs-phase{visibility:hidden}
+html.gs-android{--arcade-hud-top:34px;--arcade-score-top:74px}
+html.gs-android .hud{background:transparent!important}
+html.gs-android .arcade-scoreline{display:grid!important;grid-template-columns:1fr auto 1fr!important;gap:12px!important;align-items:center!important;line-height:1!important;background:none!important}
+html.gs-android #run-label{order:1;font-size:10px!important;line-height:1.2!important;color:#d9e3ef;text-shadow:0 2px 3px #000}
+html.gs-android #timer{order:2;font:900 italic clamp(28px,5vw,54px)/1 Impact,system-ui!important;min-width:70px!important;text-align:center!important;color:#ffe2a0!important;text-shadow:2px 3px #663c20,0 2px 8px #000;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+html.gs-android #points{order:3;text-align:right;font:900 italic clamp(18px,3vw,36px)/1 Impact,system-ui!important;color:#ffe6b5;text-shadow:2px 2px #663c20,0 2px 8px #000;white-space:nowrap;font-variant-numeric:tabular-nums}
+html.gs-android .stage-message{display:none!important}
+html.gs-android #round-screen,html.gs-android #result{gap:12px;background:radial-gradient(ellipse,#182139ed,#070b14f0);text-align:center;justify-content:center;padding:38px 16px 16px!important}
+html.gs-android #round-title,html.gs-android #result-title{font:900 italic clamp(36px,8vw,94px)/1 Impact,system-ui!important;letter-spacing:.04em;color:#ffe2a0;text-shadow:3px 5px #9a542c,0 6px 20px #000;margin:0!important}
+html.gs-android [data-outcome=loss]{color:#ffc7cf!important;text-shadow:3px 5px #7f2342,0 6px 20px #000!important}
+html.gs-android #round-stat,html.gs-android #result-stat{font:900 italic clamp(25px,4vw,48px)/1 Impact,system-ui!important;color:#ffe6b5;text-shadow:2px 3px #663c20;margin:0!important}
+html.gs-android #round-copy,html.gs-android #result-copy{font-size:12px;margin:0!important}
+.gs-return-countdown{font:800 11px system-ui!important;letter-spacing:.15em;display:flex;align-items:center;justify-content:center;gap:12px;margin:0!important;color:#d9e4f0}
+.gs-return-countdown strong{font:900 italic clamp(30px,5vw,54px)/1 Impact,system-ui;color:#ffe2a0;min-width:1.3em;text-shadow:2px 3px #663c20;font-variant-numeric:tabular-nums}
+html.gs-android .match-intro-label,html.gs-android .fight-label{font-family:Impact,system-ui!important;font-weight:900!important;font-style:italic!important}
+html.gs-android .match-intro-skip{top:calc(var(--gs-rail) + 6px)!important;opacity:.7}
+@media(orientation:landscape) and (max-height:430px){html.gs-android{--arcade-hud-top:30px;--arcade-score-top:65px}html.gs-android #result,html.gs-android #round-screen{gap:9px}html.gs-android #result .row{gap:6px}html.gs-android #result button,html.gs-android #round-screen button{padding:7px 12px;font-size:12px}}
+html.gs-android.ov-mode .stage canvas#arena{height:100%!important;width:100%!important}
+
+html.gs-android #result #return{display:none!important}
+/* Controller changes remain drafts until explicitly applied. */
+.gp-apply-bar{position:sticky;top:0;z-index:5;background:#101827f5;border:1px solid #83dce880;border-radius:8px;padding:10px;display:grid;gap:6px;margin-bottom:12px}
+.gp-apply-bar .gp-apply{width:100%;min-height:52px;background:linear-gradient(135deg,#ffe4a2,#ce914d);color:#171b2d;border:2px solid #fff0bf;font:900 italic 24px/1 Impact,system-ui;letter-spacing:.08em}
+.gp-apply-bar .gp-apply:focus-visible{outline:3px solid #8ff7ff;outline-offset:3px}
+.gp-apply-status{margin:0!important;font:700 12px/1.35 system-ui!important;color:#ffe4b2}
+.gp-applied-live{font:700 12px/1.4 system-ui;color:#9eeced;min-height:18px;display:block}
+.gp-completion{display:block;text-align:center;font:900 italic clamp(18px,3vw,28px)/1.15 Impact,system-ui;color:#ffe2a0;letter-spacing:.04em;padding:6px 0}
+.gp-completion[data-applied=true]{color:#a1ffe0}

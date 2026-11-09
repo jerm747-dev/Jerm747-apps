@@ -1,0 +1,54 @@
+/* GS Fighter Android 1.0.2: staged confirmation and independent menu sticks. */
+(()=>{'use strict';
+if(!window.GSAndroid||!window.GSSelectionEngine)return;
+const engine=window.GSSelectionEngine,$=id=>document.getElementById(id),root=document.documentElement,lobby=$('lobby'),grid=$('fighters');
+let phase=0,confirmed=[false,false],locked=['',''],rightUsed=false,busy=false,lastScreen='lobby',moves=[{dir:'',at:0},{dir:'',at:0}],neutral=[false,false];
+const rail=document.createElement('header');rail.className='gs-arcade-rail';rail.innerHTML='<button class="gs-persistent-start">START</button><span class="gs-phase" role="status"></span><button class="gs-open-music">MUSIC</button><button class="gs-open-settings">SETUP</button><button class="gs-open-menu">GS MENU</button>';document.body.append(rail);
+const persistent=rail.querySelector('.gs-persistent-start'),hint=rail.querySelector('.gs-phase');
+const ready=document.createElement('section');ready.className='gs-ready hidden';ready.setAttribute('role','dialog');ready.setAttribute('aria-modal','true');ready.setAttribute('aria-label','Matchup ready');ready.innerHTML='<img src="/projects/gs-fighter-2/brand/gs-fighter.png" alt="GS Fighter"><p class="gs-ready-pair"></p><button class="gs-launch">START</button><p>A / Start to begin · B to change Red</p><button class="gs-ready-back">Change fighters</button>';document.body.append(ready);
+const launchButton=ready.querySelector('.gs-launch');
+// Roster and preview lead. Device assignments and random picks follow; difficulty and scores stay hidden.
+const setup=document.createElement('details');setup.className='gs-selection-setup';setup.innerHTML='<summary>Controller & match setup</summary><div class="gs-setup-body"></div>';lobby.append(setup);const setupBody=setup.querySelector('div');const workshopLink=document.createElement('a');workshopLink.href='/projects/gs-fighter-2/static-workshop.html';workshopLink.textContent='Static animation workshop ↗';workshopLink.className='gs-run-link';setupBody.append(workshopLink);const waveLink=document.createElement('a');waveLink.href='/projects/gs-fighter-2/v-wave-workshop.html';waveLink.textContent='V-wave energy workshop ↗';waveLink.className='gs-run-link';setupBody.append(waveLink);const flick=document.createElement('label'),flickInput=document.createElement('input');flickInput.type='checkbox';flickInput.checked=window.GSVWave?.getFlicker()!==false;flickInput.onchange=()=>window.GSVWave?.setFlicker(flickInput.checked);flick.append(flickInput,document.createTextNode(' V-wave candle flicker'));setupBody.append(flick);const trails=document.createElement('label');const trailsToggle=document.createElement('input');trailsToggle.type='checkbox';trailsToggle.checked=window.GSStaticMotionTrail?.get()!==false;trailsToggle.onchange=()=>window.GSStaticMotionTrail?.set(trailsToggle.checked);trails.append(trailsToggle,document.createTextNode(' Static motion trails'));setupBody.append(trails);
+for(const selector of ['.player-slots','.lobby-quickbar','.length-pick','.lobby-prestart-summary','.lobby-bottom']){const el=document.querySelector(selector);if(el)setupBody.append(el);}
+for(const el of lobby.querySelectorAll('a'))if(el.href.endsWith('/projects/gs-fighter-2/runner.html'))el.classList.add('gs-run-link');
+const selectionBar=document.createElement('div');selectionBar.className='gs-confirm-row';selectionBar.innerHTML='<button class="gs-confirm-blue">Confirm Blue · A</button><span>Left stick: Blue · Right stick: Red</span><button class="gs-confirm-red">Confirm Red · A</button>';grid.after(selectionBar);
+const blueButton=selectionBar.querySelector('.gs-confirm-blue'),redButton=selectionBar.querySelector('.gs-confirm-red');
+const setPhase=i=>{phase=i;engine.activate(i);};
+const name=id=>grid.querySelector('[data-fighter="'+id+'"] strong')?.textContent||id;
+function reset(){rightUsed=false;confirmed=[false,false];locked=['',''];phase=0;busy=false;neutral=[false,false];moves=[{dir:'',at:0},{dir:'',at:0}];ready.classList.add('hidden');root.classList.remove('gs-selection-ready');engine.activate(0);paint();}
+function paint(){const s=engine.state();root.dataset.gsScreen=s.screen;
+if(s.screen==='lobby'){
+ if(confirmed[0]&&s.chosen!==locked[0]){confirmed=[false,false];locked=['',''];phase=0;}
+ if(confirmed[1]&&s.red!==locked[1]){confirmed[1]=false;locked[1]='';phase=1;}
+ hint.textContent=busy?'Loading matchup…':confirmed[1]?'MATCH READY':confirmed[0]?'CHOOSE RED · A TO CONFIRM':'CHOOSE BLUE · A TO CONFIRM';
+ blueButton.textContent=confirmed[0]?'Blue locked ✓ · Change':'Confirm Blue · A';redButton.textContent=confirmed[1]?'Red locked ✓':'Confirm Red · A';redButton.disabled=!confirmed[0]||busy;
+ for(const card of grid.querySelectorAll('[data-fighter]')){card.classList.toggle('gs-blue-locked',confirmed[0]&&card.dataset.fighter===s.chosen);card.classList.toggle('gs-red-locked',confirmed[1]&&card.dataset.fighter===s.red);}
+ const show=confirmed.every(Boolean);ready.classList.toggle('hidden',!show);root.classList.toggle('gs-selection-ready',show);ready.querySelector('.gs-ready-pair').textContent=name(s.chosen)+'  VS  '+name(s.red);launchButton.textContent=busy?'LOADING…':'START';launchButton.disabled=busy;
+}else{hint.textContent=s.screen==='fight'?(s.paused?'PAUSED':'GS FIGHTER'):s.screen==='intro'?'FIGHTER INTRO':s.screen.toUpperCase();ready.classList.add('hidden');root.classList.remove('gs-selection-ready');}
+persistent.disabled=busy;persistent.setAttribute('aria-label',s.screen==='fight'?'Start / Pause game':'Start / Confirm selection');}
+function confirm(side,device){if(engine.state().screen!=='lobby'||busy)return false;if(side===0){if(confirmed[0])return false;confirmed[0]=true;locked[0]=engine.state().chosen;setPhase(1);neutral=[true,true];}
+else{if(!confirmed[0])return false;if(confirmed[1])return false;if(device)engine.assign(device.index,1);confirmed[1]=true;locked[1]=engine.state().red;setPhase(1);}
+window.GSSound?.play('confirm');paint();return true;}
+function back(){if(engine.state().screen!=='lobby')return;if(confirmed[1]){confirmed[1]=false;locked[1]='';setPhase(1);}else if(confirmed[0]){confirmed=[false,false];locked=['',''];setPhase(0);}neutral=[true,true];paint();}
+function change(side,id){if(busy)return;if(side===0&&confirmed[0]){confirmed=[false,false];locked=['',''];phase=0;}if(side===1&&confirmed[1]){confirmed[1]=false;locked[1]='';}const before=engine.state();engine.pick(side,id);const after=engine.state();if((side?before.red:before.chosen)!==(side?after.red:after.chosen))window.GSSound?.play('navigate');engine.activate(phase);paint();}
+function move(side,dir,time){const state=moves[side];if(neutral[side]){if(!dir)neutral[side]=false;return;}if(!dir){state.dir='';return;}if(busy||confirmed[side])return;if(dir!==state.dir||time-state.at>=230){const before=engine.state();engine.move(side,dir);const after=engine.state();if((side?before.red:before.chosen)!==(side?after.red:after.chosen))window.GSSound?.play('navigate');engine.activate(phase);state.at=time;paint();}state.dir=dir;}
+function direction(x,y){if(Math.max(Math.abs(x||0),Math.abs(y||0))<.55)return '';return Math.abs(x)>Math.abs(y)?x<0?'left':'right':y<0?'up':'down';}
+function mapped(data){if(!data?.pad||data.waiting)return '';const m=data.menu||{};return ['left','right','up','down'].find(k=>m[k])||'';}
+async function launch(){if(!confirmed.every(Boolean)||busy)return;window.GSSound?.play('confirm');busy=true;paint();try{await engine.launch();if(engine.state().screen==='lobby'){hint.textContent=$('status')?.textContent||'Match could not start. Retry assets from setup.';}}catch(e){hint.textContent='Match could not start: '+e.message;}finally{busy=false;paint();}}
+function start(){if(root.classList.contains('gs-boot'))return;const c=window.Jerm747GameControls.context();if(c.screen==='lobby'){if(!confirmed[0])confirm(0);else if(!confirmed[1])confirm(1);else launch();}else if(c.screen==='intro')document.querySelector('.match-intro-skip')?.click();else if(c.screen==='fight'&&c.canPause)window.Jerm747GameControls.pause();else if(c.screen==='round')$('next-round')?.click();else if(c.screen==='result')$('again')?.click();paint();}
+window.GSAndroidSelect={start,back,reset,state:()=>({phase,confirmed:[...confirmed],rightUsed,busy}),devices(assigned){const all=Array.from(navigator.getGamepads?.()||[]).filter(p=>p&&p.connected!==false).sort((a,b)=>a.index-b.index),one=assigned?.[0]||all[0],two=assigned?.[1]||all.find(p=>p.index!==one?.index);return[one||null,two||null];},
+ poll(one,two,time){if(root.classList.contains('gs-boot'))return;if(engine.state().screen!=='lobby')return;const hasTwo=!!two.pad&&!two.waiting,left=(one?.pad?direction(one.pad.axes?.[0],one.pad.axes?.[1]):'')||mapped(one),redPad=(two?.pad?direction(two.pad.axes?.[0],two.pad.axes?.[1]):'')||mapped(two),right=one?.pad?direction(one.pad.axes?.[2],one.pad.axes?.[3]):'';if(right)rightUsed=true;
+ if(!confirmed[0])move(0,left,time);else move(0,'',time);
+ const redDirection=redPad||right||(confirmed[0]&&!rightUsed&&!hasTwo?left:'');move(1,redDirection,time);
+ if(one.back||two.back){back();return;}
+ if(confirmed.every(Boolean)){if(one.confirm||two.confirm)launch();return;}
+ if(!confirmed[0]){if(one.confirm)confirm(0);return;}
+ if(two.confirm){confirm(1,two.pad);return;}if(one.confirm&&!hasTwo)confirm(1);
+ }};
+for(const card of grid.querySelectorAll('[data-fighter]'))card.onclick=()=>change(phase,card.dataset.fighter);
+blueButton.onclick=()=>{if(confirmed[0]){confirmed=[false,false];locked=['',''];setPhase(0);paint();}else confirm(0);};redButton.onclick=()=>confirm(1);launchButton.onclick=launch;ready.querySelector('.gs-ready-back').onclick=back;persistent.onclick=start;$('start').onclick=start;
+rail.querySelector('.gs-open-menu').onclick=()=>GSAndroid.menu();rail.querySelector('.gs-open-music').onclick=()=>window.Jerm747Controls.openMusic();rail.querySelector('.gs-open-settings').onclick=()=>{if(engine.state().screen==='lobby'){setup.open=!setup.open;if(setup.open)setup.scrollIntoView({block:'start'});}else window.Jerm747Controls.openHelp();};
+document.addEventListener('keydown',e=>{if(root.classList.contains('gs-boot'))return;if(engine.state().screen!=='lobby'||window.Jerm747Controls?.menuOpen()||['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;if(['Enter','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)start();}else if(e.code==='Escape'||e.code==='Backspace'){e.preventDefault();e.stopImmediatePropagation();back();}else if(e.code.startsWith('Arrow')){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)move(phase,e.code.slice(5).toLowerCase(),performance.now());}},true);
+engine.arcade();root.classList.add('ov-mode');reset();
+setInterval(()=>{const now=engine.state().screen;if(now==='lobby'&&lastScreen!=='lobby')reset();lastScreen=now;paint();},120);
+})();

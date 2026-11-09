@@ -173,7 +173,7 @@ function updateDirection(){const ids=[...held.values()],next=ids.includes('right
 function tailFree(){if(window.GSFQuickRecover===false||!active.current)return false;
  if(AIR_MOVES.includes(mode)&&!air&&landed)return true;
  if(mode==='recover'&&health[0]>0&&active.time>=(active.clipEnd??active.duration)*.7)return true;return false;}
-function inputDown(id,token,now=performance.now()){if(window.GSFPostFight?.active||selection?.isOpen||held.has(token)||window.GSFPaused)return;held.set(token,id);if(id==='mp'||id==='hp')auraInput(id,now);if(tailFree()){mode='finished';settle();}if(['fall','recover'].includes(mode))return;if(match.active&&(match.state!=='fight'||health[0]<=0)&&!['left','right','up','down'].includes(id))return;if(match.active&&match.state!=='fight')return;if(mode==='hit'&&!['left','right','up','down','block'].includes(id))return;if(id==='left'||id==='right'){updateDirection();const twice=now-lastTap[id]<=320;lastTap[id]=now;
+function inputDown(id,token,now=performance.now()){if(window.GSFPostFight?.active||selection?.isOpen||held.has(token)||window.GSFPaused||window.GSFLoading?.busy)return;held.set(token,id);if(id==='mp'||id==='hp')auraInput(id,now);if(tailFree()){mode='finished';settle();}if(['fall','recover'].includes(mode))return;if(match.active&&(match.state!=='fight'||health[0]<=0)&&!['left','right','up','down'].includes(id))return;if(match.active&&match.state!=='fight')return;if(mode==='hit'&&!['left','right','up','down','block'].includes(id))return;if(id==='left'||id==='right'){updateDirection();const twice=now-lastTap[id]<=320;lastTap[id]=now;
   if(id==='left'){backFast=twice&&direction<0;if(MOVABLE.includes(mode)){if(!backFast&&direction<0&&['idle','walk','run'].includes(mode)){backStart=now;action('stepback',now);}else settle();}}
   else{if(twice){running=false;runAt=now+500;}if(MOVABLE.includes(mode))settle();}}
  else if(['down','duck','block'].includes(id))action(id==='block'?'block':'crouch',now);else action(id,now);}
@@ -411,7 +411,10 @@ function auraTick(dt){
 let last=performance.now();function frame(now){
  const realDt=document.hidden?0:Math.min((now-last)/1000,.1);last=now;
  if(window.GSFPostFight?.active){requestAnimationFrame(frame);try{window.GSFPostFight.tick(realDt);}catch(e){console.error('Post-fight frame',e);}return;}
- if(window.GSFPaused){if(!window.GSFPlayerMenu?.isOpen)GSFX.render(renderer,scene,camera,0);requestAnimationFrame(frame);return;}
+ // The loading curtain and title cover the arena. Let navigation paint before compiling arena shaders.
+ if(window.GSFLoading?.busy||document.hidden){requestAnimationFrame(frame);return;}
+ if(window.GSFPaused){if(!titleOpen&&!window.GSFPlayerMenu?.isOpen)GSFX.render(renderer,scene,camera,0);requestAnimationFrame(frame);return;}
+ if(titleOpen&&!demoPlaying){attractTick(realDt);requestAnimationFrame(frame);return;}
  if(selection?.isOpen){selection.tick(realDt,now);requestAnimationFrame(frame);return;}
  updateCameraPad(realDt);attractTick(realDt);matchTick(realDt);
  const dt=realDt*finishClock.update(realDt)*GSFX.timeScale(realDt);
@@ -444,8 +447,9 @@ let demoPair=null;
 function prepDemo(){const ids=FighterRoster.map(f=>f.id);const a=ids[Math.floor(Math.random()*ids.length)];let b=ids[Math.floor(Math.random()*ids.length)];if(b===a)b=ids[(ids.indexOf(a)+1+Math.floor(Math.random()*(ids.length-1)))%ids.length];
  Promise.all([ensureRig(a),ensureRig(b)]).then(()=>{demoPair=[a,b];}).catch(()=>{demoPair=null;});}
 function startDemo(){
+ if(window.GSFLoading?.busy||window.GSFPlayerMenu?.isOpen)return;
  if(demoPair&&!selection?.isOpen){configureMatchup(...demoPair);demoPair=null;}
- clearInput();reset();cameraReset();demoPlaying=true;titleOpen=false;titleScreen.classList.remove('title-cut');titleScreen.classList.add('hide');$('intro').src='about:blank';
+ clearInput();reset();cameraReset();demoPlaying=true;titleOpen=false;titleScreen.classList.add('title-cut');titleScreen.classList.add('hide');$('intro').src='about:blank';
  document.body.classList.add('demo-active');demoHUD.hidden=false;demoElapsed=0;roundOver=false;roundEndAge=0;roundWinner=null;
  x=-3;nikaX=3;
  cpus=[{name:PLAYER,rig:active,hp:100},{name:PARTNER,rig:opponent,hp:100}];
@@ -540,7 +544,7 @@ for(const ev of ['pointerdown','keydown','click'])window.addEventListener(ev,att
 let padWasDown=false;
 function pollDemoGamepad(){
  const down=Array.from(navigator.getGamepads?.()||[]).some(p=>p&&(p.buttons.some(b=>b.pressed)||p.axes.some(a=>Math.abs(a)>.65)));
- if(down&&!padWasDown){if(demoPlaying)exitDemo();else if(titleOpen&&performance.now()>=exitUntil)closeTitle();}
+ if(!window.GSFLoading?.busy&&down&&!padWasDown){if(demoPlaying)exitDemo();else if(titleOpen&&performance.now()>=exitUntil)closeTitle();}
  padWasDown=down;
 }
 // ---- v1.0 MATCH MODE: CPU opponent, player damage, rounds, timer. ----
@@ -714,9 +718,9 @@ function ensureRig(id){
 
 // ---- Title screen: the animated intro plays until Press Start (button, any key, or tap). ----
 const titleScreen=$('title-screen');let titleOpen=true;
-function closeTitle(showSelect=true){if(!titleOpen)return;attractPhase='off';titleOpen=false;titleScreen.classList.remove('title-cut');titleScreen.classList.add('hide');setTimeout(()=>{if(!titleOpen)$('intro').src='about:blank';},700);titleScreen.inert=true;if(showSelect){if(window.GSFPlayerMenu)GSFPlayerMenu.showModes();else selection?.open([PLAYER,PARTNER]);}else stage.focus?.();}
-function openTitle(){endMatch();prepDemo();resetEffects();if(selection?.isOpen)selection.close(null);titleScreen.inert=false;attractPhase='wait';attractTime=0;demoIndex=0;titleOpen=true;const f=$('intro');if(f.dataset.src)f.src=f.dataset.src;titleScreen.classList.remove('hide');clearInput(true);$('press-start').focus();}
-$('press-start').onclick=closeTitle;$('title-btn').onclick=openTitle;window.addEventListener('keydown',e=>{if(titleOpen&&!window.GSFPlayerMenu?.isOpen&&!e.target.closest?.('.title-extras')&&!['Tab','Shift'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();if(['Enter',' '].includes(e.key)||e.key.length===1||e.key.startsWith('Arrow'))closeTitle();}},true);
+function closeTitle(showSelect=true,covered=false){if(!titleOpen)return;if(showSelect&&window.GSFPlayerMenu&&!covered){return window.GSFLoading.run(()=>closeTitle(showSelect,true));}attractPhase='off';titleOpen=false;titleScreen.classList.remove('title-cut');titleScreen.classList.add('hide');setTimeout(()=>{if(!titleOpen)$('intro').src='about:blank';},700);titleScreen.inert=true;if(showSelect){if(window.GSFPlayerMenu)GSFPlayerMenu.showModes();else selection?.open([PLAYER,PARTNER]);}else stage.focus?.();}
+function openTitle(){endMatch();prepDemo();resetEffects();if(selection?.isOpen)selection.close(null);titleScreen.inert=false;attractPhase='wait';attractTime=0;demoIndex=0;titleOpen=true;const f=$('intro');delete f.dataset.loaded;if(f.dataset.src)f.src=f.dataset.src;titleScreen.classList.remove('hide');clearInput(true);$('press-start').focus();}
+$('press-start').onclick=closeTitle;$('title-btn').onclick=()=>window.GSFLoading.run(openTitle);window.addEventListener('keydown',e=>{if(titleOpen&&!window.GSFPlayerMenu?.isOpen&&!e.target.closest?.('.title-extras')&&!['Tab','Shift'].includes(e.key)){e.preventDefault();e.stopImmediatePropagation();if(['Enter',' '].includes(e.key)||e.key.length===1||e.key.startsWith('Arrow'))closeTitle();}},true);
 // Static original artwork keeps the menu independent of the arena renderer.
 selection=createFighterSelect({roster:FighterRoster,
  onOpen:()=>{attractPhase='off';clearInput();reset();cameraTouches.clear();},
@@ -727,5 +731,5 @@ $('select-btn').onclick=()=>{closeTitle(false);selection.open([PLAYER,PARTNER]);
 // The intro only loads when the title screen is shown (skipped after Play as …).
 if(new URLSearchParams(location.search).has('skipintro'))closeTitle(!new URLSearchParams(location.search).has('skipselect'));else{$('intro').src=$('intro').dataset.src;$('press-start').focus();}
 for(const f of Object.values(fighters))GSFX.decorate(f);
-window.FighterLab={clearInput,get aura(){return aura.map(a=>({used:a.used,active:a.active,prompt:a.prompt,time:a.time,level:a.level}));},get auraScale(){return [...auraScale];},AURA,auraStart,auraEnd,get playerRig(){return active;},get opponentRig(){return opponent;},playerGroup:player,opponentGroup:target,match,AI_LEVELS,startMatch,endMatch,startRound,ensureRig,keys,openTitle,get titleOpen(){return titleOpen;},get demoPlaying(){return demoPlaying;},prepDemo,hitPlayer,get enemy(){return enemyMode;},reactions,testReactions,get enemyMode(){return enemyMode;},selection,configureMatchup,renderer,finishClock,vwave,get waveCast(){return waveCast;},courtyard,quality:GSFQuality,scenery:riverScene,walls:stageWalls,surface:courtyard.userData.surface,get health(){return [...health];},get cameraYaw(){return cameraYaw;},get queue(){return rhythmQueue.slice();},combatRules,demoConfig,startDemo,get attract(){return {phase:attractPhase,index:demoIndex,time:attractTime,playing:demoPlaying,roundOver,winner:roundWinner,hp:cpus.map(c=>c.hp),moves:cpus.map(c=>c.move),positions:[x,nikaX]};},padRead:e=>padRead(e),padSet:d=>padSet(d),get env(){return env;},get envOK(){return envOK;},closeTitle,swapFighter,get PLAYER(){return PLAYER;},get PARTNER(){return PARTNER;},planters,get buffered(){return buffered;},rules,fighters,defaults,scene,camera,inputDown,inputUp,reset,step,action,get zoom(){return zoom;},get zoomTarget(){return zoomTarget();},get mode(){return mode;},get position(){return x;},get running(){return running;},get air(){return air;},get playSpeed(){return playSpeed;},get hits(){return hitCount;}};
+window.FighterLab={clearInput,get aura(){return aura.map(a=>({used:a.used,active:a.active,prompt:a.prompt,time:a.time,level:a.level}));},get auraScale(){return [...auraScale];},AURA,auraStart,auraEnd,get playerRig(){return active;},get opponentRig(){return opponent;},playerGroup:player,opponentGroup:target,match,AI_LEVELS,startMatch,endMatch,startRound,ensureRig,keys,openTitle,get titleOpen(){return titleOpen;},get demoPlaying(){return demoPlaying;},exitDemo,prepDemo,hitPlayer,get enemy(){return enemyMode;},reactions,testReactions,get enemyMode(){return enemyMode;},selection,configureMatchup,renderer,finishClock,vwave,get waveCast(){return waveCast;},courtyard,quality:GSFQuality,scenery:riverScene,walls:stageWalls,surface:courtyard.userData.surface,get health(){return [...health];},get cameraYaw(){return cameraYaw;},get queue(){return rhythmQueue.slice();},combatRules,demoConfig,startDemo,get attract(){return {phase:attractPhase,index:demoIndex,time:attractTime,playing:demoPlaying,roundOver,winner:roundWinner,hp:cpus.map(c=>c.hp),moves:cpus.map(c=>c.move),positions:[x,nikaX]};},padRead:e=>padRead(e),padSet:d=>padSet(d),get env(){return env;},get envOK(){return envOK;},closeTitle,swapFighter,get PLAYER(){return PLAYER;},get PARTNER(){return PARTNER;},planters,get buffered(){return buffered;},rules,fighters,defaults,scene,camera,inputDown,inputUp,reset,step,action,get zoom(){return zoom;},get zoomTarget(){return zoomTarget();},get mode(){return mode;},get position(){return x;},get running(){return running;},get air(){return air;},get playSpeed(){return playSpeed;},get hits(){return hitCount;}};
 })();

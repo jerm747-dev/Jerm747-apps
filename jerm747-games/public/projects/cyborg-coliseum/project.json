@@ -1,0 +1,17 @@
+{
+  "title": "Cyborg Coliseum",
+  "tagline": "Blue thrusters. Chest cannon. Open arena.",
+  "description": "Take Cyborg into the coliseum on foot or in flight. Practice close combat, boost across the arena, and hold fire for a rapid chest burst.",
+  "version": "0.2 \u00b7 Flight Systems",
+  "kind": "game",
+  "status": "playable",
+  "controls": [
+    "gamepad",
+    "touch",
+    "keyboard",
+    "mouse"
+  ],
+  "credit": "Game and character by Jerm747.",
+  "accent": "#69D5DE",
+  "order": 22
+}

@@ -1,6 +1,6 @@
 /* Texture Lab v0.27. A GPU size limit is a capability, not a memory guarantee. */
 (function(){
- const presets={balanced:{label:'2K',size:2048,ratio:1.5,shadow:2048},ultra:{label:'4K Ultra',size:4096,ratio:2,shadow:4096},extreme:{label:'8K Extreme',size:8192,ratio:3,shadow:4096}};
+ const presets={balanced:{label:'2K',size:2048,ratio:1.5,shadow:2048},ultra:{label:'4K Ultra',size:4096,ratio:2,shadow:4096},extreme:{label:'4K Ultra',size:4096,ratio:2,shadow:4096}};
  const query=new URLSearchParams(location.search);let saved='';try{saved=localStorage.getItem('gsf-quality-v27')||'';}catch{}
  let requested=query.get('quality')||saved||(/Android|iPhone|iPad|Mobile|GSFighterAPK/i.test(navigator.userAgent)?'balanced':'ultra');if(!presets[requested])requested='extreme';
  const api=window.GSFQuality={presets,requested,key:requested,profile:presets[requested],maxTextureSize:2048,anisotropy:1,error:null,notice:'',fps:0,ready:null};
@@ -23,7 +23,7 @@
   api.ready.catch(()=>{});
   select.onchange=()=>{
    try{localStorage.setItem('gsf-quality-v27',select.value);}catch{}
-   const u=new URL(location.href);u.searchParams.set('quality',select.value);u.searchParams.set('skipintro','1');location.href=u.href;
+   const u=new URL(location.href);u.searchParams.set('quality',select.value);u.searchParams.set('skipintro','1');window.GSFLoading?window.GSFLoading.navigate(u.href):location.assign(u.href);
   };
   renderer.domElement?.addEventListener('webglcontextlost',e=>{e.preventDefault();api.error='Graphics memory was exhausted. Try 4K or 2K.';api.report();});
   renderer.domElement?.addEventListener('webglcontextrestored',()=>{api.error=null;api.report();});

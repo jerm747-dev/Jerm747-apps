@@ -1,0 +1,43 @@
+/* v90 · VS on the fighter select preview. Monochrome, same white italic as before, more passion.
+   Pick a look with window.JERM747_VS_STYLE in assets/get-down-config.js: 'spotlight' (default), 'slash', 'heartbeat', 'classic'. */
+.vs-stage .vs-mark{position:relative;z-index:3;align-self:center;display:grid;place-items:center;isolation:isolate}
+@keyframes vs-beat{0%,100%{transform:skewX(-8deg) scale(1)}10%{transform:skewX(-8deg) scale(1.08)}20%{transform:skewX(-8deg) scale(1)}30%{transform:skewX(-8deg) scale(1.05)}42%{transform:skewX(-8deg) scale(1)}}
+@keyframes vs-glow{0%,100%{opacity:.55}10%{opacity:1}22%{opacity:.6}30%{opacity:.9}44%{opacity:.55}}
+@keyframes vs-ring{0%{transform:scale(.6);opacity:.0}8%{opacity:.75}60%,100%{transform:scale(2.1);opacity:0}}
+
+/* spotlight: big white VS, hairlines reaching toward both fighters, heartbeat pulse */
+.vs-style-spotlight .vs-mark{font:900 italic clamp(40px,6.4vw,76px)/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.02em;color:#fff;
+ text-shadow:0 0 1px #fff,0 0 18px #ffffffaa,0 0 42px #ffffff55,0 3px 0 #0008;animation:vs-beat 2.4s ease-in-out infinite;transform:skewX(-8deg)}
+.vs-style-spotlight .vs-mark::before,.vs-style-spotlight .vs-mark::after{content:"";position:absolute;top:50%;height:2px;width:clamp(14px,7vw,120px);border-radius:2px;pointer-events:none;animation:vs-glow 2.4s ease-in-out infinite}
+.vs-style-spotlight .vs-mark::before{right:calc(100% + 10px);background:linear-gradient(90deg,#fff0,#fff)}
+.vs-style-spotlight .vs-mark::after{left:calc(100% + 10px);background:linear-gradient(90deg,#fff,#fff0)}
+
+/* slash: a bright white stroke cuts behind the letters, crisp black outline keeps it readable */
+.vs-style-slash .vs-mark{font:900 italic clamp(40px,6.4vw,76px)/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.03em;color:#fff;
+ -webkit-text-stroke:1.5px #0b0c12;paint-order:stroke fill;text-shadow:0 0 22px #ffffff88,0 4px 0 #000a;transform:skewX(-10deg)}
+.vs-style-slash .vs-mark::before{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:170%;height:clamp(6px,.9vw,11px);border-radius:99px;
+ background:linear-gradient(90deg,#fff0,#fff 35%,#fff 65%,#fff0);transform:translate(-50%,-50%) rotate(-24deg);box-shadow:0 0 18px #fff9;animation:vs-glow 2.4s ease-in-out infinite}
+.vs-style-slash .vs-mark::after{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:120%;height:2px;background:#fff8;transform:translate(-50%,calc(-50% + 14px)) rotate(-24deg)}
+
+/* heartbeat: VS inside a soft white ring that pulses outward like a heartbeat (ties to "Fight for your voice") */
+.vs-style-heartbeat .vs-mark{font:900 italic clamp(34px,5.4vw,64px)/1 system-ui,-apple-system,"Segoe UI",sans-serif;letter-spacing:-.02em;color:#fff;
+ width:clamp(74px,11vw,132px);aspect-ratio:1;border-radius:50%;border:2px solid #ffffffd9;background:radial-gradient(circle,#ffffff1f,#0000 70%);
+ box-shadow:0 0 24px #ffffff55,inset 0 0 18px #ffffff2a;text-shadow:0 0 16px #ffffffaa,0 3px 0 #0009;animation:vs-beat 2.4s ease-in-out infinite;transform:skewX(-8deg)}
+.vs-style-heartbeat .vs-mark::before,.vs-style-heartbeat .vs-mark::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid #fff;pointer-events:none;animation:vs-ring 2.4s ease-out infinite}
+.vs-style-heartbeat .vs-mark::after{animation-delay:.3s}
+
+/* classic: the v73 look, unchanged */
+.vs-style-classic .vs-mark{font:900 clamp(18px,3vw,28px)/1 system-ui,sans-serif;font-style:italic;color:#fff;text-shadow:0 0 12px #ac72df,0 0 2px #000;letter-spacing:.04em}
+
+/* sideways phones: a little smaller */
+/* v90.1 · phones: Spotlight's line runs the full width BEHIND both fighters (drawn on the stage, under the art) */
+@keyframes vs-line{0%,100%{opacity:.5}10%{opacity:.95}22%{opacity:.55}30%{opacity:.85}44%{opacity:.5}}
+@media(max-width:700px),(orientation:landscape) and (max-height:600px){.vs-stage.vs-style-spotlight .vs-mark::before,.vs-stage.vs-style-spotlight .vs-mark::after{display:none}.vs-stage.vs-style-spotlight::before{content:"";position:absolute;z-index:0;left:3%;right:3%;top:50%;height:2px;margin-top:-1px;border-radius:2px;pointer-events:none;background:linear-gradient(90deg,#fff0,#fffc 18%,#fff 50%,#fffc 82%,#fff0);box-shadow:0 0 10px #ffffff88,0 0 22px #ffffff44;animation:vs-line 2.4s ease-in-out infinite}}
+@media(orientation:landscape) and (max-height:600px){.vs-style-spotlight .vs-mark,.vs-style-slash .vs-mark{font-size:clamp(30px,5vw,48px)}.vs-style-heartbeat .vs-mark{font-size:clamp(26px,4.2vw,40px);width:clamp(60px,9vw,88px)}}
+@media(prefers-reduced-motion:reduce){.vs-stage .vs-mark,.vs-stage .vs-mark::before,.vs-stage .vs-mark::after,.vs-stage::before{animation:none!important}}
+/* v95 · the fighter art may reach past its half of the preview (Jimmy Legend's outstretched hand was cut off);
+   only the preview's own frame clips it now. Names stay inside their half. */
+.vs-stage .vs-side{overflow:visible}
+.vs-stage .vs-side figcaption{overflow:hidden}
+/* phones: a touch less zoom and both fighters nudged toward the VS, so wide poses keep both hands in frame */
+@media(max-width:700px){.vs-stage .vs-art img{height:132%;top:8%}.vs-stage .vs-p1 .vs-art img{left:57%}.vs-stage .vs-p2 .vs-art img{left:43%}}

@@ -1,0 +1,15 @@
+{
+  "title": "Beat Room",
+  "tagline": "Record, shape and sequence your own samples.",
+  "description": "A virtual boombox with a tape sampler, turntable, 16-step rhythm composer, metronome and chromatic tuner. Record a take or load a sound, then send it to the pads.",
+  "kind": "music",
+  "status": "playable",
+  "version": "0.1.0",
+  "controls": [
+    "touch",
+    "mouse",
+    "keyboard"
+  ],
+  "accent": "#E98A3A",
+  "order": 85
+}

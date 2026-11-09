@@ -1,0 +1,33 @@
+/* The view controls and cases live inside the original cabinet monitor. */
+.cabinet .sb[hidden],.cabinet .player[hidden],.game-stack iframe[hidden]{display:none!important}
+.game-stack{order:2;position:relative;display:flex;flex-direction:column;flex:1;min-height:0;width:100%}
+.cabinet .game-stack iframe{width:100%;height:100%;min-height:0}
+.sb-top .sb-status{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.sb-status .web-visor-open{color:#c4b9b9;background:transparent;border:0;padding:7px 10px;font:600 12px/1.2 var(--ui);cursor:pointer;border-radius:6px}
+.sb-status .web-visor-open{border:1px solid #827163;display:flex;align-items:center;gap:5px;color:#fff1d3}
+.web-visor-open img{width:21px;height:16px}
+.cabinet .sb-main.is-list{display:block;min-height:0;padding-top:10px}
+.sb-cases{display:grid;gap:6px;max-height:clamp(230px,50dvh,580px);padding:3px;overflow:auto;overscroll-behavior-y:contain;touch-action:pan-y;scrollbar-color:#796053 #1d1a1a;scrollbar-width:thin}
+.sb-case{position:relative;overflow:hidden;isolation:isolate;display:flex;align-items:center;gap:clamp(10px,2vw,21px);padding:4px 13px 4px 8px;height:clamp(58px,8.8dvh,82px);color:#fff3dc;background:linear-gradient(95deg,#2c2628,#19171d);border:1px solid #574847;border-left:4px solid var(--case-accent,#a98367);border-radius:6px;text-align:left;cursor:pointer}
+.sb-case:after{content:'';position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#221e22 19%,#221e22ed 42%,#211c1f70 71%,#14131844)}
+.sb-case-wall{position:absolute;z-index:-2;inset:0 0 0 auto;width:71%;height:100%;object-fit:cover;object-position:50% 43%}
+.sb-case-thumb{flex:none;width:clamp(60px,13vw,107px);height:100%;background:#0a090c;object-fit:contain;box-shadow:0 0 0 1px #ffffff20;border-radius:3px;overflow:hidden}
+.sb-case strong{font:650 clamp(14px,1.65vw,22px)/1.15 var(--ui);letter-spacing:0;text-shadow:0 1px 5px #000}
+.sb-case i{margin-left:auto;color:#fff0d7;font:400 24px/1 system-ui}
+.sb-case:is(:hover,:focus-visible,[aria-current=true]){border-color:#d8ab7a}
+body:has(iframe[title="Jerm747 Arcade Settings"][aria-hidden=false]){overflow:hidden}
+body>div:has(>iframe[title="Jerm747 Arcade Settings"]){position:fixed!important;z-index:10000!important}
+@media(max-width:760px){.cabinet .sb-top{gap:7px;flex-wrap:wrap}.sb-case strong{font-size:16px}.sb-cases{max-height:55dvh}.sb-status .web-visor-open{min-height:34px}}
+
+/* Every running game owns the viewport. The shelf is restored on exit. */
+.cabinet.cabinet--playing {display:block;position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-width:none;padding:0;min-height:0;overflow:hidden;}
+.cabinet--playing > .cabinet-marquee,.cabinet--playing > .cabinet-wing,.cabinet--playing > .cabinet-deck {display:none;}
+.cabinet--playing .cabinet-bezel,.cabinet--playing .cabinet-screen {position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;border-radius:0;box-shadow:none;}
+.cabinet--playing .game-stack {position:absolute;inset:0;}
+.play-tools {position:absolute;z-index:4;top:max(4px,env(safe-area-inset-top));left:max(4px,env(safe-area-inset-left));max-width:calc(100% - 12px);}
+.play-tools > summary {display:grid;place-items:center;cursor:pointer;width:36px;height:36px;list-style:none;color:white;background:#151522bd;border:1px solid #ffffff55;border-radius:9px;}
+.play-tools summary::-webkit-details-marker {display:none}
+.play-tools .player-bar {border-radius:9px;background:#171721f5;max-height:50vh;overflow:auto}
+
+.game-new {display:inline-flex;align-items:center;gap:4px;color:#ffe6bb;background:#332725;border:1px solid #b28a59;border-radius:4px;padding:2px 4px;font:700 9px/1.1 system-ui,sans-serif;letter-spacing:.06em;vertical-align:middle;white-space:nowrap;margin-inline-start:6px;text-shadow:none;}
+.game-new::before {content:'';width:8px;height:7px;background:repeating-linear-gradient(0deg,#ffc57e 0 1px,transparent 1px 3px);transform:skew(-14deg);}

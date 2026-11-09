@@ -1,0 +1,1 @@
+window.ARCADE_SHEET_HEIGHTS={"eli-run":698.75,"honest-run":698.58,"jado-run":680.36,"jimmy-run":689.92,"kiana-run":768.44,"lyfelong-run":710.23,"manager-run":710.67,"nige-hood-run":771.39,"og-jerm-run":687.53,"simcity-run":678.75};

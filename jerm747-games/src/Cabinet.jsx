@@ -1,3 +1,5 @@
+import {useRef} from 'react';
+import './site-menu.css';
 import { cabinetArt } from './cabinet-art.js';
 
 const crews = {
@@ -24,14 +26,20 @@ function Wing({ side, project }) {
 }
 
 export default function Cabinet({ children, project }) {
+  const menu=useRef(null);
   return (
     <div className={`cabinet ${project ? 'cabinet--playing' : ''}`}>
       <header className="cabinet-marquee">
         <span className="cabinet-speaker" aria-hidden="true" />
         <a href="/" className="cabinet-logo" aria-label="Jerm747.games home">JERM<span>747</span><b>.GAMES</b></a>
-        <span className="cabinet-speaker" aria-hidden="true" />
+        <button type="button" className="cabinet-speaker cabinet-site-menu" aria-label="Open site menu" aria-haspopup="dialog" onClick={()=>menu.current.showModal()}><span className="sr-only">Menu</span></button>
         <p>Independent games &amp; game design</p>
       </header>
+      <dialog className="site-drawer" ref={menu} aria-labelledby="site-menu-heading" onClick={event=>{if(event.target===event.currentTarget){const rect=event.currentTarget.getBoundingClientRect();if(event.clientX<rect.left)menu.current.close();}}}>
+        <div className="drawer-top"><h2 id="site-menu-heading">Jerm747.games</h2><button type="button" onClick={()=>menu.current.close()} aria-label="Close site menu">×</button></div>
+        <nav aria-label="Site pages"><a href="/about/">About</a><a href="/contact/">Contact</a></nav>
+        <a className="drawer-download" href="/download/">Downloads <span aria-hidden="true">↗</span></a>
+      </dialog>
       <Wing side="left" project={project} />
       <div className="cabinet-bezel"><div className="cabinet-screen">{children}</div></div>
       <Wing side="right" project={project} />

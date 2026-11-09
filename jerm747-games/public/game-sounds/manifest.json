@@ -1,0 +1,28 @@
+{
+  "sounds": {
+    "punch": {
+      "file": "punch.wav",
+      "label": "Punch"
+    },
+    "kick": {
+      "file": "kick.wav",
+      "label": "Kick"
+    },
+    "v-wave": {
+      "file": "v-wave.wav",
+      "label": "V-wave"
+    },
+    "ground-impact": {
+      "file": "ground-impact.wav",
+      "label": "Ground impact"
+    },
+    "jump": {
+      "file": "jump.wav",
+      "label": "Jump"
+    },
+    "landing": {
+      "file": "landing.wav",
+      "label": "Landing"
+    }
+  }
+}

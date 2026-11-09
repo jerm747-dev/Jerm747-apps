@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGamepad, buzz, toggleFullscreen, setDisplayOrientation, HOLD_TO_EXIT_MS, BTN } from './input.js';
 import PadIcon from './PadIcon.jsx';
 import Cabinet from './Cabinet.jsx';
+import {useVisor,useGameFrame} from './Visor.jsx';
+import './arcade-list.css';
+import './view-switch.css';
 import './cabinet.css';
+
+const NEW_TITLES = new Set(['big-bowl-smash', 'tic-tac-steel', 'sumi-sudoku']);
+function NewBadge({slug}) { return NEW_TITLES.has(slug) ? <span className="game-new">NEW</span> : null; }
 
 const KIND_LABEL = { game: 'Games', app: 'Apps', site: 'Sites', tool: 'Tools', music: 'Music', experiment: 'Experiments' };
 const KIND_COLOR = { game: '#A897C9', app: '#86B0A5', site: '#8DA4C4', tool: '#C2AE7E', music: '#C4909B', experiment: '#9A9FA8' };
@@ -131,17 +137,23 @@ export default function Arcade() {
   const [cat, setCat] = useState('all');
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(null);
+  const [visorOpen,setVisorOpen]=useState(false);
+  const [view,setView]=useState(()=>localStorage.getItem('j747.web.arcadeView')==='list'?'list':'cabinet');
+  const live=useRef(null),cases=useRef(null),swipe=useRef(null);
+  const changeView=next=>{localStorage.setItem('j747.web.arcadeView',next);setView(next);};
+  useEffect(()=>{if(view==='list'&&cases.current)cases.current.scrollTop=Number(sessionStorage.getItem('j747.caseList.scroll'))||0;},[view,projects]);
   const [source, setSource] = useState('keyboard');
   const admin = useMemo(isAdmin, []);
   const tileRefs = useRef([]);
   const pushed = useRef(false);
+  const playFullscreen = useRef(false);
   const [copied, setCopied] = useState('');
 
   useEffect(() => {
     track('view');
     fetch('/api/games.php')
       .then((r) => r.json())
-      .then((d) => { if (!d.ok) throw new Error(d.error); setProjects(d.projects); })
+      .then((d) => { if (!d.ok) throw new Error(d.error); setProjects([...d.projects].sort((a,b)=>Number(a.slug==='controller-check')-Number(b.slug==='controller-check'))); })
       .catch(() => setError("The game list didn't load. Refresh to try again."));
   }, []);
 
@@ -150,7 +162,8 @@ export default function Arcade() {
   useEffect(() => {
     if (!projects) return;
     const sync = () => {
-      const slug = slugFromHash();
+      let slug = slugFromHash();
+      if(slug==='fighter-lab'){slug='cyborg-coliseum';history.replaceState(null,'','#/play/'+slug);}
       const p = slug && projects.find((x) => x.slug === slug);
       if (p) {
         setPlaying((cur) => { if (!cur || cur.slug !== p.slug) track('launch', p.slug); return p; });
@@ -167,6 +180,8 @@ export default function Arcade() {
   }, [projects]);
 
   const exitGame = useCallback(() => {
+    if (playFullscreen.current && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    playFullscreen.current = false;
     setPlaying(null);
     if (slugFromHash()) {
       if (pushed.current) { pushed.current = false; window.history.back(); }
@@ -210,14 +225,14 @@ export default function Arcade() {
     const jump = lastCat.current !== cat;
     lastCat.current = cat;
     if (Math.abs(el.scrollLeft - target) > 2) el.scrollTo({ left: target, behavior: jump ? 'auto' : 'smooth' });
-  }, [index, cat, shown.length]);
+  }, [index, cat, shown.length,view]);
   useEffect(() => {
     const el = slides.current;
     if (!el || typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(() => { el.scrollTo({ left: indexRef.current * stride(el), behavior: 'auto' }); });
     ro.observe(el);
     return () => ro.disconnect();
-  }, [projects, playing]);
+  }, [projects, playing,view]);
   const onSlidesScroll = () => {
     clearTimeout(settle.current);
     settle.current = setTimeout(() => {
@@ -230,13 +245,18 @@ export default function Arcade() {
 
   const launch = useCallback((p) => {
     if (!p) return;
+    if (!document.fullscreenElement && navigator.userActivation?.isActive && document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().then(() => { playFullscreen.current = true; }).catch(() => {});
+    }
     track('launch', p.slug);
     buzz(40, 0.4);
     setPlaying(p);
-    window.history.pushState(null, '', `#/play/${p.slug}`);
+    if(slugFromHash())window.history.replaceState(null,'',`#/play/${p.slug}`);
+    else window.history.pushState(null, '', `#/play/${p.slug}`);
     pushed.current = true;
   }, []);
 
+  const hud=useVisor({projects,playing,launch,onExit:exitGame,live,onVisibility:setVisorOpen});
   const moveCat = (dir) => {
     const i = cats.indexOf(cat);
     const next = cats[(i + dir + cats.length) % cats.length];
@@ -246,17 +266,26 @@ export default function Arcade() {
   };
 
   const onAction = (action, from) => {
-    if (document.body.dataset.viewer) return; // screenshot viewer handles its own keys
+    if(hud.current?.isOpen){
+      if(from==='gamepad'){if(action==='start')hud.current.back();else {const k=({a:'accept',b:'cancel',up:'prev',left:'prev',down:'next',right:'next'})[action];if(k)hud.current.input(k);}}
+      return;
+    }
+    if(action==='start'){hud.current?.open();return;}
+    if (playing || document.body.dataset.viewer) return; // screenshot viewer handles its own keys
     setSource(from);
     if (action === 'left') { setIndex((i) => Math.max(0, i - 1)); buzz(); }
     if (action === 'right') { setIndex((i) => Math.min(shown.length - 1, i + 1)); buzz(); }
+    if(view==='list'&&(action==='up'||action==='down')){
+      const n=Math.max(0,Math.min(shown.length-1,index+(action==='down'?1:-1)));
+      setIndex(n);cases.current?.children[n]?.focus();return;
+    }
     if (action === 'up' || action === 'lb') moveCat(-1);
     if (action === 'down' || action === 'rb') moveCat(1);
     if (action === 'a') launch(current);
     if (action === 'y') toggleFullscreen();
   };
 
-  const pads = useGamepad({ mode: playing ? 'off' : 'menu', onAction });
+  const pads = useGamepad({ mode: 'menu', onAction });
 
   useEffect(() => {
     if (pads.length) setSource('gamepad');
@@ -265,6 +294,7 @@ export default function Arcade() {
   useEffect(() => {
     if (playing) return;
     const onKey = (e) => {
+      if(hud.current?.isOpen || e.target.closest?.('.view-switch'))return;
       const map = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Enter: 'a', ' ': 'a', f: 'y', F: 'y', q: 'lb', Q: 'lb', e: 'rb', E: 'rb' };
       const action = map[e.key];
       if (!action) return;
@@ -278,11 +308,12 @@ export default function Arcade() {
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('touchstart', onTouch); };
   });
 
-  if (playing) return <Cabinet project={playing}><Player project={playing} source={source} onExit={exitGame} /></Cabinet>;
+  
 
   return (
-    <Cabinet>
-    <div className="sb">
+    <Cabinet project={playing}>
+    <Player project={playing} source={source} onExit={exitGame} live={live} visorOpen={visorOpen} openHUD={()=>hud.current?.open()} />
+    <div className="sb" hidden={!!playing}>
       <header className="sb-top">
         <a className="sb-brand" href="/">
           <PadIcon />
@@ -293,6 +324,12 @@ export default function Arcade() {
           <span className={`sb-input ${pads.length ? 'is-live' : ''}`}>
             {pads.length ? `Controller: ${pads[0].id.replace(/\(.*?\)/g, '').trim().slice(0, 32) || 'connected'}` : 'No controller, press any button to connect'}
           </span>
+          <label className="view-switch" data-view={view === 'list' ? 'list' : 'grid'}>
+            <span className="view-switch-track" aria-hidden="true"><span>List</span><span>Grid</span></span>
+            <input type="range" min="0" max="1" step="1" aria-label="Game view"
+              value={view === 'list' ? 0 : 1} aria-valuetext={view === 'list' ? 'List' : 'Grid'}
+              onChange={e => changeView(e.target.value === '0' ? 'list' : 'cabinet')} />
+          </label><button className="web-visor-open" onClick={()=>hud.current?.open()} aria-label="Open cabinet HUD"><img src="/arcade-hud/icons/hud-overlay.svg" alt=""/>HUD</button>
           <button className="sb-btn" onClick={toggleFullscreen}>Fullscreen</button>
         </div>
       </header>
@@ -306,14 +343,23 @@ export default function Arcade() {
         ))}
       </nav>
 
-      <main className="sb-main">
+      <main className={'sb-main'+(view==='list'?' is-list':'')}>
         {error && <p className="sb-empty">{error}</p>}
         {!projects && !error && <p className="sb-empty">Loading games…</p>}
         {projects && shown.length === 0 && (
           <p className="sb-empty">New games are on the way. Check back soon.</p>
         )}
 
-        {current && (
+        {view==='list' && !!shown.length && <div className="sb-cases" ref={cases} aria-label="Game list"
+          onScroll={e=>sessionStorage.setItem('j747.caseList.scroll',e.currentTarget.scrollTop)}
+          onTouchStart={e=>{swipe.current=e.touches.length===1?[e.touches[0].clientX,e.touches[0].clientY]:null;}}
+          onTouchEnd={e=>{if(!swipe.current)return;const [x,y]=swipe.current;swipe.current=null;const dx=e.changedTouches[0].clientX-x;if(Math.abs(dx)>64&&Math.abs(dx)>1.8*Math.abs(e.changedTouches[0].clientY-y)){e.preventDefault();changeView('cabinet');}}}>
+          {shown.map((p,i)=><button key={p.slug} className="sb-case" style={{'--case-accent':p.accent||KIND_COLOR[p.kind]}} aria-current={i===index} aria-label={'Open '+p.title+(NEW_TITLES.has(p.slug)?', new game':'')}
+            onClick={()=>{setIndex(i);launch(p);}} onFocus={()=>setIndex(i)}>
+            {p.cover?<><img className="sb-case-wall" src={p.listCover||p.cover} alt="" loading="lazy"/><img className="sb-case-thumb" src={p.listCover||p.cover} alt="" loading="lazy"/></>:<span className="sb-case-thumb"><Art project={p}/></span>}
+            <strong>{p.title}<NewBadge slug={p.slug}/></strong><i aria-hidden="true">›</i></button>)}
+        </div>}
+        {view==='cabinet' && current && (
           <div className="sb-slider">
           <div className="sb-slides" ref={slides} onScroll={onSlidesScroll} aria-roledescription="carousel" aria-label="Game details · swipe for the next game">
           {shown.map((current, i) => (
@@ -325,7 +371,7 @@ export default function Arcade() {
                 <span className={`chip chip-status status-${current.status}`}>{STATUS_LABEL[current.status]}</span>
                 {current.version && <span className="chip chip-ghost">{current.version}</span>}
               </p>
-              <h1>{current.title}</h1>
+              <h1>{current.title}<NewBadge slug={current.slug}/></h1>
               {current.tagline && <p className="sb-tagline">{current.tagline}</p>}
               {current.description && <p className="sb-desc">{current.description}</p>}
               {current.controls.length > 0 && (
@@ -333,16 +379,10 @@ export default function Arcade() {
               )}
               <div className="sb-actions">
                 <button className="sb-launch" onClick={() => launch(current)}>
-                  {source !== 'touch' && <Glyph name="A" source={source} />} Open {current.title}
+                  {source !== 'touch' && <Glyph name="A" source={source} />} {current.kind === 'game' ? 'Play game' : 'Open ' + current.title}
                 </button>
                 <button className="sb-btn" onClick={() => copyLink(current)}>{copied === current.slug ? 'Link copied' : 'Copy link'}</button>
                 <a className="sb-btn" href={current.url} target="_blank" rel="noopener">Open in new tab</a>
-                {current.download?.url && (
-                  <a className="sb-btn sb-download" href={current.download.url} target="_blank" rel="noopener">
-                    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" /></svg>
-                    {current.download.label || 'Download'}
-                  </a>
-                )}
               </div>
               <Gallery shots={current.screenshots} title={current.title} />
               {current.credit && <p className="sb-credit">{current.credit}</p>}
@@ -360,7 +400,7 @@ export default function Arcade() {
           </div>
         )}
 
-        <div className="sb-shelf" role="listbox" aria-label="Games">
+        {view==='cabinet' && <div className="sb-shelf" role="listbox" aria-label="Games">
           {shown.map((p, i) => (
             <button
               key={p.slug}
@@ -375,7 +415,7 @@ export default function Arcade() {
             >
               <Art project={p} />
               <span className="tile-title">{p.title}</span>
-              <span className="tile-meta">{STATUS_LABEL[p.status]}</span>
+              <span className="tile-meta">{STATUS_LABEL[p.status]}<NewBadge slug={p.slug}/></span>
             </button>
           ))}
           {admin && (
@@ -384,31 +424,33 @@ export default function Arcade() {
               <span className="tile-meta">Upload a folder with an index.html to projects/. A project.json and a 1280×720 cover.jpg are optional; see README.txt in that folder.</span>
             </div>
           )}
-        </div>
+        </div>}
       </main>
 
       <footer className="sb-foot">
         <Hints source={source} />
-        <span className="sb-note">Games and game designs by Jerm747. Music at <a href="https://jerm747.com">jerm747.com</a>. Need a game or app built? <a href="https://jerm747.dev">jerm747.dev</a></span>
+        <span className="sb-note"><a href="/download/">Android downloads</a> · Games and game designs by Jerm747. Music at <a href="https://jerm747.com">jerm747.com</a>. Need a game or app built? <a href="https://jerm747.dev">jerm747.dev</a></span>
       </footer>
     </div>
     </Cabinet>
   );
 }
 
-function Player({ project, source, onExit }) {
-  const frame = useRef(null);
+function Player({ project, source, onExit, live:frame, visorOpen, openHUD }) {
+  const stack=useRef(null);
+  useGameFrame(project,stack,frame);
   const [hold, setHold] = useState(0);
   const [showMap, setShowMap] = useState(false);
   const [displayMode, setDisplayMode] = useState('auto');
   const [displayNotice, setDisplayNotice] = useState('');
-  const bridge = project.gamepad || {};
+  const bridge = project?.gamepad || {};
   const hasBridge = Object.keys(bridge).length > 0;
 
-  useGamepad({ mode: 'player', onExitProgress: setHold, onExit });
+  useGamepad({ mode: project&&!visorOpen?'player':'off', onExitProgress: setHold, onExit });
 
   // Hold Esc to return, from the arcade page or from inside the game.
   useEffect(() => {
+    if (!project||visorOpen)return;
     let start = 0;
     let raf = 0;
     const loop = (now) => {
@@ -437,22 +479,22 @@ function Player({ project, source, onExit }) {
       targets.forEach((t) => { try { t.removeEventListener('keydown', down, true); t.removeEventListener('keyup', up, true); } catch { /* gone */ } });
       iframe?.removeEventListener('load', attach);
     };
-  }, [onExit]);
+  }, [onExit,project?.slug,visorOpen]);
 
   // A game's own Close / Exit button can hand control back to the shelf (Get Down sends jerm747-catalog-close).
   useEffect(() => {
     const onMessage = (e) => {
       if (e.origin !== location.origin || e.source !== frame.current?.contentWindow) return;
       const type = e.data && e.data.type;
-      if (type === 'jerm747-catalog-close' || type === 'jerm747-games-exit') onExit();
+      if (['arcade-return','jerm747-catalog-close','jerm747-games-exit','jerm747-arcade-close','jerm747-close-game'].includes(type)) onExit();
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [onExit]);
+  }, [onExit,project?.slug,visorOpen]);
 
   // Controller bridge: presses keys inside keyboard-only projects.
   useEffect(() => {
-    if (!hasBridge) return;
+    if (!hasBridge||visorOpen) return;
     let raf = 0;
     const down = new Set();
     const send = (type, key) => {
@@ -480,26 +522,19 @@ function Player({ project, source, onExit }) {
     };
     raf = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(raf); down.forEach((btn) => send('keyup', bridge[btn])); };
-  }, [project.slug]);
+  }, [project?.slug,visorOpen]);
 
   return (
-    <div className="player">
-      <iframe
-        ref={frame}
-        src={project.url}
-        title={project.title}
-        allow="gamepad; fullscreen; autoplay; screen-wake-lock"
-        allowFullScreen
-        onLoad={() => { try { frame.current.contentWindow.focus(); } catch { frame.current?.focus(); } }}
-      />
-      <div className="player-bar is-on">
-        <button className="sb-btn" onClick={onExit}>Back to shelf</button>
-        <span className="player-title">{project.title}</span>
+    <div className="player" hidden={!project}>
+      <div className="game-stack" ref={stack} />
+      <details className="play-tools" key={project?.slug}><summary aria-label="Game controls">☰</summary><div className="player-bar is-on">
+        <button className="sb-btn" onClick={onExit}>Back to shelf</button><button className="sb-btn" onClick={openHUD}>HUD</button>
+        <span className="player-title">{project?.title}</span>
         <Hints source={source} inPlayer />
         {hasBridge && <button className="sb-btn" onClick={() => { setShowMap(!showMap); }}>{showMap ? 'Hide controls' : 'Controller map'}</button>}
         <label className="player-orientation">Display <select aria-label="Game orientation" value={displayMode} onChange={async e => {const mode=e.target.value;setDisplayMode(mode);setDisplayNotice(await setDisplayOrientation(mode));}}><option value="auto">Auto</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
         <button className="sb-btn" onClick={async()=>{const entering=!document.fullscreenElement;await toggleFullscreen();if(entering&&displayMode!=='auto')setDisplayNotice(await setDisplayOrientation(displayMode));}}>Fullscreen</button>
-      </div>
+      </div></details>
       {displayNotice && <p className="display-notice" role="status"><span>{displayNotice}</span><button onClick={()=>setDisplayNotice('')} aria-label="Dismiss display message">×</button></p>}
       {showMap && (
         <div className="player-map">

@@ -41,6 +41,7 @@ export function useGamepad({ mode, onAction, onExitProgress, onExit }) {
   handlers.current = { onAction, onExitProgress, onExit };
 
   useEffect(() => {
+    if(mode==='off')return;
     let raf = 0;
     const prev = new Map(); // action -> {down, next}
     let holdStart = 0;
@@ -56,7 +57,7 @@ export function useGamepad({ mode, onAction, onExitProgress, onExit }) {
       if (p && mode === 'menu') {
         const d = directions(p);
         const b = (i) => !!p.buttons[i]?.pressed;
-        const state = { up: d.up, down: d.down, left: d.left, right: d.right, a: b(BTN.A), b: b(BTN.B), y: b(BTN.Y), lb: b(BTN.LB), rb: b(BTN.RB) };
+        const state = { start:b(BTN.START)&&!b(BTN.SELECT), up: d.up, down: d.down, left: d.left, right: d.right, a: b(BTN.A), b: b(BTN.B), y: b(BTN.Y), lb: b(BTN.LB), rb: b(BTN.RB) };
         for (const [action, isDown] of Object.entries(state)) {
           const s = prev.get(action) || { down: false, next: 0 };
           const repeats = ['up', 'down', 'left', 'right'].includes(action);

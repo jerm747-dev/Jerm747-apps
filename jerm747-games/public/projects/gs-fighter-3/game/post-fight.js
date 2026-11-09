@@ -126,17 +126,33 @@ function showQuote(){const s=state;if(!s)return;if(s.draw){showJourney();return;
 function showJourney(){const s=state;if(!s)return;setPhase('journey');ui.classList.remove('pf-cine');ui.querySelector('.pf-result').hidden=true;ui.querySelector('.pf-score').hidden=true;ui.querySelector('.pf-quote').hidden=true;ui.querySelector('.pf-journey').hidden=false;
  diamond('pf-player-diamond',s.player);diamond('pf-rival-diamond',s.next);$('pf-player-label').textContent=s.player.toUpperCase();$('pf-rival-label').textContent=s.next.toUpperCase();$('pf-route-label').textContent=s.win?'THE JOURNEY CONTINUES':'THE JOURNEY IS STILL YOURS';$('pf-journey-title').textContent=s.win?'Next challenger':s.draw?'Settle the score':'Ready for another round?';$('pf-rival-role').textContent=s.win?'UP NEXT':'REMATCH';$('pf-journey-note').textContent=s.win?'Your fighter. A new challenge.':s.draw?'Same matchup. A fresh start.':'Stand back up. Try again.';$('pf-fight').innerHTML=(s.win?'NEXT FIGHT':'RETRY FIGHT')+' <b>›</b>';$('pf-fight').disabled=false;$('pf-fight').focus();}
 function advance(){const s=state;if(!s||s.loading)return;window.GSFAudio?.ui?.();if(s.phase==='cine'){if(s.age<CINE.skipAfter)return;s.cineT=Math.max(s.cineT,5.6);revealResult();return;}if(s.phase==='fade'||s.phase==='showcase'){revealResult();return;}if(s.phase==='result'){if(!s.scoreDone){s.age=Math.max(s.age,3.7);finishScore();return;}if(s.loss&&s.pose!=='ready'){s.wantQuote=true;$('pf-advance').disabled=true;$('pf-advance').textContent='GETTING BACK UP…';return;}showQuote();}else if(s.phase==='quote')showJourney();}
+function back(){
+ const s=state;if(!s||s.loading)return;
+ if(s.phase==='journey'||s.phase==='quote'){
+  ui.querySelector('.pf-journey').hidden=true;
+  if(s.phase==='journey'&&!s.draw){
+   setPhase('quote');ui.querySelector('.pf-quote').hidden=false;
+   $('pf-advance').textContent='CONTINUE ›';$('pf-footer-note').textContent='ONE LESSON. THEN THE NEXT FIGHT.';
+  }else{
+   setPhase('result');ui.querySelector('.pf-quote').hidden=true;ui.querySelector('.pf-result').hidden=false;
+   ui.querySelector('.pf-score').hidden=!s.scoreDone;$('pf-advance').textContent=s.scoreDone?'NEXT ›':'COUNT POINTS ›';
+   $('pf-footer-note').textContent=s.wins.join(' – ')+'  MATCH RESULT';
+  }
+  $('pf-advance').focus();return;
+ }
+ close();L.openTitle();
+}
 function restoreScene(){const s=state;if(!s?.prepared)return;for(const {o,pos,rotation,scale,visible} of s.objects){o.position.copy(pos);o.rotation.copy(rotation);o.scale.copy(scale);o.visible=visible;}
  // Light targets are separate scene nodes and must be restored too.
  for(const {target,pos} of s.targets||[])target.position.copy(pos);
  L.scene.fog=s.fog;s.rig.setLift(0);s.rig.root.position.copy(s.originalPosition);L.scenery.setViewAspect(innerWidth/Math.max(1,innerHeight));}
 function close(){if(!state)return;ui.classList.remove('pf-cine');restoreScene();state=null;serial++;ui.hidden=true;document.body.classList.remove('post-fight-on');L.renderer.setViewport?.(0,0,innerWidth,innerHeight);}
 async function launch(){const s=state;if(!s||s.loading)return;s.loading=true;const token=s.id;ui.querySelectorAll('button').forEach(b=>b.disabled=true);$('pf-error').textContent='';$('pf-fight').textContent='LOADING FIGHTERS…';
- try{const rigs=await Promise.all([s.player,s.next].map(id=>L.ensureRig(id)));await Promise.all(rigs.map(rig=>rig.ready));if(!state||state.id!==token)return;
-  const ids=[s.player,s.next];close();const u=new URL(location.href);u.searchParams.delete('postfight');u.searchParams.set('p1',ids[0]);u.searchParams.set('p2',ids[1]);try{history.replaceState(null,'',u);}catch{}L.configureMatchup(...ids);L.startMatch();
- }catch(e){if(!state||state.id!==token)return;s.loading=false;ui.querySelectorAll('button').forEach(b=>b.disabled=false);$('pf-fight').textContent='TRY AGAIN';$('pf-error').textContent='That fighter could not load. Try again or choose Fighter Select.';console.error('Post-fight launch:',e);}
+ try{if(window.GSFLoading)await window.GSFLoading.show();const rigs=await Promise.all([s.player,s.next].map(id=>L.ensureRig(id)));await Promise.all(rigs.map(rig=>rig.ready));if(!state||state.id!==token)return;
+  const ids=[s.player,s.next];close();const u=new URL(location.href);u.searchParams.delete('postfight');u.searchParams.set('p1',ids[0]);u.searchParams.set('p2',ids[1]);try{history.replaceState(null,'',u);}catch{}L.configureMatchup(...ids);L.startMatch();if(window.GSFLoading){window.GSFPaused=true;await window.GSFLoading.hide();window.GSFPaused=false;}
+ }catch(e){if(!state||state.id!==token)return;if(window.GSFLoading)await window.GSFLoading.hide();s.loading=false;ui.querySelectorAll('button').forEach(b=>b.disabled=false);$('pf-fight').textContent='TRY AGAIN';$('pf-error').textContent='That fighter could not load. Try again or choose Fighter Select.';console.error('Post-fight launch:',e);}
 }
-ui.addEventListener('click',e=>{const action=e.target.closest('[data-pf]')?.dataset.pf;if(!action||!state||state.loading)return;if(action==='advance')advance();else if(action==='fight')launch();else{const ids=[state.player,state.opponent];close();L.endMatch();if(action==='select'){run={player:null,beaten:[],total:0};L.selection.open(ids);}else{run={player:null,beaten:[],total:0};L.openTitle();}}});
+ui.addEventListener('click',async e=>{const action=e.target.closest('[data-pf]')?.dataset.pf;if(!action||!state||state.loading)return;if(action==='advance')advance();else if(action==='fight')launch();else{const ids=[state.player,state.opponent];if(window.GSFLoading)await window.GSFLoading.show();close();L.endMatch();if(action==='select'){run={player:null,beaten:[],total:0};L.selection.open(ids);}else{run={player:null,beaten:[],total:0};L.openTitle();if(window.GSFLoading)await window.GSFLoading.ready();}}});
 function buttons(){return [...ui.querySelectorAll('button')].filter(b=>!b.disabled&&!b.closest('[hidden]')&&(state?.phase==='journey'?b.dataset.pf!=='advance':b.dataset.pf==='advance'));}
 function moveFocus(dir){const items=buttons(),i=items.indexOf(document.activeElement);items[(i+dir+items.length)%items.length]?.focus();}
 addEventListener('keydown',e=>{if(!state)return;const handled=['Tab','Enter',' ','Escape','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key);if(!handled){e.stopImmediatePropagation();return;}e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;if(e.key==='Tab')moveFocus(e.shiftKey?-1:1);else if(e.key.startsWith('Arrow'))moveFocus(['ArrowUp','ArrowLeft'].includes(e.key)?-1:1);else if(e.key==='Escape'){if(state.phase!=='journey')advance();}else if(document.activeElement?.closest('#post-fight'))document.activeElement.click();else buttons()[0]?.click();},true);
@@ -176,5 +192,5 @@ function tick(dt){if(!state)return;dt=document.hidden?0:Math.min(.1,Math.max(0,d
  }
  render(dt);
 }
-window.GSFPostFight={begin,close,tick,advance,get active(){return!!state;},get state(){return state;},scoreFor,pickNext,quotes:QUOTES,camera};
+window.GSFPostFight={begin,close,tick,advance,back,get active(){return!!state;},get state(){return state;},scoreFor,pickNext,quotes:QUOTES,camera};
 })();

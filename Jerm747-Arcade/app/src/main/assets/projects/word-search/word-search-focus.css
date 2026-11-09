@@ -1,0 +1,36 @@
+[hidden]{display:none!important}
+.puzzle-focus{overflow:hidden}
+.puzzle-focus .app{height:100dvh;min-height:0;max-width:none;padding:8px 12px;gap:8px}
+.puzzle-focus .app>header,.puzzle-focus .toolbar,.puzzle-focus .app>progress,.puzzle-focus .board-panel>.status,.puzzle-focus .board-panel>.bottom{display:none}
+.puzzle-focus .focus-bar{display:flex;align-items:center;justify-content:space-between;flex:none;gap:12px;min-height:36px}
+.focus-bar button{min-height:36px;padding:5px 12px}
+.focus-bar #exit-focus{font-size:20px;min-width:40px}
+.puzzle-focus .content{grid-template-columns:minmax(0,1fr) clamp(220px,23vw,340px);grid-template-rows:1fr;gap:16px;min-height:0}
+.puzzle-focus .board-panel,.puzzle-focus .words-panel{border:0;border-radius:0;background:transparent;padding:0;min-height:0}
+.puzzle-focus .grid-scroll{overflow:auto;container-type:size;min-height:0;display:grid;place-items:start center}
+.puzzle-focus .grid{width:min(100cqw,100cqh);min-width:0!important;max-width:none;margin:0;border:0;gap:0;background:transparent;container-type:inline-size}
+.puzzle-focus .cell{font-size:clamp(12px,2.8cqi,34px);background:transparent;border:0}
+.puzzle-focus .cell:hover{background:#ffffff0a}
+.puzzle-focus .cell.found{background:#285952;color:#b7ffee}
+.puzzle-focus .cell.selected{background:var(--pink);color:#1c1930}
+.puzzle-focus .words-panel h2{margin:0 0 10px;font-size:18px;color:var(--accent)}
+.puzzle-focus .words-panel>p{display:none}
+.puzzle-focus .word-list{padding:0;gap:5px 12px;grid-template-columns:1fr 1fr;overflow:auto}
+.puzzle-focus .word-list li{font-size:clamp(12px,1.05vw,16px);padding:3px 0;letter-spacing:.3px}
+.puzzle-focus .help{flex:none;width:100%;max-width:none;padding:0;margin:0;max-height:35dvh;overflow:auto}
+.puzzle-focus .instructions{margin:0;padding:10px 12px;border:0;border-radius:0;background:#1c2133;line-height:1.6}
+@media(max-width:650px) and (orientation:portrait){
+ .puzzle-focus .app{padding:6px 8px;gap:6px}
+ .puzzle-focus .content{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(110px,24dvh);gap:8px}
+ .puzzle-focus .grid-scroll{place-items:center}
+ .puzzle-focus .words-panel h2{font-size:15px;margin:0 0 4px}
+ .puzzle-focus .word-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 6px}
+ .puzzle-focus .word-list li{font-size:12px;padding:3px 0}
+ .puzzle-focus .cell{font-size:clamp(12px,3.8cqi,20px)}
+}
+@media(max-height:500px) and (orientation:landscape){
+ .puzzle-focus .app{padding:4px 8px;gap:4px}
+ .puzzle-focus .content{grid-template-columns:minmax(0,1fr) minmax(220px,35vw);gap:12px}
+ .puzzle-focus .word-list li{font-size:12px;padding:2px 0}
+ .puzzle-focus .help{max-height:40dvh}
+}

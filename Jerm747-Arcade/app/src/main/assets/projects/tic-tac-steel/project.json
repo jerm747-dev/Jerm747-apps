@@ -1,0 +1,15 @@
+{
+  "title": "Tic-Tac-Steel",
+  "tagline": "Etch your next move into steel.",
+  "description": "Take on the CPU or a second player. Play three in a row on the Classic board, line up four on the 5×5 plate, or claim three little boards to win Ultimate.",
+  "kind": "game",
+  "status": "playable",
+  "controls": [
+    "touch",
+    "mouse",
+    "keyboard",
+    "gamepad"
+  ],
+  "credit": "Jerm747",
+  "accent": "#ED9D49"
+}

@@ -1,0 +1,75 @@
+/* Thumb space is responsive; CSS pixels cannot guarantee a physical inch on every phone. */
+@media (pointer:coarse), (max-width:900px), (max-height:600px) {
+ html.ov-mode { --arcade-thumb-space:clamp(40px,12dvh,96px); }
+ html.ov-mode .gd-ov-pad, html.ov-mode .gd-ov-face { bottom:calc(var(--arcade-thumb-space) + env(safe-area-inset-bottom,0px))!important; }
+ html.ov-mode .gd-ov-start { left:50%;bottom:calc(var(--arcade-thumb-space) - 28px + env(safe-area-inset-bottom,0px)); }
+ html.ov-mode .tp-wide .tp-cluster { translate:0 calc(-1 * var(--arcade-thumb-space)); }
+ html.ov-mode .gd-ov-chip { min-width:36px;min-height:32px; }
+}
+@media (orientation:portrait) and (max-width:900px) {
+ html.ov-mode .stage canvas#arena { height:calc(100% - 164px - var(--arcade-thumb-space,0px) - env(safe-area-inset-bottom,0px))!important; }
+}
+
+.game-console-row { flex-wrap:wrap; }
+.game-console-row .sfx-toggle { min-width:56px!important;padding:5px 7px;letter-spacing:.3px; }
+.gd-ov-top .sfx-toggle { min-width:48px;font-size:10px;letter-spacing:0; }
+.sfx-toggle[aria-pressed="false"] { opacity:.72; }
+
+/* Independent of the hidden touch-control layer; sheets remain above this button. */
+.arcade-controls-recovery{display:none}
+html.ov-mode.controls-hidden .arcade-controls-recovery{
+ display:block!important;position:fixed;z-index:70;
+ top:calc(46px + env(safe-area-inset-top,0px));right:max(8px,env(safe-area-inset-right,0px));
+ min-height:36px;padding:6px 10px;border:1px solid #ffffff66;border-radius:18px;
+ background:#0b0f1de6;color:#ffe4a0;font:600 12px system-ui;pointer-events:auto;touch-action:manipulation;
+}
+.gc-restore-controls{min-height:44px}
+
+/* build183: short screens scroll the lobby without compressing its children. */
+@media(orientation:landscape) and (max-height:600px){
+ .stage{min-height:0!important}
+ #lobby.arcade-lobby.is-compact{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;gap:6px;scroll-padding-block:8px 64px}
+ #lobby.arcade-lobby.is-compact>*{flex-shrink:0;min-width:0}
+ #lobby .vs-stage{height:clamp(125px,32dvh,190px);margin-bottom:4px}
+ #lobby .lobby-bottom{position:sticky;bottom:0;z-index:12;flex-shrink:0;margin-top:4px;padding:6px 0!important;background:#182238f5;border-radius:10px;backdrop-filter:blur(5px)}
+}
+/* A modest trim to the surrounding buttons, retaining rounded shapes and colors. */
+@media(max-width:700px),(orientation:landscape) and (max-height:600px){
+ .toolbar nav{gap:4px}
+ .toolbar button{font-size:10px;padding:4px 7px}
+ .lobby-quickbar{gap:4px 6px}
+ .lobby-quickbar .difficulty,.quick-scores>summary{font-size:11px;min-height:28px;padding:4px 10px}
+ .lobby-quickbar .difficulty strong{font-size:11px}
+ .game-console-row{gap:5px}
+ .game-console-row .nes-console-button{min-width:68px;min-height:29px;padding:4px 8px;font-size:9px;letter-spacing:.5px}
+ #lobby .lobby-play-actions{gap:6px;flex-wrap:wrap}
+ #lobby .lobby-play-actions button{flex:1 1 140px;min-height:40px;padding:6px 10px;font-size:12px;border-radius:10px}
+ html.ov-mode .gd-ov-top{gap:4px;flex-wrap:wrap}
+ html.ov-mode .gd-ov-top .gd-ov-chip{min-height:30px;min-width:32px;font-size:11px}
+}
+
+/* Existing round-tip surfaces dissolve after their two-second display. */
+.stage-message{opacity:0;transition:opacity .3s ease;pointer-events:none}
+.stage-message.is-visible{opacity:1}
+@media(prefers-reduced-motion:reduce){.stage-message{transition:none}}
+
+/* build184: use the original bottom status position, including presentation mode. */
+html .app>#status.soundtrack-status{display:block!important;position:fixed;left:50%;bottom:max(3px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:calc(100% - 24px);max-width:650px;box-sizing:border-box;z-index:65;min-height:15px;padding:2px 8px;border-radius:6px;background:#0a1021bf;color:#d5e4f4;font:11px/1.35 system-ui;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #000;pointer-events:none}
+.fighter-refresh{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:30px;padding:4px 10px;border:1px solid #82cbd677;border-radius:999px;background:#172e3a;color:#d8f8ff;font:11px system-ui;cursor:pointer;flex-shrink:0}
+.fighter-refresh:focus-visible{outline:2px solid #a5efff;outline-offset:2px}
+.fighter-refresh .refresh-icon{display:inline-block;font-size:16px}
+.fighter-refresh.is-refreshing .refresh-icon{animation:refresh-turn .55s ease-out}
+.select-grid.is-refreshing>button{animation:fighter-art-pulse .55s ease-out}
+@keyframes refresh-turn{to{transform:rotate(360deg)}}
+@keyframes fighter-art-pulse{40%{filter:brightness(1.22);box-shadow:0 0 12px #8cd8f066}}
+@media(prefers-reduced-motion:reduce){.fighter-refresh.is-refreshing .refresh-icon,.select-grid.is-refreshing>button{animation:none}}
+
+/* build185: dedicate a small strip to music; never cover the bottom controls. */
+html .app>#status.soundtrack-status[hidden]{display:none!important}
+html:not(.ov-mode):not(.game-presentation) .app{padding-bottom:max(var(--soundtrack-clearance,0px),env(safe-area-inset-bottom,0px))}
+html.ov-mode .gd-ov-pad,html.ov-mode .gd-ov-face{bottom:calc(var(--arcade-thumb-space,40px) + var(--soundtrack-clearance,0px) + env(safe-area-inset-bottom,0px))!important}
+html.ov-mode .gd-ov-start{bottom:calc(var(--arcade-thumb-space,40px) - 28px + var(--soundtrack-clearance,0px) + env(safe-area-inset-bottom,0px))!important}
+html.ov-mode .tp-wide .tp-cluster{translate:0 calc(-1 * (var(--arcade-thumb-space,40px) + var(--soundtrack-clearance,0px)))}
+#input-preference-summary,.app>.game-pad-status,#lobby .lobby-bottom{display:none!important}
+.lobby-quickbar .quick-endless{min-height:28px;padding:4px 10px;border:1px solid #af98e0;border-radius:999px;background:#302943;color:#f0e5ff;font:11px system-ui;white-space:nowrap;flex-shrink:0;cursor:pointer}
+.lobby-quickbar .quick-endless:focus-visible{outline:2px solid #a5efff;outline-offset:2px}

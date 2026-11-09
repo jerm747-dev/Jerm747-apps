@@ -1,0 +1,24 @@
+/* v72.4 · small Let It Ride bar for pages outside the app (Character showcase). Same color ring as /ride. */
+.ride-mini{position:fixed;left:50%;bottom:max(10px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:900;display:flex;align-items:center;gap:10px;
+  width:max-content;max-width:min(520px,calc(100vw - 20px));box-sizing:border-box;padding:6px 12px 6px 6px;border-radius:999px;
+  background:rgb(14 15 20 / .92);border:1px solid #ffffff1f;box-shadow:0 8px 28px #0008;color:#f4f1ea;font:14px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.ride-mini-btn{position:relative;flex:none;width:44px;height:44px;border:0;padding:0;border-radius:50%;background:none;color:#fff;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s}
+.ride-mini-btn:active{transform:scale(.94)}
+.ride-mini-btn:focus-visible,.ride-mini-next:focus-visible,.ride-mini-open:focus-visible{outline:2px solid #19c3ff;outline-offset:3px}
+.ride-mini-ring{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,#19c3ff,#b44dff,#ff4fd8,#ff8a1f,#19c3ff);box-shadow:0 0 16px -2px rgb(180 77 255 / .6)}
+.ride-mini-face{position:absolute;inset:3px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 50% 35%,#232634,#0b0c10 70%)}
+.ride-mini.is-idle .ride-mini-ring{animation:ride-mini-breathe 3.2s ease-in-out infinite}
+.ride-mini.is-playing .ride-mini-ring,.ride-mini.is-loading .ride-mini-ring{animation:ride-mini-spin 8s linear infinite}
+@keyframes ride-mini-spin{to{transform:rotate(1turn)}}
+@keyframes ride-mini-breathe{50%{box-shadow:0 0 24px 2px rgb(180 77 255 / .7),0 0 34px -6px rgb(25 195 255 / .7)}}
+.ride-mini-text{display:flex;flex-direction:column;min-width:0;max-width:260px}
+.ride-mini-title{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ride-mini-sub{font-size:12px;color:#b5b2ac;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ride-mini-next{flex:none;width:36px;height:36px;display:grid;place-items:center;border:0;border-radius:50%;background:#ffffff14;color:#fff;cursor:pointer}
+.ride-mini-next[hidden],.ride-mini-open[hidden]{display:none}
+.ride-mini-open{flex:none;font-size:12px;font-weight:700;color:#f4f1ea;text-decoration:none;padding:7px 10px;border-radius:999px;border:1px solid #ffffff33;white-space:nowrap}
+.ride-mini-open:hover{background:#ffffff14}
+html.has-ride-mini body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+@media(max-width:420px){.ride-mini{gap:8px;padding-right:8px}.ride-mini-text{max-width:150px}.ride-mini-open{padding:6px 8px}}
+@media(prefers-reduced-motion:reduce){.ride-mini-ring{animation:none!important}}

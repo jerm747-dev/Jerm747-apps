@@ -1,0 +1,20 @@
+/* v76 · Small arcade toolbar above full-width fighter meters. */
+html.ov-mode{--arcade-hud-top:32px;--arcade-score-top:72px}
+html.ov-mode .gd-ov-top{top:calc(env(safe-area-inset-top,0px) + 4px);left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));height:24px;gap:4px;align-items:center;flex-wrap:nowrap}
+html.ov-mode .gd-ov-chip{height:24px;min-height:24px;min-width:24px;padding:0 5px;font-size:11px;line-height:1;flex:0 0 auto;border-radius:7px;background:#101729b8;border-color:#ffffff35}
+html.ov-mode .gd-ov-visibility{min-width:38px;width:auto;font-size:9px}
+html.ov-mode .gd-ov-exit{font-size:12px}
+html.ov-mode .hud,html.ov-mode .arcade-scoreline{left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));width:auto}
+html.ov-mode .hud{top:calc(env(safe-area-inset-top,0px) + var(--arcade-hud-top));gap:10px;align-items:flex-start;padding:2px 5px 2px;border-radius:6px;background:linear-gradient(#0b1025b8,#0b102570)}
+html.ov-mode .fighter-hud>div{margin-bottom:0}
+html.ov-mode .fighter-hud>div:first-child{height:12px;margin-bottom:3px;gap:4px;align-items:center;font-size:10px;line-height:1.1}
+html.ov-mode .fighter-hud b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+html.ov-mode .round-pips{flex-shrink:0;letter-spacing:3px;font-size:10px}
+html.ov-mode .meter{height:10px;border:1px solid #ffffff35;box-shadow:0 1px 2px #0008;background:#050914}
+html.ov-mode .meter.energy{height:6px;margin-top:3px;border-color:#edd18e50}
+html.ov-mode .arcade-scoreline{top:calc(env(safe-area-inset-top,0px) + var(--arcade-score-top));display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:9px;align-items:center;font-size:9px;line-height:12px;padding:0 5px}
+html.ov-mode #run-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html.ov-mode #points{font-size:9px}
+html.ov-mode #timer{font-size:11px;font-weight:800;color:#fff2df;min-width:28px;text-align:right}
+html.ov-mode .stage-message{top:calc(env(safe-area-inset-top,0px) + var(--arcade-score-top) + 16px)}
+@media(orientation:landscape) and (max-height:430px){html.ov-mode{--arcade-hud-top:27px;--arcade-score-top:62px}html.ov-mode .gd-ov-top{top:calc(env(safe-area-inset-top,0px) + 3px);height:20px}html.ov-mode .gd-ov-chip{height:20px;min-height:20px;font-size:10px}html.ov-mode .fighter-hud>div:first-child{height:10px;font-size:9px;margin-bottom:2px}html.ov-mode .meter{height:9px}html.ov-mode .meter.energy{height:5px;margin-top:2px}}

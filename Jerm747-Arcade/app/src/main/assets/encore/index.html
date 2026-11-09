@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head><script src="../hud/game-clock.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#241420">
+<title>Encore · Nige Hood</title>
+<meta name="description" content="Walk, run and flip through Nige Hood’s illustrated street. Five blocks lead to a rooftop listening party for Returnity. Collect NH merch, earn the Gold Mic, then race your own best time.">
+<link rel="icon" href="assets/encore-icon.png" type="image/png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="controls.css">
+<link rel="stylesheet" href="street.css">
+<link rel="stylesheet" href="finale.css">
+<link rel="stylesheet" href="encore.css">
+</head><body>
+<main id="game" data-screen="loading" aria-label="Encore game"><div class="cabinet"><div class="gamebar"><div class="gamebrand"><img src="assets/record.svg" width="27" height="27" alt=""> ENCORE</div><div class="tools"><button id="audio" aria-label="Toggle sound" aria-pressed="false">Sound off</button><button id="touch-toggle" aria-label="On-screen controls">Pad · Auto</button><button id="pause">Pause</button><button id="expand" aria-label="Toggle full screen">⛶</button><button id="instructions" data-help aria-label="Game controls">?</button></div></div>
+<div class="viewport" id="viewport"><section id="front" aria-label="Encore">
+  <div id="sleeve" hidden>
+    <div class="cover-art"><img src="assets/encore-sleeve.webp" alt="Nige Hood — Encore. Nige vaults over the block at sunset."></div>
+    <footer class="sleeve-foot"><div class="imprint"><b>RETURNITY</b><span>Jerm747 Games</span></div><div class="sleeve-actions"><button id="press-start">Press Start <i aria-hidden="true">→</i></button><button id="mini-start" class="arcade-link">Play CD Man <i aria-hidden="true">↗</i></button></div></footer>
+  </div>
+  <div id="selector" hidden>
+    <div class="select-body"><header class="selector-heading"><span class="sleeve-seal"><img class="seal-head" src="assets/encore-icon.png" width="72" height="72" alt=""><img class="seal-type" src="assets/encore-lockup.png" width="120" height="36" alt="Encore"></span><h1>Choose a run</h1></header>
+      <nav id="mode-list" aria-label="Game modes">
+        <button data-mode="street"><span>On the Block</span><i aria-hidden="true">↗</i></button>
+        <button data-mode="trial"><span>Time Trial</span><i aria-hidden="true">↗</i></button>
+        <button data-mode="night"><span>After Party</span><i aria-hidden="true">↗</i></button>
+        <button data-mode="cdman"><span>CD Man</span><small>Arcade mini-game</small><i aria-hidden="true">↗</i></button>
+      </nav>
+      <div class="select-tools"><button id="front-back">Back</button><button id="front-help">Controls</button><button id="front-sound">Sound on</button><button id="front-music">Music on</button></div>
+    </div>
+    <figure id="route-art"><div class="route-window"><img id="mode-image" alt="" src="assets/street-day.png"></div><figcaption><small class="folio" id="mode-location">CAFÉ BLOCK</small><p id="mode-blurb">Run the block and find your way to the rooftop show.</p></figcaption></figure>
+  </div>
+  <div id="loader" role="status"><span class="loader-record" aria-hidden="true"></span><div><img class="loading-type" src="assets/encore-lockup.png" alt="Encore"><p id="load-caption">Loading the block…</p></div></div>
+</section>
+
+<canvas id="playfield" tabindex="0" aria-label="Street platform game. Move with arrows, jump with Space, flip with X, duck with Down, double-tap Down to drop through a platform, run with Shift. Throw fireballs with F. Press Jump again in the air for one upward boost. Double-tap a direction then Speed for a blue-streak boost. Press Flip again during a flip or double jump to dive. Combine Down and Flip for a spinning ground pound. E talks to a nearby person when you choose."></canvas><div class="hud" aria-hidden="true"><span id="stop">SIDE A</span><span id="score">🔥 0</span><span id="tokens">◉ 0</span><span id="run-clock" hidden>0:00.00</span></div><div id="merch" class="merch-tracker" aria-label="NH merchandise collected: 0 of 3"><span class="merch-label">NH FINDS</span><span data-merch="tee" title="Undiscovered gear" aria-label="Undiscovered gear"><canvas width="48" height="48" data-merch-icon="0"></canvas></span><span data-merch="cap" title="Undiscovered gear" aria-label="Undiscovered gear"><canvas width="48" height="48" data-merch-icon="1"></canvas></span><span data-merch="vinyl" title="Undiscovered gear" aria-label="Undiscovered gear"><canvas width="48" height="48" data-merch-icon="2"></canvas></span><span data-night-merch data-merch="backpack" title="Undiscovered gear" aria-label="Undiscovered gear" hidden><img src="assets/night-backpack-v13.webp" width="24" height="24" alt=""></span><span data-night-merch data-merch="blackTee" title="Undiscovered gear" aria-label="Undiscovered gear" hidden><img src="assets/night-black-tee-v14.webp" width="24" height="24" alt=""></span><span data-night-merch data-merch="blackCap" title="Undiscovered gear" aria-label="Undiscovered gear" hidden><img src="assets/night-black-cap-v14.webp" width="24" height="24" alt=""></span><b id="merch-count">0/3</b></div><div id="night-intro" role="status" hidden><span class="night-head" aria-hidden="true"></span><div><small>NIGE HOOD &nbsp; / &nbsp; AFTER PARTY</small><p>Man, it’s dark out here. Good thing I brought my flashlight.</p></div></div><button id="talk-prompt" class="talk-prompt" aria-keyshortcuts="E" hidden>💬 Tap to talk <kbd>E</kbd></button><div id="collection-banner" class="collection-banner" role="status" hidden><small>NH COLLECTION</small><strong>FULL SET!</strong><span>NH gear collected</span></div><span class="route-label" id="route-label">THE SIDEWALK</span><div class="meter" aria-hidden="true"><i id="progress"></i></div><div id="toast" role="status" aria-live="polite"></div><section id="conversation" class="conversation" role="dialog" aria-modal="true" aria-labelledby="conversation-heading" hidden>
+<div class="conversation-heading"><span id="conversation-heading">A FAMILIAR FACE</span><span id="dialogue-count">1 / 6</span></div>
+<div class="conversation-cards">
+<article class="speaker-card" id="nige-card"><canvas id="nige-portrait" width="150" height="172" aria-hidden="true"></canvas><div><h3>Nige Hood</h3><p id="nige-line">…</p></div></article>
+<article class="speaker-card" id="npc-card"><canvas id="npc-portrait" width="150" height="172" aria-hidden="true"></canvas><div><h3>Open mic regular</h3><p id="npc-line">…</p></div></article>
+</div><div id="spoken-line" class="sr-only" aria-live="polite"></div>
+<div class="conversation-actions"><button id="leave-chat" class="minor">Keep walking</button><button id="next-line" class="start">Next →</button></div>
+</section><section id="reaction" aria-label="Nige at the listening party" hidden>
+<div class="reaction-face"><canvas id="reaction-face" width="360" height="360" role="img" aria-label="Nige’s expression"></canvas></div>
+<div class="reaction-copy" aria-live="polite"><small id="reaction-by">NIGE HOOD</small><strong id="reaction-line"></strong><p id="reaction-sub"></p><button id="join-party" class="finale-btn" hidden>Join the party →</button></div>
+</section><div id="area-transition" class="area-transition" aria-hidden="true" hidden><span>NEXT BLOCK</span><strong id="area-name">Sunset Market</strong></div><div class="overlay" id="overlay" hidden><div class="overbox"><div id="overKicker" class="eyebrow">RETURNITY ARCADE</div><h2 id="overTitle"></h2><p id="overText"></p><div class="links"><button id="primary" class="start"></button><button id="secondary" class="minor"></button></div><div class="pause-routes"><button id="mode-return" class="minor">Choose mode</button><button id="pause-title-button" class="return-title">Back to Title</button></div></div></div></div>
+<div class="deck" aria-label="Arcade touch controls">
+  <div class="direction-control">
+    <div class="dpad" role="group" aria-label="Eight-way direction pad. Slide toward a corner to combine two directions.">
+      <svg class="controller-defs" aria-hidden="true" width="0" height="0"><defs>
+        <linearGradient id="padBevel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8c9196"/><stop offset=".18" stop-color="#50565d"/><stop offset=".49" stop-color="#252a30"/><stop offset=".72" stop-color="#101419"/><stop offset="1" stop-color="#06080b"/></linearGradient>
+        <linearGradient id="padFace" x1="0" y1="0" x2=".65" y2="1"><stop stop-color="#383d43"/><stop offset=".45" stop-color="#272d33"/><stop offset="1" stop-color="#181d23"/></linearGradient>
+        <linearGradient id="padLit" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#48655f"/><stop offset=".45" stop-color="#2a4842"/><stop offset="1" stop-color="#182d2c"/></linearGradient>
+        <filter id="padGrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="12" result="noise"/><feColorMatrix in="noise" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".48"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/><feBlend in2="SourceGraphic" mode="soft-light"/></filter>
+      </defs></svg>
+      <svg class="direction-ring" viewBox="0 0 200 200" aria-hidden="true"><path data-directions="jump" d="M70.95 10.60 A94 94 0 0 1 129.05 10.60"/><path data-directions="jump right" d="M142.68 16.25 A94 94 0 0 1 183.75 57.32"/><path data-directions="right" d="M189.40 70.95 A94 94 0 0 1 189.40 129.05"/><path data-directions="down right" d="M183.75 142.68 A94 94 0 0 1 142.68 183.75"/><path data-directions="down" d="M129.05 189.40 A94 94 0 0 1 70.95 189.40"/><path data-directions="down left" d="M57.32 183.75 A94 94 0 0 1 16.25 142.68"/><path data-directions="left" d="M10.60 129.05 A94 94 0 0 1 10.60 70.95"/><path data-directions="jump left" d="M16.25 57.32 A94 94 0 0 1 57.32 16.25"/></svg>
+      <span class="pad-well" aria-hidden="true"></span>
+      <button class="pad-up" data-key="jump" aria-label="Up — jump" aria-pressed="false"><svg viewBox="0 0 100 116" aria-hidden="true" focusable="false"><path class="cap-edge" d="M17 4 Q3 5 3 21 L3 75 Q3 88 14 94 L43 111 Q50 115 57 111 L86 94 Q97 88 97 75 L97 21 Q97 5 83 4 Z"/><path class="cap-face" d="M19 10 Q11 11 11 23 L11 73 Q11 81 19 86 L46 101 Q50 104 54 101 L81 86 Q89 81 89 73 L89 23 Q89 11 81 10 Z"/><path class="cap-sheen" d="M18 13 Q13 15 13 24 L13 72 M20 12 L79 12 Q85 13 86 23"/><path class="cap-foot" d="M18 88 L44 104 Q50 108 56 104 L83 88"/></svg></button>
+      <button class="pad-right" data-key="right" aria-label="Move right" aria-pressed="false"><svg viewBox="0 0 100 116" aria-hidden="true" focusable="false"><path class="cap-edge" d="M17 4 Q3 5 3 21 L3 75 Q3 88 14 94 L43 111 Q50 115 57 111 L86 94 Q97 88 97 75 L97 21 Q97 5 83 4 Z"/><path class="cap-face" d="M19 10 Q11 11 11 23 L11 73 Q11 81 19 86 L46 101 Q50 104 54 101 L81 86 Q89 81 89 73 L89 23 Q89 11 81 10 Z"/><path class="cap-sheen" d="M18 13 Q13 15 13 24 L13 72 M20 12 L79 12 Q85 13 86 23"/><path class="cap-foot" d="M18 88 L44 104 Q50 108 56 104 L83 88"/></svg></button>
+      <button class="pad-down" data-key="down" aria-label="Down — duck; double-tap to drop through platforms" aria-pressed="false"><svg viewBox="0 0 100 116" aria-hidden="true" focusable="false"><path class="cap-edge" d="M17 4 Q3 5 3 21 L3 75 Q3 88 14 94 L43 111 Q50 115 57 111 L86 94 Q97 88 97 75 L97 21 Q97 5 83 4 Z"/><path class="cap-face" d="M19 10 Q11 11 11 23 L11 73 Q11 81 19 86 L46 101 Q50 104 54 101 L81 86 Q89 81 89 73 L89 23 Q89 11 81 10 Z"/><path class="cap-sheen" d="M18 13 Q13 15 13 24 L13 72 M20 12 L79 12 Q85 13 86 23"/><path class="cap-foot" d="M18 88 L44 104 Q50 108 56 104 L83 88"/></svg></button>
+      <button class="pad-left" data-key="left" aria-label="Move left" aria-pressed="false"><svg viewBox="0 0 100 116" aria-hidden="true" focusable="false"><path class="cap-edge" d="M17 4 Q3 5 3 21 L3 75 Q3 88 14 94 L43 111 Q50 115 57 111 L86 94 Q97 88 97 75 L97 21 Q97 5 83 4 Z"/><path class="cap-face" d="M19 10 Q11 11 11 23 L11 73 Q11 81 19 86 L46 101 Q50 104 54 101 L81 86 Q89 81 89 73 L89 23 Q89 11 81 10 Z"/><path class="cap-sheen" d="M18 13 Q13 15 13 24 L13 72 M20 12 L79 12 Q85 13 86 23"/><path class="cap-foot" d="M18 88 L44 104 Q50 108 56 104 L83 88"/></svg></button>
+      <span class="pad-center" aria-hidden="true"></span>
+    </div>
+    <span class="deck-label">8-WAY DIRECTION</span>
+  </div>
+  <div class="deck-mark" aria-hidden="true">NH<span>ENCORE</span><i></i></div>
+  <div class="action-control">
+    <div class="actionpad" role="group" aria-label="Action buttons">
+      <span class="thumb-arc" aria-hidden="true"></span><button class="arc-fire" data-key="fire" aria-label="Throw fireball" aria-pressed="false"><span class="button-face"><span class="action-name">Fire</span><kbd>F · <span id="fire-count">0</span></kbd></span></button>
+      <button class="arc-speed" data-key="speed" aria-label="Speed — tap to turn on" aria-pressed="false"><span class="button-face"><span class="action-name">Speed</span><kbd>SHIFT</kbd><i class="speed-led" aria-hidden="true"></i></span></button>
+      <button class="arc-lift" data-key="flip" aria-label="Flip jump; tap again in the air to dive, or combine with Down to ground pound" aria-pressed="false"><span class="button-face"><span class="action-name">Flip</span><kbd>X</kbd></span></button>
+      <button class="arc-jump" data-key="jump" aria-label="Jump" aria-pressed="false"><span class="button-face"><span class="action-name">Jump</span><kbd>SPACE</kbd></span></button>
+      <button type="button" class="arc-flashlight" data-key="flashlight" aria-label="Flashlight" aria-keyshortcuts="L" aria-pressed="false" hidden><span class="button-face"><svg class="lamp-icon" viewBox="0 0 30 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 6h10l4-3h3v10h-3l-4-3H3z M23 5l4-2 M23 8h5 M23 11l4 2"/></svg><span class="action-name">Light</span><kbd>L · <span id="lamp-state">OFF</span></kbd></span></button>
+    </div>
+    <span class="deck-label">ACTION</span>
+  </div>
+</div>
+<div class="keyline"><span><kbd>←</kbd><kbd>→</kbd> Move</span><span><kbd>↓</kbd> Duck</span><span><kbd>Space</kbd> Jump</span><span><kbd>Shift</kbd> Speed</span><span><kbd>X</kbd> Flip</span><span><kbd>↓</kbd> + <kbd>X</kbd> Pound</span><span><kbd>F</kbd> Fire</span><span><kbd>P</kbd> Pause</span></div></div>
+<dialog id="ending" aria-labelledby="end-title">
+<div class="end-wrap">
+<header class="end-mast"><span><i></i> RETURNITY RECORDS</span><button id="end-title-button" class="return-title">Back to Title</button></header>
+<section id="story-still" class="story-still"><div class="photo-frame"><img id="scene-image" alt=""></div>
+<div class="scene-caption"><div><small class="folio" id="scene-kicker"></small><h2 id="end-title"></h2><p id="scene-line"></p></div><button id="scene-next" class="finale-btn"></button></div></section>
+<section id="run-results" hidden>
+<div class="result-top"><div class="result-intro"><small class="folio" id="result-kicker">ENCORE &nbsp; / &nbsp; CHAPTER COMPLETE</small><h2 id="gold-title">The Gold Mic<span>.</span></h2><p>A little something to take home from <em>Returnity</em>.</p></div>
+<button id="after-party" class="night-ticket" type="button"><span class="ticket-moon" aria-hidden="true">☾</span><span><small>AFTER HOURS &nbsp; / &nbsp; BONUS TRACK</small><b>Go to the After Party <span aria-hidden="true">→</span></b><em>Night run · Breakfast on the roof</em></span></button>
+</div><div id="night-load-note" role="status" hidden></div>
+<div class="result-layout"><div class="record-stage" role="img" aria-label="Your collection on a spinning record"><div class="record-grooves"><div class="record-label">NH<br><small>SIDE E</small></div></div><div class="orbit" id="orbit"></div></div>
+<div class="liner-notes"><small class="folio">SLEEVE NOTES &nbsp; / &nbsp; THIS RUN</small><h3>Your collection</h3><ul id="finds-list"></ul>
+<div id="time-slip" hidden><small class="folio" id="result-verdict"></small><div class="split-times"><span>This run<strong id="this-time"></strong></span><span>Previous best<strong id="prior-time"></strong></span></div></div>
+<p id="replay-copy"></p><div class="end-actions"><button id="race-again" class="finale-btn">Try a timed run →</button><button id="story-again" class="quiet-btn">Play story again</button><button id="end-modes" class="quiet-btn">Choose mode</button></div></div></div>
+</section><footer class="end-foot"><span id="end-venue">THE LISTENING PARTY</span><span id="end-folio">SIDE E &nbsp;·&nbsp; 05 / 05</span></footer></div>
+</dialog></main>
+<dialog id="help" aria-labelledby="helpTitle"><div class="manual"><button class="close" data-close-help aria-label="Close controls">×</button><div class="eyebrow">ENCORE &nbsp;/&nbsp; 01</div><h2 id="helpTitle">Find your rhythm<span>.</span></h2><p>A quiet block to explore. Take the sidewalk, hop onto the crates, or climb the awnings and balconies. The camera follows you upward.</p><dl><dt>Controller</dt><dd>Stick or D-pad to move. A jumps, B or X flips, Y switches running on or off. Hold a bumper to run. Right trigger throws, left trigger talks, and right stick click toggles the flashlight. Start pauses. Select cycles touch controls.</dd><dt>Move</dt><dd>← → or A / D</dd><dt>Jump</dt><dd>Space, ↑ or W. Release early for a shorter hop. Run first to carry momentum into a long jump. Press Jump again in the air for one upward boost; steer with the direction pad. Landing restores the double jump. There is no third jump.</dd><dt>Flip</dt><dd>X. Step into a forward flip from the ground, or tuck during a regular jump. Tap Flip again during a flip or double jump to dive toward the ground, carrying your sideways momentum. Landing restores the move.</dd><dt>Ground pound</dt><dd>Hold Down and tap Flip (↓ + X), or tap Down during a flip. Nige tucks into a spin and drops straight down. Land on a gold supply box or a wooden NH crate to open it.</dd><dt>Speed</dt><dd>Hold Shift, double-tap a direction, or tap Speed to switch running on/off. For an extra gear, double-tap a direction, then tap Speed (or hold Shift): blue streaks mark the boost. Your jump keeps that momentum. Tap Speed again to switch it off. Reverse while running to brake and slide into the turn.</dd><dt>Fireballs</dt><dd>Head-bump a gold crate, then catch the bouncing fireball for three throws. Tap Fire or press F for an ear-level throw with a downward release. Shots bounce farther, then burn out offscreen or fizzle after five seconds. Fireballs also open gold crates. Shoot or ground pound a wooden NH crate, then touch the gear it drops. Fireballs pass through people.</dd><dt>Next block</dt><dd>Walk right through the café and Sunset Market. Climb Roofline Rise to its high right-hand exit, then cross Rooftop Run and follow the music to the listening party. The lower street in area three does not lead out. Left exits return to the previous area. Your fireballs, merch and opened crates carry over for this run.</dd><dt>Duck / drop</dt><dd>↓ or S. Press once to crouch. Double-tap within a short window to drop through steps, awnings, balconies and fire escapes—even while rising from a crouch. You land on the next surface below. Building rooftops, gold crates and NH loot crates stay solid.</dd><dt>After Party</dt><dd>Choose After Party from the mode menu or your chapter-end collection. Tap Flashlight or press L to switch your beam. Keep an eye out for NH crates. The city might still have a surprise for you on your next run.</dd><dt>Timed replay</dt><dd>Choose Time Trial to race from the café to the rooftop party. Your clock stops when you reach the party; pauses, fades and conversations don’t count. Beat your fastest time on this device.</dd><dt>Pause</dt><dd>P or Escape</dd></dl><p>A speech bubble marks someone you can chat with. Run straight past, or choose Tap to talk / E when nearby. Talking is always optional. Choose Keep walking to leave and return later; finish the chat for one merchant token.</p><label class="haptics-setting"><input id="haptics" type="checkbox" checked> Light vibration for fireballs, loot crates and ground pounds</label><p class="haptics-note">Uses phone vibration or controller rumble when available.</p><p>Touch: slide around the eight-way D-pad and use Jump or Flip with your other thumb. Upper corners jump and move together.</p><button class="start" data-close-manual>Back</button></div></dialog>
+<script src="synth.js"></script>
+<script src="gamepad.js"></script>
+<script src="sprite-data.js"></script>
+<script src="street-game.js"></script>
+<script src="night-light.js"></script>
+<script src="street-art.js"></script>
+<script src="controls-input.js"></script>
+<script src="street-haptics.js"></script>
+<script src="encore-record.js"></script>
+<script src="encore-finale.js"></script>
+<script src="street-interface.js"></script>
+</body></html>

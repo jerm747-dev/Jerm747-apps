@@ -1,0 +1,17 @@
+/* Mobile outfit lights: small visual dots with usable touch targets. */
+@media(max-width:700px){
+.vs-outfits{display:flex!important;justify-content:center;gap:1px!important;margin:2px 0!important;padding:0!important}
+.vs-outfits button{position:relative;display:inline-grid!important;place-items:center;width:32px!important;min-width:32px!important;height:32px!important;min-height:32px!important;padding:0!important;border:0!important;border-radius:50%!important;background:transparent!important;font-size:0!important;line-height:0!important;box-shadow:none!important}
+.vs-outfits button::before{content:'';display:block;width:7px;height:7px;border-radius:50%;background:#6a7891;box-shadow:0 0 4px #94b6dc55;transition:background .2s,box-shadow .2s}
+.vs-outfits button[data-outfit="auto"]::before{width:9px;height:9px;background:#bd8bfa}
+.vs-outfits button[aria-pressed="true"]::before{background:#a7edff;box-shadow:0 0 5px #a7edff,0 0 10px #8eabff99}
+.vs-outfits button:focus-visible{outline:2px solid #b7edff;outline-offset:0}
+}
+.lobby-prestart-summary{flex:none;display:block;margin:8px 0 4px!important;padding:0 2px!important;font-size:11px!important;line-height:1.45;color:#c5cee2;overflow-wrap:anywhere}
+.lobby-prestart-summary p{margin:3px 0!important;font-size:11px!important;line-height:1.45}
+.lobby-bottom{min-width:0}.lobby-play-actions{display:flex;flex-wrap:wrap;gap:8px;min-width:0;width:100%}.lobby-play-actions button{flex:1 1 145px;min-width:0;white-space:normal}
+@media(max-width:700px){.lobby-prestart-summary,.lobby-prestart-summary p{font-size:10px!important}.lobby-bottom{position:sticky;bottom:0;z-index:4;background:#182238f5;padding:7px 0 3px!important;backdrop-filter:blur(5px)}.lobby-play-actions{gap:6px}.lobby-play-actions button{font-size:12px;min-height:40px}}
+
+/* Keep input-routing text outside the console button row. */
+.app > .game-pad-status{display:block;flex:none;width:100%;min-width:0;min-height:14px;padding:1px 4px;box-sizing:border-box;text-align:center;font-size:10px;line-height:1.35;color:#95d9ed;white-space:normal;overflow-wrap:anywhere}
+html.ov-mode .app > .game-pad-status,html.game-presentation .app > .game-pad-status{display:none!important}

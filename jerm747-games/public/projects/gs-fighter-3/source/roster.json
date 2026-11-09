@@ -1,0 +1,286 @@
+[
+  {
+    "id": "Akeem",
+    "name": "Akeem",
+    "accent": "#ffbe69",
+    "subtitle": "Stand your ground",
+    "portrait": {
+      "body": "select-art/akeem-body-brush.png",
+      "head": "select-art/akeem-head-brush.png",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#54faff"
+    },
+    "energy": {
+      "color": "#54faff",
+      "colors": [
+        423417,
+        5569279,
+        12669439
+      ]
+    }
+  },
+  {
+    "id": "Nika",
+    "name": "Nika",
+    "accent": "#b7a1ff",
+    "subtitle": "Move with purpose",
+    "portrait": {
+      "body": "select-art/nika-body-brush.png",
+      "head": "select-art/nika-head-brush.png",
+      "spiral": "select-art/spiral-gold.png",
+      "tint": "#ffdc76"
+    },
+    "energy": {
+      "color": "#ffdc76",
+      "colors": [
+        16731152,
+        16768118,
+        16748862
+      ]
+    }
+  },
+  {
+    "id": "Rokr",
+    "name": "Rokr",
+    "accent": "#4fa3ff",
+    "subtitle": "Blue tracksuit fighter",
+    "portrait": {
+      "body": "select-art/painted/rokr-body.webp",
+      "head": "select-art/painted/rokr-head.webp",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#4fa3ff"
+    },
+    "energy": {
+      "color": "#4fa3ff",
+      "colors": [
+        2113894,
+        5219327,
+        4095943
+      ]
+    }
+  },
+  {
+    "id": "Major",
+    "name": "Major",
+    "accent": "#6fd36f",
+    "subtitle": "Green suit fighter",
+    "portrait": {
+      "body": "select-art/clean/major-body.png",
+      "head": "select-art/clean/major-body.png",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#6fd36f",
+      "headFromBody": true
+    },
+    "energy": {
+      "color": "#6fd36f",
+      "colors": [
+        2905132,
+        7328623,
+        5743959
+      ]
+    }
+  },
+  {
+    "id": "Tye",
+    "name": "Tye",
+    "accent": "#ff7fc0",
+    "subtitle": "Pink jacket fighter",
+    "portrait": {
+      "body": "select-art/clean/tye-body.png",
+      "head": "select-art/clean/tye-body.png",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#ff7fc0",
+      "headFromBody": true
+    },
+    "energy": {
+      "color": "#ff7fc0",
+      "colors": [
+        6697805,
+        16744384,
+        13067158
+      ]
+    }
+  },
+  {
+    "id": "Static",
+    "name": "Static",
+    "accent": "#5fd3ff",
+    "subtitle": "Blue cargo fighter",
+    "portrait": {
+      "body": "select-art/clean/static-body.png",
+      "head": "select-art/clean/static-body.png",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#5fd3ff",
+      "headFromBody": true
+    },
+    "energy": {
+      "color": "#5fd3ff",
+      "colors": [
+        2511974,
+        6280191,
+        4892103
+      ]
+    }
+  },
+  {
+    "id": "Billie",
+    "name": "Billie",
+    "accent": "#ffd84a",
+    "subtitle": "Yellow tracksuit fighter",
+    "portrait": {
+      "body": "select-art/painted/billie-body.webp",
+      "head": "select-art/painted/billie-head.webp",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#ffd84a"
+    },
+    "energy": {
+      "color": "#ffd84a",
+      "colors": [
+        6706718,
+        16767050,
+        13084730
+      ]
+    }
+  },
+  {
+    "id": "Cyon",
+    "name": "Cyon",
+    "accent": "#7fe0cf",
+    "subtitle": "Black jacket fighter",
+    "portrait": {
+      "body": "select-art/clean/cyon-body.png",
+      "head": "select-art/clean/cyon-body.png",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#7fe0cf",
+      "headFromBody": true
+    },
+    "energy": {
+      "color": "#7fe0cf",
+      "colors": [
+        3365459,
+        8380623,
+        6533025
+      ]
+    }
+  },
+  {
+    "id": "Sheila",
+    "name": "Sheila",
+    "accent": "#ff6b6b",
+    "subtitle": "Boxer",
+    "portrait": {
+      "body": "select-art/painted/sheila-body.webp",
+      "head": "select-art/painted/sheila-head.webp",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#ff6b6b"
+    },
+    "energy": {
+      "color": "#ff6b6b",
+      "colors": [
+        6695723,
+        16739179,
+        13062995
+      ]
+    }
+  },
+  {
+    "id": "Rayburn",
+    "name": "Rayburn",
+    "accent": "#ff9a3c",
+    "subtitle": "Orange vest fighter",
+    "portrait": {
+      "body": "select-art/painted/rayburn-body.webp",
+      "head": "select-art/painted/rayburn-head.webp",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#ff9a3c"
+    },
+    "energy": {
+      "color": "#ff9a3c",
+      "colors": [
+        6700568,
+        16751164,
+        13072431
+      ]
+    }
+  },
+  {
+    "id": "Mike",
+    "name": "Mike",
+    "accent": "#ffb05a",
+    "subtitle": "Tank top brawler",
+    "portrait": {
+      "body": "select-art/painted/mike-body.webp",
+      "head": "select-art/painted/mike-head.webp",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#ffb05a"
+    },
+    "energy": {
+      "color": "#ffb05a",
+      "colors": [
+        6702628,
+        16756826,
+        13076806
+      ]
+    }
+  },
+  {
+    "id": "Cyborg",
+    "name": "Cyborg",
+    "accent": "#c7d3e0",
+    "subtitle": "Armored warrior",
+    "portrait": {
+      "body": "select-art/painted/cyborg-body.webp",
+      "head": "select-art/painted/cyborg-head.webp",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#54faff"
+    },
+    "energy": {
+      "color": "#54faff",
+      "colors": [
+        2253926,
+        5569279,
+        4375495
+      ]
+    }
+  },
+  {
+    "id": "Shadow",
+    "name": "Shadow",
+    "accent": "#b07cff",
+    "subtitle": "Ninja",
+    "portrait": {
+      "body": "select-art/painted/shadow-body.webp",
+      "head": "select-art/painted/shadow-head.webp",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#b07cff"
+    },
+    "energy": {
+      "color": "#b07cff",
+      "colors": [
+        4600422,
+        11566335,
+        9003463
+      ]
+    }
+  },
+  {
+    "id": "Tank",
+    "name": "Tank",
+    "accent": "#e2453a",
+    "subtitle": "Red jacket brawler",
+    "portrait": {
+      "body": "select-art/painted/tank-body.webp",
+      "head": "select-art/painted/tank-head.webp",
+      "spiral": "select-art/spiral-cyan.png",
+      "tint": "#e2453a"
+    },
+    "energy": {
+      "color": "#e2453a",
+      "colors": [
+        5905431,
+        14828858,
+        11548205
+      ]
+    }
+  }
+]

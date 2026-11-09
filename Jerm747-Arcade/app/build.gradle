@@ -1,0 +1,46 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'com.jerm747.arcade'
+ compileSdk 35
+ buildFeatures { buildConfig true }
+ defaultConfig { resValue 'string', 'arcade_name', 'Jerm747 Arcade'; applicationId 'com.jerm747.arcade'; minSdk 26; targetSdk 35; versionCode 8; versionName '1.0.7' }
+ def keyFile = rootProject.file('keystore.properties')
+ if (keyFile.exists()) {
+  def keys = new Properties()
+  keyFile.withInputStream { keys.load(it) }
+  signingConfigs {
+   workshop {
+    storeFile rootProject.file(keys.getProperty('storeFile'))
+    storePassword keys.getProperty('storePassword')
+    keyAlias keys.getProperty('keyAlias')
+    keyPassword keys.getProperty('keyPassword')
+   }
+  }
+ }
+ def deviceKeyFile = rootProject.file('device-test-keystore.properties')
+ if (deviceKeyFile.exists()) {
+  def testKeys = new Properties()
+  deviceKeyFile.withInputStream { testKeys.load(it) }
+  signingConfigs {
+   deviceWorkshop {
+    storeFile rootProject.file(testKeys.getProperty('storeFile'))
+    storePassword testKeys.getProperty('storePassword')
+    keyAlias testKeys.getProperty('keyAlias')
+    keyPassword testKeys.getProperty('keyPassword')
+   }
+  }
+ }
+ buildTypes {
+  release { minifyEnabled false; debuggable false; if (keyFile.exists()) signingConfig signingConfigs.workshop }
+  deviceTest {
+   initWith release
+   applicationIdSuffix '.test'
+   resValue 'string', 'arcade_name', 'Jerm747 Arcade Test'
+   signingConfig(deviceKeyFile.exists() ? signingConfigs.deviceWorkshop : signingConfigs.debug)
+ }
+ debug { applicationIdSuffix '.debug'; versionNameSuffix '-debug' }
+ }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+ androidResources { noCompress += ['png','webp','jpg'] }
+}
+

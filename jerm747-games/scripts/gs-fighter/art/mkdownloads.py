@@ -3,13 +3,13 @@ from PIL import Image
 OUT='/home/claude/site/public/download'
 os.makedirs(OUT,exist_ok=True)
 GAMES=[
- dict(slug='gs-fighter-3', title='GS Fighter III', version='1.3.0', file='GS-Fighter-III-v1.3.0.apk', size=181521444,
-      sha='0457fcbac4338716fb3194abf6c0917bda4842fc23fcc0df88b757fc6218c3d3', date='November 1, 2026',
-      shots=[('01-title','Title screen'),('02-fighter-select','Diamond Crest fighter select'),('03-matchup','Painted art for every fighter'),('04-player-menu','Player Menu'),('05-move-guide','Move Guide')],
+ dict(slug='gs-fighter-3', title='GS Fighter III', version='1.4.1', file='GS-Fighter-III-v1.4.1.apk', size=184875993,
+      sha='41703874c2ba66f6cdc39356aee4a9a858550450b834b00934bfa0366abb634b', date='November 2, 2026',
+      shots=[('01-title','Title screen'),('06-round-1','Round 1 at the river arena'),('02-fighter-select','Diamond Crest fighter select'),('03-matchup','Painted art for every fighter'),('04-player-menu','Player Menu'),('05-move-guide','Move Guide')],
       cover='/home/claude/work/gs3-cover.jpg', logo='/home/claude/work/gs3-logo.png', accent='#F2A33A', glow='#35c6e8',
-      blurb='Fourteen fighters in full 3D. Version 1.3 adds the Player Menu: pause any match for fighter info, a Move Guide that plays every move with its inputs, and full Options. Plus a Training mode with a passive dummy and an endless clock.',
-      points=['14 fighters on the painted Diamond Crest select','New Player Menu, Move Guide and Training mode','Controller rumble and phone vibration','CPU Easy → Ferocious · Arcade best of three'],
-      note='<b>Have 1.2.0 installed?</b> Uninstall it first. 1.3.0 is signed with a new key, so Android won’t install it over the old one.'),
+      blurb='Fourteen fighters in full 3D. Version 1.4 adds Aura mode, a last-stand power-up at 10% health, and a letterboxed victory cinematic. Plus painted ROUND and FIGHT! art, an arcade timer and a properly lit daylight arena. There’s also the Player Menu: pause any match for fighter info, a Move Guide that plays every move with its inputs, and full Options. Plus a Training mode with a passive dummy and an endless clock.',
+      points=['New: Aura mode comeback and cinematic victories','14 fighters, and Cyborg fires the Arc Lance','New Player Menu, Move Guide and Training mode','Controller support on fighter select: right stick picks the CPU','Remap controller and keyboard in Options'],
+      note='<b>Coming from 1.3 or later?</b> Just install; it updates in place. <b>Still on 1.2.0?</b> Uninstall it first: from 1.3 on the app uses a new signing key.'),
  dict(slug='gs-fighter-2', title='GS Fighter II', version='1.0.17', file='GS-Fighter-Android-1.0.17.apk', size=422387305,
       sha='21f50544cdc64e4aeece7ec99c449365ec6d60f1c448fff82df0bed3817f8568', date='',
       cover='/home/claude/work/gs2-cover.jpg', logo='/home/claude/work/gs2-logo.png', accent='#5B83F0', glow='#f2b437',

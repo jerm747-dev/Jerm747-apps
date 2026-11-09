@@ -1,0 +1,614 @@
+{
+  "frames": {
+    "movement:0": {
+      "x": 6,
+      "y": 6,
+      "w": 221,
+      "h": 295,
+      "anchorX": 115,
+      "anchorY": 293,
+      "poseScale": 0.99322,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:1": {
+      "x": 326,
+      "y": 6,
+      "w": 219,
+      "h": 291,
+      "anchorX": 96,
+      "anchorY": 290,
+      "poseScale": 1.00687,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:2": {
+      "x": 646,
+      "y": 6,
+      "w": 279,
+      "h": 289,
+      "anchorX": 172,
+      "anchorY": 287,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:3": {
+      "x": 966,
+      "y": 6,
+      "w": 253,
+      "h": 294,
+      "anchorX": 162,
+      "anchorY": 293,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:4": {
+      "x": 6,
+      "y": 326,
+      "w": 212,
+      "h": 275,
+      "anchorX": 92,
+      "anchorY": 274,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:5": {
+      "x": 326,
+      "y": 326,
+      "w": 178,
+      "h": 276,
+      "anchorX": 81,
+      "anchorY": 275,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:6": {
+      "x": 646,
+      "y": 326,
+      "w": 219,
+      "h": 281,
+      "anchorX": 92,
+      "anchorY": 280,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:7": {
+      "x": 966,
+      "y": 326,
+      "w": 206,
+      "h": 279,
+      "anchorX": 89,
+      "anchorY": 278,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:8": {
+      "x": 6,
+      "y": 646,
+      "w": 173,
+      "h": 233,
+      "anchorX": 83,
+      "anchorY": 231,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:9": {
+      "x": 326,
+      "y": 646,
+      "w": 150,
+      "h": 215,
+      "anchorX": 71,
+      "anchorY": 213,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:10": {
+      "x": 646,
+      "y": 646,
+      "w": 154,
+      "h": 196,
+      "anchorX": 72,
+      "anchorY": 194,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "movement:11": {
+      "x": 966,
+      "y": 646,
+      "w": 203,
+      "h": 238,
+      "anchorX": 82,
+      "anchorY": 236,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-movement.png.webp?v=146"
+    },
+    "reactions-a:0": {
+      "x": 6,
+      "y": 6,
+      "w": 229,
+      "h": 227,
+      "anchorX": 142,
+      "anchorY": 226,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "reactions-a:1": {
+      "x": 326,
+      "y": 6,
+      "w": 213,
+      "h": 236,
+      "anchorX": 132,
+      "anchorY": 235,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "reactions-a:2": {
+      "x": 646,
+      "y": 6,
+      "w": 277,
+      "h": 266,
+      "anchorX": 137,
+      "anchorY": 265,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "reactions-a:3": {
+      "x": 966,
+      "y": 6,
+      "w": 247,
+      "h": 247,
+      "anchorX": 124,
+      "anchorY": 246,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "reactions-a:4": {
+      "x": 6,
+      "y": 326,
+      "w": 251,
+      "h": 202,
+      "anchorX": 138,
+      "anchorY": 201,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "reactions-a:5": {
+      "x": 326,
+      "y": 326,
+      "w": 207,
+      "h": 280,
+      "anchorX": 102,
+      "anchorY": 278,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "reactions-a:6": {
+      "x": 646,
+      "y": 326,
+      "w": 241,
+      "h": 242,
+      "anchorX": 130,
+      "anchorY": 241,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "reactions-a:7": {
+      "x": 966,
+      "y": 326,
+      "w": 255,
+      "h": 217,
+      "anchorX": 119,
+      "anchorY": 216,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "reactions-a:8": {
+      "x": 6,
+      "y": 646,
+      "w": 176,
+      "h": 218,
+      "anchorX": 91,
+      "anchorY": 216,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-reactions-a.png.webp?v=146"
+    },
+    "intermediates:0": {
+      "x": 74,
+      "y": 59,
+      "w": 231,
+      "h": 439,
+      "anchorX": 118,
+      "anchorY": 439,
+      "poseScale": 0.677457,
+      "src": "/projects/gs-fighter-2/static-intermediates.png"
+    },
+    "intermediates:1": {
+      "x": 410,
+      "y": 62,
+      "w": 328,
+      "h": 436,
+      "anchorX": 156,
+      "anchorY": 436,
+      "poseScale": 0.677457,
+      "src": "/projects/gs-fighter-2/static-intermediates.png"
+    },
+    "intermediates:2": {
+      "x": 850,
+      "y": 66,
+      "w": 269,
+      "h": 440,
+      "anchorX": 142,
+      "anchorY": 440,
+      "poseScale": 0.677457,
+      "src": "/projects/gs-fighter-2/static-intermediates.png"
+    },
+    "intermediates:3": {
+      "x": 1170,
+      "y": 66,
+      "w": 349,
+      "h": 427,
+      "anchorX": 211,
+      "anchorY": 427,
+      "poseScale": 0.677457,
+      "src": "/projects/gs-fighter-2/static-intermediates.png"
+    },
+    "intermediates:4": {
+      "x": 84,
+      "y": 538,
+      "w": 221,
+      "h": 429,
+      "anchorX": 112,
+      "anchorY": 429,
+      "poseScale": 0.677457,
+      "src": "/projects/gs-fighter-2/static-intermediates.png"
+    },
+    "intermediates:5": {
+      "x": 411,
+      "y": 541,
+      "w": 288,
+      "h": 421,
+      "anchorX": 161,
+      "anchorY": 421,
+      "poseScale": 0.677457,
+      "src": "/projects/gs-fighter-2/static-intermediates.png"
+    },
+    "intermediates:6": {
+      "x": 768,
+      "y": 534,
+      "w": 372,
+      "h": 427,
+      "anchorX": 181,
+      "anchorY": 427,
+      "poseScale": 0.677457,
+      "src": "/projects/gs-fighter-2/static-intermediates.png"
+    },
+    "intermediates:7": {
+      "x": 1186,
+      "y": 538,
+      "w": 324,
+      "h": 401,
+      "anchorX": 139,
+      "anchorY": 401,
+      "poseScale": 0.677457,
+      "src": "/projects/gs-fighter-2/static-intermediates.png"
+    },
+    "roundhouse:0": {
+      "x": 19,
+      "y": 198,
+      "w": 711,
+      "h": 749,
+      "anchorX": 211,
+      "anchorY": 749,
+      "poseScale": 0.374081,
+      "src": "/projects/gs-fighter-2/static-roundhouse.png"
+    },
+    "roundhouse:1": {
+      "x": 767,
+      "y": 199,
+      "w": 662,
+      "h": 748,
+      "anchorX": 191,
+      "anchorY": 748,
+      "poseScale": 0.374081,
+      "src": "/projects/gs-fighter-2/static-roundhouse.png"
+    },
+    "kicks:0": {
+      "x": 6,
+      "y": 6,
+      "w": 174,
+      "h": 281,
+      "anchorX": 85,
+      "anchorY": 279,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:1": {
+      "x": 326,
+      "y": 6,
+      "w": 263,
+      "h": 283,
+      "anchorX": 78,
+      "anchorY": 282,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:2": {
+      "x": 646,
+      "y": 6,
+      "w": 186,
+      "h": 283,
+      "anchorX": 91,
+      "anchorY": 281,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:3": {
+      "x": 966,
+      "y": 6,
+      "w": 213,
+      "h": 283,
+      "anchorX": 72,
+      "anchorY": 281,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:4": {
+      "x": 6,
+      "y": 326,
+      "w": 184,
+      "h": 279,
+      "anchorX": 80,
+      "anchorY": 277,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:5": {
+      "x": 326,
+      "y": 326,
+      "w": 280,
+      "h": 273,
+      "anchorX": 73,
+      "anchorY": 272,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:6": {
+      "x": 646,
+      "y": 326,
+      "w": 166,
+      "h": 276,
+      "anchorX": 87,
+      "anchorY": 274,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:7": {
+      "x": 966,
+      "y": 326,
+      "w": 203,
+      "h": 276,
+      "anchorX": 68,
+      "anchorY": 274,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:8": {
+      "x": 6,
+      "y": 646,
+      "w": 174,
+      "h": 245,
+      "anchorX": 84,
+      "anchorY": 243,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:9": {
+      "x": 326,
+      "y": 646,
+      "w": 273,
+      "h": 243,
+      "anchorX": 74,
+      "anchorY": 242,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:10": {
+      "x": 646,
+      "y": 646,
+      "w": 200,
+      "h": 245,
+      "anchorX": 70,
+      "anchorY": 244,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "kicks:11": {
+      "x": 966,
+      "y": 646,
+      "w": 212,
+      "h": 250,
+      "anchorX": 84,
+      "anchorY": 249,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-kicks.png.webp?v=146"
+    },
+    "base:0": {
+      "x": 6,
+      "y": 6,
+      "w": 282,
+      "h": 293,
+      "anchorX": 140,
+      "anchorY": 293,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    },
+    "base:1": {
+      "x": 422,
+      "y": 6,
+      "w": 351,
+      "h": 295,
+      "anchorX": 125,
+      "anchorY": 295,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    },
+    "base:2": {
+      "x": 838,
+      "y": 6,
+      "w": 313,
+      "h": 280,
+      "anchorX": 104,
+      "anchorY": 280,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    },
+    "base:3": {
+      "x": 1254,
+      "y": 6,
+      "w": 325,
+      "h": 233,
+      "anchorX": 148,
+      "anchorY": 233,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    },
+    "base:4": {
+      "x": 6,
+      "y": 422,
+      "w": 340,
+      "h": 283,
+      "anchorX": 101,
+      "anchorY": 283,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    },
+    "base:5": {
+      "x": 422,
+      "y": 422,
+      "w": 360,
+      "h": 278,
+      "anchorX": 91,
+      "anchorY": 278,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    },
+    "base:6": {
+      "x": 838,
+      "y": 422,
+      "w": 384,
+      "h": 196,
+      "anchorX": 96,
+      "anchorY": 196,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    },
+    "base:7": {
+      "x": 1254,
+      "y": 422,
+      "w": 257,
+      "h": 282,
+      "anchorX": 133,
+      "anchorY": 281,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    },
+    "base:8": {
+      "x": 6,
+      "y": 838,
+      "w": 309,
+      "h": 278,
+      "anchorX": 130,
+      "anchorY": 277,
+      "poseScale": 1,
+      "src": "/images/groove-squad/static-70/static-base.png.webp?v=146"
+    }
+  },
+  "sequences": {
+    "walk": {
+      "before": [
+        "movement:4",
+        "movement:5",
+        "movement:6",
+        "movement:7"
+      ],
+      "after": [
+        "movement:4",
+        "intermediates:0",
+        "movement:5",
+        "intermediates:1"
+      ]
+    },
+    "run": {
+      "before": [
+        "movement:2",
+        "movement:3"
+      ],
+      "after": [
+        "movement:2",
+        "intermediates:2",
+        "movement:3",
+        "intermediates:3"
+      ]
+    },
+    "back": {
+      "before": [
+        "movement:6",
+        "movement:7"
+      ],
+      "after": [
+        "movement:6",
+        "intermediates:4",
+        "movement:7",
+        "intermediates:5"
+      ]
+    },
+    "jump": {
+      "before": [
+        "reactions-a:0",
+        "reactions-a:1",
+        "reactions-a:2",
+        "reactions-a:3",
+        "reactions-a:4",
+        "reactions-a:5"
+      ],
+      "after": [
+        "reactions-a:0",
+        "reactions-a:1",
+        "intermediates:6",
+        "reactions-a:2",
+        "intermediates:7",
+        "reactions-a:3",
+        "reactions-a:4",
+        "reactions-a:5"
+      ]
+    },
+    "kHigh": {
+      "before": [
+        "kicks:0",
+        "kicks:1",
+        "base:4",
+        "kicks:2",
+        "kicks:3"
+      ],
+      "after": [
+        "kicks:0",
+        "roundhouse:0",
+        "kicks:1",
+        "base:4",
+        "roundhouse:1",
+        "kicks:2",
+        "kicks:3"
+      ]
+    }
+  },
+  "newFrames": [
+    "intermediates:0",
+    "intermediates:1",
+    "intermediates:2",
+    "intermediates:3",
+    "intermediates:4",
+    "intermediates:5",
+    "intermediates:6",
+    "intermediates:7",
+    "roundhouse:0",
+    "roundhouse:1"
+  ]
+}

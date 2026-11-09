@@ -1,0 +1,13 @@
+Jerm747.games · Arcade 1.0.6
+
+Merge this source overlay into the jerm747-games project folder. Run npm ci and npm run build using the project's normal Vite toolchain. The GoDaddy package contains prebuilt assets and the signed APK for this release.
+
+Website cabinet artwork, wood, panels and marquee use the original Cabinet component and styles. The new screen controls add a compact List view and shared visor. Cyborg Coliseum v0.2 Flight Systems is playable from the shelf or the visor. Controller Check uses the 747 controller art. The original CC arrangement and scan-line treatment are saved in public/art-archive/controller-check-old-cover-with-crt-filter.html.
+
+Preserve game state is optional and applies to the running arcade tab. Open games lists current and paused titles and lets the user close a paused title to release memory. Bundled HTML games load the clock before their game code. On HTTPS, the projects-scoped worker also supplies the clock to older same-origin game pages with a head element, when the site has no existing competing service worker. The HUD marks an incompatible game's current session as restarting on exit. Games continue to own their own saved progress. Run the site on its existing PHP hosting to use its live game registry, controller mappings and admin.
+
+Tap or drag anywhere on the larger map under Visor settings > Move HUD icon. The icon moves on contact and its position saves throughout the drag. Placing it from the cabinet sets the cabinet and default game position. Placing it inside a game sets that game’s position. Controller Check appears last on the shelf, in the list, and in the visor game launcher.
+
+
+Arcade 1.0.6
+The List/Grid slider accepts taps, drags, and arrow keys. Play game is a solid button. In portrait, the Beat Room turntable has a separate transport strip, and the record picker has its own row on phones.

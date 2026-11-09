@@ -1,0 +1,80 @@
+/* v115 · Ranked Run (Groove Squad Get Down, subscribers) */
+.rk-flag{display:inline-block;width:14px;height:11px;margin-right:6px;vertical-align:-1px;border-radius:2px;
+  background:conic-gradient(#111 25%,#f4f4f4 0 50%,#111 0 75%,#f4f4f4 0) 0 0/7px 5.5px;box-shadow:0 0 0 1px #0006}
+.difficulty.difficulty-ranked{position:relative;border-color:#c9a2ff;color:#fff;
+  background:linear-gradient(120deg,#2b1f45,#3b2350 55%,#4a2a3f);box-shadow:0 0 0 1px #c9a2ff55,0 0 14px #b07aff33}
+.difficulty.difficulty-ranked strong{display:flex;align-items:center;white-space:nowrap}
+.difficulty.difficulty-ranked[aria-pressed=true]{border-color:#ffd77a;background:linear-gradient(120deg,#4a3418,#5a2c48);box-shadow:inset 0 0 0 1px #ffd77a,0 0 18px #ffb84a55}
+.difficulty.difficulty-ranked[hidden]{display:none}
+.rk-info{margin:0 0 6px;padding:7px 10px;border-radius:10px;font-size:11.5px;line-height:1.45;color:#ecdff9;
+  background:#2a1f3dcc;border:1px solid #a27fd655}
+.rk-info b{color:#ffe3a0;display:inline-flex;align-items:center}
+.rk-info[hidden]{display:none}
+html:not(:has(#lobby:not(.hidden))) .rk-info{display:none}
+/* the Red slot isn't used in a ranked run: the setlist picks the opponents */
+html.rk-lobby .vs-p2{opacity:.35;filter:grayscale(.6)}
+
+/* run clock in the scoreline */
+.rk-clock{font-weight:800;font-variant-numeric:tabular-nums;color:#ffe3a0;padding:2px 9px;border-radius:999px;
+  background:#2c2238;border:1px solid #c9a2ff66;white-space:nowrap}
+.rk-clock[hidden]{display:none}
+html.ov-mode.rk-live .arcade-scoreline{grid-template-columns:minmax(0,1fr) auto auto auto}
+html.ov-mode .rk-clock{font-size:10px;line-height:14px;padding:0 7px}
+
+/* between fights */
+.rk-progress{width:100%;max-width:440px;margin:4px auto 10px}
+.rk-progress[hidden]{display:none}
+.rk-steps-label{margin:0 0 6px;font-size:12px;font-weight:700;color:#ffe3a0;font-variant-numeric:tabular-nums}
+.rk-steps{display:flex;gap:3px;margin-bottom:10px}
+.rk-steps span{flex:1;height:7px;border-radius:4px;background:#3a3f55}
+.rk-steps span.done{background:#7fdfc5}
+.rk-steps span.now{background:#ffd77a;box-shadow:0 0 8px #ffd77a99}
+.rk-steps span.final{flex:1.6;background:repeating-linear-gradient(90deg,#e8e8e8 0 5px,#222 5px 10px)}
+.rk-steps span.final.done{background:#7fdfc5}
+.rk-steps span.final.now{background:repeating-linear-gradient(90deg,#ffd77a 0 5px,#5a3d10 5px 10px)}
+.rk-cards{display:flex;align-items:flex-end;justify-content:center;gap:10px}
+.rk-card{margin:0;display:flex;flex-direction:column;align-items:center;padding:6px 6px 7px;border-radius:12px;
+  background:#1d2236;border:1px solid #485270;min-width:0}
+.rk-card canvas{display:block}
+.rk-card figcaption{text-align:center;line-height:1.2;margin-top:4px}
+.rk-card figcaption small{display:block;font-size:9.5px;letter-spacing:.6px;text-transform:uppercase;color:#a9b3c8}
+.rk-card figcaption b{display:block;font-size:12px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.rk-card.rk-done{opacity:.6}
+.rk-card.rk-done figcaption small{color:#7fdfc5}
+.rk-card.rk-later{opacity:.8}
+.rk-card.rk-next{border-color:#ffd77a;background:linear-gradient(180deg,#2c2a3e,#1d2236);box-shadow:0 0 18px #ffd77a33;animation:rk-in .45s ease-out}
+.rk-card.rk-next figcaption small{color:#ffe3a0}
+.rk-card.rk-next figcaption b{font-size:15px}
+.rk-card.rk-next.is-final{border-color:#ff8a5c;box-shadow:0 0 26px #ff6a3d55;background:linear-gradient(180deg,#3a2230,#1d2236)}
+.rk-card.rk-next.is-final figcaption small{color:#ffb08a}
+@keyframes rk-in{from{transform:translateX(18px) scale(.94);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.rk-card.rk-next{animation:none}}
+
+/* finish */
+#result.is-ranked #result-stat{display:flex;flex-direction:column;align-items:center;gap:4px}
+.rk-time{font-size:34px;font-weight:900;letter-spacing:1px;color:#ffe3a0;font-variant-numeric:tabular-nums}
+.rk-pb{font-size:12px;font-weight:800;color:#1a1206;background:#ffd77a;padding:2px 10px;border-radius:999px}
+.rk-pb-was{font-size:12px;color:#c9c3d8}
+.rk-result{width:100%;max-width:420px;margin:2px auto 10px;text-align:left}
+.rk-result[hidden]{display:none}
+.rk-note,.rk-rank{margin:0 0 6px;font-size:12px;color:#d9d3e6;text-align:center}
+.rk-rank b{color:#ffe3a0;font-size:15px}
+.rk-err{margin:4px 0 0;color:#ff9b8a;font-size:12px}
+.rk-name-form{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end;justify-content:center}
+.rk-name-form label{display:flex;flex-direction:column;gap:3px;font-size:11px;color:#c9c3d8}
+.rk-name-form input{min-height:36px;padding:6px 10px;border-radius:8px;border:1px solid #6a6390;background:#151827;color:#fff;font:inherit;font-size:14px;width:190px}
+.rk-name-form small{flex-basis:100%;text-align:center;font-size:10.5px;color:#9a93ad}
+
+/* board (results + Scores drop-down) */
+.rk-board{margin-bottom:8px}
+.rk-board[hidden]{display:none}
+.rk-board-title{margin:0 0 4px;font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#ffe3a0;display:flex;align-items:center}
+.rk-list{list-style:none;margin:0;padding:0;font-size:12px}
+.rk-list li{display:flex;align-items:center;gap:8px;padding:4px 6px;border-bottom:1px solid #ffffff14}
+.rk-list li.is-me{background:#ffd77a1f;border-radius:6px}
+.rk-pos{width:20px;text-align:right;font-weight:800;color:#a9b3c8;font-variant-numeric:tabular-nums}
+.rk-list li:nth-child(1) .rk-pos{color:#ffd77a}
+.rk-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff}
+.rk-name small{margin-left:6px;color:#9aa3b8;font-size:10.5px}
+.rk-list b{font-variant-numeric:tabular-nums;color:#ffe3a0}
+.rk-empty,.rk-me-line{margin:2px 0 6px;font-size:11.5px;color:#a9b3c8}

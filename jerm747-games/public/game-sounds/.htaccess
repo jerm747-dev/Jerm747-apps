@@ -1,0 +1,8 @@
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME}.webp -f
+RewriteRule ^(.+\.png)$ $1.webp [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} ^(.*)\.png$
+RewriteCond %1.webp -f
+RewriteRule ^(.+)\.png$ $1.webp [L]

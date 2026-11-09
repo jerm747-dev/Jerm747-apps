@@ -1,0 +1,22 @@
+/* v95 · Difficulty + Scores in one slim row above the select screen. While choosing, the fight's health bars and
+   score line (not used yet) step aside for it. */
+.lobby-quickbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;flex-shrink:0;margin:0 0 4px}
+html:not(:has(#lobby:not(.hidden))) .lobby-quickbar{display:none}
+html:has(#lobby:not(.hidden)) .hud,html:has(#lobby:not(.hidden)) .arcade-scoreline,html:has(#lobby:not(.hidden)) .setlist{display:none}
+.lobby-quickbar .difficulty-grid{display:flex;gap:4px;grid-template-columns:none}
+.lobby-quickbar .difficulty-grid[hidden]{display:none}
+.lobby-quickbar .difficulty{flex-direction:row;align-items:center;min-height:30px;padding:4px 14px;border-radius:999px}
+.lobby-quickbar .difficulty strong{font-size:12px}
+.lobby-quickbar .difficulty span{display:none}
+.quick-scores{margin-left:auto;border:0;background:none;padding:0;min-width:0}
+.quick-scores>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:4px 14px;border:1px solid #53617b;border-radius:999px;background:#121c2d;font-size:11.5px;color:#e8ecf8;white-space:nowrap}
+.quick-scores>summary::-webkit-details-marker{display:none}
+.quick-scores>summary::after{content:"▾";font-size:10px;opacity:.8}
+.quick-scores[open]>summary::after{content:"▴"}
+.quick-scores{position:relative}
+.quick-scores[open]>summary{border-color:#e1bc71}
+/* the list floats over the screen and scrolls, so the game doesn't jump down */
+.quick-scores-panel{display:none}
+.quick-scores[open] .quick-scores-panel{display:block;position:absolute;z-index:30;right:0;top:calc(100% + 6px);width:min(420px,calc(100vw - 24px));max-height:min(60vh,440px);overflow:auto;overscroll-behavior:contain;border:1px solid #53617b;border-radius:10px;background:#121c2d;padding:8px;box-shadow:0 14px 40px #000b}
+.quick-scores-panel .record-table{width:100%;font-size:11px}
+.quick-scores-note{margin:0 0 6px;font-size:10px;color:#a9b3cc}

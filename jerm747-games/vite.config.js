@@ -21,7 +21,7 @@ function uiPreview() {
           const m = existsSync(resolve(path, 'project.json')) ? JSON.parse(readFileSync(resolve(path, 'project.json'), 'utf8')) : {};
           if (m.hidden) return [];
           const cover = ['cover.webp', 'cover.png', 'cover.jpg', 'cover.jpeg', 'cover.gif'].find(c => existsSync(resolve(path, c)));
-          return [{ title: d.name, kind: 'experiment', status: 'in_progress', controls: [], description: '', tagline: '', order: 100, ...m, slug: d.name, url: `/projects/${d.name}/index.html`, cover: cover ? `/projects/${d.name}/${cover}` : '', screenshots: (m.screenshots || []).map(x => ({ src: `/projects/${d.name}/${x.src}`, thumb: `/projects/${d.name}/${x.thumb || x.src}`, caption: x.caption || '' })) }];
+          return [{ title: d.name, kind: 'experiment', status: 'in_progress', controls: [], description: '', tagline: '', order: 100, ...m, slug: d.name, url: `/projects/${d.name}/index.html`, cover: cover ? `/projects/${d.name}/${cover}` : '', listCover: existsSync(resolve(path,'case.webp')) ? `/projects/${d.name}/case.webp` : '', screenshots: (m.screenshots || []).map(x => ({ src: `/projects/${d.name}/${x.src}`, thumb: `/projects/${d.name}/${x.thumb || x.src}`, caption: x.caption || '' })) }];
         }).sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
         res.end(JSON.stringify({ ok: true, preview: true, projects }));
       });

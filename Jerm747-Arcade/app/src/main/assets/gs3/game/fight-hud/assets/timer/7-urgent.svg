@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 170" width="328" height="340" role="img" aria-label="7">
+<defs><linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff4bf"/><stop offset=".38" stop-color="#ffb369"/><stop offset=".7" stop-color="#ff5328"/><stop offset="1" stop-color="#b92715"/></linearGradient>
+<linearGradient id="edge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#52e6ff"/><stop offset="1" stop-color="#1763bd"/></linearGradient>
+<path id="glyph" d="M0 0H112V30L64 140H24L72 32H0Z" fill-rule="evenodd"/></defs>
+<g transform="translate(32 12) skewX(-8)" stroke-linejoin="miter">
+<use href="#glyph" transform="translate(2 7)" fill="#061122" stroke="#052444" stroke-width="13"/>
+<use href="#glyph" fill="#07101b" stroke="url(#edge)" stroke-width="10"/>
+<use href="#glyph" fill="#07101b" stroke="#07101b" stroke-width="6"/>
+<use href="#glyph" fill="url(#face)" stroke="#fff4ad" stroke-width="1.2"/>
+</g></svg>

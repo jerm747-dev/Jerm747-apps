@@ -1,0 +1,50 @@
+/* Player 1 rehearsal. Shared Get Down engine/art; no opponent, score, timer or audio. */
+(()=>{'use strict';
+const canvas=document.getElementById('practice'),ctx=canvas.getContext('2d'),status=document.getElementById('practice-status'),config=document.getElementById('pad-config');
+const keys=new Set(),touch=new Map(),sheets=new Map(),reader=window.Jerm747PadMap?.reader(0);
+const moves={KeyA:'pHigh',KeyS:'pMid',KeyD:'pLow',KeyZ:'kHigh',KeyX:'kMid',KeyC:'kLow',KeyV:'wave'};
+const scenery=window.Jerm747PracticeScenery?.create(ctx);
+let travel=0;const runner=window.Jerm747PracticeRunner.create();
+let member='og-jerm',run=createArcadeRun(member,'easy',747,{human2:true}),enabled=true,wasFocused=false,prev=0,acc=0,lastAction='',lastSource='Keyboard / touch',tick=0,loading=0,missing=false,editCleanup=null,sceneActive=true;
+function reset(){runner.reset();keys.clear();touch.clear();reader?.reset();for(const b of document.querySelectorAll('[data-action]'))b.classList.remove('is-held');const p=run.battle.player;p.movePress=0;p.moveSpeed=0;p.stepRemaining=0;p.guard=false;}
+function focused(){try{return enabled&&sceneActive&&!document.hidden&&config.hidden&&document.hasFocus()&&(parent===window||parent.document.activeElement===frameElement)&&!parent.Jerm747SitePad?.ownsInput?.();}catch{return false;}}
+function setup(id){if(!ARCADE_FIGHTERS.includes(id))return;runner.center();travel=0;member=id;run=createArcadeRun(id,'easy',747,{human2:true});run.battle.readyTime=0;run.battle.player.x=450;run.battle.boss.x=10000;reset();missing=false;
+ const token=++loading,set=window.Jerm747FighterSet?.(id),image=new Image();
+ status.textContent='Loading fighter art…';
+ image.onload=()=>{if(token!==loading)return;const frames=window.ARCADE_BASE_FRAMES?.[id];if(!frames?.length){missing=true;status.textContent='Frame map unavailable. Keep your existing fighter art pack.';return;}sheets.set(id,{key:id+'-base',image,frames,maxH:set?.referenceHeight||Math.max(...frames.map(f=>f.h))});status.textContent='Click stage to try your controls · Esc releases focus';};
+ image.onerror=()=>{if(token!==loading)return;if(id==='og-jerm'&&!image.dataset.practiceFallback){image.dataset.practiceFallback='1';image.src='/images/groove-squad/practice-og-jerm/og-jerm.png';return;}missing=true;status.textContent='Fighter art unavailable — keep the existing game media in your main folder.';};
+ image.src=set?.baseSrc||window.FULL_SQUAD_SOURCES?.[id]||'/images/groove-squad/level10/'+id+'.png';
+ window.Jerm747ArcadeArt?.active([id]);
+}
+function pulse(action){lastAction=action;}
+function activeInput(){const vals=[...touch.values()],held=(code,action)=>keys.has(code)||vals.includes(action);return{left:held('ArrowLeft','left'),right:held('ArrowRight','right'),duck:held('ArrowDown','duck'),block:held('KeyF','block'),player2:{}};}
+let edge={};
+canvas.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();reset();canvas.blur();if(parent!==window)parent.postMessage({type:'jerm747-practice-release'},location.origin);return;}if(!focused()||e.ctrlKey||e.altKey||e.metaKey||!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyF',...Object.keys(moves)].includes(e.code))return;e.preventDefault();e.stopPropagation();if(e.repeat)return;keys.add(e.code);lastSource='Keyboard';if(e.code==='ArrowUp'||e.code==='Space'){edge.jump=true;pulse('jump');}if(moves[e.code]){edge.attack=moves[e.code];pulse(edge.attack);}});
+window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('resize',()=>{reset();edge={};});window.addEventListener('blur',()=>{reset();edge={};});document.addEventListener('visibilitychange',()=>{reset();edge={};});
+function configure(){reset();edge={};config.hidden=false;editCleanup?.();document.getElementById('config-body').replaceChildren();editCleanup=window.Jerm747PadMap?.editor(document.getElementById('config-body'));document.getElementById('config-close').focus();}
+function closeConfigure(){editCleanup?.();editCleanup=null;config.hidden=true;reader?.reload();canvas.focus();}
+document.getElementById('config-close').onclick=closeConfigure;
+document.addEventListener('keydown',e=>{if(!config.hidden&&e.key==='Escape'){e.preventDefault();e.stopPropagation();closeConfigure();}},true);
+window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent)return;const d=e.data;if(d?.type==='jerm747-practice-state'){sceneActive=d.active!==false;if(ARCADE_FIGHTERS.includes(d.member)&&d.member!==member)setup(d.member);if(!sceneActive){reset();edge={};}}if(d?.type==='jerm747-practice-configure')configure();if(d?.type==='jerm747-practice-input-reset'){reset();edge={};}if(d?.type==='jerm747-practice-input'&&sceneActive&&enabled&&!document.hidden&&config.hidden){if(!d.down)touch.delete(d.id);else if(['left','right','jump','duck','block','wave','pHigh','pMid','pLow','kHigh','kMid','kLow'].includes(d.action)){touch.set(d.id,d.action);lastSource='Touch';if(d.action==='jump')edge.jump=true;else if(!['left','right','duck','block'].includes(d.action))edge.attack=d.action;pulse(d.action);}}if(d?.type==='jerm747-practice-center'){runner.center();travel=0;run.battle.player.x=450;run.battle.player.y=0;run.battle.player.vy=0;reset();edge={};}if(d?.type==='jerm747-practice-focus')canvas.focus();});
+function draw(){const w=Math.max(1,Math.round(canvas.clientWidth*Math.min(devicePixelRatio||1,2))),h=Math.max(1,Math.round(canvas.clientHeight*Math.min(devicePixelRatio||1,2)));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle="#111725";ctx.fillRect(0,0,w,h);const viewScale=Math.min(w,h)/600;ctx.setTransform(viewScale,0,0,viewScale,(w-600*viewScale)/2,(h-600*viewScale)/2);const p=run.battle.player;
+ if(scenery)scenery.draw(travel);else{ctx.fillStyle='#18374e';ctx.fillRect(0,0,600,600);ctx.fillStyle='#596253';ctx.fillRect(0,500,600,100);}
+ runner.draw(ctx);ctx.fillStyle='rgba(10,22,30,.5)';ctx.fillRect(12,12,192,28);ctx.fillStyle='#d5e6ed';ctx.font='15px system-ui';ctx.fillText('PLAYER 1 · PRACTICE',20,31);
+
+ let sheet=sheets.get(member);if(!sheet){ctx.fillStyle='#c1cbdb';ctx.textAlign='center';ctx.font='17px system-ui';ctx.fillText(missing?'Fighter media unavailable':'Loading fighter…',300,295);ctx.textAlign='left';return;}
+ let pose=window.Jerm747FighterSet?.(member)?.pose(p,CATALOG_MOVES,run.battle.t)||arcadePose(p,run.battle.t);pose=window.Jerm747JumpTransitions?.pose(member,p,pose)||pose;const extra=pose.sheet!=='base'&&window.Jerm747ArcadeArt?.get(member,pose.sheet);let frame=extra?pose.frame:(pose.sheet==='base'?pose.frame:CATALOG_MOVES[p.action]?.frame??(p.guard?7:0));if(extra)sheet=extra;const f=sheet.frames[frame]||sheet.frames[0],scale=230*(window.Jerm747FighterSet?.(member)?.renderScale||1)/sheet.maxH*(pose.sheet.startsWith('jump-apex')?(f.poseScale||1):1);ctx.save();ctx.fillStyle='rgba(6,16,18,.28)';ctx.beginPath();ctx.ellipse(300,502,Math.max(10,25+p.y*.04),4,0,0,Math.PI*2);ctx.fill();ctx.restore();ctx.save();ctx.translate(300,500+p.y*.9);ctx.scale(p.facing||1,1-.22*(p.duckAmount||0));const isolated=window.Jerm747ArcadeArt?.isolated(sheet,frame);if(isolated)ctx.drawImage(isolated,-(window.Jerm747FighterRoot?.x(sheet,frame)??f.anchorX??f.w/2)*scale,-(f.anchorY??f.h)*scale,f.w*scale,f.h*scale);else ctx.drawImage(sheet.image,f.x,f.y,f.w,f.h,-(window.Jerm747FighterRoot?.x(sheet,frame)??f.anchorX??f.w/2)*scale,-(f.anchorY??f.h)*scale,f.w*scale,f.h*scale);ctx.restore();
+ for(const wave of run.battle.projectiles)if(wave.life>0)window.Jerm747VWaveArt.draw(ctx,{...wave,x:300+(wave.x-p.x)*.7,y:420+wave.y-270},member);
+}
+function loop(now){requestAnimationFrame(loop);const keyboardActive=focused(),active=keyboardActive||(sceneActive&&enabled&&!document.hidden&&config.hidden&&touch.size>0);if(!active&&wasFocused){reset();edge={};}wasFocused=active;const delta=prev?Math.min(.05,(now-prev)/1000):0;prev=now;
+ let input=active?activeInput():{player2:{}};
+ if(active){let pad;try{pad=keyboardActive?reader?.read():null;}catch{}if(pad?.pad&&!pad.waiting){for(const k of ['left','right','duck','block'])input[k]||=!!pad.state[k];if(pad.state.jump)edge.jump=true;if(pad.state.attack)edge.attack=pad.state.attack;if(pad.state.attack||pad.state.jump||pad.state.left||pad.state.right||pad.state.block||pad.state.duck){lastSource='Controller';pulse(pad.state.attack|| (pad.state.jump?'jump':pad.state.block?'block':pad.state.duck?'duck':pad.state.left?'left':'right'));}}
+ input={...input,...edge};
+ }
+ // Keep breathing while unfocused; physics and attacks only advance on the visible practice stage.
+ if(sceneActive&&!document.hidden){acc+=delta;while(acc>=ARCADE_STEP){const b=run.battle,p=b.player;b.readyTime=0;b.timeLeft=99999;b.hp=b.bossHp=120;b.energy=100;b.boss.x=(input.left||!input.right&&p.facing<0)?p.x-10000:p.x+10000;const facing=input.left?-1:input.right?1:p.facing;const walked=runner.step(run,input,ARCADE_STEP,arcadeStep);travel+=walked;if(active)window.Jerm747GameSound?.observe(run);edge={};p.facing=facing;b.boss.x=10000;b.effects=[];acc-=ARCADE_STEP;tick++;}}
+ for(const b of document.querySelectorAll('[data-action]')){const a=b.dataset.action,on=['left','right','duck','block'].includes(a)?!!input[a]:a==='jump'?run.battle.player.y<0:run.battle.player.attack?.move===a;b.classList.toggle('is-held',on);}
+ if(!missing&&sheets.has(member)&&tick%12===0)status.textContent=active?`${lastSource} · ${run.battle.player.action}${lastAction?' · '+lastAction:''}`:'Click stage to play · Esc releases focus';draw();
+}
+window.addEventListener('pagehide',()=>editCleanup?.());
+window.Jerm747Practice={state:()=>({member,runner:runner.state(),x:450+travel,actorX:run.battle.player.x,scenery:scenery?.state(travel),y:run.battle.player.y,action:run.battle.player.action,attack:run.battle.player.attack?.move,guard:run.battle.player.guard,launch:run.battle.player.launch,keys:[...keys],pending:{...edge},active:focused(),tick,ready:sheets.has(member),missing}),configure};
+setup(new URLSearchParams(location.search).get('fighter')||'og-jerm');requestAnimationFrame(loop);parent.postMessage({type:'jerm747-practice-ready'},location.origin);
+})();

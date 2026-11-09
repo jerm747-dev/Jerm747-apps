@@ -1,0 +1,14 @@
+
+.cabinet .cabinet-site-menu {border:0;cursor:pointer;min-width:44px;min-height:44px;opacity:.85; background:repeating-linear-gradient(0deg,#ffe0ac 0 3px,transparent 3px 10px);background-size:34px 23px;background-position:center;background-repeat:no-repeat;}
+.cabinet .cabinet-site-menu:focus-visible {outline:2px solid #ffe0ac;outline-offset:4px}
+.site-drawer {position:fixed;inset:0 0 0 auto;margin:0;padding:28px 24px;width:min(360px,90vw);max-width:100%;height:100dvh;max-height:100dvh;border:0;border-left:1px solid #a9885b;background:linear-gradient(155deg,#302624,#16151b 65%);color:#fff0d9;box-sizing:border-box;font-family:var(--ui,system-ui)}
+.site-drawer[open] {display:flex;flex-direction:column}
+.site-drawer::backdrop {background:#08090cc2}
+.drawer-top {display:flex;align-items:center;justify-content:space-between;gap:12px}
+.drawer-top h2 {font:700 21px system-ui;margin:0}
+.drawer-top button {font:28px system-ui;min-width:44px;min-height:44px;border:1px solid #8d7964;border-radius:9px;color:#ffdfad;background:#ffffff0a;cursor:pointer}
+.site-drawer nav {display:grid;gap:10px;margin-top:36px}
+.site-drawer a {padding:16px 10px;color:#ffe0ae;text-decoration:none;border-bottom:1px solid #b9987544;font:600 18px/1.4 system-ui}
+.site-drawer a:hover {background:#fff0d90a}
+.site-drawer .drawer-download {display:flex;justify-content:space-between;margin-top:auto;border:1px solid #b99875;border-radius:10px}
+@media(prefers-reduced-motion:no-preference){.site-drawer[open]{animation:drawer-in 240ms ease-out}@keyframes drawer-in{from{transform:translateX(100%)}to{transform:translateX(0)}}}

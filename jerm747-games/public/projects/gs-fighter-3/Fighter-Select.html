@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#07111d"><title>GS Fighter III · Painted Crest</title><style>:root{color-scheme:dark;--ink:#07111d;--text:#f0ede7;--muted:#97a6b8;--gold:#efd080;--purple:#b594ee;--line:#ffffff20;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--ink);color:var(--text)}
+<html lang="en" class="gsf-boot"><head><script src="/arcade-hud/game-clock.js"></script><style>html,body{background:#000}html.gsf-boot body>*:not(#gsf-loading){visibility:hidden!important}</style><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#07111d"><title>GS Fighter III · Painted Crest</title><style>:root{color-scheme:dark;--ink:#07111d;--text:#f0ede7;--muted:#97a6b8;--gold:#efd080;--purple:#b594ee;--line:#ffffff20;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--ink);color:var(--text)}
 *{box-sizing:border-box}body{margin:0}button,input{-webkit-tap-highlight-color:transparent}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible{outline:2px solid white;outline-offset:5px}button,input{touch-action:manipulation}button{user-select:none;-webkit-user-select:none}button img{pointer-events:none}img{display:block}button:disabled{cursor:default}[hidden]{display:none!important}
 .workshop{height:100svh;min-height:540px;max-width:1800px;margin:auto;padding:24px 32px 18px;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;background:radial-gradient(ellipse at 15% 53%,#0c324130,transparent 50%),radial-gradient(ellipse at 84% 48%,#30204630,transparent 50%),#07111d;overflow:hidden}
 .masthead{display:flex;justify-content:space-between;align-items:center;gap:18px}.brand{margin:0 0 7px;font-size:9px;font-weight:650;letter-spacing:.24em;color:var(--gold)}.brand span{color:#65748a;margin:0 12px}h1{font-size:23px;letter-spacing:.025em;text-transform:uppercase;margin:0;display:flex;align-items:center;gap:24px;font-weight:800}.edition{font-size:8px;color:#78879a;letter-spacing:.2em;font-weight:500}.haptics{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);min-height:38px}.haptics input{accent-color:var(--gold);width:15px;height:15px}
@@ -151,7 +151,7 @@ footer output{justify-self:end}.ready-transition{position:fixed;inset:0;z-index:
 .pad-on .fighter-tile.is-p2-focus .tile-frame{background:var(--purple)}
 .pad-on .fighter-tile.is-focus.is-p2-focus .tile-frame{background:linear-gradient(125deg,#ffdfa0 45%,var(--purple) 55%)}
 </style></head>
-<body>
+<body><script src="game/screen-transition.js"></script>
 <div class="workshop" id="workshop">
   <header class="masthead"><div><p class="brand">JERM747 <span>/</span> GS FIGHTER III</p><h1>Choose your fighter<span class="edition">PAINTED CREST / 07</span></h1></div><div class="select-menu-links"><button id="select-title" type="button">TITLE</button><button id="select-options" type="button">OPTIONS</button></div><label class="haptics"><input type="checkbox" id="haptics" checked><span>Vibration</span></label></header>
   <nav class="concepts" aria-label="Layout concepts"><button data-layout="s" aria-pressed="false"><span>01</span> S Drift</button><button data-layout="crest" aria-pressed="true"><span>02</span> Diamond Crest</button><button data-layout="grid" aria-pressed="false"><span>03</span> Studio Grid</button><p id="concept-note">A balanced crest, built around the diagonal.</p></nav>
@@ -266,7 +266,7 @@ function beginMatch(){
  chargePortrait(0);chargePortrait(1);flashVersus();pulse(28);controllerRumble(0,'ready');controllerRumble(1,'ready');
  const params=new URLSearchParams({skipintro:'1',skipselect:'1',crest:'1',p1:fighters[0],p2:fighters[1],haptics:haptics?'1':'0',mode:new URLSearchParams(location.search).get('mode')==='training'?'training':'arcade'});
  const url='game/index.html?'+params.toString();
- readyTimer=setTimeout(()=>{const event=new CustomEvent('gsfighter:launch',{cancelable:true,detail:{fighters,haptics,url}});if(window.dispatchEvent(event))location.assign(url);},window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?120:650);
+ readyTimer=setTimeout(()=>{const event=new CustomEvent('gsfighter:launch',{cancelable:true,detail:{fighters,haptics,url}});if(window.dispatchEvent(event))window.GSFLoading.navigate(url);},window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?120:650);
 }
 const readyButton=$('#ready-button');let readyPointer=null,readySuppressUntil=0;
 function clearReadyPointer(){const id=readyPointer;readyPointer=null;readyButton.classList.remove('is-pressed');try{if(id!==null&&readyButton.hasPointerCapture?.(id))readyButton.releasePointerCapture(id);}catch{}trace.fade();}
@@ -329,8 +329,8 @@ window.GSMatrixWorkshop={layouts,get state(){return {layout:currentLayout,chosen
 })();
 
 // Shared production options; the matchup survives the round trip.
-document.getElementById('select-title').onclick=()=>location.assign('game/index.html');
-document.getElementById('select-options').onclick=()=>{const q=new URLSearchParams({menu:'options',return:'select',p1:GSMatrixWorkshop.state.chosen[0],p2:GSMatrixWorkshop.state.chosen[1],layout:GSMatrixWorkshop.state.layout,locks:GSMatrixWorkshop.state.locked.map(Number).join(''),mode:new URLSearchParams(location.search).get('mode')||'arcade'});location.assign('game/index.html?'+q);};
+document.getElementById('select-title').onclick=()=>window.GSFLoading.navigate('game/index.html');
+document.getElementById('select-options').onclick=()=>{const q=new URLSearchParams({menu:'options',return:'select',p1:GSMatrixWorkshop.state.chosen[0],p2:GSMatrixWorkshop.state.chosen[1],layout:GSMatrixWorkshop.state.layout,locks:GSMatrixWorkshop.state.locked.map(Number).join(''),mode:new URLSearchParams(location.search).get('mode')||'arcade'});window.GSFLoading.navigate('game/index.html?'+q);};
 if(new URLSearchParams(location.search).get('mode')==='training'){document.querySelector('.edition').textContent='TRAINING / CHOOSE YOUR DUMMY';}
 </script>
 </body></html>

@@ -1,0 +1,328 @@
+/* Jerm747 contact ribbons v3 (shared by jerm747.com, .dev and .games). All rules are scoped to this component. */
+.site-ribbons {
+  --j747-ribbon-overhang: 12px;
+  margin-top: 40px;
+  container-type: inline-size;
+}
+.site-ribbons *, .site-ribbons *::before, .site-ribbons *::after { box-sizing: border-box; }
+.site-ribbons .j747-ribbons-heading {
+  margin: 0 0 20px;
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  color: inherit;
+}
+.site-ribbons .j747-ribbons-list { display: grid; gap: 28px; }
+.site-ribbons .j747-ribbon {
+  position: relative;
+  margin: 0 calc(-1 * var(--j747-ribbon-overhang));
+  min-width: 0;
+  color: #fff;
+  --j747-bg: #041b12;
+  --j747-accent: #efd271;
+  --j747-edge: #697735;
+  --j747-fold: #245e3d;
+  --j747-button-top: #f5de95;
+  --j747-button-bottom: #d4af4d;
+  --j747-button-ink: #10291c;
+  --j747-arrow: #173c2b;
+  --j747-arrow-ink: #ffe6a0;
+}
+.site-ribbons .j747-ribbon--games {
+  --j747-bg: #100e27;
+  --j747-accent: #87f1f4;
+  --j747-edge: #6362ae;
+  --j747-fold: #4d337c;
+  --j747-button-top: #b3f9f8;
+  --j747-button-bottom: #66d6e8;
+  --j747-button-ink: #18253e;
+  --j747-arrow: #302453;
+  --j747-arrow-ink: #c9ffff;
+}
+.site-ribbons .j747-ribbon--com {
+  --j747-bg: #120a22;
+  --j747-accent: #ff92e2;
+  --j747-edge: #7a4aa6;
+  --j747-fold: #4b2372;
+  --j747-button-top: #ffc6ef;
+  --j747-button-bottom: #e57ad6;
+  --j747-button-ink: #2a0e3c;
+  --j747-arrow: #3c1a5e;
+  --j747-arrow-ink: #ffd8f6;
+}
+.site-ribbons .j747-ribbon::before,
+.site-ribbons .j747-ribbon::after {
+  content: "";
+  position: absolute;
+  bottom: calc(-1 * var(--j747-ribbon-overhang));
+  width: var(--j747-ribbon-overhang);
+  height: var(--j747-ribbon-overhang);
+  background: var(--j747-fold);
+}
+.site-ribbons .j747-ribbon::before { left: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.site-ribbons .j747-ribbon::after { right: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.site-ribbons .j747-ribbon-surface {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 300px;
+  border: 1px solid var(--j747-edge);
+  border-radius: 9px 9px 3px 3px;
+  background: var(--j747-bg);
+  box-shadow: 0 18px 32px -22px #000b, inset 0 1px 0 #ffffff18;
+}
+.site-ribbons .j747-ribbon-surface::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  inset: 0;
+  background: linear-gradient(90deg, var(--j747-bg) 0%, var(--j747-bg) 34%, transparent 76%);
+}
+.site-ribbons .j747-ribbon-surface::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 0 #ffffff24, inset 0 -1px 0 #0009;
+}
+.site-ribbons .j747-ribbon-art {
+  position: absolute;
+  z-index: 0;
+  inset: 0 0 0 23%;
+  overflow: hidden;
+  pointer-events: none;
+}
+.site-ribbons .j747-circuit {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 70% 50%;
+}
+.site-ribbons .j747-splash {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 62% 50%;
+}
+.site-ribbons .j747-ribbon--com .j747-ribbon-blurb { color: #e2d6ea; }
+.site-ribbons .j747-ribbon--com .j747-ribbon-detail { color: #cdbfd8; }
+.site-ribbons .j747-ribbon-body {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 61%;
+  min-height: 300px;
+  padding: 28px 32px 23px;
+}
+.site-ribbons .j747-ribbon-kicker {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 13px;
+  color: var(--j747-accent);
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.site-ribbons .j747-ribbon-kicker > span {
+  display: block;
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--j747-accent);
+  box-shadow: 0 0 12px var(--j747-accent);
+}
+.site-ribbons .j747-ribbon-title {
+  margin: 0 0 11px;
+  color: #fffdf4;
+  font-family: inherit;
+  font-size: clamp(26px, 3.1vw, 34px);
+  font-weight: 800;
+  letter-spacing: -.035em;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+.site-ribbons .j747-ribbon-blurb {
+  max-width: 350px;
+  margin: 0 0 21px;
+  color: #d6dfd9;
+  font-size: 14px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.site-ribbons .j747-ribbon--games .j747-ribbon-blurb { color: #d9d8e9; }
+.site-ribbons .j747-ribbon-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 282px;
+  max-width: 100%;
+  min-height: 64px;
+  margin-top: auto;
+  padding: 10px 12px 10px 18px;
+  border: 1px solid #ffffff6b;
+  border-radius: 12px;
+  color: var(--j747-button-ink);
+  background: linear-gradient(155deg, var(--j747-button-top), var(--j747-button-bottom));
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 #fff6, 0 3px 0 #0006, 0 8px 16px #0004;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.site-ribbons .j747-button-copy { display: grid; gap: 4px; min-width: 0; }
+.site-ribbons .j747-button-domain { font-size: 16px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+.site-ribbons .j747-button-action { font-size: 11px; font-weight: 600; line-height: 1.3; }
+.site-ribbons .j747-button-arrow {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--j747-arrow-ink);
+  outline: 1px solid var(--j747-arrow);
+  outline-offset: 2px;
+  color: var(--j747-arrow-ink);
+  background: var(--j747-arrow);
+}
+.site-ribbons .j747-button-arrow svg { width: 22px; height: 22px; display: block; }
+.site-ribbons .j747-ribbon-button:focus-visible { outline: 3px solid var(--j747-accent); outline-offset: 5px; }
+@media (hover: hover) {
+  .site-ribbons .j747-ribbon-button:hover { transform: translateY(-2px); filter: brightness(1.07); box-shadow: inset 0 1px 0 #fff6, 0 5px 0 #0005, 0 12px 20px #0006; }
+}
+.site-ribbons .j747-ribbon-button:active { transform: translateY(2px); box-shadow: inset 0 1px 0 #fff4, 0 1px 0 #0005; }
+.site-ribbons .j747-ribbon-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  margin: 15px 0 0;
+  color: #c1cec4;
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: .025em;
+}
+.site-ribbons .j747-ribbon--games .j747-ribbon-detail { color: #bfc1da; }
+.site-ribbons .j747-ribbon-detail > span { white-space: nowrap; }
+/* One shared artwork plane. The projected corners are about 115 degrees:
+   rotateX(50deg) + rotateZ(-45deg), before the gentle perspective projection.
+   These are presentation transforms; the original character images stay intact. */
+.site-ribbons .j747-arcade-stage {
+  position: absolute;
+  inset: 0;
+  perspective: 1500px;
+  background: radial-gradient(ellipse at 70% 54%, #253964 0%, #16172e 45%, #100e27 80%);
+}
+.site-ribbons .j747-arcade-plane {
+  --j747-plane-tilt: 50deg;
+  --j747-plane-turn: -45deg;
+  position: absolute;
+  width: 520px;
+  height: 760px;
+  left: 65%;
+  top: 47%;
+  transform-style: preserve-3d;
+  transform: translate(-50%, -50%) rotateX(var(--j747-plane-tilt)) rotateZ(var(--j747-plane-turn));
+  border-radius: 15px;
+  background: #182e45;
+  box-shadow: -1px 1px 0 #77bdd1, -2px 2px 0 #447c99,
+    -3px 3px 0 #315d78, -4px 4px 0 #315d78,
+    -5px 5px 0 #254561, -6px 6px 0 #254561,
+    -7px 7px 0 #1a354f, -8px 8px 0 #1a354f,
+    -9px 9px 0 #13263c, -10px 10px 0 #13263c,
+    -20px 28px 18px #0008, -36px 50px 44px #0009;
+}
+.site-ribbons .j747-arcade-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 7px solid #13263d;
+  outline: 1px solid #8cd9e5;
+  border-radius: inherit;
+  background: #12233d;
+}
+.site-ribbons .j747-mural-panel { position: relative; height: 100%; overflow: hidden; }
+.site-ribbons .j747-mural-panel--groove { border-right: 2px solid #6dd8ed; }
+.site-ribbons .j747-mural-panel img {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  object-fit: cover;
+}
+.site-ribbons .j747-mural-panel--groove img { object-position: center; }
+.site-ribbons .j747-mural-panel--fighters img { object-position: center; }
+.site-ribbons .j747-arcade-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(140deg, #b4f5ff28, transparent 42%, #0b0d2b66 100%);
+  box-shadow: inset 0 0 0 2px #ffffff38, inset 0 0 26px #0004;
+}
+.site-ribbons .j747-arcade-caption {
+  position: absolute;
+  z-index: 1;
+  bottom: 15px;
+  right: 18px;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: .15em;
+  text-shadow: 0 2px 8px #000;
+}
+.site-ribbons .j747-arcade-caption span { display: block; margin-top: 3px; font-size: 10px; letter-spacing: .46em; color: #b0f8ff; text-align: right; }
+/* Container queries also handle a narrow contact column on a wide screen. */
+@container (max-width: 680px) {
+  .site-ribbons .j747-ribbon { margin-inline: 0; }
+  .site-ribbons .j747-ribbon::before, .site-ribbons .j747-ribbon::after { display: none; }
+  .site-ribbons .j747-ribbon-surface { border-radius: 12px; }
+  .site-ribbons .j747-ribbon-art { position: relative; inset: auto; width: 100%; height: 170px; }
+  .site-ribbons .j747-ribbon-surface::before { top: 115px; bottom: auto; height: 56px; background: linear-gradient(0deg, var(--j747-bg), transparent); }
+  .site-ribbons .j747-ribbon-body { width: 100%; min-height: 0; padding: 14px 22px 23px; }
+  .site-ribbons .j747-ribbon-title { font-size: clamp(26px, 6vw, 32px); }
+  .site-ribbons .j747-ribbon-blurb { max-width: 470px; min-height: 44px; }
+  .site-ribbons .j747-ribbon-button { width: 100%; }
+  .site-ribbons .j747-ribbon-detail { font-size: 10px; }
+  .site-ribbons .j747-circuit { object-position: 72% 43%; }
+  .site-ribbons .j747-splash { object-position: 50% 45%; }
+  .site-ribbons .j747-arcade-plane { width: 290px; height: 424px; left: 58%; top: 44%; }
+  .site-ribbons .j747-arcade-face { border-width: 5px; }
+  .site-ribbons .j747-arcade-caption { bottom: 10px; right: 10px; font-size: 11px; }
+  .site-ribbons .j747-arcade-caption span { font-size: 8px; }
+}
+/* Fallback for older browsers without container queries. */
+@media (max-width: 680px) {
+  .site-ribbons { --j747-ribbon-overhang: 0px; }
+  .site-ribbons .j747-ribbon-surface { border-radius: 12px; }
+  .site-ribbons .j747-ribbon-art { position: relative; inset: auto; width: 100%; height: 170px; }
+  .site-ribbons .j747-ribbon-surface::before { top: 115px; bottom: auto; height: 56px; background: linear-gradient(0deg, var(--j747-bg), transparent); }
+  .site-ribbons .j747-ribbon-body { width: 100%; min-height: 0; padding: 14px 22px 23px; }
+  .site-ribbons .j747-ribbon-title { font-size: clamp(26px, 6vw, 32px); }
+  .site-ribbons .j747-ribbon-blurb { max-width: 470px; min-height: 44px; }
+  .site-ribbons .j747-ribbon-button { width: 100%; }
+  .site-ribbons .j747-circuit { object-position: 72% 43%; }
+  .site-ribbons .j747-splash { object-position: 50% 45%; }
+  .site-ribbons .j747-arcade-plane { width: 290px; height: 424px; left: 58%; top: 44%; }
+  .site-ribbons .j747-arcade-face { border-width: 5px; }
+  .site-ribbons .j747-arcade-caption { bottom: 10px; right: 10px; font-size: 11px; }
+  .site-ribbons .j747-arcade-caption span { font-size: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-ribbons .j747-ribbon-button { transition: none; }
+  .site-ribbons .j747-ribbon-button:hover,
+  .site-ribbons .j747-ribbon-button:active { transform: none; }
+}

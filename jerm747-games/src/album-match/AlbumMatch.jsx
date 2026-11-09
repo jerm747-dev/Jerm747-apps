@@ -1,7 +1,8 @@
+import {createReward} from '../../public/projects/shared/rewards.js';
 import { flushSync } from "react-dom";
 import React, { useState, useRef, useEffect } from "react";
 import { FullscreenButton, SquadScoreboard, recordRound } from "./standalone.jsx";
-import { adjacent, matches, swapped, validSwap, hasMove, refillWithMotion, newBoard, neighbor, outcome, START_MOVES } from "./albumMatchEngine.js";
+import { adjacent, matches, swapped, validSwap, hasMove, refillWithMotion, newBoard, neighbor, outcome } from "./albumMatchEngine.js";
 import tiles, { ALBUM_COLORS } from "./albumCoverStyles.js";
 import "./AlbumMatch.css";
 
@@ -20,6 +21,10 @@ const validKeys = keys => DIRECTIONS.every(d => /^[a-z]$/.test(keys?.[d])) && ne
 const readKeys = () => { try { const keys = JSON.parse(localStorage.getItem(KEYS_KEY)); if (validKeys(keys)) return keys; } catch {} return PRESETS[0].keys; };
 
 export default function AlbumMatch({ member, image, onClose }) {
+  const reward=useRef(null);
+  const [series] = useState(() => window.Jerm747Runs.open('album-match'));
+  const [stage, setStage] = useState(() => series.read());
+  const target = window.Jerm747Runs.albumSwaps(stage.level);
   const [board, setBoard] = useState(newBoard);
   const [cursor, setCursor] = useState(0);
   const [armed, setArmed] = useState(null);
@@ -28,7 +33,7 @@ export default function AlbumMatch({ member, image, onClose }) {
   const [motion, setMotion] = useState(null);
   const [pulse, setPulse] = useState(null);
   const [score, setScore] = useState(0);
-  const [moves, setMoves] = useState(START_MOVES);
+  const [moves, setMoves] = useState(target);
   const [phase, setPhase] = useState("play");
   const [message, setMessage] = useState("Match 3 identical symbols in a row or column.");
   const [gap, setGap] = useState(0);
@@ -62,6 +67,19 @@ export default function AlbumMatch({ member, image, onClose }) {
     };
   }, []);
   useEffect(() => { if (phase !== "play") resultRef.current?.focus(); }, [phase]);
+  useEffect(() => {
+    reward.current=createReward();
+    return () => {reward.current?.destroy();reward.current=null;};
+  }, []);
+  useEffect(() => {
+    if(phase!=='won')return;
+    reward.current?.show({
+      game:'Album Match · Level '+stage.level,style:'albums',title:'Crate sorted!',
+      message:'Every matching swap brought the collection together. Beautiful work.',
+      stats:score.toLocaleString()+' this level · '+(stage.total+score).toLocaleString()+' total',
+      nextLabel:'Play level '+(stage.level+1),onNext:advance,onTitle:()=>setPhase('title')
+    });
+  }, [phase]);
   const flash = (index, direction, label) => setPulse({ index, direction, label, sequence: ++sequence.current });
   const finish = (points, remaining) => {
     const result = outcome(points, remaining);
@@ -69,6 +87,7 @@ export default function AlbumMatch({ member, image, onClose }) {
     saved.current = true;
     recordRound("album-match", member.id, { score: points, won: result === "won" });
     if (result === "won") {
+      series.complete(stage.level, points);
       try { localStorage.setItem(COMPLETION_KEY, "1"); } catch {}
       window.dispatchEvent(new Event("jerm747-journey-complete"));
     }
@@ -133,9 +152,12 @@ export default function AlbumMatch({ member, image, onClose }) {
     } else if (armed === index) { setArmed(null); setMessage("Choose a tile."); }
     else { setCursor(index); setArmed(index); setMessage("Choose a neighbor."); }
   };
-  const restart = () => {
+  const advance = () => startBoard(series.read());
+  const restart = () => startBoard(stage);
+  const startBoard = nextStage => {
+    setStage(nextStage);
     if (lock.current) return;
-    saved.current = false; setBoard(newBoard()); setScore(0); setMoves(START_MOVES); setCursor(0); setArmed(null);
+    saved.current = false; setBoard(newBoard()); setScore(0); setMoves(window.Jerm747Runs.albumSwaps(nextStage.level)); setCursor(0); setArmed(null);
     setPulse(null); setClearing([]); setMotion(null); setSettings(false); setPhase("play");
     setMessage("Fresh crate. Match 3 identical symbols.");
     requestAnimationFrame(() => buttonRefs.current[0]?.focus());
@@ -163,13 +185,18 @@ export default function AlbumMatch({ member, image, onClose }) {
     const target = index === motion.from ? motion.to : motion.from;
     return { transform: `translate(calc(${target % 6 - index % 6} * (100% + var(--am-gap))), calc(${Math.floor(target / 6) - Math.floor(index / 6)} * (100% + var(--am-gap))))` };
   };
-  return <div className="album-match am-v33" role="dialog" aria-modal="true" aria-label="Level 3 challenge: Album Match" style={{ "--match-gap": `${gap}px` }} onKeyDown={keyboard}>
-    <header><div><small>LEVEL 3 · ALBUM MATCH</small><h1>Album Match</h1></div><div className="game-head-actions"><FullscreenButton /><button type="button" className="btn btn-ghost" onClick={onClose}>✕ Close</button></div></header>
-    <div className="am-objective"><strong>Sort the crate: {START_MOVES} matching swaps</strong></div>
-    <div className="match-status"><span>Score <strong>{score}</strong></span><span>Swaps left <strong>{moves}</strong></span><span>Best <strong>{best}</strong></span></div>
-    <progress className="am-progress" value={START_MOVES - moves} max={START_MOVES} aria-label="Matching swaps toward sorting the crate" />
+  return <div className="album-match am-v33" role="dialog" aria-modal="true" aria-label="Album Match" style={{ "--match-gap": `${gap}px` }} onKeyDown={keyboard}>
+    <header><div><small>LEVEL {stage.level} · ALBUM MATCH</small><h1>Album Match</h1></div><div className="game-head-actions"><FullscreenButton /><button type="button" className="btn btn-ghost" onClick={onClose}>✕ Close</button></div></header>
+    <div className="am-objective"><strong>Sort the crate: {target} matching swaps</strong></div>
+    <div className="match-status"><span>Score <strong>{(stage.total+score).toLocaleString()}</strong></span><span>Swaps left <strong>{moves}</strong></span><span>Best <strong>{best}</strong></span></div>
+    <progress className="am-progress" value={target - moves} max={target} aria-label="Matching swaps toward sorting the crate" />
     <p className="match-message" role="status" aria-live="polite">{message}</p>
-    {phase === "play" ? <>
+    {phase === "title" ? <section className="am-result" aria-labelledby="am-title-heading">
+      <img src="./cover.png" alt="" style={{width:'min(260px,90%)',maxHeight:220,objectFit:'contain'}} />
+      <h2 id="am-title-heading">Album Match</h2><p>A fresh crate is waiting.</p>
+      <button type="button" className="btn" onClick={advance} autoFocus>Play level {stage.level + 1}</button>
+      <button type="button" className="btn btn-ghost" onClick={onClose}>Back to arcade</button>
+    </section> : phase === "play" ? <>
       <div className="match-grid" role="grid" aria-label="Album tiles" aria-busy={busy}>{Array.from({ length: 6 }, (_, row) => <div role="row" className="match-row" key={row}>{board.slice(row * 6, row * 6 + 6).map((type, col) => {
         const index = row * 6 + col, tile = tiles[type], activePulse = pulse?.index === index;
         return <div role="gridcell" key={index}><button type="button" ref={el => buttonRefs.current[index] = el} tabIndex={cursor === index ? 0 : -1}
@@ -194,11 +221,11 @@ export default function AlbumMatch({ member, image, onClose }) {
       <p className="am-selection">Selected: row {Math.floor(cursor / 6) + 1}, column {cursor % 6 + 1} · {member.name}</p>
     </> : <section className={`am-result am-result--${phase}`} tabIndex={-1} ref={resultRef} aria-labelledby="am-result-title">
       <div className="am-result-mark" aria-hidden="true">✓</div><h2 id="am-result-title">Crate sorted!</h2>
-      <p>✓ Level 3 · Album Match complete</p>
-      <p><strong>{score} points</strong> · {START_MOVES - moves} matching swaps</p><div className="match-actions"><button type="button" className="btn" onClick={restart}>Play again</button><button type="button" className="btn btn-ghost" onClick={onClose}>Back to arcade</button></div>
+      <p>✓ Level {stage.level} · Crate sorted</p>
+      <p><strong>{score} points</strong> · {target - moves} matching swaps</p><div className="match-actions"><button type="button" className="btn" onClick={advance}>Play level {stage.level+1}</button><button type="button" className="btn btn-ghost" onClick={onClose}>Back to arcade</button></div>
     </section>}
     <details className="am-how"><summary>Controls</summary><p>Tap two neighbors or swipe a cover. Arrow keys move the cursor. {DIRECTIONS.map(d => `${keys[d].toUpperCase()} = swap ${d}`).join(" · ")}. Match 3 identical symbols in a line. Only matching swaps count.</p></details>
-    <div className="match-actions"><button type="button" className="btn btn-ghost" disabled={busy} onClick={restart}>New game</button><button type="button" className="btn btn-ghost" disabled={busy || phase !== "play"} onClick={() => { setDraft(keys); setSettings(!settings); setKeyError(""); }}>Configure keys</button></div>
+    <div className="match-actions"><button type="button" className="btn btn-ghost" disabled={busy || phase !== "play"} onClick={restart}>Retry level</button><button type="button" className="btn btn-ghost" disabled={busy || phase !== "play"} onClick={() => { setDraft(keys); setSettings(!settings); setKeyError(""); }}>Configure keys</button></div>
     {settings && <section className="match-settings"><h2>Swap controls</h2><div>{PRESETS.map(p => <button type="button" className="btn btn-ghost" key={p.name} onClick={() => setDraft(p.keys)}>{p.name}</button>)}</div><div className="match-key-fields">{DIRECTIONS.map(d => <label key={d}>{d}<input value={draft[d]} maxLength={1} onChange={event => setDraft({ ...draft, [d]: event.target.value.toLowerCase() })} /></label>)}</div>{keyError && <p role="alert">{keyError}</p>}<button type="button" className="btn" onClick={saveKeys}>Save keys</button><button type="button" className="btn btn-ghost" onClick={() => setSettings(false)}>Cancel</button></section>}
     <details className="am-scores"><summary>Local scores</summary><SquadScoreboard game="album-match" member={member} image={image} /></details>
   </div>;

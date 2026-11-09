@@ -65,6 +65,7 @@ foreach (glob($root . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
         'credit' => clean((string)($m['credit'] ?? ''), 240),
         'accent' => preg_match('/^#[0-9a-fA-F]{6}$/', (string)($m['accent'] ?? '')) ? $m['accent'] : '',
         'cover' => $cover,
+        'listCover' => is_file("$dir/case.webp") ? "projects/$slug/case.webp?v=" . filemtime("$dir/case.webp") : $cover,
         'order' => (int)($m['order'] ?? 100),
         'gamepad' => (object)$bridge,
         'gamepadLabels' => (object)$labels,

@@ -1,12 +1,12 @@
 {
   "title": "Word Search",
-  "tagline": "Pick a theme, your word count and the clock. Find every word.",
-  "description": "Six music-and-life themes with 75 words each. Before you play, choose a theme, 15 (Easy), 30 (Medium) or 60 (Hard) words, and Timed or Untimed. Big, well-spaced letters: the grid fills the screen, and goes tall on phones held upright. Drag across a word in any direction or tap its first and last letters; found words get a colored highlight and are crossed off the list below the grid. Hints, a pick-your-own-words option, and progress saved on this device.",
+  "tagline": "Pick a topic. Find your groove. 15, 30 or 60 words.",
+  "description": "Six music-and-life topics, with 75 words each. Choose Quick/Easy (15), Medium (30), or Hard (60). Keep your word set, draw a new set, or hand-pick words. Includes local saves, hints, expanded puzzle mode, and on-demand help.",
   "order": 30,
   "accent": "#64DFCA",
   "kind": "game",
   "status": "playable",
-  "version": "Arcade 1.2",
+  "version": "Arcade 1.1",
   "controls": [
     "keyboard",
     "mouse",

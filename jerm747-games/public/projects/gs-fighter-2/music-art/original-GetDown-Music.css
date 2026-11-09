@@ -1,0 +1,140 @@
+/* ---------- v73 · In-game music: mini player + song page in front of the game ----------
+   The Get Down window sits at z-index 1300 and the showcase window (which can run a game) at 100000; this goes above both. Sheets (Add to playlist, Download…)
+   and the large artwork are lifted above this while it's open. */
+.gm-layer {
+  position: fixed; inset: 0; z-index: 100002; /* above the Get Down window (1300) and the showcase window (100000) */ display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+  padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  background: rgb(5 6 10 / .42); -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  animation: gm-fade .16s ease-out;
+}
+html.game-music-open .sheet-layer, html.game-music-open .art-view { z-index: 100003; }
+html.game-music-open .toaster { z-index: 100004; }
+
+.gm-panel {
+  position: relative; width: min(420px, 100%); max-height: min(640px, 100%); display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; border-radius: 18px; background: var(--bg); color: var(--text);
+  border: 1px solid var(--surface-2); box-shadow: 0 24px 80px rgb(0 0 0 / .65), 0 0 0 1px rgb(255 255 255 / .03);
+  animation: gm-rise .2s cubic-bezier(.2, .9, .3, 1.1);
+}
+.gm-panel--song { width: min(780px, 100%); max-height: min(860px, 100%); }
+@keyframes gm-fade { from { opacity: 0; } }
+@keyframes gm-rise { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) { .gm-layer, .gm-panel { animation: none; } }
+
+.gm-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; }
+.gm-eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 700; }
+.gm-back-game, .gm-back, .gm-x {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border-radius: 99px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--surface-2); color: var(--text); font: inherit; font-size: 13.5px;
+}
+.gm-back-game { background: linear-gradient(180deg, #ffb347, #ff8a1f 60%, #f06d00); color: #2a1300; border: 0; font-weight: 800; box-shadow: 0 3px 0 #a84a00; }
+.gm-back-game:active { transform: translateY(2px); box-shadow: 0 1px 0 #a84a00; }
+.gm-back { padding-left: 6px; }
+.gm-x { width: 34px; padding: 0; justify-content: center; }
+.gm-song-nav { display: flex; align-items: center; gap: 6px; }
+.gm-song-nav .round-btn { width: 34px; height: 34px; }
+
+/* Now playing (a small player bar) */
+.gm-now {
+  display: grid; grid-template-columns: 56px minmax(0, 1fr); grid-template-areas: "art text" "ctl ctl" "seek seek"; gap: 8px 12px; align-items: center;
+  padding: 10px; border-radius: 14px; flex: none;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--glow, var(--accent)) 16%, var(--surface)), var(--surface) 70%);
+  border: 1px solid color-mix(in srgb, var(--glow, var(--accent)) 30%, var(--surface-2));
+}
+.gm-now-art { grid-area: art; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 10px; }
+.gm-now-art img { display: block; width: 56px; height: 56px; border-radius: 10px; object-fit: cover; }
+.gm-now-art img.is-live, .gm-row-art img.is-live { animation: cover-breathe 3.4s ease-in-out infinite; }
+.gm-now-text { grid-area: text; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; text-align: left; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; font: inherit; }
+.gm-now-title { font-weight: 700; font-size: 16px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-now-meta { font-size: 13px; color: var(--muted); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-now-text:hover .gm-now-title { text-decoration: underline; text-underline-offset: 3px; }
+.gm-now-empty { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 14px; }
+.gm-controls { grid-area: ctl; display: flex; justify-content: center; align-items: center; gap: 10px; }
+.gm-controls button {
+  width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  background: transparent; border: 0; color: var(--text);
+}
+.gm-controls button:hover:not(:disabled) { background: var(--surface-2); }
+.gm-controls button:disabled { opacity: .35; cursor: default; }
+.gm-controls button.is-on { color: var(--accent); }
+.gm-controls .gm-main { width: 48px; height: 48px; background: var(--text); color: var(--bg); }
+.gm-controls .gm-main:hover:not(:disabled) { background: var(--text); filter: brightness(.92); }
+.gm-seek {
+  grid-area: seek; width: 100%; height: 4px; margin: 0; appearance: none; -webkit-appearance: none; border-radius: 99px; cursor: pointer;
+  background: linear-gradient(90deg, var(--glow, var(--accent)) var(--pct, 0%), var(--surface-2) var(--pct, 0%));
+}
+.gm-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: var(--text); }
+.gm-seek::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--text); }
+
+/* Type check-boxes: just the colored boxes (same colors as the home page) */
+.gm-filter-row { display: flex; align-items: center; gap: 8px; flex: none; }
+.gm-types { display: flex; gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.gm-type {
+  position: relative; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--surface-2); -webkit-tap-highlight-color: transparent;
+}
+.gm-type input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.gm-type .type-box { width: 18px; height: 18px; }
+.gm-type.is-on { background: color-mix(in srgb, var(--type) 16%, var(--surface)); border-color: color-mix(in srgb, var(--type) 60%, transparent); }
+.gm-type.is-on .type-box { background: var(--type); border-color: var(--type); }
+.gm-type:has(input:focus-visible) { outline: 2px solid var(--type); outline-offset: 2px; }
+.gm-count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; }
+.gm-shuffle-these {
+  display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 12px; border-radius: 99px; cursor: pointer; flex: none;
+  background: var(--surface); border: 1px solid var(--surface-2); color: var(--text); font: inherit; font-size: 13px; font-weight: 600;
+}
+.gm-shuffle-these:disabled { opacity: .4; cursor: default; }
+
+/* The song list (scroll and pick) */
+.gm-list {
+  list-style: none; margin: 0; padding: 2px 2px 4px; flex: 1 1 auto; min-height: 120px; overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; gap: 6px; -webkit-overflow-scrolling: touch;
+}
+.gm-row {
+  display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 6px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--surface-2);
+  border-left: 3px solid color-mix(in srgb, var(--pick) 70%, transparent);
+}
+.gm-row.is-on { border-color: color-mix(in srgb, var(--pick) 60%, transparent); background: color-mix(in srgb, var(--pick) 10%, var(--surface)); }
+.gm-row-art { flex: none; padding: 0; border: 0; background: none; cursor: zoom-in; border-radius: 8px; }
+.gm-row-art img { display: block; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; --glow: var(--pick); }
+.gm-row-art:hover img { outline: 2px solid var(--pick); outline-offset: 1px; }
+.gm-row-play { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.gm-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gm-row-title { font-weight: 700; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-row.is-on .gm-row-title { color: var(--pick); }
+.gm-row-meta { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-row-icon {
+  width: 32px; height: 32px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: var(--pick); color: #0b0c10; box-shadow: 0 0 14px -4px var(--pick);
+}
+.gm-more, .gm-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 10px; }
+.gm-foot { display: flex; justify-content: center; flex: none; }
+
+/* Song page, a little smaller, in front of the game */
+.gm-song { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 0 4px 6px; }
+.gm-song .song-card { padding-top: 0; }
+
+/* "Leave the game?" */
+.gm-leave {
+  position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2; padding: 12px; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--accent); box-shadow: 0 12px 40px rgb(0 0 0 / .6);
+}
+.gm-leave p { margin: 0 0 10px; font-size: 14px; }
+.gm-leave div { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+
+/* Phones in landscape (how most people play): a shorter panel, list still scrolls */
+@media (orientation: landscape) and (max-height: 520px) {
+  .gm-panel { max-height: 100%; padding: 8px; gap: 6px; }
+  .gm-panel--mini { width: min(620px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); grid-template-rows: auto auto 1fr auto; column-gap: 10px; }
+  .gm-panel--mini .gm-head { grid-column: 1 / -1; }
+  .gm-panel--mini .gm-now { grid-column: 1; grid-row: 2 / 4; align-self: start; }
+  .gm-panel--mini .gm-filter-row { grid-column: 2; grid-row: 2; }
+  .gm-panel--mini .gm-list { grid-column: 2; grid-row: 3; min-height: 0; }
+  .gm-panel--mini .gm-foot { grid-column: 1; grid-row: 4; justify-content: flex-start; }
+  .gm-type, .gm-shuffle-these { height: 30px; }
+  .gm-type { width: 30px; }
+}
+
+/* Light theme */
+:root[data-theme="light"] .gm-layer { background: rgb(20 22 30 / .35); }

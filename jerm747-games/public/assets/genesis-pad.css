@@ -1,0 +1,26 @@
+/* v91/v92 · The Sega Genesis-style pad (v54 arcade mode) is the on-screen controller everywhere.
+   html.gd-pad-live: a round is on and Player 1 plays on-screen (shows the pad).
+   html.gd-pad-zone: Player 1 plays on-screen (reserves the controls strip, so the fight doesn't change size between rounds). */
+html.gd-pad-live:not(.ov-mode) .gd-ov{display:block;position:absolute;inset:0;z-index:6;pointer-events:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+html:not(.ov-mode) .gd-ov .gd-ov-top,html:not(.ov-mode) .gd-ov .gd-ov-start,html:not(.ov-mode) .gd-ov .gd-ov-turn{display:none!important}
+html:not(.gd-pad-live) .gd-ov-pad,html:not(.gd-pad-live) .gd-ov-face{display:none!important}
+html.controls-hidden:not(.ov-mode) .gd-ov-pad,html.controls-hidden:not(.ov-mode) .gd-ov-face{display:none!important}
+
+/* Upright (normal view and full screen): the fight on top, about 3/4, and the pad in its own strip underneath, no overlap */
+@media (orientation:portrait){
+ html.gd-pad-zone:not(.ov-mode):not(.controls-hidden) .stage canvas#arena{height:calc(100% - max(25%,150px))}
+ html.gd-pad-zone:not(.ov-mode):not(.controls-hidden) .stage{background:linear-gradient(#1e2947,#1e2947) top/100% calc(100% - max(25%,150px)) no-repeat,#0f1424}
+ html:not(.ov-mode) .gd-ov-pad{--pad:min(124px,calc(max(25%,150px) - 18px));left:10px;bottom:8px}
+ html:not(.ov-mode) .gd-ov-face{--btn:40px;--gap:5px;gap:4px;right:10px;bottom:8px}
+ html:not(.ov-mode) .gd-ov-btn{font-size:9px}
+ /* Arcade mode upright: the pad all the way down, the fight fills everything above it */
+ html.ov-mode .gd-ov-pad{bottom:max(6px,env(safe-area-inset-bottom))}
+ html.ov-mode .gd-ov-face{bottom:max(6px,env(safe-area-inset-bottom))}
+ html.ov-mode .stage canvas#arena{height:calc(100% - 164px - env(safe-area-inset-bottom))!important}
+}
+/* Sideways (normal view): the pad over the fight, smaller */
+@media (orientation:landscape){
+ html:not(.ov-mode) .gd-ov-pad{--pad:112px;left:10px;bottom:10px}
+ html:not(.ov-mode) .gd-ov-face{--btn:40px;--gap:5px;gap:4px;right:10px;bottom:10px}
+}
+@media (orientation:landscape) and (min-height:700px){html:not(.ov-mode) .gd-ov-pad{--pad:132px}html:not(.ov-mode) .gd-ov-face{--btn:46px}}

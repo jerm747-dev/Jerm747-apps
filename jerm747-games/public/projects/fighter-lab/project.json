@@ -1,12 +1,1 @@
-{
-  "title": "Fighter Lab",
-  "tagline": "GS Fighter III Lab · Akeem and Nika · Brush Fighters",
-  "description": "The GS Fighter III workshop: Akeem and Nika on their Meshy rigs with the full move set, the Azure V-Wave with finish slow motion, hit reactions, foot IK and the river courtyard stage. v0.36 adds brush-painted fighter select art with cyan and gold spirals, quick tap or hold-and-slide P1/P2 picks, and a motion workshop to test every clip, reaction and texture setting.",
-  "kind": "game",
-  "status": "prototype",
-  "controls": ["gamepad", "keyboard", "mouse", "touch"],
-  "credit": "Original Jerm747 project. All rights reserved.",
-  "accent": "#35b8ae",
-  "order": 20,
-  "version": "Lab 0.36"
-}
+{"hidden":true}
