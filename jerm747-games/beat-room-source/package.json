@@ -1,7 +1,7 @@
 {
   "name": "jerm747-beat-room",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Jerm747 Beat Room: a virtual boombox kit. Tape deck sampler, turntable, 16-step rhythm composer, metronome and tuner on one shared engine.",
   "scripts": {

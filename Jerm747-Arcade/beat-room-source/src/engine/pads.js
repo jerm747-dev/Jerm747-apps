@@ -1,13 +1,17 @@
 // Sequencer state, shared by the Rhythm Composer UI and the clock. Each row has a sound source
-// (a synth voice or a library clip), 16 steps, and its own mixer channel (EQ + level + mute).
+// (a synth voice or a library clip), 16 or 32 steps, and its own mixer channel (EQ + level + mute).
+// Loop record: arm it and the next full pass of the pattern records live pad hits (quantized
+// to the nearest step, added on top of what's there); when that pass ends, recording stops
+// and the loop keeps playing.
 import { audio, out } from './audio.js';
 import { createChannel } from './channel.js';
 import { VOICES, playSample } from './voices.js';
-import { definePart, arm, isArmed } from './clock.js';
+import { definePart, arm, isArmed, onStep } from './clock.js';
 import * as library from './library.js';
 
 const KEY = 'beatroom.pads';
-const blank = () => Array(16).fill(0);
+export const LENGTHS = [16, 32];
+const blank = (n = 16) => Array(n).fill(0);
 const DEFAULT_ROWS = [
   { id: 'r1', name: 'Kick', src: { type: 'synth', voice: 'kick' }, steps: [1,0,0,0, 0,0,1,0, 0,0,1,0, 0,0,0,0] },
   { id: 'r2', name: 'Clap', src: { type: 'synth', voice: 'clap' }, steps: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,1] },
@@ -17,6 +21,7 @@ const DEFAULT_ROWS = [
 ].map((r) => ({ low: 0, mid: 0, high: 0, vol: 0.8, mute: false, ...r }));
 
 let rows = load();
+let len = loadLen();
 const subs = new Set();
 const channels = new Map();
 const voicesOut = new Map(); // row id -> last sample source, for choke
@@ -24,9 +29,19 @@ const voicesOut = new Map(); // row id -> last sample source, for choke
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(KEY));
-    if (Array.isArray(saved) && saved.length === DEFAULT_ROWS.length) return saved.map((r, i) => ({ ...DEFAULT_ROWS[i], ...r, steps: (r.steps || blank()).slice(0, 16) }));
+    if (Array.isArray(saved) && saved.length === DEFAULT_ROWS.length) {
+      return saved.map((r, i) => {
+        const st = Array.isArray(r.steps) ? r.steps : blank();
+        const n = st.length >= 32 ? 32 : 16;
+        return { ...DEFAULT_ROWS[i], ...r, steps: [...st.slice(0, n), ...blank(Math.max(0, n - st.length))] };
+      });
+    }
   } catch { /* fall through */ }
   return structuredClone(DEFAULT_ROWS);
+}
+function loadLen() {
+  const n = rows[0]?.steps.length;
+  return LENGTHS.includes(n) ? n : 16;
 }
 let saveT = 0;
 function commit(next) {
@@ -56,9 +71,62 @@ function sound(row, time) {
   voicesOut.set(row.id, playSample(ac, dest, clip.buffer, time, { maxLen: Math.min(clip.duration, 4) }));
 }
 
-definePart('pattern', (step, time) => {
-  for (const r of rows) if (r.steps[step]) sound(r, time);
+definePart('pattern', (step, time, dur, abs) => {
+  const i = abs % len;
+  for (const r of rows) if (r.steps[i]) sound(r, time);
 });
+
+/** Pattern length in steps (16 or 32). */
+export const getLength = () => len;
+/** Double the pattern: 16 -> 32, copying the first bar into the second so the groove carries on. */
+export function double() {
+  if (len >= 32) return;
+  len = 32; commit(rows.map((r) => ({ ...r, steps: [...r.steps, ...r.steps] })));
+}
+/** Back to 16: keeps the first bar. */
+export function halve() {
+  if (len <= 16) return;
+  len = 16; commit(rows.map((r) => ({ ...r, steps: r.steps.slice(0, 16) })));
+}
+
+// ---------- loop record ----------
+// state: 'off' | 'armed' (waiting for the top of the pattern) | 'rec' (recording this pass)
+const rec = { state: 'off', start: 0, minAbs: 0, last: { abs: -1, time: 0, dur: 0.15 } };
+const recSubs = new Set();
+export const getRec = () => rec.state;
+export const onRec = (fn) => (recSubs.add(fn), () => recSubs.delete(fn));
+const setRec = (st) => { rec.state = st; recSubs.forEach((fn) => fn(st)); };
+
+onStep((i, abs, time, dur) => {
+  if (i < 0) { rec.last.abs = -1; if (rec.state !== 'off') setRec('off'); return; }
+  rec.last = { abs, time, dur };
+  if (rec.state === 'armed' && abs % len === 0 && abs >= rec.minAbs) { rec.start = abs; setRec('rec'); }
+  else if (rec.state === 'rec' && abs - rec.start >= len) setRec('off');
+});
+
+/** Arm loop record (starts the pattern if it's stopped), or cancel it. */
+export function toggleRec() {
+  if (rec.state !== 'off') { setRec('off'); return; }
+  // from a stop the pattern plays one pass first as a count-in; if it's already looping,
+  // recording starts at the top of the next pass
+  rec.minAbs = isArmed('pattern') ? 0 : len;
+  setRec('armed');
+  if (!isArmed('pattern')) play(true);
+}
+
+/** Live pad hit: plays the row now and, while recording, writes it to the nearest step. */
+export function perform(ri) {
+  const ac = audio(); if (!ac) return;
+  sound(rows[ri], ac.currentTime);
+  const L = rec.last; if (rec.state === 'off' || L.abs < 0) return;
+  const abs = L.abs + Math.round((ac.currentTime - L.time) / L.dur);
+  // a hit just ahead of the downbeat while armed counts as the first step of the take
+  if (rec.state === 'armed') { if (abs % len !== 0 || abs < rec.minAbs) return; rec.start = abs; setRec('rec'); }
+  if (abs - rec.start >= len || abs < rec.start) return;
+  const i = abs % len;
+  if (rows[ri].steps[i]) return;
+  commit(rows.map((r, k) => (k === ri ? { ...r, steps: r.steps.map((v, j) => (j === i ? 1 : v)) } : r)));
+}
 
 export function toggleStep(ri, i) {
   const next = rows.map((r, k) => (k === ri ? { ...r, steps: r.steps.map((v, j) => (j === i ? (v ? 0 : 1) : v)) } : r));
@@ -66,7 +134,7 @@ export function toggleStep(ri, i) {
   if (next[ri].steps[i] && !isArmed('pattern')) hit(ri);
 }
 export function setRow(ri, patch) { commit(rows.map((r, k) => (k === ri ? { ...r, ...patch } : r))); }
-export function clear() { commit(rows.map((r) => ({ ...r, steps: blank() }))); }
+export function clear() { commit(rows.map((r) => ({ ...r, steps: blank(len) }))); }
 export function hit(ri) { const ac = audio(); if (ac) sound(rows[ri], ac.currentTime); }
 
 /** Put a clip on a row (defaults to the Tape row) and name the row after it. */
@@ -76,7 +144,7 @@ export function loadClip(clipId, ri = rows.length - 1) {
 }
 
 export const isPlaying = () => isArmed('pattern');
-export const play = (on) => arm('pattern', on);
+export function play(on) { if (!on && rec.state !== 'off') setRec('off'); arm('pattern', on); }
 
 // when a clip is deleted, rows using it go quiet instead of pointing at nothing
 let loadedOnce = false;

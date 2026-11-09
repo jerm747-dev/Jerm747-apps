@@ -8,7 +8,7 @@ import { buildTapeChain, printTape, TAPE_DEFAULTS } from '../engine/tapefx.js';
 import { startRecording, micAnalyser, micError, releaseMic } from '../engine/mic.js';
 import * as library from '../engine/library.js';
 import * as pads from '../engine/pads.js';
-import { Screws, Led, Ico, Knob, useLibrary, useRaf, reduce, fmtDb, fmtPct } from '../ui/parts.jsx';
+import { Screws, Led, Ico, Knob, useLibrary, useRaf, reduce, fmtDb, fmtPct, useFullscreen, FullBtn } from '../ui/parts.jsx';
 
 const MAX_REC = 30; // seconds
 const FX_KEY = 'beatroom.tape';
@@ -51,6 +51,7 @@ export default function TapeDeck() {
   const refs = { reelL: useRef(null), reelR: useRef(null), tapeL: useRef(null), tapeR: useRef(null), nL: useRef(null), nR: useRef(null) };
   const anim = useRef({ ang: 0, lv: [0, 0], mic: null });
   const live = useRef({}); live.current = { mode, winding, cur, loop };
+  const [fsRef, full, toggleFull] = useFullscreen();
 
   useEffect(() => { library.loadAll(); }, []);
   useEffect(() => {
@@ -150,8 +151,8 @@ export default function TapeDeck() {
   const label = mode === 'rec' || mode === 'arming' ? 'RECORDING…' : cur ? cur.name : 'BLANK TAPE';
 
   return (
-    <section className="section tape-section" aria-labelledby="tape-h">
-      <header className="sec-head"><h2 id="tape-h"><span className="sec-dot" style={{ background: 'var(--c-tape)' }} />Tape deck</h2><p>Record, shape, print, send.</p></header>
+    <section ref={fsRef} className={`section tape-section ${full ? 'is-full brushed' : ''}`} aria-labelledby="tape-h">
+      <header className="sec-head"><h2 id="tape-h"><span className="sec-dot" style={{ background: 'var(--c-tape)' }} />Tape deck</h2><p>Record, shape, print, send.</p><FullBtn full={full} onClick={toggleFull} label="Tape deck" /></header>
       <div className="tape-grid">
         <div className="deck-unit brushed">
           <Screws />
