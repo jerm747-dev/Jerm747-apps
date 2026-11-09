@@ -1,11 +1,12 @@
 // Jerm747 Beat Room: one boombox, one engine.
 //   Handle strip: metronome · tuner · output
 //   Front: left speaker · tape deck sampler · right speaker
-//   Rack: rhythm composer, turntable
+//   Rack: rhythm composer, turntable, keyboard synth
 // Everything plays into the same bus, keeps the same tempo, and shares the sample library.
 import { useEffect } from 'react';
 import TapeDeck from './decks/TapeDeck.jsx';
 import VinylDeck from './decks/VinylDeck.jsx';
+import Synth from './decks/Synth.jsx';
 import Sequencer from './decks/Sequencer.jsx';
 import Metronome from './utils/Metronome.jsx';
 import Tuner from './utils/Tuner.jsx';
@@ -52,11 +53,12 @@ export default function App() {
       <div className="rack">
         <Sequencer />
         <VinylDeck />
+        <Synth />
       </div>
 
       <footer className="foot">
         <p><b>The flow:</b> record on the tape → shape it → print → send to the pads → EQ the row → play it over the metronome.</p>
-        <p className="engrave">Jerm747 · Beat Room v0.1</p>
+        <p className="engrave">Jerm747 · Beat Room v0.2</p>
       </footer>
     </main>
   );

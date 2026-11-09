@@ -92,3 +92,63 @@ export function useExternal(subscribe, get) {
   useEffect(() => subscribe(() => setV(get())), []); // eslint-disable-line react-hooks/exhaustive-deps
   return v;
 }
+
+/**
+ * Full screen for one section. Uses the browser's Fullscreen API; where that isn't allowed
+ * (iPhone Safari, an app WebView, an iframe without permission) the section fills the window
+ * instead. Returns [ref for the section, isFull, toggle].
+ */
+export function useFullscreen() {
+  const ref = useRef(null);
+  const [full, setFull] = useState(false);
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  const unmax = () => { ref.current?.classList.remove('is-max'); document.documentElement.classList.remove('has-max'); };
+  useEffect(() => {
+    const sync = () => { const el = ref.current; if (el) setFull(fsEl() === el || el.classList.contains('is-max')); };
+    const esc = (e) => { if (e.key === 'Escape' && ref.current?.classList.contains('is-max')) { unmax(); sync(); } };
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    window.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('fullscreenchange', sync);
+      document.removeEventListener('webkitfullscreenchange', sync);
+      window.removeEventListener('keydown', esc);
+    };
+  }, []);
+  const toggle = async () => {
+    const el = ref.current; if (!el) return;
+    if (fsEl() === el) { (document.exitFullscreen || document.webkitExitFullscreen)?.call(document); return; }
+    if (el.classList.contains('is-max')) { unmax(); setFull(false); return; }
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    try {
+      if (!req) throw new Error('no fullscreen');
+      await req.call(el, { navigationUI: 'hide' });
+      if (fsEl() !== el) throw new Error('refused');
+    } catch {
+      el.classList.add('is-max'); document.documentElement.classList.add('has-max'); setFull(true);
+    }
+  };
+  return [ref, full, toggle];
+}
+
+export function FullBtn({ full, onClick, label }) {
+  return (
+    <button type="button" className="mini fs-btn" onClick={onClick} aria-pressed={full} aria-label={full ? `Exit full screen` : `${label} full screen`} title={full ? 'Exit full screen' : 'Full screen'}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        {full ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+      </svg>
+    </button>
+  );
+}
+
+/** Live media query as state. */
+export function useMedia(q) {
+  const get = () => typeof matchMedia !== 'undefined' && matchMedia(q).matches;
+  const [m, setM] = useState(get);
+  useEffect(() => {
+    const mq = matchMedia(q), fn = () => setM(mq.matches);
+    mq.addEventListener?.('change', fn); fn();
+    return () => mq.removeEventListener?.('change', fn);
+  }, [q]);
+  return m;
+}

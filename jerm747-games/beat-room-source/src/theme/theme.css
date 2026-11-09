@@ -16,6 +16,7 @@
   --c-vinyl: #e98a3a;  /* turntable + output: orange */
   --c-pads: #d9573b;   /* rhythm composer: red */
   --c-tools: #7fbcb5;  /* metronome + tuner: teal */
+  --c-synth: #8fc96a;  /* keyboard synth: phosphor green */
 
   --display: 'Bricolage Grotesque', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
   --mono: 'Share Tech Mono', ui-monospace, Menlo, Consolas, monospace;
