@@ -1,7 +1,8 @@
 // The one AudioContext every section shares. Signal flow:
-//   decks / pads / metronome -> bus -> master gain -> analyser (speakers + meter) -> speakers out
+//   decks / pads / metronome -> bus -> 747 Drive (character.js) -> master gain -> analyser (speakers + meter) -> speakers out
 // Browsers only allow audio after a tap, so audio() is called from click handlers and creates
 // (or wakes) the context lazily.
+import { build as buildDrive } from './character.js';
 let ac = null;
 let bus = null;
 let master = null;
@@ -21,7 +22,8 @@ export function audio() {
     analyser = ac.createAnalyser();
     analyser.fftSize = 1024;
     analyser.smoothingTimeConstant = 0.6;
-    bus.connect(master).connect(analyser).connect(ac.destination);
+    const drive = buildDrive(ac);
+    bus.connect(drive.input); drive.output.connect(master).connect(analyser).connect(ac.destination);
   }
   if (ac.state === 'suspended' && !window.ArcadeGameClock?.held) ac.resume().catch(() => {});
   return ac;

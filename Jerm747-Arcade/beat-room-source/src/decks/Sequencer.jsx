@@ -21,6 +21,7 @@ export default function Sequencer() {
   const rows = useExternal(pads.subscribe, pads.getRows);
   const len = useExternal(pads.subscribe, pads.getLength);
   const recState = useExternal(pads.onRec, pads.getRec);
+  const song = useExternal(pads.onSong, pads.getSong);
   const clips = useLibrary();
   const bpm = useExternal(onBpm, getBpm);
   const playing = useExternal(onRun, pads.isPlaying);
@@ -44,7 +45,10 @@ export default function Sequencer() {
     } catch { setMsg('That file could not be read. Try an MP3, WAV, M4A or OGG.'); }
   }
 
-  useEffect(() => onStep((i, abs) => setNow(pads.isPlaying() && i >= 0 ? abs % pads.getLength() : -1)), []);
+  useEffect(() => onStep((i, abs) => {
+    const m = i >= 0 && pads.isPlaying() ? pads.posAt(abs) : null;
+    setNow(m && m.sec === pads.getSong()?.edit ? m.pos : -1);
+  }), []);
   useEffect(() => { if (follow && now >= 0) setPage(Math.floor(now / PAGE)); }, [now, follow]);
   useEffect(() => { if (page >= pages) setPage(pages - 1); }, [page, pages]);
 
@@ -79,7 +83,7 @@ export default function Sequencer() {
 
   return (
     <section ref={fsRef} className={`section pads-section ${full ? 'is-full' : ''}`} aria-labelledby="pads-h">
-      <header className="sec-head"><h2 id="pads-h"><span className="sec-dot" style={{ background: 'var(--c-pads)' }} />Rhythm composer</h2><p>{len} steps. Tap a row name to EQ it or swap its sound.</p><FullBtn full={full} onClick={toggleFull} label="Rhythm composer" /></header>
+      <header className="sec-head"><h2 id="pads-h"><span className="sec-dot" style={{ background: 'var(--c-pads)' }} />Rhythm composer</h2><p>Section {pads.SECTIONS[song?.edit ?? 0]} · {len} steps. Tap a row name to EQ it or swap its sound.</p><FullBtn full={full} onClick={toggleFull} label="Rhythm composer" /></header>
       <div className="pad-unit"><div className="pad">
         <div className="pad-top">
           <button className="btn primary" type="button" onClick={() => { blip(880); pads.play(!playing); }} aria-pressed={playing}>{playing ? 'Stop' : 'Play'}</button>
@@ -87,6 +91,11 @@ export default function Sequencer() {
             title="Loop record: plays one pass, then records your pad hits for one pass"><Led on={recState === 'rec'} color="#ff4b3a" />{recLabel}</button>
           <button className="btn" type="button" onClick={() => { blip(330); pads.clear(); }}>Clear</button>
           <label className="tempo">Tempo <input type="range" min="60" max="180" value={bpm} onChange={(e) => setBpm(+e.target.value)} /> <output>{bpm}</output></label>
+          <div className="len-ctl sec-ctl" role="tablist" aria-label="Section">
+            {pads.SECTIONS.map((n, i) => (
+              <button key={n} type="button" role="tab" aria-selected={song?.edit === i} className={`len-btn ${song?.edit === i ? 'on' : ''} ${song?.info[i].notes ? '' : 'dim'}`} onClick={() => { blip(500 + i * 90); pads.setEdit(i); }}>{n}</button>
+            ))}
+          </div>
           <div className="len-ctl" role="radiogroup" aria-label="Pattern length in steps">
             <span className="engrave len-label">Steps</span>
             {pads.LENGTHS.map((n) => (

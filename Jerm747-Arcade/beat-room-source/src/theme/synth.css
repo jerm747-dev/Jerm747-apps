@@ -174,3 +174,68 @@ html.has-max, html.has-max body { overflow: hidden; }
   .len-btn { min-height: 38px; }
   .sy-keys { height: 170px; }
 }
+
+/* ---------- console row: song strip + 747 Drive ---------- */
+.console { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr); gap: 12px; margin-bottom: clamp(14px, 2vw, 22px); }
+.songbar { display: grid; gap: 10px; align-content: start; min-width: 0; padding: 12px; border-radius: 10px; color: var(--text); background: linear-gradient(180deg, #232327, #17171a); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 2px 0 rgba(255, 255, 255, .5), 0 6px 14px rgba(0, 0, 0, .35); }
+.songbar .switch.on { color: var(--c-pads); }
+.song-transport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.song-play { width: 46px; height: 46px; flex: none; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--c-vinyl); color: #17130b; box-shadow: 0 3px 0 #0b0b0d, inset 0 1px 0 rgba(255, 255, 255, .3); cursor: pointer; }
+.song-play svg { width: 20px; height: 20px; }
+.song-play[aria-pressed="true"] { background: var(--c-pads); color: #fff; transform: translateY(2px); box-shadow: 0 1px 0 #0b0b0d; }
+.song-tempo input { width: 110px; }
+.song-pos { margin-left: auto; display: inline-flex; align-items: baseline; gap: 6px; min-height: 34px; padding: 0 10px; line-height: 34px; border-radius: 6px; background: #0b0b0d; box-shadow: inset 0 1px 4px #000; font: 400 .7rem var(--mono); color: #8d8c92; font-variant-numeric: tabular-nums; letter-spacing: .06em; white-space: nowrap; }
+.song-pos b { font: 400 1.05rem var(--mono); color: var(--c-pads); text-shadow: 0 0 8px color-mix(in srgb, var(--c-pads) 60%, transparent); }
+.song-sections { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.25fr); gap: 6px; }
+.song-sec { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 8px; min-height: 52px; padding: 6px 10px; border: 1px solid #34343a; border-radius: 8px; background: #0f0f12; color: var(--text); text-align: left; cursor: pointer; overflow: hidden; }
+.song-sec .led { grid-row: 1 / 3; width: 6px; height: 6px; }
+.song-sec b { font: 700 1.25rem/1 var(--display); }
+.song-sec em { grid-column: 2; font: 400 .56rem var(--mono); font-style: normal; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-sec.sel { border-color: var(--c-pads); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-pads) 40%, transparent); }
+.song-sec.empty b { color: #6f6e74; }
+.song-prog { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--c-pads); box-shadow: 0 0 6px var(--c-pads); }
+.song-copy { min-height: 52px; font-size: .76rem; }
+.sec-ctl + .len-ctl { margin-left: 0; }
+.len-btn.dim:not(.on) { opacity: .5; }
+
+.drive .switch.on { color: var(--c-drive); }
+.drive-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; padding: 3px; border-radius: 8px; background: #0b0b0d; }
+.drive-mode { min-height: 30px; border: 0; border-radius: 6px; background: none; color: #77767c; font: 400 .64rem var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.drive-mode.sel { background: #2a2414; color: var(--c-drive); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-drive) 45%, transparent); }
+.drive-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; transition: opacity .2s; }
+.drive:not(.on) .drive-body { opacity: .55; }
+.drive-knobs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.drive-btns { display: grid; gap: 6px; }
+.drive-key { display: flex; align-items: center; gap: 7px; min-width: 96px; min-height: 36px; padding: 0 10px; border: 0; border-radius: 6px; background: linear-gradient(180deg, #3a3a40, #26262b); box-shadow: 0 3px 0 #0b0b0d, inset 0 1px 0 rgba(255, 255, 255, .1); color: #cfcfd4; font: 400 .66rem var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.drive-key:active { transform: translateY(2px); box-shadow: 0 1px 0 #0b0b0d; }
+.drive-key.lit { color: var(--c-drive); }
+.drive-key .led { width: 6px; height: 6px; }
+.drive-key em { margin-left: auto; font-style: normal; font-size: .58rem; color: var(--muted); }
+.gr { position: relative; width: 26px; height: 6px; border-radius: 3px; overflow: hidden; background: #0b0b0d; }
+.gr i { position: absolute; top: 0; right: 0; bottom: 0; width: calc(var(--gr, 0) * 100%); background: var(--c-drive); }
+
+/* ---------- scope button ---------- */
+.scope-btn { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: #8d8c92; font: 400 .6rem var(--mono); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; flex: none; }
+.scope-btn svg { width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 0 0 1px #34343a, 0 3px 0 #0b0b0d; }
+.scope-btn:hover svg, .scope-btn:focus-visible svg { box-shadow: 0 0 0 1px var(--c-synth), 0 3px 0 #0b0b0d; }
+.sb-face { fill: #070908; }
+.sb-grid { fill: none; stroke: rgba(143, 201, 106, .2); stroke-width: .8; }
+.sb-wave { fill: none; stroke: var(--c-synth); stroke-width: 2; stroke-linecap: round; filter: drop-shadow(0 0 2px var(--c-synth)); }
+.synth-top.scope-away { grid-template-columns: auto minmax(0, 1fr); align-items: start; }
+.synth-top.scope-away .scope-btn { flex-direction: column; gap: 4px; padding: 8px 4px 0; }
+.scope.compact { min-height: 110px; margin-bottom: 10px; }
+
+@media (max-width: 980px) {
+  .console { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .song-sections { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .song-copy { grid-column: 1 / -1; min-height: 40px; }
+  .song-unit { display: none; }
+  .song-sec { padding: 6px 8px; column-gap: 6px; }
+  .song-pos { margin-left: 0; }
+  .song-tempo input { width: 90px; }
+  .drive-body { grid-template-columns: minmax(0, 1fr); }
+  .drive-btns { grid-template-columns: 1fr 1fr; }
+  .scope.compact { min-height: 90px; }
+}

@@ -14,7 +14,7 @@ const C = 'var(--c-synth)';
 const OCT_KEY = 'beatroom.synth.oct';
 const SIZE_KEY = 'beatroom.synth.size';
 const VIEW_KEY = 'beatroom.synth.view';
-const VIEW0 = { patch: false, osc: [false, false, false], oscView: 'stack', tab: 0, env: false, eq: false };
+const VIEW0 = { scopeDown: false, patch: false, osc: [false, false, false], oscView: 'stack', tab: 0, env: false, eq: false };
 const KEYMAP = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ';': 16, "'": 17 };
 const WaveIco = {
   sawtooth: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 18 L12 6 V18 L22 6" /></svg>,
@@ -37,8 +37,10 @@ export default function Synth() {
     <section ref={fsRef} className={`section synth-section ${full ? 'is-full' : ''}`} aria-labelledby="synth-h">
       <header className="sec-head"><h2 id="synth-h"><span className="sec-dot" style={{ background: C }} />Keyboard synth</h2><p>Three oscillators, ADSR, EQ, patches. Plays from touch, keys or MIDI.</p><FullBtn full={full} onClick={toggleFull} label="Keyboard synth" /></header>
       <div className="synth">
-        <div className={`synth-top ${view.patch ? 'patch-folded' : ''}`}>
-          <Scope />
+        <div className={`synth-top ${view.patch ? 'patch-folded' : ''} ${view.scopeDown ? 'scope-away' : ''}`}>
+          {view.scopeDown
+            ? <ScopeBtn up onClick={() => setView({ scopeDown: false })} />
+            : <Scope />}
           <PatchPanel patch={patch} min={view.patch} onFold={() => setView({ patch: !view.patch })} />
         </div>
         <div className="osc-bar">
@@ -62,9 +64,24 @@ export default function Synth() {
             <Eq eq={patch.eq} min={view.eq} onFold={() => setView({ eq: !view.eq })} />
           </div>
         </div>
-        <Keys full={full} />
+        <Keys full={full} scope={view.scopeDown ? <Scope compact /> : null} scopeBtn={view.scopeDown ? null : <ScopeBtn onClick={() => setView({ scopeDown: true })} />} />
       </div>
     </section>
+  );
+}
+
+/** Round scope button: moves the oscilloscope between the top and the keyboard. */
+function ScopeBtn({ up = false, onClick }) {
+  return (
+    <button type="button" className={`scope-btn ${up ? 'up' : ''}`} onClick={() => { blip(up ? 990 : 660); onClick(); }}
+      aria-label={up ? 'Move the scope back to the top' : 'Move the scope down by the keyboard'} title={up ? 'Scope to top' : 'Scope by the keys'}>
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="15" className="sb-face" />
+        <path d="M5 11h22M5 16h22M5 21h22M11 4v24M16 4v24M21 4v24" className="sb-grid" />
+        <path d="M4 16 C7 7 10 7 12.5 16 S18 25 20.5 16 S25 7 28 16" className="sb-wave" />
+      </svg>
+      {up && <span>Scope</span>}
+    </button>
   );
 }
 
@@ -80,7 +97,7 @@ const fmtSt = (v) => `${v > 0 ? '+' : ''}${Math.round(v)}st`;
 const fmtCt = (v) => `${v > 0 ? '+' : ''}${Math.round(v)}c`;
 
 // ---------- oscilloscope ----------
-function Scope() {
+function Scope({ compact = false }) {
   const cv = useRef(null), buf = useRef(null), gain = useRef(1);
   const notes = useExternal(synth.onNotes, synth.getNotes);
   useRaf(() => {
@@ -114,7 +131,7 @@ function Scope() {
   });
   const top = notes.length ? notes[notes.length - 1] : null;
   return (
-    <div className="scope">
+    <div className={`scope ${compact ? 'compact' : ''}`}>
       <canvas ref={cv} aria-label="Oscilloscope" role="img" />
       <div className="scope-read">
         <span>{top != null ? synth.noteName(top) : '—'}</span>
@@ -325,7 +342,7 @@ function PatchPanel({ patch, min, onFold }) {
 }
 
 // ---------- keyboard ----------
-function Keys({ full }) {
+function Keys({ full, scope, scopeBtn }) {
   const [oct, setOct] = useState(() => store.get(OCT_KEY, 4));
   const [size, setSize] = useState(() => store.get(SIZE_KEY, 'auto'));
   const [autoOcts, setAutoOcts] = useState(1);
@@ -392,6 +409,7 @@ function Keys({ full }) {
   return (
     <div className="kb">
       <div className="kb-bar">
+        {scopeBtn}
         <div className="oct" role="group" aria-label="Octave">
           <button type="button" className="btn" onClick={() => shift(-1)} disabled={base <= 0} aria-label="Octave down">−</button>
           <span className="oct-lcd"><b>C{base}</b>oct</span>
@@ -407,6 +425,7 @@ function Keys({ full }) {
         </button>
         <span className="midi-status" role="status" aria-live="polite">{status.msg || (status.devices.length ? status.devices.join(', ') : `${keys.list.length} keys · A–K plays · Z/X octave`)}</span>
       </div>
+      {scope}
       <div ref={wrap} className="sy-keys" style={{ '--whites': keys.whites }} onPointerDown={pDown} onPointerMove={pMove} onPointerUp={pUp} onPointerCancel={pUp} onLostPointerCapture={pUp} onContextMenu={(e) => e.preventDefault()}>
         {keys.list.map(({ n, black, wi }) => (
           <div key={n} data-note={n} role="button" tabIndex={-1} aria-label={synth.noteName(n)} aria-pressed={on.has(n)}

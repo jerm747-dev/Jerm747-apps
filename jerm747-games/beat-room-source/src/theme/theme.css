@@ -17,6 +17,7 @@
   --c-pads: #d9573b;   /* rhythm composer: red */
   --c-tools: #7fbcb5;  /* metronome + tuner: teal */
   --c-synth: #8fc96a;  /* keyboard synth: phosphor green */
+  --c-drive: #e6c36a;  /* 747 Drive: brass */
 
   --display: 'Bricolage Grotesque', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
   --mono: 'Share Tech Mono', ui-monospace, Menlo, Consolas, monospace;

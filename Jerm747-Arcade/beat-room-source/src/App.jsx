@@ -1,5 +1,6 @@
 // Jerm747 Beat Room: one boombox, one engine.
 //   Handle strip: metronome · tuner · output
+//   Console: song strip (sections A–D, one transport) · 747 Drive (master character)
 //   Front: left speaker · tape deck sampler · right speaker
 //   Rack: rhythm composer, turntable, keyboard synth
 // Everything plays into the same bus, keeps the same tempo, and shares the sample library.
@@ -12,6 +13,8 @@ import Metronome from './utils/Metronome.jsx';
 import Tuner from './utils/Tuner.jsx';
 import Speaker from './chassis/Speaker.jsx';
 import Master from './chassis/Master.jsx';
+import Drive from './chassis/Drive.jsx';
+import SongBar from './chassis/SongBar.jsx';
 import { Screws } from './ui/parts.jsx';
 import { audio } from './engine/audio.js';
 import * as library from './engine/library.js';
@@ -42,6 +45,10 @@ export default function App() {
               <Master />
             </div>
           </header>
+          <div className="console">
+            <SongBar />
+            <Drive />
+          </div>
           <div className="front">
             <Speaker side="L" />
             <TapeDeck />
