@@ -21,6 +21,7 @@ npm run build    # static site in dist/, upload anywhere
 | Keyboard synth | new (v0.2) | 3 oscillators (saw/square/sine, coarse + fine detune, level), amp ADSR, 3-band EQ with sweepable mid, fold any panel to a one-line bar, Stack or Tabs view for the oscillators, oscilloscope, patch save/recall, layer a second patch (Blend, Merge), octave −/+, 1–3 octave keyboard, computer keys, Web MIDI |
 
 ### v0.2
+- **Settings** (under the brand plate): Button clicks on/off. Audio now starts on the first tap on phones (iPhone needs a finger lift) and ignores the iPhone silent switch where Safari allows it.
 - **Song strip** (top of the boombox): one transport, BPM, and four sections A–D. Each section has its own steps and length (rows, sounds and mixer are shared). Tap a section to edit it; **Song** plays every section with notes in order, **Loop** repeats the one you're editing; copy a section to another to build variations. Loop record always works on the section you're editing.
 - **747 Drive** (master character, next to the song strip): our own transformer-style color stage. Drive (asymmetric, mostly 2nd-harmonic saturation, 4× oversampled), Iron (low end saturates first), Warmth (top roll-off), Air (+3 / +6 dB high shelf), Glue (slow bus compressor with GR meter), Output trim. Modes Clean / Warm / Iron / 747 are starting points.
 - **Scope button:** the round scope button above the keys moves the oscilloscope down beside the keyboard; the same button at the top brings it back.

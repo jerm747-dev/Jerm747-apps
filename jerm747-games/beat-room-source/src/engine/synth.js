@@ -165,6 +165,11 @@ function kill(note, fast = false) {
 /** Start a note (MIDI number). vel is 0..1. */
 export function noteOn(note, vel = 0.8) {
   const g = graph(); if (!g) return;
+  // audio not started yet (first touch on a phone): start it, then play this note
+  if (g.ac.state !== 'running') {
+    g.ac.resume().then(() => { if (held.has(note) && !voices.has(note)) noteOn(note, vel); }).catch(() => {});
+    held.add(note); return;
+  }
   if (voices.has(note)) kill(note, true);
   if (voices.size >= MAX_VOICES) {
     const oldest = [...voices.entries()].sort((a, b) => a[1].born - b[1].born)[0];

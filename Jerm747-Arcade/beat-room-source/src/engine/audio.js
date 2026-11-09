@@ -44,8 +44,40 @@ export function setMaster(v) {
   try { localStorage.setItem(MASTER_KEY, String(v)); } catch { /* storage off */ }
 }
 
-/** Short square blip for button feedback, same as the Returnity pieces. */
+/**
+ * Unlock audio on the first real gesture. Phones are picky: iPhone only starts audio on a
+ * finger lift (touchend / click), not on touch-down, so listen for all of them and stop once
+ * the context is running. Also ask Safari to treat this as media playback, so the ringer's
+ * silent switch doesn't mute the room.
+ */
+export function unlockOnGesture() {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch { /* not supported */ }
+  const evs = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'];
+  const go = () => {
+    const c = audio(); if (!c) return;
+    if (c.state === 'running') { evs.forEach((e) => window.removeEventListener(e, go, true)); return; }
+    c.resume().then(() => { if (c.state === 'running') evs.forEach((e) => window.removeEventListener(e, go, true)); }).catch(() => {});
+  };
+  evs.forEach((e) => window.addEventListener(e, go, true));
+  return () => evs.forEach((e) => window.removeEventListener(e, go, true));
+}
+export const running = () => !!ac && ac.state === 'running';
+
+// ---------- settings ----------
+const SET_KEY = 'beatroom.settings';
+let settings = (() => { try { return { clicks: true, ...JSON.parse(localStorage.getItem(SET_KEY)) }; } catch { return { clicks: true }; } })();
+const setSubs = new Set();
+export const getSettings = () => settings;
+export const onSettings = (fn) => (setSubs.add(fn), () => setSubs.delete(fn));
+export function setSetting(k, v) {
+  settings = { ...settings, [k]: v };
+  try { localStorage.setItem(SET_KEY, JSON.stringify(settings)); } catch { /* storage off */ }
+  setSubs.forEach((fn) => fn(settings));
+}
+
+/** Short square blip for button feedback, same as the Returnity pieces. Off in Settings → Button clicks. */
 export function blip(f = 660) {
+  if (!settings.clicks) { audio(); return; }
   const c = audio(); if (!c) return;
   const t = c.currentTime, o = c.createOscillator(), g = c.createGain();
   o.type = 'square'; o.frequency.value = f;

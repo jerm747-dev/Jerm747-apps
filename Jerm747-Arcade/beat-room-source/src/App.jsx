@@ -15,17 +15,16 @@ import Speaker from './chassis/Speaker.jsx';
 import Master from './chassis/Master.jsx';
 import Drive from './chassis/Drive.jsx';
 import SongBar from './chassis/SongBar.jsx';
+import Settings from './chassis/Settings.jsx';
 import { Screws } from './ui/parts.jsx';
-import { audio } from './engine/audio.js';
+import { unlockOnGesture } from './engine/audio.js';
 import * as library from './engine/library.js';
 
 export default function App() {
   useEffect(() => {
     library.loadAll();
-    // wake the audio engine on the first touch anywhere, so the speakers are live right away
-    const wake = () => { audio(); window.removeEventListener('pointerdown', wake); };
-    window.addEventListener('pointerdown', wake);
-    return () => window.removeEventListener('pointerdown', wake);
+    // wake the audio engine on the first gesture anywhere (phones need a finger lift)
+    return unlockOnGesture();
   }, []);
 
   return (
@@ -38,6 +37,7 @@ export default function App() {
             <div className="plate">
               <h1><b>Jerm747</b> Beat Room</h1>
               <p className="engrave">Virtual boombox kit · Your music. Your way.</p>
+              <Settings />
             </div>
             <div className="utils">
               <Metronome />
