@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useGamepad, buzz, toggleFullscreen, setDisplayOrientation, HOLD_TO_EXIT_MS, BTN } from './input.js';
 import PadIcon from './PadIcon.jsx';
 import Cabinet from './Cabinet.jsx';
@@ -139,7 +139,7 @@ export default function Arcade() {
   const [playing, setPlaying] = useState(null);
   const [visorOpen,setVisorOpen]=useState(false);
   const [view,setView]=useState(()=>localStorage.getItem('j747.web.arcadeView')==='list'?'list':'cabinet');
-  const live=useRef(null),cases=useRef(null),swipe=useRef(null);
+  const live=useRef(null),cases=useRef(null),swipe=useRef(null),pocket=useRef(null);
   const changeView=next=>{localStorage.setItem('j747.web.arcadeView',next);setView(next);};
   useEffect(()=>{if(view==='list'&&cases.current)cases.current.scrollTop=Number(sessionStorage.getItem('j747.caseList.scroll'))||0;},[view,projects]);
   const [source, setSource] = useState('keyboard');
@@ -256,7 +256,7 @@ export default function Arcade() {
     pushed.current = true;
   }, []);
 
-  const hud=useVisor({projects,playing,launch,onExit:exitGame,live,onVisibility:setVisorOpen});
+  const hud=useVisor({projects,playing,launch,onExit:exitGame,live,pocket,onVisibility:setVisorOpen});
   const moveCat = (dir) => {
     const i = cats.indexOf(cat);
     const next = cats[(i + dir + cats.length) % cats.length];
@@ -312,7 +312,7 @@ export default function Arcade() {
 
   return (
     <Cabinet project={playing}>
-    <Player project={playing} source={source} onExit={exitGame} live={live} visorOpen={visorOpen} openHUD={()=>hud.current?.open()} />
+    <Player project={playing} source={source} onExit={exitGame} live={live} pocket={pocket} visorOpen={visorOpen} openHUD={()=>hud.current?.open()} />
     <div className="sb" hidden={!!playing}>
       <header className="sb-top">
         <a className="sb-brand" href="/">
@@ -436,9 +436,21 @@ export default function Arcade() {
   );
 }
 
-function Player({ project, source, onExit, live:frame, visorOpen, openHUD }) {
+function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHUD }) {
   const stack=useRef(null);
-  useGameFrame(project,stack,frame);
+  const actions = useRef(null);
+  actions.current = {openHUD,onExit};
+  useLayoutEffect(() => {
+    if (!window.Jerm747PocketHost) return;
+    pocket.current = window.Jerm747PocketHost.create(stack.current,{
+      onMenu:() => actions.current.openHUD(), onEject:() => actions.current.onExit(),
+      onGuideChange(open,game) {
+        if(game)open ? window.ArcadeSessions.hold(game) : window.ArcadeSessions.release(game);
+      }
+    });
+    return () => {pocket.current?.destroy();pocket.current=null;};
+  }, [pocket]);
+  useGameFrame(project,stack,frame,pocket);
   const [hold, setHold] = useState(0);
   const [showMap, setShowMap] = useState(false);
   const [displayMode, setDisplayMode] = useState('auto');

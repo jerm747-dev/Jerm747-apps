@@ -1,5 +1,10 @@
 'use strict';
 function renderHostMenu() {
+  const pocket = byId('pocket-view');
+  const canSwitch = panel==='main' && context==='game' && typeof menuSpec.pocket==='boolean';
+  pocket.hidden = !canSwitch;
+  pocket.setAttribute('aria-checked',String(menuSpec.pocket===true));
+  pocket.querySelector('.pref-value').textContent=menuSpec.pocket?'On':'Off';
   const choices=byId('host-actions'), more=byId('more-actions');
   const title=panel==='main'&&context==='title'&&!!menuSpec.name;
   const options=panel==='choices';
@@ -23,6 +28,7 @@ function renderHostMenu() {
   }else document.querySelector('.hud-brand').textContent='Jerm747 Arcade';
   if(embeddedVisor)byId('hud-fullscreen').hidden=!window.EncoreAndroid&&!document.fullscreenEnabled||byId('hud-fullscreen').hidden;
 }
+byId('pocket-view').addEventListener('click',()=>closeMenu('game','command','pocket-view'));
 byId('more-actions').addEventListener('click',()=>{showPanel('choices');byId('host-actions').firstElementChild?.focus();});
 function navigateHUD(key) {
   if(key==='back'){if(!overlayBack())closeMenu();return;}

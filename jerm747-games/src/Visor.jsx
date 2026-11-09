@@ -22,7 +22,7 @@ function prepareLegacyGames() {
 }
 
 // Keep one visor alive across the shelf, live games and the Open games list.
-export function useVisor({projects, playing, launch, onExit, live, onVisibility}) {
+export function useVisor({projects, playing, launch, onExit, live, pocket, onVisibility}) {
   const host = useRef(null), latest = useRef(null);
   latest.current = {projects, playing, launch, onExit};
   useLayoutEffect(() => {
@@ -30,7 +30,7 @@ export function useVisor({projects, playing, launch, onExit, live, onVisibility}
     const bridge = {
       holding(w) {
         try {while (w && w !== window) {if (w.frameElement?.hidden) return true; w=w.parent;}} catch {}
-        return !!host.current?.isOpen;
+        return !!host.current?.isOpen || !!pocket.current?.guideOpen;
       },
       pads: () => navigator.getGamepads?.() || [],
       returnToCabinet: () => latest.current.onExit(),
@@ -41,15 +41,17 @@ export function useVisor({projects, playing, launch, onExit, live, onVisibility}
       context: 'cabinet',
       getMenu() {
         const {projects,playing} = latest.current;
-        return {name: playing?.title, active: playing?.slug, canHold: sessions.supported(live.current),
+        return {name: playing?.title, active: playing?.slug, pocket: playing && pocket.current ? pocket.current.active : undefined, canHold: sessions.supported(live.current),
           catalog: (projects||[]).map(p => ({id:p.slug,title:p.title}))};
       },
       getScene() {
         try {return live.current?.contentDocument?.querySelector('canvas') || document.querySelector('.sb-case[aria-current=true] img,.sb-slide[aria-hidden=false] .art-img');} catch {return null;}
       },
-      onOpening() {sessions.hold(live.current);onVisibility(true);},
+      onOpening() {pocket.current?.setHeld(true);sessions.hold(live.current);onVisibility(true);},
       onAction(action, {command}) {
         onVisibility(false);
+        if(action==='command' && command==='pocket-view' && latest.current.playing) pocket.current?.toggle();
+        pocket.current?.setHeld(false);
         const {projects, playing, launch, onExit} = latest.current;
         if (action === 'command' && command?.startsWith('launch:')) {
           const next = projects?.find(p=>p.slug===command.slice(7));
@@ -72,19 +74,21 @@ export function useVisor({projects, playing, launch, onExit, live, onVisibility}
   return host;
 }
 
-export function useGameFrame(project, stage, live) {
+export function useGameFrame(project, stage, live, pocket) {
   useLayoutEffect(() => {
     if (!project) return;
     const sessions=window.ArcadeSessions;
     const kept=sessions.take(project.slug);
     const frame=kept?.frame || document.createElement('iframe');
     live.current=frame;
+    const attachPocket=()=>pocket.current?.setGame(frame,project.slug,{title:project.title,cover:project.cover});
     const focus=()=>{
+      if (live.current===frame) attachPocket();
       if(live.current===frame && !window.Arcade?.holding(frame.contentWindow))frame.focus();
       else sessions.hold(frame);
     };
     frame.addEventListener('load',focus);
-    if (kept) {sessions.release(frame);frame.focus();}
+    if (kept) {attachPocket();sessions.release(frame);frame.focus();}
     else {
       frame.title=project.title;
       frame.allow='gamepad; fullscreen; autoplay; screen-wake-lock'+(project.slug==='beat-room'?'; microphone':'');
@@ -92,6 +96,7 @@ export function useGameFrame(project, stage, live) {
       prepareLegacyGames().then(()=>{if(live.current===frame && stage.current){frame.src=project.url;stage.current.append(frame);}});
     }
     return () => {
+      pocket.current?.setGame(null,'');
       frame.removeEventListener('load',focus);
       if (!sessions.park(project.slug,frame,null))frame.remove();
       live.current=null;

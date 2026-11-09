@@ -1,0 +1,11 @@
+/* Full-size game geometry is recovered by removing this class. */
+:is(#session, .cabinet .game-stack).j747-pocket-active > iframe.j747-pocket-viewport {
+  position:absolute!important;inset:auto!important;left:var(--pocket-left)!important;top:var(--pocket-top)!important;
+  width:var(--pocket-width)!important;height:var(--pocket-height)!important;
+  min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important;
+  margin:0!important;padding:0!important;border:0!important;border-radius:0!important;
+  transform-origin:0 0!important;transform:scale(var(--pocket-scale))!important;z-index:1!important;
+}
+#session.j747-pocket-active > .game-nav {display:none!important}
+
+.player:has(.j747-pocket-active) > .play-tools {display:none;}

@@ -94,7 +94,7 @@ function launch(){
   frame=saved.frame;frameHook=frame.contentWindow;diskGameId=saved.data;
   session.classList.toggle('standard',!!routes[current]);setPlaySurface();
   visor.enable(true);visor.setContext('game',diskGameId);
-  ArcadeSessions.release(frame);frameHook.focus();return;
+  setPocketGame();ArcadeSessions.release(frame);frameHook.focus();return;
  }
  if(routes[current]){openTitle();return;}
  diskGameId='gs-fighter-iii';visor.enable(true);visor.setContext('game',diskGameId);session.classList.remove('standard');loadGame(games[current][3]);
@@ -115,10 +115,11 @@ function bindGame(){
  w.addEventListener('keydown',e=>{if(e.key==='Escape'&&!e.defaultPrevented){e.preventDefault();e.stopImmediatePropagation();backOne();}},true);
  // Game pages can opt out of browser fullscreen: the APK surface is already immersive.
  w.Element.prototype.requestFullscreen=function(){return Promise.resolve()};
- bindVisorGame(w);if(!visor.isOpen)w.focus();
+ bindVisorGame(w);setPocketGame();if(!visor.isOpen)w.focus();
 }
 function returnToCabinet(){
  if(!frame&&!titleShowing)return;
+ pocketView?.setGame(null,'');
  titleShowing=false;pendingChoice=null;heldByVisor=false;titleScreen.hidden=true;
  visor.setContext('cabinet','cabinet');visor.enable(true);
  const saved=listScroll;if(frame&&!ArcadeSessions.park(current,frame,diskGameId))frame.remove();frame=frameHook=null;activeKeys.clear();session.hidden=true;cabinet.hidden=false;window.EncoreAndroid?.gameOrientation?.(false);requestAnimationFrame(()=>{if(view==='list')list.scrollTop=saved;const el=(view==='list'?list:shelf).children[gameOrder.indexOf(current)];el.focus({preventScroll:true});});rumble(12);
@@ -127,11 +128,12 @@ function isParkedWindow(w){
  try {while(w&&w!==window){if(w.frameElement?.hidden)return true;w=w.parent;}}catch{}
  return false;
 }
-window.Arcade={beatRoomOpen:()=>!!frame&&routes[current]?.id==='beat-room'&&!visor.isOpen,returnToCabinet,back:backOne,holding:w=>backgroundReasons.size>0||heldByVisor||isParkedWindow(w),
+window.Arcade={beatRoomOpen:()=>!!frame&&routes[current]?.id==='beat-room'&&!visor.isOpen,returnToCabinet,back:backOne,holding:w=>backgroundReasons.size>0||heldByVisor||!!pocketView?.guideOpen||isParkedWindow(w),
  gameTitle(source){if(frame?.contentWindow!==source||!routes[current])return false;openTitle();return true;},
  background(reason,held){
   if(held)backgroundReasons.add(reason);else backgroundReasons.delete(reason);
   if(!frame)return;
+  pocketView?.setHeld(!!backgroundReasons.size || heldByVisor);
   if(backgroundReasons.size){activeKeys.clear();ArcadeSessions.hold(frame);}
   else if(!visor.isOpen)ArcadeSessions.release(frame);
  },
@@ -179,6 +181,7 @@ byId('game-back').onclick=backOne;
 byId('game-hud').onclick=()=>visor.open();
 document.querySelector('.game-nav').addEventListener('pointerdown',e=>e.preventDefault());
 function backOne(){
+ if(pocketView?.closeGuide())return;
  if(visor.back())return;
  if(titleShowing){returnToCabinet();return;}
  if(viewer.open){viewer.close();return;}

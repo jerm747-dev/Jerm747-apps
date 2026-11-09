@@ -23,6 +23,16 @@ let titleShowing=false, heldByVisor=false, releasePadGate=false;
 const entryArt=byId('entry-art'), titleScreen=byId('game-entry');
 const cabButton=byId('cabinet-hud');
 let diskGameId='', pendingChoice=null;
+const pocketView = window.Jerm747PocketHost?.create(session, {
+ onMenu:()=>visor.open(), onEject:returnToCabinet,
+ onChange(on){if(frame)window.EncoreAndroid?.gameOrientation?.(!on && [3,4].includes(current));},
+ onGuideChange(open,game){ if(game)open ? ArcadeSessions.hold(game) : ArcadeSessions.release(game); }
+});
+function setPocketGame(){
+ if(!frame) return;
+ const index=diskGameId==='cd-man'?1:current;
+ pocketView?.setGame(frame,diskGameId,{title:games[index][0],cover:shelfArt[index]||games[index][4]});
+}
 const portableFullscreen=()=>window.EncoreAndroid?localStorage.getItem('arcade.immersive')!=='off':!!document.fullscreenElement;
 function toggleArcadeFullscreen(){
  if(!window.EncoreAndroid)return document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen();
@@ -50,7 +60,9 @@ function optionList(){
 function getVisorMenu(){
  const menu=getGameMenu();
  menu.catalog=gameOrder.map(i=>({id:String(i),title:games[i][0]}));
- menu.active=frame?String(current):null;return menu;
+ menu.active=frame?String(current):null;
+ if(frame && pocketView)menu.pocket=pocketView.active;
+ return menu;
 }
 function getGameMenu(){
  const format=items=>items.map(([id,label])=>({id,label}));
@@ -72,13 +84,15 @@ const visor=Jerm747HUD.mount(document.body,{
  isFullscreen:portableFullscreen,onFullscreen:toggleArcadeFullscreen,
  onOpening(){
   if(!frame)return;
-  heldByVisor=true;
+  heldByVisor=true;pocketView?.setHeld(true);
   for(const code of activeKeys)key(frame.contentWindow,code,false);
   activeKeys.clear();
   ArcadeSessions.hold(frame);
  },
  onAction(action,{command}){
   heldByVisor=false;releasePadGate=true;
+  if(action==='command' && command==='pocket-view' && frame)pocketView?.toggle();
+  pocketView?.setHeld(backgroundReasons.size>0);
   if(action==='command'&&command?.startsWith('launch:')){
    const target=Number(command.slice(7));
    if(!Number.isInteger(target)||!games[target])return;
@@ -109,6 +123,7 @@ function setPlaySurface(){
 }
 function openTitle(){
  if(!routes[current])return;
+ pocketView?.setGame(null,'');
  const old=frame;frame=frameHook=null;old?.remove();
  activeKeys.clear();pendingChoice=null;heldByVisor=false;
  titleShowing=true;

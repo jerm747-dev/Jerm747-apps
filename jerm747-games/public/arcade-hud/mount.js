@@ -8,7 +8,7 @@ window.Jerm747HUD=(()=>{
     const url=new URL('index.html',assets);
     let context=options.context||'game',gameId=String(options.gameId||'game');
     if(!allowed.has(context))throw new TypeError('Use game, title, or cabinet.');
-    url.search=new URLSearchParams({embed:'1',v:'workshop-1',context,game:gameId});
+    url.search=new URLSearchParams({embed:'1',v:'pocket-109',context,game:gameId});
     if(!document.querySelector('link[data-j747-hotkey]')){
       const css=document.createElement('link');css.rel='stylesheet';css.href=new URL('hotkey.css?v=workshop-1',assets);
       css.dataset.j747Hotkey='';document.head.append(css);
