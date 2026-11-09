@@ -1,5 +1,9 @@
 import React,{useEffect,useRef} from 'react';
 import {dpad,jump} from './padMarkup.js';
+// Keep these objects stable. React 19 re-applies dangerouslySetInnerHTML whenever the
+// object changes, which swapped in fresh pad buttons on every landing and left the
+// listeners below attached to the old, detached ones (controls froze after one jump).
+const DPAD_HTML={__html:dpad},JUMP_HTML={__html:jump};
 export function ClimbPad({keys,paused}){
  const root=useRef(null);
  useEffect(()=>{
@@ -18,5 +22,5 @@ export function ClimbPad({keys,paused}){
   for(const b of node.querySelectorAll('[data-key]'))b.addEventListener('click',e=>{if(e.detail===0){set('assist',[b.dataset.key]);setTimeout(()=>{if(!lifetime.signal.aborted)set('assist',[]);},130);}},options);
   return ()=>{lifetime.abort();held.clear();set('clear',[]);};
  },[keys,paused]);
- return <div ref={root} className="deck climb-deck" aria-label="Climb controls"><div className="direction-control" dangerouslySetInnerHTML={{__html:dpad}}/><div className="action-control actionpad" dangerouslySetInnerHTML={{__html:jump}}/></div>;
+ return <div ref={root} className="deck climb-deck" aria-label="Climb controls"><div className="direction-control" dangerouslySetInnerHTML={DPAD_HTML}/><div className="action-control actionpad" dangerouslySetInnerHTML={JUMP_HTML}/></div>;
 }
