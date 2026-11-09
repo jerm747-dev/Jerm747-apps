@@ -1,5 +1,5 @@
 // Sequencer state, shared by the Rhythm Composer UI and the clock. Each row has a sound source
-// (a synth voice or a library clip), 16 or 32 steps, and its own mixer channel (EQ + level + mute).
+// (a synth voice or a library clip), 16, 32 or 64 steps, and its own mixer channel (EQ + level + mute).
 // Loop record: arm it and the next full pass of the pattern records live pad hits (quantized
 // to the nearest step, added on top of what's there); when that pass ends, recording stops
 // and the loop keeps playing.
@@ -10,7 +10,7 @@ import { definePart, arm, isArmed, onStep } from './clock.js';
 import * as library from './library.js';
 
 const KEY = 'beatroom.pads';
-export const LENGTHS = [16, 32];
+export const LENGTHS = [16, 32, 64];
 const blank = (n = 16) => Array(n).fill(0);
 const DEFAULT_ROWS = [
   { id: 'r1', name: 'Kick', src: { type: 'synth', voice: 'kick' }, steps: [1,0,0,0, 0,0,1,0, 0,0,1,0, 0,0,0,0] },
@@ -32,7 +32,7 @@ function load() {
     if (Array.isArray(saved) && saved.length === DEFAULT_ROWS.length) {
       return saved.map((r, i) => {
         const st = Array.isArray(r.steps) ? r.steps : blank();
-        const n = st.length >= 32 ? 32 : 16;
+        const n = st.length >= 64 ? 64 : st.length >= 32 ? 32 : 16;
         return { ...DEFAULT_ROWS[i], ...r, steps: [...st.slice(0, n), ...blank(Math.max(0, n - st.length))] };
       });
     }
@@ -76,17 +76,13 @@ definePart('pattern', (step, time, dur, abs) => {
   for (const r of rows) if (r.steps[i]) sound(r, time);
 });
 
-/** Pattern length in steps (16 or 32). */
+/** Pattern length in steps (16, 32 or 64). */
 export const getLength = () => len;
-/** Double the pattern: 16 -> 32, copying the first bar into the second so the groove carries on. */
-export function double() {
-  if (len >= 32) return;
-  len = 32; commit(rows.map((r) => ({ ...r, steps: [...r.steps, ...r.steps] })));
-}
-/** Back to 16: keeps the first bar. */
-export function halve() {
-  if (len <= 16) return;
-  len = 16; commit(rows.map((r) => ({ ...r, steps: r.steps.slice(0, 16) })));
+/** Change the length. Longer repeats what's there so the groove carries on; shorter keeps the start. */
+export function setLength(n) {
+  if (!LENGTHS.includes(n) || n === len) return;
+  len = n;
+  commit(rows.map((r) => ({ ...r, steps: Array.from({ length: n }, (_, i) => r.steps[i % r.steps.length]) })));
 }
 
 // ---------- loop record ----------

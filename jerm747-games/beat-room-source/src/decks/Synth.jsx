@@ -1,16 +1,20 @@
-// Keyboard synth: three oscillators, amp ADSR, patch memory with a layer slot, an oscilloscope,
+// Keyboard synth: three oscillators, amp ADSR, a 3-band EQ, patch memory with a layer slot, an oscilloscope,
 // and a keyboard that sizes itself to the room (one octave upright, two across, three when the
 // panel is full screen and wide). Plays from touch/mouse (slide across keys), the computer
 // keyboard (A–K row, Z/X for octave), or a MIDI keyboard.
+// Every panel can fold down to a one-line bar (patch, each oscillator, ADSR, EQ), and the
+// oscillators can sit as a stack of three or as one panel with tabs. The layout is remembered.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as synth from '../engine/synth.js';
 import * as midi from '../engine/midi.js';
 import { blip } from '../engine/audio.js';
-import { Knob, Led, useExternal, useRaf, fmtPct, useFullscreen, FullBtn } from '../ui/parts.jsx';
+import { Knob, Led, useExternal, useRaf, fmtPct, fmtDb, useFullscreen, FullBtn } from '../ui/parts.jsx';
 
 const C = 'var(--c-synth)';
 const OCT_KEY = 'beatroom.synth.oct';
 const SIZE_KEY = 'beatroom.synth.size';
+const VIEW_KEY = 'beatroom.synth.view';
+const VIEW0 = { patch: false, osc: [false, false, false], oscView: 'stack', tab: 0, env: false, eq: false };
 const KEYMAP = { a: 0, w: 1, s: 2, e: 3, d: 4, f: 5, t: 6, g: 7, y: 8, h: 9, u: 10, j: 11, k: 12, o: 13, l: 14, p: 15, ';': 16, "'": 17 };
 const WaveIco = {
   sawtooth: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 18 L12 6 V18 L22 6" /></svg>,
@@ -24,24 +28,56 @@ const typing = (t) => t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t
 export default function Synth() {
   const patch = useExternal(synth.subscribe, synth.getPatch);
   const [fsRef, full, toggleFull] = useFullscreen();
+  const [view, setViewState] = useState(() => ({ ...VIEW0, ...store.get(VIEW_KEY, {}) }));
+  const setView = (change) => setViewState((v) => { const n = { ...v, ...change }; store.set(VIEW_KEY, n); return n; });
+  const foldOsc = (i) => setView({ osc: view.osc.map((m, k) => (k === i ? !m : m)) });
   useEffect(() => () => synth.allOff(), []);
+  const tabs = view.oscView === 'tabs';
   return (
     <section ref={fsRef} className={`section synth-section ${full ? 'is-full' : ''}`} aria-labelledby="synth-h">
-      <header className="sec-head"><h2 id="synth-h"><span className="sec-dot" style={{ background: C }} />Keyboard synth</h2><p>Three oscillators, ADSR, patches. Plays from touch, keys or MIDI.</p><FullBtn full={full} onClick={toggleFull} label="Keyboard synth" /></header>
+      <header className="sec-head"><h2 id="synth-h"><span className="sec-dot" style={{ background: C }} />Keyboard synth</h2><p>Three oscillators, ADSR, EQ, patches. Plays from touch, keys or MIDI.</p><FullBtn full={full} onClick={toggleFull} label="Keyboard synth" /></header>
       <div className="synth">
-        <div className="synth-top">
+        <div className={`synth-top ${view.patch ? 'patch-folded' : ''}`}>
           <Scope />
-          <PatchPanel patch={patch} />
+          <PatchPanel patch={patch} min={view.patch} onFold={() => setView({ patch: !view.patch })} />
         </div>
-        <div className="synth-mods">
-          {patch.osc.map((o, i) => <Osc key={i} i={i} o={o} />)}
-          <Env env={patch.env} vol={patch.vol} />
+        <div className="osc-bar">
+          <span className="engrave">Oscillators</span>
+          <div className="seg" role="radiogroup" aria-label="Oscillator view">
+            <button type="button" role="radio" aria-checked={!tabs} className={`switch ${!tabs ? 'on' : ''}`} onClick={() => setView({ oscView: 'stack' })}>Stack</button>
+            <button type="button" role="radio" aria-checked={tabs} className={`switch ${tabs ? 'on' : ''}`} onClick={() => setView({ oscView: 'tabs' })}>Tabs</button>
+          </div>
+          {!tabs && <button type="button" className="switch" onClick={() => setView({ osc: view.osc.every(Boolean) ? [false, false, false] : [true, true, true] })}>{view.osc.every(Boolean) ? 'Open all' : 'Fold all'}</button>}
+        </div>
+        <div className={`synth-mods ${tabs ? 'tabbed' : 'stacked'}`}>
+          {tabs ? (
+            <OscTabs oscs={patch.osc} tab={view.tab} onTab={(t) => setView({ tab: t })} />
+          ) : (
+            <div className="osc-stack">
+              {patch.osc.map((o, i) => <Osc key={i} i={i} o={o} min={view.osc[i]} onFold={() => foldOsc(i)} />)}
+            </div>
+          )}
+          <div className="fx-stack">
+            <Env env={patch.env} vol={patch.vol} min={view.env} onFold={() => setView({ env: !view.env })} />
+            <Eq eq={patch.eq} min={view.eq} onFold={() => setView({ eq: !view.eq })} />
+          </div>
         </div>
         <Keys full={full} />
       </div>
     </section>
   );
 }
+
+/** Fold / unfold chevron for a panel head. */
+function Fold({ min, onClick, label }) {
+  return (
+    <button type="button" className="mini fold-btn" onClick={onClick} aria-expanded={!min} aria-label={`${min ? 'Expand' : 'Minimize'} ${label}`} title={min ? 'Expand' : 'Minimize'}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{min ? <path d="M6 9l6 6 6-6" /> : <path d="M6 15l6-6 6 6" />}</svg>
+    </button>
+  );
+}
+const fmtSt = (v) => `${v > 0 ? '+' : ''}${Math.round(v)}st`;
+const fmtCt = (v) => `${v > 0 ? '+' : ''}${Math.round(v)}c`;
 
 // ---------- oscilloscope ----------
 function Scope() {
@@ -90,14 +126,10 @@ function Scope() {
 }
 
 // ---------- oscillator ----------
-function Osc({ i, o }) {
+function OscBody({ i, o }) {
   const set = (c) => synth.setOsc(i, c);
   return (
-    <div className={`panel osc ${o.on ? '' : 'off'}`}>
-      <div className="panel-head">
-        <span className="engrave">Osc {i + 1}</span>
-        <button type="button" className={`switch ${o.on ? 'on' : ''}`} aria-pressed={o.on} onClick={() => { blip(o.on ? 330 : 660); set({ on: !o.on }); }}><Led on={o.on} color={C} />{o.on ? 'On' : 'Off'}</button>
-      </div>
+    <>
       <div className="wave-sw" role="radiogroup" aria-label={`Osc ${i + 1} waveform`}>
         {synth.WAVES.map((w) => (
           <button key={w} type="button" role="radio" aria-checked={o.wave === w} className={`wave-btn ${o.wave === w ? 'on' : ''}`} onClick={() => set({ wave: w })}>
@@ -106,23 +138,81 @@ function Osc({ i, o }) {
         ))}
       </div>
       <div className="knob-row">
-        <Knob size="sm" label="Coarse" value={o.coarse} min={-synth.COARSE} max={synth.COARSE} def={0} bipolar onChange={(v) => set({ coarse: Math.round(v) })} format={(v) => `${v > 0 ? '+' : ''}${Math.round(v)}st`} color={C} />
-        <Knob size="sm" label="Fine" value={o.fine} min={-synth.FINE} max={synth.FINE} def={0} bipolar onChange={(v) => set({ fine: v })} format={(v) => `${v > 0 ? '+' : ''}${Math.round(v)}c`} color={C} />
+        <Knob size="sm" label="Coarse" value={o.coarse} min={-synth.COARSE} max={synth.COARSE} def={0} bipolar onChange={(v) => set({ coarse: Math.round(v) })} format={fmtSt} color={C} />
+        <Knob size="sm" label="Fine" value={o.fine} min={-synth.FINE} max={synth.FINE} def={0} bipolar onChange={(v) => set({ fine: v })} format={fmtCt} color={C} />
         <Knob size="sm" label="Level" value={o.level} max={1} def={0.6} onChange={(v) => set({ level: v })} format={fmtPct} color={C} />
       </div>
+    </>
+  );
+}
+const OnSwitch = ({ i, o }) => (
+  <button type="button" className={`switch ${o.on ? 'on' : ''}`} aria-pressed={o.on} aria-label={`Osc ${i + 1} ${o.on ? 'on' : 'off'}`} onClick={() => { blip(o.on ? 330 : 660); synth.setOsc(i, { on: !o.on }); }}><Led on={o.on} color={C} />{o.on ? 'On' : 'Off'}</button>
+);
+
+function Osc({ i, o, min, onFold }) {
+  if (min) {
+    return (
+      <div className={`panel osc mini-bar ${o.on ? '' : 'off'}`}>
+        <span className="engrave">Osc {i + 1}</span>
+        <OnSwitch i={i} o={o} />
+        <span className="bar-wave" aria-hidden="true">{WaveIco[o.wave]}</span>
+        <select value={o.wave} onChange={(e) => synth.setOsc(i, { wave: e.target.value })} aria-label={`Osc ${i + 1} waveform`}>
+          {synth.WAVES.map((w) => <option key={w} value={w}>{synth.WAVE_NAMES[w]}</option>)}
+        </select>
+        <span className="bar-read">{fmtSt(o.coarse)} {fmtCt(o.fine)} · {fmtPct(o.level)}</span>
+        <Fold min onClick={onFold} label={`Osc ${i + 1}`} />
+      </div>
+    );
+  }
+  return (
+    <div className={`panel osc ${o.on ? '' : 'off'}`}>
+      <div className="panel-head">
+        <span className="engrave">Osc {i + 1}</span>
+        <span className="head-tools"><OnSwitch i={i} o={o} /><Fold min={false} onClick={onFold} label={`Osc ${i + 1}`} /></span>
+      </div>
+      <OscBody i={i} o={o} />
+    </div>
+  );
+}
+
+function OscTabs({ oscs, tab, onTab }) {
+  const i = Math.min(2, tab), o = oscs[i];
+  return (
+    <div className={`panel osc osc-tabs ${o.on ? '' : 'off'}`}>
+      <div className="tab-row" role="tablist" aria-label="Oscillators">
+        {oscs.map((x, k) => (
+          <button key={k} type="button" role="tab" aria-selected={k === i} className={`tab ${k === i ? 'sel' : ''}`} onClick={() => onTab(k)}>
+            <Led on={x.on} color={C} />Osc {k + 1}<span className="tab-wave" aria-hidden="true">{WaveIco[x.wave]}</span>
+          </button>
+        ))}
+        <OnSwitch i={i} o={o} />
+      </div>
+      <div role="tabpanel" aria-label={`Osc ${i + 1}`}><OscBody i={i} o={o} /></div>
     </div>
   );
 }
 
 // ---------- envelope ----------
-function Env({ env, vol }) {
+function EnvGraph({ env }) {
   const W = 120, H = 40;
   const aw = 4 + env.a * 26, dw = 4 + env.d * 26, sw = 24, rw = 4 + env.r * 26, tot = aw + dw + sw + rw, k = W / tot;
   const sy = 4 + (1 - env.s) * (H - 8);
-  const d = `M0 ${H - 2} L${aw * k} 4 L${(aw + dw) * k} ${sy} L${(aw + dw + sw) * k} ${sy} L${W} ${H - 2}`;
+  return <svg className="env-graph" viewBox={`0 0 ${W} ${H}`} aria-hidden="true"><path d={`M0 ${H - 2} L${aw * k} 4 L${(aw + dw) * k} ${sy} L${(aw + dw + sw) * k} ${sy} L${W} ${H - 2}`} /></svg>;
+}
+function Env({ env, vol, min, onFold }) {
+  if (min) {
+    return (
+      <div className="panel env mini-bar">
+        <span className="engrave">Amp ADSR</span>
+        <EnvGraph env={env} />
+        <span className="bar-read">A {fmtSec(synth.envSec('a', env.a))} · D {fmtSec(synth.envSec('d', env.d))} · S {fmtPct(env.s)} · R {fmtSec(synth.envSec('r', env.r))}</span>
+        <Fold min onClick={onFold} label="ADSR" />
+      </div>
+    );
+  }
   return (
     <div className="panel env">
-      <div className="panel-head"><span className="engrave">Amp ADSR</span><svg className="env-graph" viewBox={`0 0 ${W} ${H}`} aria-hidden="true"><path d={d} /></svg></div>
+      <div className="panel-head"><span className="engrave">Amp ADSR</span><span className="head-tools"><EnvGraph env={env} /><Fold min={false} onClick={onFold} label="ADSR" /></span></div>
       <div className="knob-row env-knobs">
         <Knob size="sm" label="Attack" value={env.a} max={1} def={0.05} onChange={(v) => synth.setEnv({ a: v })} format={(v) => fmtSec(synth.envSec('a', v))} color={C} />
         <Knob size="sm" label="Decay" value={env.d} max={1} def={0.35} onChange={(v) => synth.setEnv({ d: v })} format={(v) => fmtSec(synth.envSec('d', v))} color={C} />
@@ -134,8 +224,50 @@ function Env({ env, vol }) {
   );
 }
 
+// ---------- EQ ----------
+const fmtHz = (v) => { const f = synth.midHz(v); return f >= 1000 ? `${(f / 1000).toFixed(1)}k` : `${Math.round(f)}`; };
+function EqGraph({ eq }) {
+  // rough response curve: shelves at the ends, a bell at the mid frequency
+  const W = 120, H = 40, pts = [];
+  const fx = Math.log(synth.midHz(eq.freq) / 20) / Math.log(1000);
+  for (let i = 0; i <= 40; i++) {
+    const x = i / 40;
+    const lowW = 1 / (1 + Math.exp((x - 0.27) * 22)), highW = 1 / (1 + Math.exp(-(x - 0.75) * 22));
+    const bell = Math.exp(-Math.pow((x - fx) / 0.11, 2));
+    const db = eq.low * lowW + eq.high * highW + eq.mid * bell;
+    pts.push(`${(x * W).toFixed(1)} ${(H / 2 - db * (H / 2 - 4)).toFixed(1)}`);
+  }
+  return <svg className="env-graph eq-graph" viewBox={`0 0 ${W} ${H}`} aria-hidden="true"><line x1="0" y1={H / 2} x2={W} y2={H / 2} /><path d={`M${pts.join(' L')}`} /></svg>;
+}
+function Eq({ eq, min, onFold }) {
+  if (min) {
+    return (
+      <div className="panel eq mini-bar">
+        <span className="engrave">EQ</span>
+        <EqGraph eq={eq} />
+        <span className="bar-read">Low {fmtDb(eq.low)} · Mid {fmtDb(eq.mid)} @ {fmtHz(eq.freq)} · High {fmtDb(eq.high)}</span>
+        <Fold min onClick={onFold} label="EQ" />
+      </div>
+    );
+  }
+  return (
+    <div className="panel eq">
+      <div className="panel-head">
+        <span className="engrave">EQ</span>
+        <span className="head-tools"><EqGraph eq={eq} /><button type="button" className="switch" onClick={() => synth.setEq({ ...synth.FLAT_EQ })}>Flat</button><Fold min={false} onClick={onFold} label="EQ" /></span>
+      </div>
+      <div className="knob-row eq-knobs">
+        <Knob size="sm" label="Low" value={eq.low} min={-1} max={1} def={0} bipolar onChange={(v) => synth.setEq({ low: v })} format={fmtDb} color={C} />
+        <Knob size="sm" label="Mid" value={eq.mid} min={-1} max={1} def={0} bipolar onChange={(v) => synth.setEq({ mid: v })} format={fmtDb} color={C} />
+        <Knob size="sm" label="Mid freq" value={eq.freq} max={1} def={0.5} onChange={(v) => synth.setEq({ freq: v })} format={(v) => `${fmtHz(v)}Hz`} color={C} />
+        <Knob size="sm" label="High" value={eq.high} min={-1} max={1} def={0} bipolar onChange={(v) => synth.setEq({ high: v })} format={fmtDb} color={C} />
+      </div>
+    </div>
+  );
+}
+
 // ---------- patches ----------
-function PatchPanel({ patch }) {
+function PatchPanel({ patch, min, onFold }) {
   const [name, setName] = useState(patch.name);
   const [msg, setMsg] = useState('');
   useEffect(() => { setName(patch.name); }, [patch.from, patch.name]);
@@ -146,14 +278,27 @@ function PatchPanel({ patch }) {
   const del = () => { if (!isMine) return; blip(220); synth.deletePatch(patch.from); setMsg('Patch deleted. The sound stays on the panel until you load another.'); };
   const opts = (list) => list.map((p) => <option key={p.id} value={p.id}>{p.name}{p.layer ? ' (layered)' : ''}</option>);
 
-  return (
-    <div className="panel patch-panel">
-      <div className="panel-head"><span className="engrave">Patch</span><span className="patch-name">{patch.name}{patch.dirty ? ' *' : ''}</span></div>
-      <select value={patch.from && !patch.dirty ? patch.from : ''} onChange={(e) => { if (e.target.value) { blip(700); synth.loadPatch(e.target.value); setMsg(''); } }} aria-label="Load patch">
+  const picker = (
+    <select value={patch.from && !patch.dirty ? patch.from : ''} onChange={(e) => { if (e.target.value) { blip(700); synth.loadPatch(e.target.value); setMsg(''); } }} aria-label="Load patch">
         <option value="">{patch.dirty ? `${patch.name} (edited)` : 'Load a patch…'}</option>
         <optgroup label="Factory">{opts(factory)}</optgroup>
         {mine.length > 0 && <optgroup label="My patches">{opts(mine)}</optgroup>}
       </select>
+  );
+  if (min) {
+    return (
+      <div className="panel patch-panel mini-bar">
+        <span className="engrave">Patch</span>
+        {picker}
+        {patch.dirty && <span className="bar-read">edited</span>}
+        <Fold min onClick={onFold} label="patch" />
+      </div>
+    );
+  }
+  return (
+    <div className="panel patch-panel">
+      <div className="panel-head"><span className="engrave">Patch</span><span className="head-tools"><span className="patch-name">{patch.name}{patch.dirty ? ' *' : ''}</span><Fold min={false} onClick={onFold} label="patch" /></span></div>
+      {picker}
       <div className="patch-save">
         <input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} aria-label="Patch name" placeholder="Patch name" />
         <button type="button" className="btn" onClick={save}>Save</button>
@@ -262,7 +407,7 @@ function Keys({ full }) {
         </button>
         <span className="midi-status" role="status" aria-live="polite">{status.msg || (status.devices.length ? status.devices.join(', ') : `${keys.list.length} keys · A–K plays · Z/X octave`)}</span>
       </div>
-      <div ref={wrap} className="keys" style={{ '--whites': keys.whites }} onPointerDown={pDown} onPointerMove={pMove} onPointerUp={pUp} onPointerCancel={pUp} onLostPointerCapture={pUp} onContextMenu={(e) => e.preventDefault()}>
+      <div ref={wrap} className="sy-keys" style={{ '--whites': keys.whites }} onPointerDown={pDown} onPointerMove={pMove} onPointerUp={pUp} onPointerCancel={pUp} onLostPointerCapture={pUp} onContextMenu={(e) => e.preventDefault()}>
         {keys.list.map(({ n, black, wi }) => (
           <div key={n} data-note={n} role="button" tabIndex={-1} aria-label={synth.noteName(n)} aria-pressed={on.has(n)}
             className={`pk ${black ? 'pk-b' : 'pk-w'} ${on.has(n) ? 'down' : ''}`}

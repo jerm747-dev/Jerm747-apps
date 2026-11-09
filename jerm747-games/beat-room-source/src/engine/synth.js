@@ -25,16 +25,21 @@ const CUR_KEY = 'beatroom.synth.current';
 const PATCH_KEY = 'beatroom.synth.patches';
 
 const osc = (wave, coarse = 0, fine = 0, level = 0.6, on = true) => ({ on, wave, coarse, fine, level });
+// Synth EQ: low shelf 120 Hz, sweepable mid peak (200 Hz–5 kHz), high shelf 5 kHz. Gains are
+// -1..1 (= ±12 dB); freq is a 0..1 knob position mapped on a log scale.
+export const EQ_DB = 12;
+export const FLAT_EQ = { low: 0, mid: 0, freq: 0.5, high: 0 };
+export const midHz = (v) => 200 * Math.pow(25, v);
 const sound = (oscs, env) => ({ osc: oscs, env });
 
 export const FACTORY = [
   { id: 'f-init', name: 'Init', ...sound([osc('sawtooth', 0, 0, 0.7), osc('square', -12, 0, 0.4, false), osc('sine', 12, 0, 0.3, false)], { a: 0.05, d: 0.35, s: 0.7, r: 0.3 }) },
   { id: 'f-lead', name: 'Saw Lead', ...sound([osc('sawtooth', 0, -7, 0.6), osc('sawtooth', 0, 7, 0.6), osc('square', 12, 0, 0.22)], { a: 0.04, d: 0.4, s: 0.75, r: 0.3 }) },
-  { id: 'f-bass', name: 'Square Bass', ...sound([osc('square', -12, 0, 0.7), osc('sawtooth', -12, 5, 0.4), osc('sine', -24, 0, 0.6)], { a: 0.02, d: 0.3, s: 0.5, r: 0.2 }) },
+  { id: 'f-bass', name: 'Square Bass', eq: { low: 0.45, mid: -0.25, freq: 0.45, high: -0.2 }, ...sound([osc('square', -12, 0, 0.7), osc('sawtooth', -12, 5, 0.4), osc('sine', -24, 0, 0.6)], { a: 0.02, d: 0.3, s: 0.5, r: 0.2 }) },
   { id: 'f-pad', name: 'Sine Pad', ...sound([osc('sine', 0, 0, 0.6), osc('sine', 12, 4, 0.35), osc('sawtooth', 0, -9, 0.16)], { a: 0.55, d: 0.6, s: 0.8, r: 0.65 }) },
   { id: 'f-organ', name: 'Square Organ', ...sound([osc('square', 0, 0, 0.35), osc('sine', 12, 0, 0.5), osc('sine', 19, 0, 0.35)], { a: 0.03, d: 0.2, s: 0.9, r: 0.15 }) },
   { id: 'f-pluck', name: 'Pluck', ...sound([osc('sawtooth', 0, 0, 0.65), osc('square', 0, 3, 0.3), osc('sine', -12, 0, 0.45)], { a: 0.02, d: 0.42, s: 0, r: 0.3 }) },
-].map((p) => ({ ...p, factory: true, vol: 0.8, layer: null }));
+].map((p) => ({ eq: { ...FLAT_EQ }, ...p, factory: true, vol: 0.8, layer: null }));
 
 // ---------- state ----------
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -59,7 +64,9 @@ function cleanSound(s, fallback = FACTORY[0]) {
 function cleanPatch(p) {
   const base = cleanSound(p);
   const layer = p?.layer && p.layer.osc ? { ...cleanSound(p.layer), id: p.layer.id || null, name: String(p.layer.name || 'Layer'), mix: num(p.layer.mix, 0, 1, 0.5) } : null;
-  return { ...base, name: String(p?.name || 'Init').slice(0, 40), vol: num(p?.vol, 0, 1, 0.8), layer };
+  const e = p?.eq || FLAT_EQ;
+  const eq = { low: num(e.low, -1, 1, 0), mid: num(e.mid, -1, 1, 0), freq: num(e.freq, 0, 1, 0.5), high: num(e.high, -1, 1, 0) };
+  return { ...base, name: String(p?.name || 'Init').slice(0, 40), vol: num(p?.vol, 0, 1, 0.8), eq, layer };
 }
 
 function load(key, d) { try { const v = JSON.parse(localStorage.getItem(key)); return v ?? d; } catch { return d; } }
@@ -89,14 +96,25 @@ function graph() {
   const ac = audio(); if (!ac) return null;
   if (!node || node.ac !== ac) {
     const input = ac.createGain();
+    const low = ac.createBiquadFilter(); low.type = 'lowshelf'; low.frequency.value = 120;
+    const mid = ac.createBiquadFilter(); mid.type = 'peaking'; mid.Q.value = 1;
+    const high = ac.createBiquadFilter(); high.type = 'highshelf'; high.frequency.value = 5000;
     const vol = ac.createGain(); vol.gain.value = cur.vol;
     const lim = ac.createDynamicsCompressor();
     lim.threshold.value = -8; lim.knee.value = 6; lim.ratio.value = 8; lim.attack.value = 0.003; lim.release.value = 0.12;
     const an = ac.createAnalyser(); an.fftSize = 2048; an.smoothingTimeConstant = 0;
-    input.connect(vol).connect(lim).connect(an).connect(out());
-    node = { ac, input, vol, an };
+    input.connect(low).connect(mid).connect(high).connect(vol).connect(lim).connect(an).connect(out());
+    node = { ac, input, vol, an, low, mid, high };
+    applyEq(0);
   }
   return node;
+}
+function applyEq(tc = 0.02) {
+  if (!node) return;
+  const t = node.ac.currentTime, e = cur.eq;
+  const set = (param, v) => (tc ? param.setTargetAtTime(v, t, tc) : (param.value = v));
+  set(node.low.gain, e.low * EQ_DB); set(node.mid.gain, e.mid * EQ_DB); set(node.high.gain, e.high * EQ_DB);
+  set(node.mid.frequency, midHz(e.freq));
 }
 /** Analyser on the synth's own output, for the scope (null until the first note). */
 export const analyser = () => node?.an || null;
@@ -201,6 +219,7 @@ export function setOsc(i, change) {
   });
 }
 export const setEnv = (change) => commit({ ...cur, env: { ...cur.env, ...change }, dirty: true });
+export function setEq(change) { commit({ ...cur, eq: { ...cur.eq, ...change }, dirty: true }); applyEq(); }
 export function setVol(v) {
   commit({ ...cur, vol: v, dirty: true });
   if (node) node.vol.gain.setTargetAtTime(v, node.ac.currentTime, 0.02);
@@ -213,6 +232,7 @@ export function loadPatch(id) {
   const p = listPatches().find((x) => x.id === id); if (!p) return;
   commit({ ...cleanPatch(clone(p)), from: p.id, dirty: false });
   if (node) node.vol.gain.setTargetAtTime(cur.vol, node.ac.currentTime, 0.02);
+  applyEq();
 }
 /** Save the panel (and its layer) as a patch. Same name as one of yours overwrites it. */
 export function savePatch(name) {

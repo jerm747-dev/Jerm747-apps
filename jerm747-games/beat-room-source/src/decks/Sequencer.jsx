@@ -1,14 +1,16 @@
 // The Returnity rhythm composer with a mixer bolted on: tap a row's name to open its channel
 // strip (source, 3-band EQ, level, mute). Any row can play a synth voice or a library clip; the
 // fifth row is the Tape row, where the tape deck's SEND button drops clips.
-// Patterns run 16 or 32 steps (×2 copies the first bar). The grid always shows 16 at a time;
-// a 32-step pattern gets two pages, and Follow flips them with the playhead.
+// Patterns run 16, 32 or 64 steps (going longer repeats what's there). The grid always shows
+// 16 at a time, one page per 16, and Follow flips the pages with the playhead.
+// Any row can load a sound file from the device (Load sound in its channel strip).
 // Loop record: REC plays one pass as a count-in (or waits for the top if it's already looping),
 // records pad hits for one pass, then stops recording and keeps the loop going.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as pads from '../engine/pads.js';
 import { onStep, getBpm, setBpm, onBpm, onRun } from '../engine/clock.js';
-import { blip } from '../engine/audio.js';
+import { audio, blip } from '../engine/audio.js';
+import * as library from '../engine/library.js';
 import { VOICE_NAMES, EXTRA_NAMES, ALL_VOICE_NAMES } from '../engine/voices.js';
 import { Knob, Led, useLibrary, useExternal, fmtDb, fmtPct, useFullscreen, FullBtn } from '../ui/parts.jsx';
 
@@ -28,7 +30,19 @@ export default function Sequencer() {
   const [follow, setFollow] = useState(true);
   const [flash, setFlash] = useState(-1);
   const [fsRef, full, toggleFull] = useFullscreen();
+  const [msg, setMsg] = useState('');
+  const fileRef = useRef(null);
   const pages = len / PAGE;
+
+  async function loadSound(e) {
+    const f = e.target.files?.[0]; e.target.value = ''; if (!f || sel == null) return;
+    setMsg('Loading the sound…');
+    try {
+      const c = await library.importFile(audio(), f);
+      pads.loadClip(c.id, sel); setTimeout(() => pads.hit(sel), 40);
+      setMsg(`${c.name} is on row ${sel + 1} and in the library.`);
+    } catch { setMsg('That file could not be read. Try an MP3, WAV, M4A or OGG.'); }
+  }
 
   useEffect(() => onStep((i, abs) => setNow(pads.isPlaying() && i >= 0 ? abs % pads.getLength() : -1)), []);
   useEffect(() => { if (follow && now >= 0) setPage(Math.floor(now / PAGE)); }, [now, follow]);
@@ -73,17 +87,18 @@ export default function Sequencer() {
             title="Loop record: plays one pass, then records your pad hits for one pass"><Led on={recState === 'rec'} color="#ff4b3a" />{recLabel}</button>
           <button className="btn" type="button" onClick={() => { blip(330); pads.clear(); }}>Clear</button>
           <label className="tempo">Tempo <input type="range" min="60" max="180" value={bpm} onChange={(e) => setBpm(+e.target.value)} /> <output>{bpm}</output></label>
-          <div className="len-ctl" role="group" aria-label="Pattern length">
-            <span className="len-lcd" aria-live="polite"><b>{len}</b> steps</span>
-            <button type="button" className="btn" onClick={() => { blip(700); pads.halve(); }} disabled={len <= 16} aria-label="Halve to 16 steps">½</button>
-            <button type="button" className="btn" onClick={() => { blip(900); pads.double(); }} disabled={len >= 32} aria-label="Double to 32 steps">×2</button>
+          <div className="len-ctl" role="radiogroup" aria-label="Pattern length in steps">
+            <span className="engrave len-label">Steps</span>
+            {pads.LENGTHS.map((n) => (
+              <button key={n} type="button" role="radio" aria-checked={len === n} className={`len-btn ${len === n ? 'on' : ''}`} onClick={() => { blip(500 + n * 6); pads.setLength(n); }}>{n}</button>
+            ))}
           </div>
         </div>
 
         {pages > 1 && (
-          <div className="page-bar" role="group" aria-label="Step pages">
+          <div className="page-bar" role="group" aria-label="Step pages" style={{ '--pages': pages }}>
             {Array.from({ length: pages }, (_, p) => (
-              <button key={p} type="button" className={`page-btn ${page === p ? 'sel' : ''}`} aria-pressed={page === p} onClick={() => goPage(p)}>
+              <button key={p} type="button" className={`page-btn ${page === p ? 'sel' : ''} ${now >= p * PAGE && now < (p + 1) * PAGE ? 'playing' : ''}`} aria-pressed={page === p} onClick={() => goPage(p)}>
                 <Led on={now >= p * PAGE && now < (p + 1) * PAGE} color="var(--c-pads)" />{p * PAGE + 1}–{(p + 1) * PAGE}
               </button>
             ))}
@@ -113,7 +128,7 @@ export default function Sequencer() {
             </button>
           ))}
         </div>
-        <p className="pad-hint">{recState === 'armed' ? 'Get ready: recording starts at the top of the loop.' : recState === 'rec' ? 'Recording this pass. Hit the pads (or keys 1–5).' : 'Live pads: tap to play. Hit REC to record them into the loop.'}</p>
+        <p className="pad-hint">{recState === 'armed' ? 'Get ready: recording starts at the top of the loop.' : recState === 'rec' ? 'Recording this pass. Hit the pads (or keys 1–5).' : 'Live pads: tap to play. Hit REC to record them into the loop. Tap a row name to load your own sound.'}</p>
 
         {row && (
           <div className="chstrip" role="group" aria-label={`${row.name} channel strip`}>
@@ -129,7 +144,10 @@ export default function Sequencer() {
                 <button type="button" className="btn" onClick={() => pads.hit(sel)} disabled={!row.src}>Hit</button>
                 <button type="button" className={`btn ${row.mute ? 'active' : ''}`} aria-pressed={row.mute} onClick={() => pads.setRow(sel, { mute: !row.mute })}>Mute</button>
                 <button type="button" className="btn" onClick={() => pads.setRow(sel, { low: 0, mid: 0, high: 0, vol: 0.8 })}>Flat</button>
+                <button type="button" className="btn" onClick={() => fileRef.current?.click()}>Load sound</button>
+                <input ref={fileRef} type="file" accept="audio/*" hidden onChange={loadSound} />
               </div>
+              {msg && <p className="hint" role="status" aria-live="polite">{msg}</p>}
             </div>
             <div className="knob-row">
               <Knob label="Low" value={row.low} min={-1} max={1} def={0} bipolar onChange={setK('low')} format={fmtDb} color="var(--c-pads)" />
