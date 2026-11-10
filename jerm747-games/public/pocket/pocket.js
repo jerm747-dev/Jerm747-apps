@@ -355,7 +355,8 @@
       'D-pad chooses a token. A swaps a pair or twists left, B twists right. X changes mode.'),
     'album-match':profile('album',{a:'Swap ↓',b:'Swap →',x:'Swap ←',y:'Swap ↑'},
       'D-pad moves the tile cursor. Use the four face buttons to swap in that direction; A confirms on result screens.'),
-    'beat-room':focusProfile,
+    'beat-room':profile('pad',{a:'Use / play',b:'Sections',x:'− / clear',y:'+ / set',l:'Previous',r:'Next',select:'Pad mode'},
+      'L/R choose a section, A enters, B goes back. D-pad moves. In a section L/R browse controls or pages. Select plays your mapped pads.'),
     'controller-check':profile('focus',{a:'Use',b:'Back'},'The checker reads the connected physical controller. D-pad and A navigate test options.'),
   };
   const defaultProfile = focusProfile;

@@ -121,3 +121,15 @@
   .vinyl-panel .field { grid-template-columns: minmax(0, 1fr); }
   .vinyl-panel .field .btn { justify-self: start; padding-inline: 18px; }
 }
+
+/* Focus for the physical controller and keyboard grid. */
+[data-pad-section="outside"]:focus, [data-pad-focus]:focus { outline: 3px solid #ffd277; outline-offset: 2px; }
+[data-pad-section="inside"] { box-shadow: 0 0 0 2px #d5a95d; }
+select[data-pad-choosing] { outline-color: #8fe5ac; }
+.pad-mapping { margin-top: .8rem; border-top: 1px solid #514a40; padding-top: .65rem; }
+.pad-mapping .btn-row, .pad-bindings { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pad-bindings { margin-top: .55rem; align-items: center; }
+.pad-bindings .btn { display: grid; gap: .15rem; text-align: left; }
+.pad-mapping [aria-pressed="true"] { outline: 2px solid var(--c-pads); }
+.pad-mapping .hint { margin: .45rem 0 0; }
+.settings-panel { max-height: min(65vh, 420px); overflow-y: auto; }

@@ -3,7 +3,7 @@ android {
  namespace 'com.jerm747.arcade'
  compileSdk 35
  buildFeatures { buildConfig true }
- defaultConfig { resValue 'string', 'arcade_name', 'Jerm747 Arcade'; applicationId 'com.jerm747.arcade'; minSdk 26; targetSdk 35; versionCode 10; versionName '1.0.9' }
+ defaultConfig { resValue 'string', 'arcade_name', 'Jerm747 Arcade'; applicationId 'com.jerm747.arcade'; minSdk 26; targetSdk 35; versionCode 11; versionName '1.0.10' }
  def keyFile = rootProject.file('keystore.properties')
  if (keyFile.exists()) {
   def keys = new Properties()

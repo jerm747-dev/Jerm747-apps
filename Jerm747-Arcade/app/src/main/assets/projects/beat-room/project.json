@@ -1,14 +1,15 @@
 {
   "title": "Beat Room",
-  "tagline": "Record, shape and sequence your own samples.",
-  "description": "A virtual boombox with a tape sampler, turntable, 16-step rhythm composer, metronome and chromatic tuner. Record a take or load a sound, then send it to the pads.",
+  "tagline": "Make beats, play synth, build a song.",
+  "description": "A virtual boombox: tape sampler, turntable, 16/32/64-step rhythm composer with loop record and four song sections, a 3-oscillator keyboard synth with MIDI, metronome, tuner and the 747 Drive master stage. Map five controller buttons to live pads and record them into a loop.",
   "kind": "music",
   "status": "playable",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "controls": [
     "touch",
     "mouse",
-    "keyboard"
+    "keyboard",
+    "gamepad"
   ],
   "accent": "#E98A3A",
   "order": 85
