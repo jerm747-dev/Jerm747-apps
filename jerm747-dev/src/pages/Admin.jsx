@@ -3,6 +3,7 @@ import { adminStatus, adminSetup, adminGet, adminPost } from '../api.js';
 import ProjectView, { STAGES } from '../components/ProjectView.jsx';
 import Traffic from './Traffic.jsx';
 import AdminSites from './AdminSites.jsx';
+import Shares from './Shares.jsx';
 
 function useSession() {
   const [pw, setPw] = useState(() => { try { return sessionStorage.getItem('j747-admin') || ''; } catch { return ''; } });
@@ -106,9 +107,10 @@ export default function Admin() {
         </button>
         <button role="tab" aria-selected={view === 'sites'} className={`tab ${view === 'sites' ? 'is-on' : ''}`} onClick={() => setView('sites')}>Sites</button>
         <button role="tab" aria-selected={view === 'traffic'} className={`tab ${view === 'traffic' ? 'is-on' : ''}`} onClick={() => setView('traffic')}>Traffic</button>
+        <button role="tab" aria-selected={view === 'shared'} className={`tab ${view === 'shared' ? 'is-on' : ''}`} onClick={() => setView('shared')}>Shared</button>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
-      {view === 'sites' ? <AdminSites pw={pw} /> : view === 'traffic' ? <Traffic pw={pw} /> : <>
+      {view === 'sites' ? <AdminSites pw={pw} /> : view === 'traffic' ? <Traffic pw={pw} /> : view === 'shared' ? <Shares pw={pw} /> : <>
       {showCreate && <CreateProject pw={pw} onCreated={(p) => { setShowCreate(false); setCurrent(p); refresh(); }} />}
       {projects.length === 0 ? (
         <p className="empty">No requests yet. New ones from the contact form land here and in your inbox.</p>

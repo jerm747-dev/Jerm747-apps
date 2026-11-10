@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { adminGet, adminPost } from '../api.js';
+import { adminGet, adminPost, noCountOn, setNoCount as saveNoCount } from '../api.js';
 
 function Bars({ data, label, valueKey, format }) {
   const [hover, setHover] = useState(null);
@@ -65,7 +65,7 @@ export default function Traffic({ pw }) {
   const [settings, setSettings] = useState(null);
   const [msg, setMsg] = useState('');
   const [preview, setPreview] = useState('');
-  const [noCount, setNoCount] = useState(() => { try { return localStorage.getItem('j747-nocount') === '1'; } catch { return false; } });
+  const [noCount, setNoCount] = useState(noCountOn);
 
   useEffect(() => {
     adminGet(pw, { action: 'stats', days }).then((d) => setStats(d.stats)).catch((e) => setMsg(e.message));
@@ -85,7 +85,7 @@ export default function Traffic({ pw }) {
   const toggleNoCount = () => {
     const next = !noCount;
     setNoCount(next);
-    try { next ? localStorage.setItem('j747-nocount', '1') : localStorage.removeItem('j747-nocount'); } catch { /* storage off */ }
+    saveNoCount(next);
   };
 
   if (!stats) return <p className="empty">{msg || 'Loading traffic…'}</p>;
@@ -146,7 +146,7 @@ export default function Traffic({ pw }) {
         </label>
         {msg && <p className="admin-msg" role="status">{msg}</p>}
       </section>
-      <p className="traffic-note">No cookies. Visitors are counted with a hash that resets daily, so nobody is tracked across days and project keys never appear in these numbers.</p>
+      <p className="traffic-note">No tracking cookies. Visitors are counted with a hash that resets daily, so nobody is tracked across days and project keys never appear in these numbers.</p>
     </div>
   );
 }

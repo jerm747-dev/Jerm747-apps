@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Application Console v0.2.0</title>
+<style>
+  :root { --red:#C8350A; --blue:#1018BE; --gray:#C2C2C2; --light:#F0F0F0; --ink:#151B3D; --text:#1F2328; --muted:#5F6368; --line:#E2E2E2; --tint:#EEF0F8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--text); font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .banner { display: flex; height: 40px; overflow: hidden; }
+  .band { flex: 1; margin-right: -29px; filter: drop-shadow(4px 0 3px rgba(0,0,0,.38)); position: relative; }
+  .band span { display: block; height: 100%; clip-path: polygon(0 0, calc(100% - 23px) 0, 100% 100%, 0 100%); }
+  .band:nth-child(1) { z-index: 4; flex: 1.15; } .band:nth-child(1) span { background: var(--red); }
+  .band:nth-child(2) { z-index: 3; flex: 1.1; } .band:nth-child(2) span { background: var(--blue); }
+  .band:nth-child(3) { z-index: 2; } .band:nth-child(3) span { background: var(--gray); }
+  .band:nth-child(4) { z-index: 1; margin: 0; filter: none; } .band:nth-child(4) span { background: var(--light); clip-path: none; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 20px 48px; }
+  h1 { margin: 0; font-size: 1.6rem; text-shadow: 1px 1px 2px rgba(0,0,0,.18); }
+  .sub { margin: 4px 0 24px; color: var(--muted); }
+  .hero { display: grid; grid-template-columns: minmax(0,1.3fr) minmax(0,1fr); gap: 16px; margin-bottom: 28px; }
+  .btn { display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; border-radius: 8px; text-decoration: none; }
+  .btn b { font-size: 1.15rem; } .btn small { font-size: .85rem; opacity: .85; }
+  .btn--primary { background: var(--blue); color: #fff; } .btn--primary:hover { background: #0c13a0; }
+  .btn--ghost { border: 2px solid var(--ink); color: var(--ink); } .btn--ghost:hover { background: var(--tint); }
+  h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 10px; }
+  .docs { display: grid; gap: 8px; }
+  .doc { display: grid; grid-template-columns: 64px 180px minmax(0,1fr); align-items: center; gap: 12px; padding: 12px 14px;
+         border: 1px solid var(--line); border-radius: 6px; text-decoration: none; color: var(--text); }
+  .doc:hover { background: #fafafa; border-color: #c9c9c9; }
+  .doc__type { font-size: .7rem; font-weight: 700; text-align: center; padding: 3px 0; border-radius: 4px; background: var(--tint); color: var(--blue); }
+  .doc__type.pdf { background: #fde8e2; color: var(--red); }
+  .doc__name { font-weight: 600; } .doc__desc { color: var(--muted); font-size: .9rem; }
+  pre { background: #f7f7f7; border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; font-size: .85rem; overflow-x: auto; }
+  .note { margin-top: 28px; padding: 12px 14px; border-radius: 6px; background: #fff4e0; color: #7a4a00; font-size: .9rem; }
+  footer { margin-top: 32px; color: var(--muted); font-size: .8rem; }
+  @media (max-width: 720px) { .hero { grid-template-columns: 1fr; } .doc { grid-template-columns: 56px minmax(0,1fr); } .doc__desc { grid-column: 2; } }
+</style>
+</head>
+<body>
+<div class="banner" aria-hidden="true"><div class="band"><span></span></div><div class="band"><span></span></div><div class="band"><span></span></div><div class="band"><span></span></div></div>
+<main>
+  <h1>Application Console</h1>
+  <p class="sub">Release v0.2.0 · WASVC v0.2.0 + EMVT v0.4.1 · November 9, 2026</p>
+
+  <div class="hero">
+    <a class="btn btn--primary" href="get.php?f=wasvc-v0.2.0.zip">
+      <b>Download the build</b>
+      <small>wasvc-v0.2.0.zip · 73 KB · Node.js 18+ · unzip, then <code>npm start</code></small>
+    </a>
+    <a class="btn btn--ghost" href="go.php">
+      <b>Open the console</b>
+      <small>Runs in your browser on built-in sample data</small>
+    </a>
+  </div>
+
+  <h2>Documents</h2>
+  <div class="docs">
+    <a class="doc" href="get.php?f=Application-Console-Guide-v0.2.0.pdf"><span class="doc__type pdf">PDF</span><span class="doc__name">Guide</span>
+      <span class="doc__desc">How the two tools work together, walkthrough with screenshots, reference, full code appendix</span></a>
+    <a class="doc" href="get.php?f=Application-Console-One-Pager-v0.2.0.pptx"><span class="doc__type">PPTX</span><span class="doc__name">One-pager</span><span class="doc__desc">For management: problem, the two tools, status (1 slide)</span></a><a class="doc" href="get.php?f=Application-Console-Overview-v0.2.0.pptx"><span class="doc__type">PPTX</span><span class="doc__name">Overview</span><span class="doc__desc">The one-pager, expanded (3 slides)</span></a><a class="doc" href="get.php?f=Application-Console-Tech-Stack-v0.2.0.pptx"><span class="doc__type">PPTX</span><span class="doc__name">Tech stack</span><span class="doc__desc">Architecture, back end, integrations, security, roadmap (7 slides)</span></a>
+  </div>
+
+  <h2>Quick start</h2>
+  <pre>unzip wasvc-v0.2.0.zip
+cd wasvc-v0.2.0
+npm run samples     # example job folders
+npm start           # http://127.0.0.1:7474
+npm test            # checks every API route</pre>
+
+  <div class="note">This page is private. Please don't forward the link or the password.</div>
+  <footer>Jeremy Currence · WASVC (WebSphere Application Server Version Control) and EMVT (EM Validation Tool)</footer>
+</main>
+</body>
+</html>

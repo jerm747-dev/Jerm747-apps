@@ -563,3 +563,35 @@ code { font-size: .9em; background: var(--paper-2); padding: 1px 5px; border-rad
 .build-folders ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: .92rem; }
 .build-folders li { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .site-admin-status .link-btn { font: 500 .9rem var(--ui); }
+
+/* ---------- Admin: Shared pages ---------- */
+.shares-intro { color: var(--ink-2); max-width: 70ch; margin: 0 0 20px; }
+.share-card { background: var(--card); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px 20px; margin-bottom: 20px; }
+.share-card.is-due { border-color: var(--danger); }
+.share-card.is-off { opacity: .8; }
+.share-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.share-head h3 { font-size: 1.4rem; margin: 0 0 2px; }
+.share-head a { font: 400 .92rem var(--ui); word-break: break-all; }
+.share-status { font: 600 .8rem var(--ui); padding: 4px 10px; border-radius: 99px; white-space: nowrap; }
+.share-status.is-live { background: var(--signal); color: #fff; }
+.share-status.is-wait { background: var(--paper-2); color: var(--ink-2); border: 1px solid var(--line); }
+.share-status.is-due { background: var(--danger); color: #fff; }
+.share-status.is-off { background: var(--ink-2); color: var(--card); }
+.share-dates, .share-firsts { font: 400 .92rem var(--ui); color: var(--ink-2); margin: 8px 0 14px; }
+.share-firsts b { color: var(--ink); font-weight: 600; }
+.share-tiles { margin-bottom: 10px; }
+.share-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px 32px; margin: 8px 0 16px; }
+.share-grid h3 { font-size: 1.2rem; }
+.share-activity { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow-y: auto; }
+.share-activity li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 7px 0; border-bottom: 1px solid var(--line); font: 400 .92rem var(--ui); }
+.share-activity small { display: block; color: var(--ink-2); font-size: .82rem; }
+.share-activity code { font-size: .82rem; word-break: break-all; }
+.share-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; background: var(--ink-2); }
+.share-dot.t-download { background: var(--signal); }
+.share-dot.t-console { background: var(--gold-ink); }
+.share-when { color: var(--ink-2); font-size: .82rem; white-space: nowrap; }
+.share-controls { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 14px; }
+.share-notify { border: 0; margin: 0; padding: 0; display: flex; gap: 4px 18px; flex-wrap: wrap; align-items: center; }
+.share-notify legend { font: 600 .9rem var(--ui); margin: 0 12px 0 0; padding: 0; float: left; }
+.share-notify .check { padding: 4px 0; font-size: .92rem; align-items: center; }
+.share-notify .check input { margin-top: 0; }

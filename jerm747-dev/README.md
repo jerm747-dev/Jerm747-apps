@@ -90,6 +90,32 @@ here as the project record. Build folders are marked noindex so search engines s
 Data: `api/data/sites/<address>.json` and `api/data/site-files/<address>/` (keep `api/data/`
 when uploading new builds, same as always). The slide viewer uses pdf.js, stored in `vendor/pdfjs/`.
 
+## Shared pages (private links you hand out)
+
+For a password-protected folder you give to people outside the site, like
+`sites/your-share-folder/` (the Application Console download page). The folder's PHP files log each
+visit, download and console open quietly; the people you share with see nothing different.
+
+- **Admin → Shared** shows each shared page: visits, people, downloads per file, console opens,
+  first and last visit, who signed in (the cPanel Directory Privacy user name), and recent activity.
+- **Emails** to admin@jerm747.dev on the first visit and the first download (on by default), and on
+  every download if you tick it. The regular traffic report lists shared pages too.
+- **30-day removal date** set when the page is first opened. When it passes you get one reminder
+  email and the card turns red. **Extend 30 days** pushes it out.
+- **Take down now** makes the page, downloads and console answer "no longer available" (410) right
+  away, without deleting anything; **Put back up** reverses it. Delete the folder in File Manager
+  when you're done with it.
+- Tick **Don't count my own visits** (Traffic or Shared tab) on each device before testing.
+- Tip: in Directory Privacy, make one user per person you share with, so you can see who signed in.
+
+How it works: the share folder's `index.php`, `get.php` and `go.php` load `api/shares_lib.php`, so
+the folder has to sit under `sites/` on this site. Data lives in `api/data/shares/` (kept when you
+upload new builds, like the rest of `api/data/`). If the API isn't there, the page and downloads
+still work, just without tracking. The reminder goes out from the hourly cron job if you have one,
+otherwise on the next visit to the site or the admin page.
+
+Test: `python3 tests/shares.integration.py` (needs PHP; never sends real email).
+
 ## Games
 
 Games moved to their own site, jerm747.games (separate project, `jerm747-games`). This site has no

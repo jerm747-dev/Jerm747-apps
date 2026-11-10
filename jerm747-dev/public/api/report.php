@@ -5,11 +5,13 @@
 // Your token and exact command are shown on the admin Traffic tab.
 // It only sends when a report is due (every 12 or 24 hours, set in admin).
 require __DIR__ . '/lib.php';
+require __DIR__ . '/shares_lib.php';
 
 if (PHP_SAPI !== 'cli') {
     $s = settings();
     if (!hash_equals($s['report_token'], (string)($_GET['token'] ?? ''))) fail('Not allowed.', 403);
 }
+maybe_share_reminders();
 $sent = maybe_send_report();
 if (PHP_SAPI === 'cli') { echo $sent ? "Report sent\n" : "No report due\n"; exit; }
 respond(['ok' => true, 'sent' => $sent]);

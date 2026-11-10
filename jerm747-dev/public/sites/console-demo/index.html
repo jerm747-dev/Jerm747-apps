@@ -1135,7 +1135,7 @@
 
 <script>
   // Keep in step with "version" in package.json (npm test checks this).
-  const WASVC_VERSION = '0.1.0';
+  const WASVC_VERSION = '0.2.0';
   document.getElementById('appVersion').textContent = `WASVC v${WASVC_VERSION}`;
 
   const body = document.body;
@@ -2149,7 +2149,7 @@
   // =====================================================================
   // EMVT: deployment watcher
   // =====================================================================
-  const EMVT_VERSION = '0.4.0';
+  const EMVT_VERSION = '0.4.1';
   document.getElementById('appVersion').textContent = `WASVC v${WASVC_VERSION} · EMVT v${EMVT_VERSION}`;
 
   // Watch list format (JSON). The real watcher reads the same file.
@@ -2492,6 +2492,8 @@
     if (st.ticket?.id === T.id) return;
     const forRun = attachRun(st);
     st.ticket = { id: T.id, url: T.url, env: T.env, forRun };
+    // Linking to a deployment already under way or finished: credit its earlier steps to the ticket too
+    if (forRun !== 'next') st.steps.forEach(s => { if (s.t >= forRun && !s.ticket) s.ticket = ticketTag(st); });
     st.steps.push({ t: Date.now(), phase: 'ticket', label: `Ticket ${T.id} linked`,
       detail: `${T.env} · ${forRun === 'next' ? 'for the next deployment' : `to the deployment started ${fmtClock(forRun)}`}`, ticket: ticketTag(st) });
   }

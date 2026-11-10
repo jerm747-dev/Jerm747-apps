@@ -1,0 +1,16 @@
+# Private share page. Password protection is added by cPanel Directory Privacy.
+DirectoryIndex index.php
+Options -Indexes
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow"
+</IfModule>
+# The page is served through index.php so each visit is logged
+<Files "page.html">
+<IfModule mod_authz_core.c>
+  Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>
+</Files>
