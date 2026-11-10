@@ -338,6 +338,11 @@ function report_text(int $hours): string {
     $list('Top pages', top_counts(array_map(fn($r) => $r['path'], $views), 6));
     $list('Came from', top_counts(array_map(fn($r) => $r['ref'], $views), 6));
     $list('Devices', top_counts(array_map(fn($r) => $r['dev'], $views), 3));
+    if (function_exists('share_report_lines') && ($shares = share_report_lines())) {
+        $lines[] = '';
+        $lines[] = 'Shared pages (all time)';
+        array_push($lines, ...$shares);
+    }
     $lines[] = '';
     $lines[] = 'Full traffic: ' . SITE_URL . '/#/admin';
     return implode("\n", $lines) . "\n";

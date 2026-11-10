@@ -87,6 +87,19 @@ export function siteFileUrl(slug, token, id, inline = false) {
   return `${BASE}/sitefile.php?${qs}`;
 }
 
+// "Don't count my own visits": localStorage for the site's own tracking, plus a cookie so the
+// PHP share pages (sites/<folder>/) can skip your visits too.
+export function noCountOn() {
+  try { return localStorage.getItem('j747-nocount') === '1'; } catch { return false; }
+}
+
+export function setNoCount(on) {
+  try { on ? localStorage.setItem('j747-nocount', '1') : localStorage.removeItem('j747-nocount'); } catch { /* storage off */ }
+  document.cookie = on
+    ? 'j747_nocount=1; path=/; max-age=31536000; SameSite=Lax; Secure'
+    : 'j747_nocount=; path=/; max-age=0; SameSite=Lax; Secure';
+}
+
 // Admin
 export async function adminStatus() {
   return handle(await fetch(`${BASE}/admin.php?action=status`));

@@ -16,7 +16,10 @@
 // GET  ?action=settings                    -> report settings + cron command
 // POST action=settings report_hours(0|12|24)
 // POST action=report_test                  -> send a traffic report now
+// GET  ?action=shares                      -> shared private pages with visits and downloads
+// POST action=share id, op                 -> op: takedown | restore | extend | notify | title
 require __DIR__ . '/lib.php';
+require __DIR__ . '/shares_lib.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $isJson = str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json');
@@ -131,6 +134,39 @@ switch ($action) {
     case 'report_test':
         $ok = maybe_send_report(true);
         respond(['ok' => true, 'sent' => $ok, 'preview' => report_text(max(12, (int)settings()['report_hours']))]);
+
+    case 'shares':
+        maybe_share_reminders();
+        respond(['ok' => true, 'shares' => share_list()]);
+
+    case 'share':
+        $id = (string)($in['id'] ?? '');
+        if (!share_load($id)) fail('Shared page not found.', 404);
+        $op = (string)($in['op'] ?? '');
+        if (!in_array($op, ['takedown', 'restore', 'extend', 'notify', 'title'], true)) fail('Unknown change.');
+        $flag = fn($k) => in_array((string)($in[$k] ?? ''), ['1', 'true'], true);
+        $s = share_update($id, function (array $s) use ($op, $in, $flag) {
+            switch ($op) {
+                case 'takedown': $s['active'] = false; $s['taken_down'] = now(); break;
+                case 'restore': $s['active'] = true; $s['taken_down'] = null; break;
+                case 'extend':
+                    $days = max(1, min(365, (int)($in['days'] ?? SHARE_DEFAULT_DAYS)));
+                    $s['expires'] = gmdate('c', max(time(), strtotime($s['expires'])) + $days * 86400);
+                    $s['reminded'] = null;
+                    break;
+                case 'notify':
+                    foreach (['notify_first_visit', 'notify_first_download', 'notify_downloads'] as $k) {
+                        if (array_key_exists($k, $in)) $s[$k] = $flag($k);
+                    }
+                    break;
+                case 'title':
+                    $t = clean($in['title'] ?? '', 140);
+                    if ($t !== '') $s['title'] = $t;
+                    break;
+            }
+            return $s;
+        });
+        respond(['ok' => true, 'share' => share_summary($s)]);
 
     case 'create':
         $name = clean($in['name'] ?? '', 120);
