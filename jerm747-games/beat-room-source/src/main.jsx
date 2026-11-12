@@ -4,5 +4,9 @@ import App from './App.jsx';
 import './theme/theme.css';
 import './theme/gear.css';
 import './theme/sections.css';
+import './theme/synth.css';
+import './theme/lab.css';
+import { installBackKey } from './engine/backkey.js';
+installBackKey();
 
 createRoot(document.getElementById('root')).render(<StrictMode><App /></StrictMode>);

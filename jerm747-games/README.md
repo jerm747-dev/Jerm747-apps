@@ -317,3 +317,11 @@ Tap or drag anywhere on the larger map under Visor settings > Move HUD icon. The
 
 Arcade 1.0.6
 The List/Grid slider accepts taps, drags, and arrow keys. Play game is a solid button. In portrait, the Beat Room turntable has a separate transport strip, and the record picker has its own row on phones.
+
+## Arcade 1.0.12: Wave Run 747, Pulse Runner, Beat Room 1.0.3
+
+- **Wave Run 747** (`projects/wave-run-747/`): WebGPU jet ski race. Needs WebGPU (recent Chrome/Edge, many Android phones); other browsers show the game's own notice. On-screen stick and A/B buttons use a translucent water-glass style, and the 747 Pocket switches to the **ice** skin for this cartridge (`skins` in `pocket/pocket.js`, `[data-skin=ice]` rules in `pocket/pocket-shell.css`).
+- **Pulse Runner** (`projects/pulse-runner/`): the Pocket edition run-and-gun, a single HTML file with its own Pocket Player. In the arcade's Pocket view only its game screen shows.
+- **Beat Room 1.0.3**: `projects/beat-room/` holds the 1.0.3 web build (`index.html` + `assets/`); `beat-room-source/` is the 1.0.3 source. The download page `download/beat-room/` needs `Jerm747-Beat-Room-1.0.3-test.apk` uploaded beside it (APKs stay out of git). For a new APK, upload it there and update the version, size and SHA-256 on that page.
+- **GS Fighter II 1.0.18**: download page and shelf label updated; upload `GS-Fighter-Android-1.0.18.apk` to `download/gs-fighter-2/`.
+- Pocket files are cache-busted to `?v=111`; the shell stylesheet now carries the same version as `pocket.js`.

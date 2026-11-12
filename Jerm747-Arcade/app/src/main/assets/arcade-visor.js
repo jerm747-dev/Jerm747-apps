@@ -17,7 +17,9 @@ const routes = [
  {"id": "big-bowl-smash", "start": [["play", "Play Big Bowl Smash"]]},
  {"id": "tic-tac-steel", "start": [["play", "Play Tic-Tac-Steel"]]},
  {"id": "sumi-sudoku", "start": [["play", "Play Sumi Sudoku"]]},
- {id:"gs-fighter-2",start:[["play","Play GS Fighter II"]]}
+ {id:"gs-fighter-2",start:[["play","Play GS Fighter II"]]},
+ {id:"wave-run-747",start:[["play","Ride Wave Run 747"]]},
+ {id:"pulse-runner",start:[["play","Play Pulse Runner"]]}
 ];
 let titleShowing=false, heldByVisor=false, releasePadGate=false;
 const entryArt=byId('entry-art'), titleScreen=byId('game-entry');

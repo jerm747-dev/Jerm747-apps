@@ -72,7 +72,7 @@ const nextName = (prefix) => {
 
 export function add({ buffer, name, source = 'tape' }) {
   const id = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-  const c = { id, name: name || nextName(source === 'print' ? 'Print' : source === 'file' ? 'File' : 'Take'), created: Date.now(), source, buffer, duration: buffer.duration };
+  const c = { id, name: name || nextName(source === 'print' ? 'Print' : source === 'file' ? 'File' : source === 'room' ? 'Room' : source === 'bounce' ? 'Bounce' : 'Take'), created: Date.now(), source, buffer, duration: buffer.duration };
   clips.set(id, c); emit();
   tx('readwrite', (s) => s.put(toRecord(c)));
   return c;

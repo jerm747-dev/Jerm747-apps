@@ -22,3 +22,10 @@ Tap or drag anywhere on the larger map under Visor settings > Move HUD icon. The
 
 Arcade 1.0.6
 The List/Grid slider accepts taps, drags, and arrow keys. Play game is a solid button. In portrait, the Beat Room turntable has a separate transport strip, and the record picker has its own row on phones.
+
+Arcade 1.0.12 · Wave Run 747, Pulse Runner, Beat Room 1.0.3
+Includes the 1.0.11 update (Catalog Clash Level 10 match pad, Groove Squad Get Down fight script, and the Pocket controller profiles).
+New titles: Wave Run 747 (projects/wave-run-747, WebGPU jet ski race) and Pulse Runner (projects/pulse-runner, the Pocket edition run-and-gun). Both are on the shelf and in the visor, with NEW badges.
+Pocket controls: Wave Run maps A/R gas, B/X/L brake, Y reset and Select start/pause. Pulse Runner maps A/R fire, B dive, X melee, Y grenade, L run and Select start. In Pocket view, Pulse Runner shows only its game screen; with Pocket off, it plays in its own built-in Pocket Player.
+Skins: pocket.js picks a shell finish per cartridge (skins map). Wave Run 747 uses the ice skin in pocket-shell.css: frosted ice-blue body and translucent water-glass buttons. Wave Run's own on-screen stick and A/B buttons use the same water-glass look.
+Beat Room: the arcade carries Beat Room 1.0.3 (web bundle 0.3.23) as a fixed baseline and won't follow later Beat Room releases. Newer versions ship as the Android APK on jerm747.games. In Pocket view, Beat Room uses D-pad focus navigation (A uses, B goes back).

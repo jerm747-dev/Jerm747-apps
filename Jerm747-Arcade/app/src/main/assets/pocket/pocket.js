@@ -2,11 +2,12 @@
    existing arcade frame. The playing document never changes parents. */
 (() => {
   'use strict';
-  const stylesheet = new URL('pocket-shell.css', document.currentScript.src).href;
+  const stylesheet = new URL('pocket-shell.css' + new URL(document.currentScript.src).search, document.currentScript.src).href;
   const faces = [
     ['y', 'top', '#b9c6ff'], ['x', 'left', '#ffa7cc'],
     ['a', 'right', '#ffdc91'], ['b', 'bottom', '#9ef0dc']
   ];
+  const skins = {'wave-run-747':'ice'};
   const actions = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'y', 'l', 'r', 'select'];
   const sectors = [['right'], ['up','right'], ['up'], ['up','left'],
                    ['left'], ['down','left'], ['down'], ['down','right']];
@@ -238,6 +239,10 @@
         }
       }
       cartridge={title,cover,id:String(next?.id||'')};
+      // Per-game shell finishes. Wave Run 747 rides in the ice-blue water edition.
+      const skin=skins[cartridge.id]||'';
+      if (skin) {device.dataset.skin=skin;root.dataset.skin=skin;}
+      else {delete device.dataset.skin;delete root.dataset.skin;}
       $('.cart-label strong').textContent=title || '747 Pocket';
       $('.cart-label').title=title;
       $('.eject').setAttribute('aria-label',title?'Eject '+title+' and return to shelf':'Eject cartridge and return to shelf');
@@ -328,6 +333,8 @@
   const profile = (mode, labels, hint, buttons={}) => ({mode,labels:{...blank,...labels},hint,buttons:{...standard,...buttons}});
   const fight = profile('pad',{a:'Jump',b:'Kick',x:'Punch',y:'V-wave',l:'Guard',r:'High',select:'Music'},
     'D-pad moves and ducks. Hold R for high strikes. Custom game bindings still apply.');
+  const storyFight = profile('pad', {...fight.labels, select:'Low'},
+    'D-pad moves and ducks. X punches, B kicks. Hold R for high or Select for low. Y fires a V-Wave.', {select:6});
   const climb = profile('pad',{a:'Jump / OK'},'D-pad moves. A selects a story or jumps on the mountain.');
   const focusProfile = profile('focus',{a:'Use',b:'Back'},'Move between controls with the D-pad. Press A to use the focused control, or touch the screen.');
   const profiles = {
@@ -355,12 +362,17 @@
       'D-pad chooses a token. A swaps a pair or twists left, B twists right. X changes mode.'),
     'album-match':profile('album',{a:'Swap ↓',b:'Swap →',x:'Swap ←',y:'Swap ↑'},
       'D-pad moves the tile cursor. Use the four face buttons to swap in that direction; A confirms on result screens.'),
-    'beat-room':focusProfile,
+    'beat-room':profile('focus',{a:'Use',b:'Back'},
+      'Move between Beat Room controls with the D-pad. Press A to use the focused control, or play the decks by touch.'),
+    'wave-run-747':profile('pad',{a:'Gas',b:'Brake',x:'Brake',y:'Reset',l:'Brake',r:'Gas',select:'Start'},
+      'D-pad steers; Up adds throttle. Hold A or R for gas, B or L to brake. Y puts you back on the course. Select starts the race or pauses.',{l:6,r:7,select:9}),
+    'pulse-runner':profile('pad',{a:'Fire',b:'Dive',x:'Melee',y:'Grenade',l:'Run',r:'Fire',select:'Start'},
+      'D-pad moves and picks an operator. A or R fires, B dives, X strikes, Y throws a grenade. Hold L to run. Select launches or pauses.',{r:7,select:9}),
     'controller-check':profile('focus',{a:'Use',b:'Back'},'The checker reads the connected physical controller. D-pad and A navigate test options.'),
   };
   const defaultProfile = focusProfile;
   function gameProfile(id, doc) {
-    if (id === 'catalog-clash' && doc?.location.pathname.endsWith('catalog-clash-level10.html')) return fight;
+    if (id === 'catalog-clash' && doc?.location.pathname.endsWith('catalog-clash-level10.html')) return storyFight;
     return profiles[aliases[id] || id] || defaultProfile;
   }
   const controlsSelector = 'button:not([disabled]),summary,select:not([disabled]),input:not([disabled]):not([type="hidden"]),a[href]';
@@ -579,7 +591,19 @@
     'encore':'#game .deck {display:none!important}',
     'cd-man':'#game .deck {display:none!important}',
     'big-bowl-smash':'.controls.deck {display:none!important}',
-    'catalog-clash':'.climb-deck {display:none!important}'
+    'catalog-clash':'.climb-deck {display:none!important}',
+    'wave-run-747':'.pad {display:none!important}',
+    // Pulse Runner ships inside its own Pocket Player page. In the arcade
+    // Pocket, only its game screen is shown; the outer handheld supplies the controls.
+    'pulse-runner':`
+      html,body {overflow:hidden!important;background:#000!important}
+      .top,.sectionhead,footer,.shell-body,.screw,.cartridge-slot,.left-wing,.right-wing,.bezel-head,.bezel-foot {display:none!important}
+      main {padding:0!important;margin:0!important;width:100%!important;max-width:none!important}
+      .console-stage {position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important;display:block!important;background:#000!important}
+      .device.deck {position:absolute!important;inset:0!important;width:100%!important;height:100%!important;padding:0!important;border-radius:0!important;display:block!important;transform:none!important}
+      .device .bezel {position:absolute!important;inset:0!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important}
+      .display {width:100%!important;height:100%!important;aspect-ratio:auto!important;border-radius:0!important;border:0!important}
+    `
   };
   function create(host, options) {
     let frame = null, gameId = '', guest = null, active = false, held = false, guideOpen = false, aperture = null;
@@ -632,6 +656,8 @@
       const rules = guestStyles[gameId];
       if (rules && doc?.head && !guest) {
         guest = doc.createElement('style'); guest.textContent = rules; doc.head.append(guest);
+        // Let canvas games re-measure for the new layout.
+        try {doc.defaultView.dispatchEvent(new doc.defaultView.Event('resize'));} catch {}
       }
       frame.classList.add('j747-pocket-viewport');
       input.sync();

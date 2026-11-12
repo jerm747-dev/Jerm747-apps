@@ -16,7 +16,9 @@ const games = [
  ["Big Bowl Smash", "Get your crew through all four quarters.", "Hurdle passing fans, dive through openings, and ride empty carts as you guide your crew from the field to the parking lot. Time each crossing before the clock runs out.", "projects/big-bowl-smash/index.html", "projects/big-bowl-smash/case.webp"],
  ["Tic-Tac-Steel", "Etch your next move into steel.", "Take on the CPU or a second player. Play three in a row on the Classic board, line up four on the 5×5 plate, or claim three little boards to win Ultimate.", "projects/tic-tac-steel/index.html", "projects/tic-tac-steel/case.webp"],
  ["Sumi Sudoku", "Ink-brush Sudoku with a watercolor park to rest in.", "Classic Sudoku with Japanese ink-brush styling. Take a break in a living watercolor park inspired by Maruyama Park in Kyoto: 12 painted plants, seasons that turn every 5 minutes, day and night every 12, and tap-to-glow plants with fireflies and info cards.", "projects/sumi-sudoku/index.html", "projects/sumi-sudoku/case.webp"],
- ["GS Fighter II", "Groove Squad · Fighter", "Fourteen fighters, cinematic intros, and the Parallax Run.", "projects/gs-fighter-2/index.html", "projects/gs-fighter-2/cover.jpg"]
+ ["GS Fighter II", "Groove Squad · Fighter", "Fourteen fighters, cinematic intros, and the Parallax Run.", "projects/gs-fighter-2/index.html", "projects/gs-fighter-2/cover.jpg"],
+ ["Wave Run 747", "Racing · WebGPU jet ski", "Ride the 747 jet ski through the buoys. Run three laps, ride the Clover, chase your ghost in Time Trial, or take a new course every race in Endless.", "projects/wave-run-747/index.html", "projects/wave-run-747/case.webp"],
+ ["Pulse Runner", "Pocket · Run and gun", "Pick an operator and fight your way up the Dustline Outpost. Fire, dive, strike and throw grenades past raiders, sentries and a gunship.", "projects/pulse-runner/index.html", "projects/pulse-runner/case.webp"]
 ];
 const shelfArt = [
  'encore/assets/encore-sleeve.webp','encore/assets/cd-arcade.webp','images/groove-squad/level10/coat-gift.webp','gs3/game/menu-logo.png',
@@ -24,7 +26,9 @@ const shelfArt = [
  "projects/big-bowl-smash/cover.webp",
  "projects/tic-tac-steel/cover.webp",
  "projects/sumi-sudoku/cover.webp",
- "projects/gs-fighter-2/cover.jpg"
+ "projects/gs-fighter-2/cover.jpg",
+ "projects/wave-run-747/cover.webp",
+ "projects/pulse-runner/cover.webp"
 ];
 // Display order is independent of game IDs used by saves, routes and controls.
 const gameOrder=games.map((game,id)=>id).sort((a,b)=>
@@ -71,7 +75,7 @@ function setView(next,scroll=true){
  slider.parentElement.dataset.view=view==='list'?'list':'grid';
  select(current,scroll);
 }
-const newGamePaths = new Set(['big-bowl-smash','tic-tac-steel','sumi-sudoku'].map(slug => 'projects/'+slug+'/index.html'));
+const newGamePaths = new Set(['wave-run-747','pulse-runner'].map(slug => 'projects/'+slug+'/index.html'));
 gameOrder.forEach(i=>{
  const [name,,,,art]=games[i];
  const cart=document.createElement('button');cart.className='cart';const tile=new Image();tile.src=art;tile.alt='';const title=document.createElement('b');title.textContent=name;

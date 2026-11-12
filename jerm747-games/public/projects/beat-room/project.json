@@ -1,15 +1,19 @@
 {
   "title": "Beat Room",
   "tagline": "Record, shape and sequence your own samples.",
-  "description": "A virtual boombox with a tape sampler, turntable, 16-step rhythm composer, metronome and chromatic tuner. Record a take or load a sound, then send it to the pads.",
+  "description": "A virtual boombox with a tape sampler, turntable, keyboard synth, 16-step rhythm composer, metronome and chromatic tuner. Record a take or load a sound, send it to the pads, and export your song. The Android app adds USB and Bluetooth MIDI.",
   "kind": "music",
   "status": "playable",
-  "version": "0.1.0",
+  "version": "1.0.3",
   "controls": [
     "touch",
     "mouse",
     "keyboard"
   ],
   "accent": "#E98A3A",
-  "order": 85
+  "order": 85,
+  "download": {
+    "label": "Android APK · 1.0.3",
+    "url": "/download/beat-room/"
+  }
 }

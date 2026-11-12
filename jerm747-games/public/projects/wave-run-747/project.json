@@ -1,0 +1,16 @@
+{
+  "title": "Wave Run 747",
+  "tagline": "Ride the 747 jet ski through the buoys.",
+  "description": "A WebGPU jet ski race on open water. Run three laps, ride the Clover course, chase your ghost in Time Trial, or take on a new course every race in Endless. Needs a browser with WebGPU (recent Chrome or Edge, and many Android phones).",
+  "kind": "game",
+  "status": "playable",
+  "version": "2",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "touch"
+  ],
+  "credit": "Jerm747",
+  "accent": "#5FE0E6",
+  "order": 40
+}

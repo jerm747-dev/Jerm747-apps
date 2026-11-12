@@ -1,16 +1,21 @@
 // The Returnity turntable, now spinning library clips. Load any audio file (it joins the library,
 // so the pads can use it too) or pick a clip; 33/45 and the pitch fader change playback speed
 // live, like the real thing. Records loop until you stop them.
+// Start·Stop lifts the needle and starts over from the top. Play·Pause spins the platter down
+// and leaves the needle where it is, so the next play picks up right there. Tap anywhere on the
+// record to drop the needle: outer edge is the start, the label is the end.
+// Full screen = vinyl mode: the record follows your finger 1:1 (engine/turntable.js), so you can
+// crawl a drum hit slow, stop it, drag it back, or whip it. Cut is the crossfader.
 import { useEffect, useRef, useState } from 'react';
-import { audio, out, blip } from '../engine/audio.js';
+import { audio, blip } from '../engine/audio.js';
+import { deckEngine, REV_SEC, loadVinylOpts } from '../engine/turntable.js';
+import { DUST } from '../engine/vinylcut.js';
 import * as library from '../engine/library.js';
-import { useLibrary, useRaf, reduce, Led } from '../ui/parts.jsx';
+import { onPlatter } from '../engine/platter.js';
+import { openBin } from '../chassis/SampleBin.jsx';
+import { useLibrary, useRaf, reduce, Led, useFullscreen, FullBtn, useFold, FoldBtn } from '../ui/parts.jsx';
 
-let deck = null; // { gain, src }
-function getDeck() {
-  if (!deck) { const ac = audio(); const g = ac.createGain(); g.gain.value = 0.9; g.connect(out()); deck = { gain: g, src: null }; }
-  return deck;
-}
+const PITCH_STEP = 0.5;
 
 export default function VinylDeck() {
   const clips = useLibrary();
@@ -18,13 +23,25 @@ export default function VinylDeck() {
   const [rpm, setRpm] = useState(33.333);
   const [pitch, setPitch] = useState(0);
   const [on, setOn] = useState(false);
+  const [cued, setCued] = useState(false);     // needle down, platter stopped
+  const [posLabel, setPosLabel] = useState('0:00');
+  const pos = useRef(0);                       // seconds into the clip
+  const [fsRef, full, toggleFull] = useFullscreen();
+  const [folded, toggleFold] = useFold('vinyl');
   const [msg, setMsg] = useState('');
   const fileRef = useRef(null);
   const clip = clips.find((c) => c.id === clipId) || null;
   const rate = (rpm / 33.333) * (1 + pitch / 100);
   const platterRef = useRef(null), armRef = useRef(null), strobeRef = useRef(null), groovesRef = useRef(null);
   const anim = useRef({ vel: 0, ang: 0, arm: 0 });
-  const live = useRef({}); live.current = { on, rate };
+  const live = useRef({}); live.current = { on, rate, cued, dur: clip?.duration || 0 };
+  const engRef = useRef(null);
+  const [scratchOK, setScratchOK] = useState(true);
+  const sc = useRef({ held: false });          // hand on the record (full screen)
+  const [held, setHeld] = useState(false);
+  const [cutOn, setCutOn] = useState(false);
+  const [vopts, setVopts] = useState(loadVinylOpts);
+  const setVinyl = (o) => { setVopts((v) => ({ ...v, ...o })); withEng().then((en) => en.setOpts(o)); };
 
   useEffect(() => {
     const g = groovesRef.current; if (!g || g.childNodes.length) return;
@@ -32,58 +49,145 @@ export default function VinylDeck() {
     for (let r = 74; r < 224; r += 3.2) add(r.toFixed(1), (r | 0) % 19 === 0 ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.028)', 1);
     for (const r of [120, 160, 196]) add(r, '#050506', 2.5);
   }, []);
-  useEffect(() => { if (deck?.src) deck.src.playbackRate.setTargetAtTime(rate, audio().currentTime, 0.08); }, [rate]);
-  useEffect(() => () => stop(), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // the deck engine (vinyl mode when the browser has AudioWorklet)
+  const eng = () => engRef.current;
+  const withEng = async () => { if (!engRef.current) { engRef.current = await deckEngine(); setScratchOK(engRef.current.scratch); } return engRef.current; };
+  useEffect(() => { if (clip && engRef.current) engRef.current.load(clip); }, [clip]);
+  useEffect(() => { eng()?.setRate(rate); }, [rate]);
+  useEffect(() => () => { eng()?.stop(); clearInterval(rpt.current); }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // the record on the platter was deleted from the library
   useEffect(() => { if (clipId && !clip) { stop(); setClipId(null); } }, [clipId, clip]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useRaf((dt) => {
-    const L = live.current, A = anim.current, target = L.on ? 33.333 * 6 * L.rate : 0;
-    A.vel += (target - A.vel) * Math.min(1, dt * (L.on ? 2.6 : 3.2));
-    if (!reduce()) A.ang = (A.ang + A.vel * dt) % 360;
+    const L = live.current, A = anim.current, S = sc.current, e = eng();
+    const r = e ? e.read() : { pos: pos.current, speed: 0 };
+    if (L.dur) pos.current = r.pos;
+    // the platter turns with the groove: one turn per 1.8 s of audio (under your hand it follows your finger)
+    if (!S.held && !reduce()) A.ang = (A.ang + (r.speed * dt / REV_SEC) * 360) % 360;
     platterRef.current?.setAttribute('transform', `rotate(${A.ang.toFixed(2)} 330 300)`);
-    A.arm += ((L.on ? 26 : 0) - A.arm) * Math.min(1, dt * 2.2);
+    const prog = L.dur ? pos.current / L.dur : 0;
+    A.arm += ((L.on || L.cued ? 18 + prog * 12 : 0) - A.arm) * Math.min(1, dt * 2.2);
+    const lbl = fmtTime(pos.current); if (lbl !== A.lbl) { A.lbl = lbl; setPosLabel(lbl); }
     armRef.current?.setAttribute('transform', `rotate(${A.arm.toFixed(2)} 660 130)`);
-    strobeRef.current?.setAttribute('fill', L.on && Math.abs(A.vel - target) < 5 ? '#ff5b3a' : '#3a1a12');
+    strobeRef.current?.setAttribute('fill', L.on && !S.held && Math.abs(r.speed - L.rate) < 0.01 ? '#ff5b3a' : '#3a1a12');
   });
 
-  function stop() {
-    if (deck?.src) { try { deck.src.stop(); } catch { /* ended */ } deck.src = null; }
-    setOn(false);
-  }
-  function start(c = clip) {
+  function stop() { eng()?.stop(); setOn(false); setCued(false); pos.current = 0; }
+  async function start(c = clip, from = 0, spin = true) {
     if (!c) return;
-    const ac = audio(), d = getDeck();
-    if (d.src) { try { d.src.stop(); } catch { /* ended */ } }
-    const s = ac.createBufferSource(); s.buffer = c.buffer; s.loop = true;
-    s.playbackRate.value = 0.001; s.playbackRate.setTargetAtTime(rate, ac.currentTime, reduce() ? 0.01 : 0.25); // spin-up
-    s.connect(d.gain); s.start(); d.src = s; setOn(true);
+    const e = await withEng();
+    e.load(c); e.seek(from % c.duration); pos.current = from % c.duration;
+    e.play(live.current.rate, spin && !reduce() ? 0.6 : 0.02); // a direct-drive deck reaches speed in about 0.6 s
+    setOn(true); setCued(true);
   }
+  /** Spin down and hold the needle where it is. */
+  function pause() { eng()?.pause(reduce() ? 0.01 : 0.35); setOn(false); setCued(true); }
+  const pick = () => {
+    const c = clip || clips[clips.length - 1];
+    if (!c) { setMsg('No record on the platter. Load an audio file first.'); return null; }
+    if (c.id !== clipId) { setClipId(c.id); pos.current = 0; }
+    return c;
+  };
   const startStop = () => {
     blip(500); setMsg('');
     if (on) { stop(); return; }
-    const c = clip || clips[clips.length - 1];
-    if (!c) { setMsg('No record on the platter. Load an audio file first.'); return; }
-    setClipId(c.id); start(c);
+    const c = pick(); if (c) start(c, 0);
   };
+  const playPause = () => {
+    blip(560); setMsg('');
+    if (on) { pause(); return; }
+    const c = pick(); if (c) start(c, pos.current);
+  };
+  const pointAt = (e) => {
+    const ctm = e.currentTarget.getScreenCTM(); if (!ctm) return null;
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse());
+    return { r: Math.hypot(p.x - 330, p.y - 300), ang: (Math.atan2(p.y - 300, p.x - 330) * 180) / Math.PI };
+  };
+  const dropAt = async (r) => {
+    if (!clip || r < 66 || r > 230) return;
+    const sec = Math.max(0, Math.min(0.999, (226 - r) / (226 - 74))) * clip.duration;
+    blip(420); pos.current = sec;
+    const e = await withEng(); e.load(clip); e.seek(sec);
+    if (!on) setCued(true);
+  };
+  /** Needle drop: tap the record to jump there. */
+  const drop = (e) => { const pt = pointAt(e); if (pt) dropAt(pt.r); };
+
+  // ---------- vinyl mode (full screen) ----------
+  // Hand on the record: the groove follows your finger exactly (one turn = 1.8 s), so the sound
+  // moves as fast or slow as you do, backward too, and stops when you stop. Let go and it keeps
+  // the speed you gave it, then the motor takes over again (or it coasts to a stop when paused).
+  const scratchDown = async (e) => {
+    if (!clip) return;
+    const pt = pointAt(e); if (!pt || pt.r < 66 || pt.r > 236) return;
+    e.preventDefault(); e.currentTarget.setPointerCapture?.(e.pointerId);
+    const en = await withEng(); en.load(clip);
+    Object.assign(sc.current, { held: true, last: pt.ang, total: 0, ang0: anim.current.ang, downT: performance.now(), startR: pt.r, hist: [{ t: e.timeStamp, a: 0 }] });
+    en.grab(); setHeld(true);
+  };
+  const scratchMove = (e) => {
+    const S = sc.current; if (!S.held) return;
+    // use every touch sample the browser collected since the last frame (smoother hand path)
+    const evs = e.nativeEvent.getCoalescedEvents?.() || [];
+    const list = evs.length ? evs : [e.nativeEvent];
+    const svg = e.currentTarget, ctm = svg.getScreenCTM(); if (!ctm) return;
+    const inv = ctm.inverse();
+    for (const ev of list) {
+      const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(inv);
+      const ang = (Math.atan2(p.y - 300, p.x - 330) * 180) / Math.PI;
+      let dA = ang - S.last; if (dA > 180) dA -= 360; if (dA < -180) dA += 360;
+      S.last = ang; S.total += dA;
+      S.hist.push({ t: ev.timeStamp, a: S.total });
+    }
+    // hand speed over the last ~40 ms (seconds of groove per second)
+    const now = list[list.length - 1].timeStamp;
+    S.hist = S.hist.filter((h) => now - h.t < 40);
+    const h0 = S.hist[0], span = (now - h0.t) / 1000;
+    const vel = span > 0.004 ? (((S.total - h0.a) / 360) * REV_SEC) / span : 0;
+    anim.current.ang = S.ang0 + S.total;
+    eng()?.hand((S.total / 360) * REV_SEC, vel);
+  };
+  const scratchUp = () => {
+    const S = sc.current; if (!S.held) return;
+    S.held = false; setHeld(false);
+    eng()?.release();
+    // a quick tap that didn't move the record drops the needle instead
+    if (performance.now() - S.downT < 220 && Math.abs(S.total) < 4) dropAt(S.startR);
+  };
+  // Cut: the crossfader. Hold to kill the sound, let go to bring it back (chop scratches with it).
+  const cut = (v) => { setCutOn(v); withEng().then((en) => en.cut(v)); };
+
+  // pitch −/+ : tap for 0.5%, hold to keep going
+  const rpt = useRef(0);
+  const nudgePitch = (d) => setPitch((p) => { const v = Math.round(Math.max(-8, Math.min(8, p + d)) * 10) / 10; return Math.abs(v) < 0.05 ? 0 : v; });
+  const holdStart = (d) => { blip(d > 0 ? 880 : 660); nudgePitch(d); clearInterval(rpt.current); const t0 = Date.now(); rpt.current = setInterval(() => { if (Date.now() - t0 > 350) nudgePitch(d); }, 90); };
+  const holdEnd = () => clearInterval(rpt.current);
+
   async function loadFile(e) {
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
     setMsg('Pressing the record…');
-    try { const c = await library.importFile(audio(), f); setClipId(c.id); setMsg(`${c.name} is on the platter and in the library.`); if (on) start(c); }
+    try { const c = await library.importFile(audio(), f); setClipId(c.id); pos.current = 0; setMsg(`${c.name} is on the platter and in the library.`); if (on) start(c); else setCued(false); }
     catch { setMsg('That file could not be read. Try an MP3, WAV, M4A or OGG.'); }
   }
-  const choose = (id) => { setClipId(id || null); const c = clips.find((x) => x.id === id); if (on && c) start(c); };
+  // something in the Sample bin (or a bounce) asked for the platter
+  useEffect(() => onPlatter((id) => {
+    const c = library.get(id); if (!c) return;
+    setClipId(id); pos.current = 0; setMsg(`${c.name} is on the platter.`);
+    if (live.current.on) start(c); else setCued(false);
+  }), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const choose = (id) => { setClipId(id || null); pos.current = 0; const c = clips.find((x) => x.id === id); if (on && c) start(c); else setCued(false); };
   const labelTop = clip ? clip.name : 'Jerm747';
   const labelLine = clip ? `${clip.duration.toFixed(1)}s · ${clip.source}` : 'Beat Room';
 
   return (
-    <section className="section vinyl-section" aria-labelledby="vinyl-h">
-      <header className="sec-head"><h2 id="vinyl-h"><span className="sec-dot" style={{ background: 'var(--c-vinyl)' }} />Turntable</h2><p>Spin a file or any clip. Pitch it, loop it.</p></header>
+    <section ref={fsRef} className={`section vinyl-section ${full ? 'is-full' : ''} ${folded && !full ? 'is-folded' : ''}`} aria-labelledby="vinyl-h">
+      <header className="sec-head"><h2 id="vinyl-h"><span className="sec-dot" style={{ background: 'var(--c-vinyl)' }} />Turntable</h2><p>{full ? 'Vinyl mode: the record follows your finger.' : 'Spin a file or any clip. Tap the record to drop the needle.'}</p><span className="sec-tools"><FoldBtn folded={folded} onClick={() => { blip(folded ? 880 : 440); toggleFold(); }} label="Turntable" /><FullBtn full={full} onClick={toggleFull} label="Turntable" /></span></header>
       <div className="vinyl-grid">
         <div className="tt-scene">
           <div className="tt">
             <div className="tt-face">
-              <svg viewBox="0 0 800 600" aria-hidden="true">
+              <svg viewBox="0 0 800 600" aria-hidden="true" className={`${clip ? 'droppable' : ''} ${full ? 'scratchable' : ''} ${held ? 'held' : ''}`}
+                onPointerDown={full && scratchOK ? scratchDown : drop} onPointerMove={full && scratchOK ? scratchMove : undefined} onPointerUp={full && scratchOK ? scratchUp : undefined} onPointerCancel={full && scratchOK ? scratchUp : undefined}>
                 <defs>
                   <linearGradient id="br-plinth" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2c2c31" /><stop offset=".08" stopColor="#232327" /><stop offset="1" stopColor="#141417" /></linearGradient>
                   <radialGradient id="br-platter" cx=".5" cy=".5" r=".5"><stop offset=".92" stopColor="#b9bac0" /><stop offset=".96" stopColor="#e9e9ec" /><stop offset="1" stopColor="#7e7f85" /></radialGradient>
@@ -124,6 +228,7 @@ export default function VinylDeck() {
             </div>
             <div className="tt-transport" role="group" aria-label="Turntable transport">
               <button className={`tt-btn tt-start ${on ? 'on' : ''}`} type="button" onClick={startStop} aria-pressed={on}><Led on={on} />Start · Stop</button>
+              <button className={`tt-btn tt-cue ${on ? 'on' : ''}`} type="button" onClick={playPause} aria-pressed={on} title="Pause in place, play from the needle">{on ? 'Pause' : 'Play'}</button>
               <button className={`tt-btn tt-33 ${rpm < 40 ? 'on' : ''}`} type="button" aria-pressed={rpm < 40} onClick={() => { blip(700); setRpm(33.333); }}>33</button>
               <button className={`tt-btn tt-45 ${rpm > 40 ? 'on' : ''}`} type="button" aria-pressed={rpm > 40} onClick={() => { blip(760); setRpm(45); }}>45</button>
             </div>
@@ -137,12 +242,47 @@ export default function VinylDeck() {
               {clips.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <button type="button" className="btn" onClick={() => fileRef.current?.click()}>Load file</button>
+            <button type="button" className="btn" onClick={() => { blip(760); openBin(); }}>Sample bin</button>
             <input ref={fileRef} type="file" accept="audio/*" hidden onChange={loadFile} />
           </div>
-          <div className="tt-readout"><span>Speed <b>{rpm > 40 ? '45' : '33⅓'}</b></span><span>Pitch <b>{pitch >= 0 ? '+' : ''}{pitch.toFixed(1)}%</b></span><span>Playback <b>{Math.round(rate * 100)}%</b></span></div>
-          <p className="hint" role="status" aria-live="polite">{msg || 'Files you load here also show up in the tape library and on the pads.'}</p>
+          <div className="pitch-ctl" role="group" aria-label="Pitch">
+            <span className="engrave">Pitch</span>
+            <button type="button" className="mini-key" aria-label="Pitch down 0.5%" disabled={pitch <= -8}
+              onPointerDown={() => holdStart(-PITCH_STEP)} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), nudgePitch(-PITCH_STEP))}>−</button>
+            <output className="pitch-val">{pitch > 0 ? '+' : ''}{pitch.toFixed(1)}%</output>
+            <button type="button" className="mini-key" aria-label="Pitch up 0.5%" disabled={pitch >= 8}
+              onPointerDown={() => holdStart(PITCH_STEP)} onPointerUp={holdEnd} onPointerLeave={holdEnd} onPointerCancel={holdEnd} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), nudgePitch(PITCH_STEP))}>+</button>
+            <button type="button" className="switch" onClick={() => { blip(700); setPitch(0); }} disabled={pitch === 0}>0</button>
+          </div>
+          <div className="vinyl-opts">
+            <span className="engrave">Analog</span>
+            <button type="button" className={`switch ${vopts.analog ? 'on' : ''}`} aria-pressed={vopts.analog} disabled={!scratchOK}
+              onClick={() => { blip(vopts.analog ? 520 : 940); setVinyl({ analog: !vopts.analog }); }} title="Phono stage, RIAA groove, platter wow and dust. Switch off to hear the plain digital deck.">
+              <Led on={vopts.analog && scratchOK} />{vopts.analog ? 'Vinyl' : 'Digital'}
+            </button>
+            <span className="engrave">Dust</span>
+            {Object.entries(DUST).map(([k, l]) => (
+              <button key={k} type="button" className={`switch ${vopts.dust === k ? 'on' : ''}`} aria-pressed={vopts.dust === k} disabled={!scratchOK || !vopts.analog} onClick={() => { blip(600); setVinyl({ dust: k }); }}>
+                <Led on={vopts.dust === k && vopts.analog} />{l}
+              </button>
+            ))}
+          </div>
+          {full && (
+            <div className="cut-row">
+              <button type="button" className={`cut-pad ${cutOn ? 'on' : ''}`} aria-pressed={cutOn}
+                onPointerDown={(e) => { e.preventDefault(); e.currentTarget.setPointerCapture?.(e.pointerId); cut(true); }} onPointerUp={() => cut(false)} onPointerCancel={() => cut(false)}
+                onKeyDown={(e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); cut(true); } }} onKeyUp={(e) => { if (e.key === ' ' || e.key === 'Enter') cut(false); }}>
+                Cut
+              </button>
+              <span className="hint">Hold Cut to kill the sound while you move the record, let go to bring it in. Scratch with one hand, cut with the other.</span>
+            </div>
+          )}
+          <div className="tt-readout"><span>Speed <b>{rpm > 40 ? '45' : '33⅓'}</b></span><span>Pitch <b>{pitch >= 0 ? '+' : ''}{pitch.toFixed(1)}%</b></span><span>Playback <b>{Math.round(rate * 100)}%</b></span><span>Needle <b>{clip ? `${posLabel} / ${fmtTime(clip.duration)}` : '—'}</b></span></div>
+          <p className="hint" role="status" aria-live="polite">{msg || (full ? (scratchOK ? 'Vinyl mode: put a finger on the record and move it. The sound follows your hand exactly, slow or fast, forward or back. Let go and it plays on. Quick tap drops the needle.' : 'This browser can’t do vinyl mode (no AudioWorklet), so scratching is off. Play, pause and needle drops still work.') : 'Go full screen to scratch, and for the pitch fader. Files you load here also join the tape library and the pads.')}</p>
         </div>
       </div>
     </section>
   );
 }
+
+function fmtTime(sec) { const s = Math.max(0, Math.floor(sec || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
