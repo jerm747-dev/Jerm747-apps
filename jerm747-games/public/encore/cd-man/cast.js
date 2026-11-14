@@ -199,6 +199,7 @@
       backElbow = [-21, -95]; backHand = [-16, -123];
       frontElbow = [23, -95]; frontHand = [17, -123];
     }
+    if(options.throwPose>0){const reach=options.throwPose>.17?-.3:Math.min(1,options.throwPose/.06);frontElbow=[14+reach*8,-79];frontHand=[10+reach*26,-75]}
     arm(ctx, [-10, -78], backElbow, backHand, true, action === 'idle');
     jacket(ctx);
     head(ctx);

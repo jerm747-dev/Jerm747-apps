@@ -205,7 +205,7 @@ function pollPad(now) {
    const keys=[];
    if(pad.L)keys.push('left');if(pad.R)keys.push('right');if(pad.D)keys.push('down');
    if((pad.a||pad.U)&&!blockJump)keys.push('jump');
-   if((pad.b||pad.x)&&!blockJump)keys.push('lift');
+   if(pad.b&&!blockJump)keys.push('lift');if(pad.x&&!blockJump)keys.push('pulse');
    if(pad.lb||pad.rb||pad.lt||pad.rt)keys.push('speed');
    const keyset=keys.join(',');
    if(keyset!==heldKeys){heldKeys=keyset;controller.setSource('gamepad',keys)}

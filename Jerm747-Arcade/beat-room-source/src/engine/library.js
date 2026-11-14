@@ -72,7 +72,7 @@ const nextName = (prefix) => {
 
 export function add({ buffer, name, source = 'tape' }) {
   const id = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-  const c = { id, name: name || nextName(source === 'print' ? 'Print' : source === 'file' ? 'File' : 'Take'), created: Date.now(), source, buffer, duration: buffer.duration };
+  const c = { id, name: name || nextName(source === 'print' ? 'Print' : source === 'file' ? 'File' : source === 'room' ? 'Room' : source === 'bounce' ? 'Bounce' : 'Take'), created: Date.now(), source, buffer, duration: buffer.duration };
   clips.set(id, c); emit();
   tx('readwrite', (s) => s.put(toRecord(c)));
   return c;
@@ -91,4 +91,21 @@ export function remove(id) {
 export async function importFile(ac, file) {
   const buf = await ac.decodeAudioData(await file.arrayBuffer());
   return add({ buffer: buf, name: file.name.replace(/\.[^.]+$/, '').slice(0, 32), source: 'file' });
+}
+
+export async function saveRegions(original, regions){
+  const src=original.buffer, now=Date.now();
+  const parts=regions.map(([start,end,suffix],index)=>{
+    if(!Number.isInteger(start)||!Number.isInteger(end)||start<0||end>src.length||start>=end)throw Error('Invalid sample region');
+    const buffer=new AudioBuffer({length:end-start,numberOfChannels:src.numberOfChannels,sampleRate:src.sampleRate});
+    for(let ch=0;ch<src.numberOfChannels;ch++)buffer.copyToChannel(src.getChannelData(ch).subarray(start,end),ch);
+    return {id:'c'+crypto.randomUUID(),buffer,duration:buffer.duration,name:original.name+' · '+suffix,source:original.source,created:now+index};
+  });
+  const db=await openDb();
+  try{await new Promise((resolve,reject)=>{
+    const tx=db.transaction(STORE,'readwrite');tx.oncomplete=resolve;tx.onabort=()=>reject(tx.error);tx.onerror=()=>reject(tx.error);
+    const store=tx.objectStore(STORE);for(const part of parts)store.add(toRecord(part));
+  })}finally{db.close()}
+  for(const part of parts)clips.set(part.id,part);
+  emit();return parts;
 }

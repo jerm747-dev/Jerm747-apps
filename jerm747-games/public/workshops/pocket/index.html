@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#151718"><title>747 Pocket • Controller Workshop</title>
+<style>
+:root{color-scheme:dark;--paper:#f4f0df;--muted:#a4a69d;--gold:#feb87d;--page:#151718;--edge:#3d4040;font:16px/1.45 "Barlow",system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 52% 18%,#292b29 0,transparent 60%),var(--page);color:var(--paper);min-height:100svh}button{font:inherit;color:inherit;cursor:pointer}button:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid #ffb77d;outline-offset:3px}button,select,summary{-webkit-tap-highlight-color:transparent}button:disabled{cursor:default}main,header{width:min(calc(100% - 40px),1100px);margin:0 auto}header{display:flex;align-items:center;justify-content:space-between;height:58px;border-bottom:1px solid var(--edge)}.brand{font:italic 900 19px/1 Arial,sans-serif;letter-spacing:-1.4px}.brand span{color:var(--gold)}.ver,.minor,.screenbar,.meta,.ctllegend,.keyhint{font:600 10px/1.4 ui-monospace,Consolas,monospace;letter-spacing:.095em;text-transform:uppercase}.ver,.minor,.keyhint{color:var(--muted)}.intro{display:flex;justify-content:space-between;align-items:end;gap:15px;padding:28px 0 19px}.intro h1{font:650 clamp(30px,5.2vw,62px)/.98 "Barlow",system-ui,sans-serif;letter-spacing:-.065em;margin:0}.intro p{font-size:14px;margin:10px 0 0;color:#c5c5b9}.segment{display:inline-flex;align-items:center;padding:3px;border-radius:9px;background:#101213;border:1px solid #494b44;flex:none}.segment button{min-height:36px;display:flex;align-items:center;justify-content:center;gap:6px;border:0;background:transparent;border-radius:6px;font-size:13px;font-weight:680;padding:4px 13px;color:#c4c6ba}.segment button[aria-pressed="true"]{background:#efba87;color:#211c17;box-shadow:inset 0 1px #ffdfbd}.segment svg{width:16px;height:16px;fill:currentColor}.bay{position:relative;border:1px solid #393e3b;border-radius:14px;background:radial-gradient(ellipse at 50% 22%,#393e3b,#212524 72%);padding:30px max(15px,3%) 25px;overflow:hidden;isolation:isolate}.bay:before{content:"";position:absolute;inset:0;background-image:radial-gradient(#adb2a326 .8px,transparent .9px);background-size:8px 8px;z-index:-1}.device{--metal1:#555b64;--metal2:#373c45;--metal3:#292e37;--rim:#181c21;--rimHi:#6d7176;position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.75fr) minmax(0,1fr);align-items:center;column-gap:2%;padding:5.3% 3.5% 5%;width:100%;max-width:965px;margin:auto;border-radius:7% 7% 9% 9%/22% 22% 27% 27%;border:1px solid #85878b;background:linear-gradient(154deg,var(--metal1),var(--metal2) 52%,var(--metal3));box-shadow:inset 0 3px 2px #ffffff45,inset 0 -7px 4px #10121873,inset 4px 0 4px #ffffff1f,0 4px 0 var(--rim),0 12px 20px #0007,0 20px 35px #0004;user-select:none;-webkit-user-select:none}
+.device:before{content:"";position:absolute;inset:5px;border:1px solid #ffffff12;border-radius:inherit;pointer-events:none}.bolt{position:absolute;width:9px;height:9px;border-radius:50%;background:linear-gradient(135deg,#767b82 0 38%,#252a30 41% 54%,#81868c 58%);box-shadow:0 1px 1px #fff3,inset 1px 1px 2px #151920}.bolt.tl{top:12%;left:3%}.bolt.tr{top:12%;right:3%}.bolt.bl{bottom:11%;left:3%}.bolt.br{bottom:11%;right:3%}.cart{position:absolute;left:50%;top:-8px;transform:translateX(-50%);width:24%;height:24px;min-width:108px;background:repeating-linear-gradient(90deg,#282c31 0 3px,#42454a 3px 5px);border:2px solid #15171b;border-radius:5px 5px 3px 3px;text-align:center;box-shadow:0 2px 3px #1119}.cart span{display:inline-block;vertical-align:top;padding:1px 9px;background:#e0aa74;color:#241b16;font:800 10px/16px ui-monospace,monospace;letter-spacing:.08em}
+.group{display:flex;flex-flow:column;align-items:center;position:relative;gap:8px}.ctllegend{font-size:9px;letter-spacing:.15em;color:#b4b8ba}.dirbox,.faces{position:relative;width:88%;max-width:201px;aspect-ratio:1}.dirbox{touch-action:none}.screenunit{min-width:0;position:relative}.screenbezel{padding:7px 9px 10px;background:linear-gradient(155deg,#30353a,#0b0f13 65%);border:1px solid #11151a;border-radius:13px;box-shadow:0 1px 1px #ffffff6b,inset 0 2px 3px #000a}.screenbar{display:flex;align-items:center;justify-content:space-between;padding:0 2px 5px;font-size:8px;letter-spacing:.14em;color:#adb8b4}.led{display:inline-block;width:5px;height:5px;border-radius:50%;background:#a6ffb5;box-shadow:0 0 5px #8afa9f;margin-right:4px}.lcd{position:relative;aspect-ratio:1.85;overflow:hidden;border-radius:5px;background:#102d2b;box-shadow:0 0 0 1px #000}.lcd canvas{width:100%;height:100%;display:block}.wordmark{margin:6px auto -13px;text-align:center;font:italic 850 clamp(13px,2.2vw,23px)/1 Arial,sans-serif;letter-spacing:-.06em;color:#e5e4da;text-shadow:0 1px 1px #15191f}.wordmark i{font-weight:500}.speaker{position:absolute;bottom:9%;right:8%;height:8px;width:7%;background:radial-gradient(#151a21 1px,transparent 2px) 0 0/5px 4px;rotate:-7deg}
+.controller-defs { position: absolute; pointer-events: none; }
+.dpad {
+  width: var(--pad); height: var(--pad); position: relative;
+  border-radius: 50%; touch-action: none; cursor: pointer;
+  background: radial-gradient(circle at 40% 25%, #383c44 25%, #262a32 68%, #141820 72%, #545a6370 74%, #20242c 77%, #1d2129 91%, #5a5f6555 94%, #151923 98%);
+  box-shadow: 0 2px 2px #9fa3a01f, inset 0 2px 5px #050911e0;
+}
+.direction-ring { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke-width: 2.1; pointer-events: none; }
+.direction-ring path { stroke: #727a875c; transition: stroke .08s, filter .08s; }
+.direction-ring path.lit { stroke: #9cebd8; filter: drop-shadow(0 0 3px #58e0ba); }
+.pad-well {
+  position: absolute; inset: 11%; border-radius: 28%;
+  background: #080c12;
+  clip-path: polygon(30% 0,70% 0,70% 30%,100% 30%,100% 70%,70% 70%,70% 100%,30% 100%,30% 70%,0 70%,0 30%,30% 30%);
+  filter: drop-shadow(0 3px 3px #000);
+}
+.deck .dpad button {
+  position: absolute; left: 32%; top: 7%; width: 36%; height: 40%;
+  min-width: 44px; min-height: 44px; padding: 0; border: 0; background: none;
+  transform-origin: 50% 107.5%; border-radius: 10px; z-index: 2;
+  -webkit-tap-highlight-color: transparent;
+}
+.dpad .pad-up { transform: rotate(0); }
+.dpad .pad-right { transform: rotate(90deg); }
+.dpad .pad-down { transform: rotate(180deg); }
+.dpad .pad-left { transform: rotate(270deg); }
+.dpad button svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 3px 2px #000c); transition: translate .06s; }
+.cap-edge { fill: url(#padBevel); stroke: #070b10; stroke-width: 1.6; }
+.cap-face { fill: url(#padFace); filter: url(#padGrain); }
+.cap-sheen { stroke: #bec5cb; opacity: .32; stroke-width: 1.6; fill: none; }
+.cap-foot { stroke: #000; opacity: .75; stroke-width: 3.4; fill: none; }
+.dpad button.held svg { translate: 0 1.5px; filter: drop-shadow(0 1px 1px #000); }
+.dpad button.held .cap-face { fill: url(#padLit); }
+.dpad button.held .cap-sheen { stroke: #c8ffea; opacity: 1; filter: drop-shadow(0 0 2px #72f4cc); }
+.dpad button.held .cap-edge { stroke: #93e6cb; stroke-width: 1.2; }
+.pad-center { position: absolute; width: 9%; height: 9%; left: 45.5%; top: 45.5%; border-radius: 50%; background: radial-gradient(circle at 35% 20%, #323740, #171b23 70%); box-shadow: inset 0 1px 2px #000a; pointer-events: none; }
+.deck .dpad button:focus-visible { outline: 2px solid #bcffeb; outline-offset: 0; }
+.button-face {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; width: 100%; height: 100%; border-radius: 50%;
+  isolation: isolate; overflow: hidden; gap: 3px;
+  background: radial-gradient(ellipse at 50% 82%, #39454d 0%, #242e35 42%, #192128 74%, #121a22);
+  border: 1px solid #7f8c9466;
+  box-shadow: inset 0 2px 2px #edf3f588, inset 2px 0 3px #a7bec52e, inset 0 -3px 3px #050d11cf;
+}
+/* Separate rectangular softbox and curved rim reflections mimic convex caps. */
+.button-face::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background:
+    linear-gradient(176deg, transparent 2%, #f3f5f5a6 3%, #d2d5d56b 28%, #d5d6d45c 44%, #929fa630 46%, transparent 47%);
+  transform: rotate(var(--reflection-angle, 0deg)) translateY(var(--reflection-shift, 0%));
+  transform-origin: center;
+}
+.button-face::after {
+  content: ''; position: absolute; inset: 2px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(ellipse at 24% 12%, #ffffffe0 0, #ffffff44 3%, transparent 14%);
+  border: 1px solid transparent; border-top-color: #e1e9ed70; border-left-color: #e1e9ed24;
+}
+.action-name { font: 800 clamp(11px, 1.45vw, 16px)/1 Arial, sans-serif; letter-spacing: -.025em; text-shadow: 0 1px 2px #000e, 0 0 8px #0007; z-index: 1; }
+
+.faces .face{position:absolute;width:37%;height:37%;border-radius:50%;color:var(--c);padding:3%;background:conic-gradient(from 125deg,#1d2228,#080b10 28%,#a7acb0 48%,#32373d 63%,#898c90 75%,#11151b);border:1px solid #101319;box-shadow:0 3px 3px #0009,0 5px 8px #0006;touch-action:none}.face.top{left:31.5%;top:0}.face.right{right:0;top:31.5%}.face.left{left:0;top:31.5%}.face.bottom{left:31.5%;bottom:0}.device .face .button-face{font:800 clamp(15px,2.25vw,27px)/1 Arial,sans-serif;text-shadow:0 1px 3px #000}.face.held{transform:translateY(2px);outline:2px solid var(--c)}.face.held .button-face{box-shadow:inset 0 4px 8px #0009,0 0 9px var(--c)}.dpad{width:100%;height:100%;touch-action:none}.deck .dpad button{min-width:0;min-height:0}.stick{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle,#292e34 0 1px,#20252b 2px 4px);box-shadow:inset 0 0 0 3px #191d21,inset 0 0 0 5px #646a70,inset 0 4px 10px 7px #10151acc,0 2px 2px #ffffff40;border:1px solid #20242a;touch-action:none}.stick:before{content:"";position:absolute;inset:10%;border-radius:50%;border:1px dashed #7a878383}.thumb{pointer-events:none;position:absolute;left:50%;top:50%;width:51%;height:51%;border-radius:50%;transform:translate(calc(-50% + var(--dx,0px)),calc(-50% + var(--dy,0px)));box-shadow:0 4px 0 #11151a,0 8px 12px #0009,inset 0 2px 2px #a1a5a8;background:radial-gradient(circle at 53% 59%,#41464d 5%,#4b5056 52%,#888b8f 59%,#494f56 65%,#252b31 87%);border:1px solid #151a20}.thumb:after{content:"";position:absolute;inset:16%;border:1px solid #3b4148;border-radius:50%;box-shadow:inset 0 2px 4px #16191e62}
+.device.ice{--metal1:#ceeffd;--metal2:#87c4e1;--metal3:#4d91b6;--rim:#386c88;border-color:#c6ecff}.ice .ctllegend,.ice .wordmark{color:#173d50;text-shadow:0 1px #bce9ff}.ice .stick{background:repeating-radial-gradient(circle,#589abb 0 1px,#558cab 2px 4px);box-shadow:inset 0 0 0 3px #467491,inset 0 0 0 5px #c4efff,inset 0 4px 11px 8px #17456499,0 2px 2px #d4fbff}.ice .thumb{background:radial-gradient(circle at 52% 60%,#8ec6e0 4%,#a9dfef 52%,#e4faff 59%,#8fcced 65%,#4f99c0 87%);border-color:#5c91af}.ice .thumb:after{border-color:#73aece}.ice .face .button-face{background:radial-gradient(ellipse at 50% 82%,#7be0ed,#3985a5 54%,#154b6b);color:#f3fcff}.ice .cart span{background:#b7e7f5}.ice .cap-face{fill:#d8eff7;filter:none}.ice .cap-edge{fill:#65a6c5}.ice .dpad button.held .cap-face{fill:#87e4fb}
+[hidden]{display:none!important}.under{margin:14px 0 0;display:grid;grid-template-columns:1fr 1.1fr;gap:14px}.card{min-width:0;border:1px solid var(--edge);background:#202323;border-radius:12px;padding:14px 17px}.cardtop{display:flex;align-items:baseline;justify-content:space-between;gap:7px}.card h2{font-size:16px;letter-spacing:-.025em;margin:0}.card .minor{font-size:9px}.hcontrols{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.hcontrols .segment button{min-height:32px}.plain{background:#303434;border:1px solid #515750;border-radius:7px;min-height:37px;font-weight:620;padding:4px 12px}.plain:hover{background:#3b403c}.status{margin:9px 0 0;color:#bbbfaf;font-size:12px;min-height:18px}.readings{display:grid;grid-template-columns:1fr 1fr .8fr;gap:10px;margin-top:7px}.readings b{font:600 clamp(20px,3vw,32px)/1.15 ui-monospace,monospace;letter-spacing:-.06em;color:#c0e3cd}.readings span{display:block}.meta{font-size:9px;color:#aaafa3}.tools{margin:9px 0 22px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.tools summary{cursor:pointer;color:#c0c3ba;font-size:12px;padding:5px 0}.tools details p{font-size:13px;color:#d9dbce;margin:4px 0}.finish{font-size:12px;background:transparent;border:1px solid #4c534c}
+@media(max-width:680px){main,header{width:calc(100% - 24px)}header{height:41px}.intro{padding:17px 0 12px;align-items:start;flex-wrap:wrap;gap:10px}.intro p{font-size:12px;margin-top:5px}.bay{padding:20px 7px 15px}.under{grid-template-columns:1fr;gap:8px}.card{padding:12px 14px}.speaker{display:none}.wordmark{margin-bottom:0}.dirbox,.faces{width:98%}.cart{height:20px}.cart span{font-size:8px;line-height:12px}.device{padding:8% 3% 7%}.ctllegend{font-size:7px}.screenbezel{padding:4px 4px 6px}.screenbar{font-size:6px}.group{gap:4px}}
+@media(max-width:560px) and (orientation:portrait){.device{grid-template-columns:1fr 1fr;gap:12px 9%;padding:27px 9% 18px;border-radius:29px 29px 39px 39px}.screenunit{grid-column:1/-1;grid-row:1;justify-self:center;width:100%;max-width:270px}.group.left{grid-column:1;grid-row:2}.group.right{grid-column:2;grid-row:2}.wordmark{font-size:14px;margin:5px 0 0}.dirbox,.faces{width:100%;max-width:142px}.ctllegend{font-size:8px}.bolt.tl,.bolt.tr{top:8%}.lcd{aspect-ratio:2.25}}
+@media (orientation:landscape) and (max-height:560px){main,header{width:min(calc(100% - 24px),980px)}header{height:29px}.ver{font-size:8px}.brand{font-size:15px}.intro{padding:7px 0;align-items:center}.intro h1{font-size:27px}.intro p{font-size:11px;margin-top:2px}.segment button{min-height:31px}.bay{padding:13px 6px 9px}.device{max-width:min(100%,178svh);padding:clamp(15px,4svh,25px) 3.5% clamp(12px,3.5svh,22px)}.screenbezel{padding:3px 6px 6px}.wordmark{font-size:12px;margin:3px 0 -8px}.group{gap:3px}.direction-ring{filter:none}.ctllegend{font-size:7px}.cart{height:17px;top:-8px}.cart span{font-size:7px;line-height:12px}.under{grid-template-columns:1fr 1fr;margin-top:7px;gap:7px}.card{padding:8px 12px}.hcontrols{margin-top:5px}.card h2{font-size:13px}.readings b{font-size:20px}.status{margin:4px 0 0}.tools{margin-top:5px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+.lab-navigation,.brick-line,.setup-actions,.scale-test{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}.lab-navigation{justify-content:space-between}.brick-line,.setup-actions span,.scale-test span{font-size:13px;color:#c7d3c7}.setup-actions #apply{background:#edbb88;color:#17201e}.scale-test{padding-block:8px}.fill-test{overflow:hidden}.fill-test .bay{position:fixed;inset:0;z-index:20;border:0;border-radius:0;display:grid;align-content:stretch;align-items:stretch;padding:max(10px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));background:#1c2425}.fill-test .device{max-width:none;height:100%;width:100%;grid-template-columns:minmax(0,1fr) minmax(0,2.1fr) minmax(0,1fr);padding:clamp(16px,5vh,48px) 2%;align-content:center;border-radius:20px}.fill-test .dirbox,.fill-test .faces{width:100%;max-width:min(98%,58vh)}.fill-test .screenunit{min-width:0}.fill-test .lcd{aspect-ratio:auto;height:min(68dvh,65vw)}.fill-test .cart{top:1px}.fill-test #exit-fill{position:absolute;right:max(11px,env(safe-area-inset-right));top:max(9px,env(safe-area-inset-top));z-index:5;background:#142222e8;color:#fff;font-size:12px;min-height:33px}.fill-test .speaker{display:none}
+@media(orientation:portrait){.fill-test .device{grid-template-columns:1fr 1fr;gap:3vh 7%;padding:7vh 5% 8vh;align-content:space-evenly}.fill-test .screenunit{grid-column:1/-1;grid-row:1;width:100%;max-width:none}.fill-test .group.left{grid-column:1;grid-row:2}.fill-test .group.right{grid-column:2;grid-row:2}.fill-test .dirbox,.fill-test .faces{max-width:min(100%,28dvh)}.fill-test .lcd{height:min(41dvh,92vw)}}
+</style></head><body>
+<header><div class="brand">JERM<span>747</span> ARCADE</div><div class="ver">Workshop v0.2.0</div></header>
+<main><div class="intro"><div><h1>Controller workshop</h1><p id="page-hint">Move the cursor and press a face button to test its response.</p></div>
+<div class="segment" role="group" aria-label="Directional control"><button data-mode="pad" aria-pressed="true"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M7 1h6v6h6v6h-6v6H7v-6H1V7h6z"/></svg>D-pad</button><button data-mode="stick" aria-pressed="false"><svg aria-hidden="true" viewBox="0 0 20 20"><circle cx="10" cy="6" r="4"/><path d="M8.5 9h3v5h-3zM4 14h12l2 4H2z"/></svg>Joystick</button></div></div>
+<div class="lab-navigation"><div class="segment" role="group" aria-label="Workshop activity"><button data-activity="bricks" aria-pressed="true">Brick breaker</button><button data-activity="scope" aria-pressed="false">Input test</button></div><button class="plain" type="button" id="back">Back</button></div>
+<section class="bay" aria-label="Pocket controller"><button id="exit-fill" class="plain" type="button" hidden>Exit fill</button><div class="device deck" id="unit">
+<i aria-hidden="true" class="bolt tl"></i><i aria-hidden="true" class="bolt tr"></i><i aria-hidden="true" class="bolt bl"></i><i aria-hidden="true" class="bolt br"></i><div class="cart" aria-hidden="true"><span id="cart-name">BRICK TEST</span></div>
+<div class="group left"><div class="dirbox" id="direction"><div class="dpad" role="group" aria-label="Eight-way direction pad. Slide toward a corner to combine two directions.">
+        <svg class="controller-defs" aria-hidden="true" width="0" height="0"><defs>
+          <linearGradient id="padBevel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8c9196"/><stop offset=".18" stop-color="#50565d"/><stop offset=".49" stop-color="#252a30"/><stop offset=".72" stop-color="#101419"/><stop offset="1" stop-color="#06080b"/></linearGradient>
+          <linearGradient id="padFace" x1="0" y1="0" x2=".65" y2="1"><stop stop-color="#383d43"/><stop offset=".45" stop-color="#272d33"/><stop offset="1" stop-color="#181d23"/></linearGradient>
+          <linearGradient id="padLit" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#48655f"/><stop offset=".45" stop-color="#2a4842"/><stop offset="1" stop-color="#182d2c"/></linearGradient>
+          <filter id="padGrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="12" result="noise"/><feColorMatrix in="noise" type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".48"/></feComponentTransfer><feComposite in2="SourceGraphic" operator="in"/><feBlend in2="SourceGraphic" mode="soft-light"/></filter>
+        </defs></svg>
+        <svg class="direction-ring" viewBox="0 0 200 200" aria-hidden="true"><path data-directions="up" d="M70.95 10.60 A94 94 0 0 1 129.05 10.60"/><path data-directions="up right" d="M142.68 16.25 A94 94 0 0 1 183.75 57.32"/><path data-directions="right" d="M189.40 70.95 A94 94 0 0 1 189.40 129.05"/><path data-directions="down right" d="M183.75 142.68 A94 94 0 0 1 142.68 183.75"/><path data-directions="down" d="M129.05 189.40 A94 94 0 0 1 70.95 189.40"/><path data-directions="down left" d="M57.32 183.75 A94 94 0 0 1 16.25 142.68"/><path data-directions="left" d="M10.60 129.05 A94 94 0 0 1 10.60 70.95"/><path data-directions="up left" d="M16.25 57.32 A94 94 0 0 1 57.32 16.25"/></svg>
+        <span class="pad-well" aria-hidden="true"></span>
+        <button class="pad-up" data-key="up" aria-label="Up" aria-pressed="false"><svg viewBox="0 0 100 116" aria-hidden="true" focusable="false"><path class="cap-edge" d="M17 4 Q3 5 3 21 L3 75 Q3 88 14 94 L43 111 Q50 115 57 111 L86 94 Q97 88 97 75 L97 21 Q97 5 83 4 Z"/><path class="cap-face" d="M19 10 Q11 11 11 23 L11 73 Q11 81 19 86 L46 101 Q50 104 54 101 L81 86 Q89 81 89 73 L89 23 Q89 11 81 10 Z"/><path class="cap-sheen" d="M18 13 Q13 15 13 24 L13 72 M20 12 L79 12 Q85 13 86 23"/><path class="cap-foot" d="M18 88 L44 104 Q50 108 56 104 L83 88"/></svg></button>
+        <button class="pad-right" data-key="right" aria-label="Move right" aria-pressed="false"><svg viewBox="0 0 100 116" aria-hidden="true" focusable="false"><path class="cap-edge" d="M17 4 Q3 5 3 21 L3 75 Q3 88 14 94 L43 111 Q50 115 57 111 L86 94 Q97 88 97 75 L97 21 Q97 5 83 4 Z"/><path class="cap-face" d="M19 10 Q11 11 11 23 L11 73 Q11 81 19 86 L46 101 Q50 104 54 101 L81 86 Q89 81 89 73 L89 23 Q89 11 81 10 Z"/><path class="cap-sheen" d="M18 13 Q13 15 13 24 L13 72 M20 12 L79 12 Q85 13 86 23"/><path class="cap-foot" d="M18 88 L44 104 Q50 108 56 104 L83 88"/></svg></button>
+        <button class="pad-down" data-key="down" aria-label="Down" aria-pressed="false"><svg viewBox="0 0 100 116" aria-hidden="true" focusable="false"><path class="cap-edge" d="M17 4 Q3 5 3 21 L3 75 Q3 88 14 94 L43 111 Q50 115 57 111 L86 94 Q97 88 97 75 L97 21 Q97 5 83 4 Z"/><path class="cap-face" d="M19 10 Q11 11 11 23 L11 73 Q11 81 19 86 L46 101 Q50 104 54 101 L81 86 Q89 81 89 73 L89 23 Q89 11 81 10 Z"/><path class="cap-sheen" d="M18 13 Q13 15 13 24 L13 72 M20 12 L79 12 Q85 13 86 23"/><path class="cap-foot" d="M18 88 L44 104 Q50 108 56 104 L83 88"/></svg></button>
+        <button class="pad-left" data-key="left" aria-label="Move left" aria-pressed="false"><svg viewBox="0 0 100 116" aria-hidden="true" focusable="false"><path class="cap-edge" d="M17 4 Q3 5 3 21 L3 75 Q3 88 14 94 L43 111 Q50 115 57 111 L86 94 Q97 88 97 75 L97 21 Q97 5 83 4 Z"/><path class="cap-face" d="M19 10 Q11 11 11 23 L11 73 Q11 81 19 86 L46 101 Q50 104 54 101 L81 86 Q89 81 89 73 L89 23 Q89 11 81 10 Z"/><path class="cap-sheen" d="M18 13 Q13 15 13 24 L13 72 M20 12 L79 12 Q85 13 86 23"/><path class="cap-foot" d="M18 88 L44 104 Q50 108 56 104 L83 88"/></svg></button>
+        <span class="pad-center" aria-hidden="true"></span>
+      </div><div id="stick" class="stick" tabindex="0" role="group" aria-label="Analog joystick. Drag to move or use arrow keys." hidden><div class="thumb"></div></div></div><span class="ctllegend" id="dirlabel">8-way D-pad</span></div>
+<div class="screenunit"><div class="screenbezel"><div class="screenbar"><span><i class="led"></i>PWR</span><span>747 Pocket</span></div><div class="lcd"><canvas id="display" aria-label="Live movement grid and face-button response"></canvas></div></div><div class="wordmark">747 <i>Pocket</i></div></div>
+<div class="group right"><div class="faces" role="group" aria-label="Face buttons"><button type="button" class="face right" data-key="a" aria-label="Face button A" aria-pressed="false" style="--c:#b7f1be"><span class="button-face">A</span></button><button type="button" class="face bottom" data-key="b" aria-label="Face button B" aria-pressed="false" style="--c:#ffa585"><span class="button-face">B</span></button><button type="button" class="face left" data-key="x" aria-label="Face button X" aria-pressed="false" style="--c:#a6d5ff"><span class="button-face">X</span></button><button type="button" class="face top" data-key="y" aria-label="Face button Y" aria-pressed="false" style="--c:#ffe89b"><span class="button-face">Y</span></button></div><span class="ctllegend">Face buttons</span></div><i class="speaker" aria-hidden="true"></i>
+</div></section>
+<div class="brick-line" id="brick-line"><span id="brick-info" role="status"></span><button hidden id="next-wall" class="plain">Next wall</button></div><div id="workshop-settings" class="under"><section class="card"><div class="cardtop"><h2>Haptic feedback</h2></div><div class="hcontrols"><div class="segment" role="group" aria-label="Haptic strength"><button data-level="off" aria-pressed="false">Off</button><button data-level="light" aria-pressed="true">Light</button><button data-level="firm" aria-pressed="false">Firm</button></div><button id="pulse" class="plain" type="button">Test pulse</button></div><p id="motor" class="status" role="status">Ready to test</p></section>
+<section class="card"><div class="cardtop"><h2>Input monitor</h2><span class="minor" id="source">Ready</span></div><div class="readings"><div><b id="rx">0.00</b><span class="meta">X axis</span></div><div><b id="ry">0.00</b><span class="meta">Y axis</span></div><div><b id="presses">0</b><span class="meta">Presses</span></div></div><p id="last" class="status">Last press · —</p></section></div>
+<div class="setup-actions"><button id="apply" type="button" class="plain">Apply controls</button><span role="status" id="save-status">Apply saves direction and haptics for Pocket Player.</span></div><div class="scale-test"><button type="button" class="plain" id="fill" aria-pressed="false" aria-describedby="scale-hint">Fill screen</button><span id="scale-hint">Preview a larger screen and buttons. The display proportions may change.</span></div><div class="tools"><details><summary>Keyboard &amp; gamepad controls</summary><p>Arrow keys or WASD move. J / K / U / I press A / B / X / Y. A standard gamepad uses its left stick, D-pad and four face buttons. In Input test, Y centers the cursor. In Brick breaker, each face button fires its own color.</p></details><button class="plain finish" id="finish">Finish · Classic</button></div>
+</main><script>'use strict';
+const $ = id => document.getElementById(id);
+const all = selector => [...document.querySelectorAll(selector)];
+const direction = $('direction'), dpad = direction.querySelector('.dpad'), stick = $('stick');
+const canvas = $('display'), ctx = canvas.getContext('2d');
+const buttons = all('button[data-key]');
+const dirs = ['right','down right','down','down left','left','up left','up','up right'];
+const colors = {a:'#b7f1be',b:'#ffa585',x:'#a6d5ff',y:'#ffe89b'};
+const faceNames = Object.keys(colors);
+const owned = new Map(), sticks = new Map();
+const keys = {ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',KeyJ:'a',KeyK:'b',KeyU:'x',KeyI:'y'};
+const profiles = {off:[0,0],light:[12,.18],firm:[28,.44]};
+const prefPrefix = '747.pocket.workshop.v1.';
+function pref(k,values,fallback) {
+  try {const value=localStorage.getItem(prefPrefix+k);return values.includes(value)?value:fallback;} catch {return fallback;}
+}
+function save(k,v){try{localStorage.setItem(prefPrefix+k,v);}catch{}}
+let mode=pref('mode',['pad','stick'],'pad'), level=pref('level',Object.keys(profiles),'light'), ice=pref('finish',['classic','ice'],'classic')==='ice';
+let axes={x:0,y:0}, active=new Set(), lastPulse=-Infinity, motorEpoch=0, usedActuator=null, count=0, lastSector='', pointerId=null, padIndex=null, lastPad=null, padNeutral=false;
+let moving={x:.50,y:.53}, burst=null, trail=[], priorT=0, pathT=0, frame=0, enabled=true;
+const reduce=window.matchMedia('(prefers-reduced-motion: reduce)');
+const format=n=>(Math.abs(n)<.005?'0.00':n.toFixed(2));
+function say(id,value){if($(id).textContent!==value)$(id).textContent=value;}
+function vector(x,y,analog=false){
+  const r=Math.hypot(x,y);
+  if(!r || (analog && r<.15))return {x:0,y:0};
+  const amount=analog?Math.min(1,(r-.15)/.85):Math.min(1,r);
+  return {x:x/r*amount,y:y/r*amount};
+}
+function sector(v){return Math.hypot(v.x,v.y)<.01?'':dirs[(Math.round(Math.atan2(v.y,v.x)/(Math.PI/4))+8)%8];}
+function controller(){try{const pads=embed&&parent.parent.Arcade?.pads?parent.parent.Arcade.pads():navigator.getGamepads?.();return [...(pads||[])].filter(p=>p?.connected&&p.mapping==='standard');}catch{return [];}}
+function motorStatus(message){say('motor',message);}
+function stopMotor(){
+  motorEpoch++;
+  try{usedActuator?.reset?.()?.catch?.(()=>{});}catch{}
+  usedActuator=null;
+  if(navigator.userActivation?.hasBeenActive){try{navigator.vibrate?.(0);}catch{}}
+}
+function phonePulse(ms){
+  try{
+    if(typeof window.EncoreAndroid?.rumble==='function'){window.EncoreAndroid.rumble(ms,level==='firm'?44:18);motorStatus('Phone vibration requested');return;}
+    if(typeof navigator.vibrate==='function'&&navigator.vibrate(ms)){
+      motorStatus('Phone vibration requested');return;
+    }
+  }catch{}
+  motorStatus('Vibration unavailable here · visual feedback active');
+}
+function pulse(src,pad,force=false){
+  if(level==='off'){motorStatus('Haptics off · visual feedback active');return;}
+  const now=performance.now();
+  if(!force&&now-lastPulse<45)return;
+  lastPulse=now;
+  const [duration,strength]=profiles[level], ticket=++motorEpoch;
+  if(src!=='Gamepad'){phonePulse(duration);return;}
+  const actuator=pad?.vibrationActuator||pad?.hapticActuators?.[0];
+  const fallback=()=>{if(ticket!==motorEpoch)return;motorStatus('Gamepad rumble unavailable · visual feedback active');};
+  try{
+    if(!actuator){fallback();return;}
+    let result;
+    if(typeof actuator.playEffect==='function'){
+      result=actuator.playEffect('dual-rumble',{duration,startDelay:0,weakMagnitude:strength,strongMagnitude:strength*.5});
+    }else if(typeof actuator.pulse==='function'){result=actuator.pulse(strength,duration);}
+    else{fallback();return;}
+    usedActuator=actuator;
+    motorStatus('Gamepad rumble requested');
+    Promise.resolve(result).then(r=>{if(r===false||r==='not-supported')fallback();},fallback);
+  }catch{fallback();}
+}
+function press(name,source,pad){
+  count++;say('presses',String(count));say('source',source);
+  say('last','Last press · '+name.toUpperCase());
+  pulse(source,pad);
+  if(activity==='bricks' && faceNames.includes(name))fireBeam(name);
+  if(activity==='scope' && name==='y'){moving={x:.5,y:.53};trail=[];}
+  if(faceNames.includes(name))burst={name,t:performance.now()};
+}
+function update(source,pad){
+  const prev=active;
+  active=new Set([...owned.values()].flat());
+  let x=Number(active.has('right'))-Number(active.has('left'));
+  let y=Number(active.has('down'))-Number(active.has('up'));
+  for(const v of sticks.values()){x+=v.x;y+=v.y;}
+  axes=vector(x,y);
+  const angle=sector(axes), lit=new Set(angle?angle.split(' '):[]);
+  if(angle&&angle!==lastSector && source)press(angle,source,pad);
+  lastSector=angle;
+  for(const key of faceNames)if(active.has(key)&&!prev.has(key)&&source)press(key,source,pad);
+  for(const b of buttons){
+    const k=b.dataset.key,down=active.has(k)||lit.has(k);
+    if(b.classList.toggle('held',down)!== (b.getAttribute('aria-pressed')==='true'))b.setAttribute('aria-pressed',String(down));
+  }
+  for(const rim of dpad.querySelectorAll('[data-directions]')){
+    rim.classList.toggle('lit',rim.dataset.directions.split(' ').every(k=>lit.has(k)));
+  }
+  const travel=stick.offsetWidth*.23;
+  stick.style.setProperty('--dx',(axes.x*travel)+'px');stick.style.setProperty('--dy',(axes.y*travel)+'px');
+  say('rx',format(axes.x));say('ry',format(-axes.y));
+}
+function assign(owner,keys,v,src,pad){
+  if(keys.length)owned.set(owner,keys);else owned.delete(owner);
+  if(v&&(v.x||v.y))sticks.set(owner,v);else sticks.delete(owner);
+  update(src,pad);
+}
+function clearInputs(){
+  pointerId=null;owned.clear();sticks.clear();lastPad=null;padNeutral=padIndex!==null;update(null);
+}
+function renderSettings(){
+  all('[data-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.mode===mode)));
+  all('[data-level]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.level===level)));
+  dpad.hidden=mode!=='pad';stick.hidden=mode!=='stick';
+  say('dirlabel',mode==='pad'?'8-way D-pad':'Analog joystick');$('unit').classList.toggle('ice',ice);
+  say('finish','Finish · '+(ice?'Ice Blue':'Classic'));$('finish').setAttribute('aria-pressed',String(ice));
+}
+all('[data-mode]').forEach(b=>b.onclick=()=>{if(mode===b.dataset.mode)return;clearInputs();mode=b.dataset.mode;say('save-status','Preview · Apply controls to save.');renderSettings();});
+all('[data-level]').forEach(b=>b.onclick=()=>{
+  level=b.dataset.level;say('save-status','Preview · Apply controls to save.');renderSettings();
+  if(level==='off'){stopMotor();motorStatus('Haptics off · visual feedback active');}
+  else motorStatus('Press a control or tap Test pulse');
+});
+$('finish').onclick=()=>{ice=!ice;save('finish',ice?'ice':'classic');renderSettings();};
+$('pulse').onclick=()=>{const p=controller().find(p=>p.index===padIndex);pulse(p?'Gamepad':'Touch',p,true);};
+const src=e=>e.pointerType==='touch'?'Touch':e.pointerType==='pen'?'Pen':'Mouse';
+function steer(e){
+  const box=direction.getBoundingClientRect(),r=box.width/2;
+  const x=(e.clientX-box.left)/r-1,y=(e.clientY-box.top)/r-1;
+  if(mode==='pad'){
+    const k=Math.hypot(x,y)>.22?sector({x,y}).split(' '):[];
+    assign('dir',k,null,src(e));
+  }else assign('dir',[],vector(x/.70,y/.70,true),src(e));
+}
+direction.onpointerdown=e=>{
+  if(e.button!==0||pointerId!==null)return;
+  pointerId=e.pointerId;e.preventDefault();direction.setPointerCapture(e.pointerId);steer(e);
+};
+direction.onpointermove=e=>{if(e.pointerId===pointerId)steer(e);};
+function releaseDir(e){if(e.pointerId===pointerId){pointerId=null;assign('dir',[],null,null);}}
+for(const type of ['pointerup','pointercancel','lostpointercapture'])direction.addEventListener(type,releaseDir);
+for(const b of buttons){
+  const key=b.dataset.key;
+  if(faceNames.includes(key)){
+    b.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();b.setPointerCapture(e.pointerId);assign('face:'+e.pointerId,[key],null,src(e));};
+    for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,e=>assign('face:'+e.pointerId,[],null,null));
+  }
+  b.addEventListener('click',e=>{if(e.detail===0){const id='assist:'+key;assign(id,[key],null,'Keyboard');assign(id,[],null,null);}});
+}
+window.addEventListener('keydown',e=>{
+  if(!enabled||e.ctrlKey||e.altKey||e.metaKey||!keys[e.code])return;
+  e.preventDefault();if(!e.repeat)assign('key:'+e.code,[keys[e.code]],null,'Keyboard');
+});
+window.addEventListener('keyup',e=>{if(keys[e.code])assign('key:'+e.code,[],null,null);});
+const grid='#41685b';
+function paint(t,dt){
+ const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;
+ const scale=Math.min(2,devicePixelRatio||1),w=Math.round(rect.width*scale),h=Math.round(rect.height*scale);
+ if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
+ ctx.setTransform(w/320,0,0,h/170,0,0);ctx.fillStyle='#14332e';ctx.fillRect(0,0,320,170);
+ ctx.strokeStyle=grid;ctx.lineWidth=.55;ctx.beginPath();
+ for(let x=0;x<321;x+=16){ctx.moveTo(x,0);ctx.lineTo(x,170);}
+ for(let y=0;y<171;y+=16){ctx.moveTo(0,y);ctx.lineTo(320,y);}
+ ctx.stroke();
+ ctx.fillStyle='#173930';ctx.fillRect(0,0,320,23);
+ ctx.font='bold 9px monospace';ctx.fillStyle='#c2e3bc';ctx.fillText(activity==='bricks'?'WALL '+round+'  /  '+hits+' OF '+targets.length:'INPUT SCOPE',10,15);
+ ctx.textAlign='right';ctx.fillStyle='#92b9a2';ctx.fillText(mode==='pad'?'DIGITAL / 8-WAY':'ANALOG / X-Y',310,15);ctx.textAlign='left';
+ ctx.strokeStyle='#82a994';ctx.setLineDash([3,5]);ctx.beginPath();ctx.moveTo(160,27);ctx.lineTo(160,161);ctx.moveTo(9,94);ctx.lineTo(311,94);ctx.stroke();ctx.setLineDash([]);
+ moving.x=Math.min(.96,Math.max(.04,moving.x+axes.x*dt*.45));moving.y=Math.min(.94,Math.max(.20,moving.y+axes.y*dt*.78));
+ if(activity==='bricks')drawWall(t);
+ const x=moving.x*320,y=moving.y*170;
+ if(!reduce.matches&&t-pathT>48&&(axes.x||axes.y)){trail.push({x,y,t});pathT=t;}
+ trail=trail.filter(p=>t-p.t<750);
+ for(const p of trail){ctx.globalAlpha=.65*(1-(t-p.t)/750);ctx.fillStyle='#a8ddba';ctx.fillRect(p.x-1.5,p.y-1.5,3,3);}ctx.globalAlpha=1;
+ const age=burst?(t-burst.t)/650:2;const c=age<1?colors[burst.name]:'#b7f1bb';ctx.strokeStyle=c;ctx.fillStyle=c;ctx.lineWidth=1.5;
+ ctx.beginPath();ctx.arc(x,y,7,0,Math.PI*2);ctx.stroke();ctx.fillRect(x-1.5,y-1.5,3,3);
+ ctx.beginPath();for(const [dx,dy] of [[0,-1],[1,0],[0,1],[-1,0]]){ctx.moveTo(x+dx*9,y+dy*9);ctx.lineTo(x+dx*13,y+dy*13);}ctx.stroke();
+ if(age>=0&&age<1){
+  ctx.globalAlpha=1-age;ctx.beginPath();ctx.arc(x,y,reduce.matches?12:10+age*27,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1;
+  ctx.font='bold 15px monospace';ctx.fillText(burst.name.toUpperCase(),Math.min(x+17,299),Math.max(40,y-12));
+ }
+}
+function poll(){
+ const pads=controller();
+ const p=pads.find(p=>p.buttons.some(b=>b.pressed)||p.axes.some(a=>Math.abs(a)>.2))||pads.find(p=>p.index===padIndex)||pads[0];
+ if(!p){if(padIndex!==null){padIndex=null;padNeutral=false;lastPad=null;assign('hardware',[],null,null);}return;}
+ if(padIndex!==p.index){padIndex=p.index;lastPad=null;}
+ const down=i=>!!p.buttons[i]?.pressed;
+ const face=faceNames.filter((_,i)=>down(i));
+ const digital=['up','down','left','right'].filter((_,i)=>down(i+12));
+ const v=vector(p.axes[0]||0,p.axes[1]||0,true);
+ if(padNeutral){if(face.length||digital.length||v.x||v.y)return;padNeutral=false;}
+ const a=mode==='stick'&&!digital.length?v:null;
+ const directionKeys=digital.length?digital:mode==='pad'&&sector(v)?sector(v).split(' '):[];
+ const next=[...face,...directionKeys];const signature=next.join(',')+'|'+format(a?.x||0)+'|'+format(a?.y||0);
+ if(signature!==lastPad){lastPad=signature;assign('hardware',next,a,'Gamepad',p);}
+}
+function loop(t){if(!enabled)return;const dt=Math.min(.045,(t-(priorT||t))/1000);priorT=t;poll();paint(t,dt);frame=requestAnimationFrame(loop);}
+function suspend(){enabled=false;cancelAnimationFrame(frame);clearInputs();stopMotor();}
+function resume(){if(enabled||document.hidden)return;enabled=true;priorT=0;frame=requestAnimationFrame(loop);}
+window.addEventListener('blur',suspend);window.addEventListener('focus',resume);window.addEventListener('pagehide',suspend);window.addEventListener('pageshow',resume);
+document.addEventListener('visibilitychange',()=>document.hidden?suspend():resume());
+const playMode='bricks';
+let activity=playMode, round=1, targets=[], beams=[], shards=[], hits=0;
+const shareKey='jerm747.pocket.controls.v1';
+try {const finish=localStorage.getItem('jerm747.pocket.finish.v1');if(finish==='ice'||finish==='classic')ice=finish==='ice';} catch {}
+function committed(){
+  try {const v=JSON.parse(localStorage.getItem(shareKey)||'{}');return {level:Object.hasOwn(profiles,v.level)?v.level:pref('level',Object.keys(profiles),'light'),mode:['stick','pad'].includes(v.mode)?v.mode:'pad'};}
+  catch{return {level:'light',mode:'pad'};}
+}
+let applied=committed();
+level=applied.level;mode=applied.mode;
+const embed=new URLSearchParams(location.search).get('hud')==='1'&&parent!==window;
+function buildWall(){
+  targets=[];beams=[];shards=[];hits=0;
+  for(let row=0;row<3;row++)for(let col=0;col<6;col++){
+    targets.push({x:12+col*50,y:34+row*28,w:45,h:20,key:faceNames[(row+col+round-1)%4],alive:true});
+  }
+  moving={x:.50,y:.79};$('next-wall').hidden=true;reportWall('Aim at a brick. Fire with its matching letter.');
+}
+function reportWall(msg){say('brick-info',msg+'  ·  '+hits+'/'+targets.length+' bricks');}
+function fireBeam(key){
+  if(hits===targets.length)return;
+  const x=moving.x*320,y=moving.y*170,t=performance.now();
+  const target=targets.find(b=>b.alive&&x>=b.x-1&&x<=b.x+b.w+1&&y>=b.y-1&&y<=b.y+b.h+1);
+  beams.push({x,y,key,t});
+  if(!target){reportWall('Miss');return;}
+  if(target.key!==key){reportWall('Match this brick with '+target.key.toUpperCase());return;}
+  target.alive=false;hits++;
+  if(!reduce.matches)for(let n=0;n<6;n++)shards.push({x,y,key,t,dx:Math.cos(n*Math.PI/3)*22,dy:Math.sin(n*Math.PI/3)*16});
+  if(hits===targets.length){reportWall('Wall clear');$('next-wall').hidden=false;}
+  else reportWall('Match');
+}
+function drawWall(t){
+  ctx.textAlign='center';ctx.font='bold 12px monospace';
+  for(const b of targets)if(b.alive){
+    ctx.fillStyle=colors[b.key];ctx.fillRect(b.x,b.y,b.w,b.h);
+    ctx.fillStyle='#ffffff70';ctx.fillRect(b.x+1,b.y+1,b.w-2,2);
+    ctx.fillStyle='#0a25254a';ctx.fillRect(b.x,b.y+b.h-4,b.w,4);
+    ctx.fillStyle='#19312f';ctx.fillText(b.key.toUpperCase(),b.x+b.w/2,b.y+14);
+  }
+  ctx.textAlign='left';beams=beams.filter(b=>t-b.t<205);
+  for(const beam of beams){
+    const a=Math.max(0,1-(t-beam.t)/205);ctx.lineCap='round';
+    for(const [width,opacity] of [[6,.21],[2.4,.95],[.8,1]]){
+      ctx.globalAlpha=a*opacity;ctx.lineWidth=width;ctx.strokeStyle=width<1?'#fff':colors[beam.key];
+      ctx.beginPath();ctx.moveTo(160,166);ctx.lineTo(beam.x,beam.y);ctx.stroke();
+    }
+  }
+  ctx.globalAlpha=1;ctx.lineCap='butt';shards=shards.filter(v=>t-v.t<300);
+  for(const v of shards){const f=(t-v.t)/300;ctx.fillStyle=colors[v.key];ctx.globalAlpha=1-f;ctx.fillRect(v.x+v.dx*f,v.y+v.dy*f+f*f*8,2,2);}
+  ctx.globalAlpha=1;ctx.fillStyle='#b8dbbc';ctx.beginPath();ctx.moveTo(154,168);ctx.lineTo(160,160);ctx.lineTo(166,168);ctx.fill();
+  if(hits===targets.length){ctx.font='bold 18px monospace';ctx.textAlign='center';ctx.fillText('WALL CLEAR',160,97);ctx.textAlign='left';}
+}
+function setActivity(next){
+  activity=next;clearInputs();burst=null;trail=[];beams=[];
+  all('[data-activity]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.activity===next)));
+  $('brick-line').hidden=activity!=='bricks';
+  say('cart-name',activity==='bricks'?'BRICK TEST':'INPUT TEST');
+  say('page-hint',activity==='bricks'?'Aim the crosshairs at a brick. Press its matching face button to fire.':'Move the cursor and press a face button to test its response.');
+}
+function setScale(on){
+  clearInputs();document.body.classList.toggle('fill-test',on);$('exit-fill').hidden=!on;
+  $('fill').setAttribute('aria-pressed',String(on));
+  requestAnimationFrame(()=>{if(on)$('exit-fill').focus({preventScroll:true});else $('fill').focus({preventScroll:true});});
+}
+function goBack(){
+  if(document.body.classList.contains('fill-test')){setScale(false);return;}
+  if(embed){parent.postMessage({type:'pocket-workshop-back'},location.origin);return;}
+  let same=false;try{same=new URL(document.referrer).origin===location.origin;}catch{}
+  if(same&&history.length>1){history.back();return;}
+  if(location.protocol==='file:'){level=applied.level;mode=applied.mode;renderSettings();say('save-status','Saved settings restored.');return;}
+  location.assign('/pocket-player/');
+}
+$('apply').onclick=()=>{
+  try {
+    localStorage.setItem(shareKey,JSON.stringify({mode,level}));applied={mode,level};
+    if(embed)parent.postMessage({type:'pocket-workshop-applied'},location.origin);
+    say('save-status','Applied · '+(mode==='pad'?'D-pad':'Joystick')+' / '+level);
+  } catch {say('save-status','Storage unavailable. These settings are for this test only.');}
+};
+$('back').onclick=goBack;$('fill').onclick=()=>setScale(true);$('exit-fill').onclick=()=>setScale(false);
+$('next-wall').onclick=()=>{round++;buildWall();};
+all('[data-activity]').forEach(b=>b.onclick=()=>setActivity(b.dataset.activity));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(embed||document.body.classList.contains('fill-test'))){e.preventDefault();goBack();}});
+window.addEventListener('message',e=>{
+  if(embed&&e.origin===location.origin&&e.source===parent&&e.data?.type==='pocket-workshop-back-request')goBack();
+});
+buildWall();setActivity('bricks');
+
+renderSettings();if(level==='off')motorStatus('Haptics off · visual feedback active');frame=requestAnimationFrame(loop);
+</script></body></html>

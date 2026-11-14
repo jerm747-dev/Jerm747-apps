@@ -17,7 +17,9 @@ const routes = [
  {"id": "big-bowl-smash", "start": [["play", "Play Big Bowl Smash"]]},
  {"id": "tic-tac-steel", "start": [["play", "Play Tic-Tac-Steel"]]},
  {"id": "sumi-sudoku", "start": [["play", "Play Sumi Sudoku"]]},
- {id:"gs-fighter-2",start:[["play","Play GS Fighter II"]]}
+ {id:"gs-fighter-2",start:[["play","Play GS Fighter II"]]},
+ {id:'wave-run-747',start:[['play','Launch Wave Run 747']]},
+ {id:'pulse-runner',start:[['play','Choose operator']]}
 ];
 let titleShowing=false, heldByVisor=false, releasePadGate=false;
 const entryArt=byId('entry-art'), titleScreen=byId('game-entry');
@@ -48,7 +50,8 @@ function optionList(){
  if(path.includes('/encore/cd-man'))list=[['#instructions','How to play'],['#audio','Toggle sound'],['#cd-touch','Cycle touch controls']];
  else if(current===0)list=[['#instructions','How to play'],['#audio','Toggle sound'],['#front-music','Toggle music'],['#touch-toggle','Cycle touch controls']];
  else if(current===4)list=[['@mapping','Controller mapping']];
- else if(current===5)list=[['#settings','Flight controls'],['#camera-toggle','Switch camera'],['#inputmode','Switch input mode'],['#layout','Change layout'],['#warp','Activate warp']];
+ else if(current===5&&pocketView?.active)list=[['#controller-view',d.querySelector('#controller-view')?.textContent||'Flight camera'],['#controller-mode',d.querySelector('#controller-mode')?.textContent||'Control mode']];
+ else if(current===5)list=[['#settings','Flight controls'],['#camera-toggle','Switch camera'],['#inputmode','Switch input mode'],['#layout',d.querySelector('#layout')?.textContent||'Change layout'],['#warp','Activate warp']];
  else if(current===6)list=[['#navMoves','Move list'],['#audio','Toggle sound']];
  else if(current===7)list=[['#new','Choose a puzzle'],['#help-button','How to play'],['#reset','Restart puzzle']];
  else if(current===8)list=[['#help','How to play'],['#new','Restart puzzle']];
@@ -191,8 +194,8 @@ function detailOpen(w){
   ||w.Jerm747Controls?.menuOpen()||current===7&&!!d.querySelector('#exit-focus')?.getClientRects().length;
 }
 function startKey(){
- if(visor.isOpen){visor.back();return;}
+ if(visor.isOpen){if(titleShowing)visor.input('accept');else visor.back();return;}
  if(viewer.open){viewer.close();return;}
- if(frame){visor.open();}
- else if(titleShowing)visor.open();else launch();
+ if(frame){pocketView?.systemStart();}
+ else if(titleShowing)startRoute(routes[current].start[0][0]);else launch();
 }

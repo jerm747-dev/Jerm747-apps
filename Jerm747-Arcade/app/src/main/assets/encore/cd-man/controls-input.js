@@ -3,7 +3,7 @@
  'use strict';
  const mapping = {ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
   ArrowUp:'jump',KeyW:'jump',ArrowDown:'down',KeyS:'down',Space:'jump',
-  KeyX:'lift',ShiftLeft:'speed',ShiftRight:'speed'};
+  KeyX:'lift',KeyC:'pulse',ShiftLeft:'speed',ShiftRight:'speed'};
  const sectors = [['right'],['jump','right'],['jump'],['jump','left'],
   ['left'],['down','left'],['down'],['down','right']];
 

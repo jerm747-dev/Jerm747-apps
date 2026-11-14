@@ -7,7 +7,7 @@ import './arcade-list.css';
 import './view-switch.css';
 import './cabinet.css';
 
-const NEW_TITLES = new Set(['big-bowl-smash', 'tic-tac-steel', 'sumi-sudoku']);
+const NEW_TITLES = new Set(['wave-run-747', 'pulse-runner']);
 function NewBadge({slug}) { return NEW_TITLES.has(slug) ? <span className="game-new">NEW</span> : null; }
 
 const KIND_LABEL = { game: 'Games', app: 'Apps', site: 'Sites', tool: 'Tools', music: 'Music', experiment: 'Experiments' };

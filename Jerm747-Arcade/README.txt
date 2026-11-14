@@ -22,3 +22,11 @@ Tap or drag anywhere on the larger map under Visor settings > Move HUD icon. The
 
 Arcade 1.0.6
 The List/Grid slider accepts taps, drags, and arrow keys. Play game is a solid button. In portrait, the Beat Room turntable has a separate transport strip, and the record picker has its own row on phones.
+
+747 Pocket Player home — next Android build
+
+The website now has /pocket-player/, a finish-aware site menu entry and a one-time Ice Blue introduction on the Arcade shelf. Its cartridge links enter the browser Arcade in Pocket mode with the previewed finish.
+
+For the next Arcade APK, keep access in the existing HUD. Add a Pocket Player entry to the cabinet HUD for previewing Ice Blue and Classic before choosing a cartridge. Keep the in-game Pocket view toggle and Visor settings > Pocket finish available during play. Reuse the existing Android preference and game-session paths so changing finish preserves the running game.
+
+The public About/Contact drawer, browser landing page and first-visit website introduction are web features in this release. The controller haptics and analog joystick are still workshop prototypes. Device-test an upgrade from 1.0.12, a fresh install, controller focus, and the Android back button before including new APK behavior.

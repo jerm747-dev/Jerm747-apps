@@ -250,3 +250,12 @@ button:disabled { cursor:default; }
 .cart-label::after {content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#091411e8,#111b1d73 38%,transparent 80%);}
 .cart-label strong {align-self:flex-end;color:#fff6dc;font-size:max(8px,2.6em);text-shadow:0 1px 3px #000;}
 .eject {min-width:25px;}
+
+.pocket-stick {position:relative;width:100%;height:100%;border-radius:50%;touch-action:none;pointer-events:auto;box-shadow:inset 0 0 0 .6em #262e34,inset 0 0 0 1.1em #7d8790,inset 0 1.4em 2em #070c14,0 .35em .4em #ffffff47;background:repeating-radial-gradient(circle,#313940 0 .22em,#272e36 .25em .5em)}
+.pocket-stick span{position:absolute;left:50%;top:50%;width:51%;height:51%;border-radius:50%;transform:translate(calc(-50% + var(--x,0%)),calc(-50% + var(--y,0%)));background:radial-gradient(circle at 49% 55%,#525a63 0%,#454c55 46%,#787f87 55%,#454a52 65%,#222933 83%);box-shadow:0 .6em .1em #161d24,0 1em 1.7em #0007;pointer-events:none}
+.device[data-skin=ice] .pocket-stick{background:repeating-radial-gradient(circle,#5799b9 0 .2em,#5086a4 .22em .5em);box-shadow:inset 0 0 0 .6em #487a95,inset 0 0 0 1em #d1f4ff,inset 0 1.6em 2em #22567488}
+.device[data-skin=ice] .pocket-stick span{background:radial-gradient(circle at 48% 53%,#aaddeb,#93cbe3 45%,#dcf9ff 56%,#8dc7df 64%,#5894b2 81%);box-shadow:0 .6em .1em #4c7791,0 1em 1.7em #16374780}
+
+.system-row,.wide .system-row{gap:.75em;justify-content:space-evenly}.system-btn[data-command=eject] i{width:3.6em;height:2.8em;border-radius:.75em}.system-row .system-btn span{letter-spacing:0}
+
+.device .wordmark img{display:block;object-fit:contain;object-position:left center;width:100%;height:100%}

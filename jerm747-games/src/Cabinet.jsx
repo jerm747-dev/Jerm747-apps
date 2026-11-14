@@ -37,7 +37,7 @@ export default function Cabinet({ children, project }) {
       </header>
       <dialog className="site-drawer" ref={menu} aria-labelledby="site-menu-heading" onClick={event=>{if(event.target===event.currentTarget){const rect=event.currentTarget.getBoundingClientRect();if(event.clientX<rect.left)menu.current.close();}}}>
         <div className="drawer-top"><h2 id="site-menu-heading">Jerm747.games</h2><button type="button" onClick={()=>menu.current.close()} aria-label="Close site menu">×</button></div>
-        <nav aria-label="Site pages"><a href="/about/">About</a><a href="/contact/">Contact</a></nav>
+        <nav aria-label="Site pages"><a href="/about/">About</a><a href="/contact/">Contact</a><a className="pocket-drawer-link" href="/pocket-player/" aria-label="747 Pocket Player"><span className="pocket-drawer-logo" aria-hidden="true" /><span className="pocket-drawer-arrow" aria-hidden="true"></span></a></nav>
         <a className="drawer-download" href="/download/">Downloads <span aria-hidden="true">↗</span></a>
       </dialog>
       <Wing side="left" project={project} />

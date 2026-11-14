@@ -31,3 +31,5 @@ body>div:has(>iframe[title="Jerm747 Arcade Settings"]){position:fixed!important;
 
 .game-new {display:inline-flex;align-items:center;gap:4px;color:#ffe6bb;background:#332725;border:1px solid #b28a59;border-radius:4px;padding:2px 4px;font:700 9px/1.1 system-ui,sans-serif;letter-spacing:.06em;vertical-align:middle;white-space:nowrap;margin-inline-start:6px;text-shadow:none;}
 .game-new::before {content:'';width:8px;height:7px;background:repeating-linear-gradient(0deg,#ffc57e 0 1px,transparent 1px 3px);transform:skew(-14deg);}
+
+.sb-case .game-new {vertical-align:middle;font-size:9px;line-height:1;margin-inline-start:6px;padding:3px 5px;color:#ffdcab;background:#33251b;border-color:#a16c3f;}

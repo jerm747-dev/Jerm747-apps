@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>747 Pocket Player · Jerm747 Arcade</title>
+<meta name="description" content="Meet the Ice Blue 747 Pocket Player. Choose a cartridge and play the Jerm747 Arcade with a handheld controller in your browser.">
+<meta name="theme-color" content="#e4f4f8"><meta property="og:title" content="747 Pocket Player"><meta property="og:description" content="Ice Blue or Classic. Pick a cartridge and play in the Jerm747 Arcade."><meta property="og:image" content="https://jerm747.games/pocket-player/ice-blue-share.jpg">
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="home.css"><script src="/pocket/pocket.js?v=controls-2"></script><script defer src="home.js"></script>
+</head><body>
+<header class="mast"><div class="wrap mast-inner"><a class="site-brand" href="/" aria-label="Jerm747 Games home">JERM<span>747</span><b>.GAMES</b></a><a class="back" href="/"><span aria-hidden="true">←</span> Arcade</a></div></header>
+<main>
+<section class="hero" aria-labelledby="player-title"><div class="wrap stage">
+<div class="pitch"><h1 id="player-title"><img src="wordmark.svg?v=2" alt="747 Pocket Player"></h1>
+<p>Your arcade in handheld form. Pick a cartridge, choose a finish, and play right in your browser.</p>
+<a class="cta" href="#cartridges">Choose a cartridge <span aria-hidden="true">↓</span></a></div>
+<div class="showcase"><div class="product"><img id="hero-device" src="handheld-ice.webp" width="1427" height="706" alt="Ice Blue 747 Pocket Player showing Wave Run 747"></div>
+<fieldset class="finishes"><legend class="visually-hidden">Pocket Player finish</legend>
+<button type="button" data-finish="ice" aria-pressed="true"><i class="swatch ice" aria-hidden="true"></i>Ice Blue</button>
+<button type="button" data-finish="classic" aria-pressed="false"><i class="swatch classic" aria-hidden="true"></i>Classic</button></fieldset>
+</div></div></section>
+<section class="library wrap" id="cartridges" aria-labelledby="shelf-title" tabindex="-1"><div class="section-heading"><h2 id="shelf-title">Cartridge shelf</h2><a class="workshop" href="/workshops/pocket/">Controller workshop <span class="out-arrow" aria-hidden="true"></span></a></div>
+<div class="cards">
+<a class="game-card" href="/#/play/wave-run-747?pocket=ice" data-game="wave-run-747"><img src="/projects/wave-run-747/cover.webp" width="1280" height="720" alt=""><div><small>Jet ski racing</small><h3>Wave Run 747</h3><span class="play" aria-hidden="true"></span></div></a>
+<a class="game-card" href="/#/play/pulse-runner?pocket=ice" data-game="pulse-runner"><img src="/projects/pulse-runner/cover.webp" width="1280" height="720" alt=""><div><small>Run and gun</small><h3>Pulse Runner</h3><span class="play" aria-hidden="true"></span></div></a>
+<a class="game-card" href="/#/play/beat-room?pocket=ice" data-game="beat-room"><img src="/projects/beat-room/cover.jpg" width="1280" height="720" alt=""><div><small>Music studio</small><h3>Beat Room</h3><span class="play" aria-hidden="true"></span></div></a>
+</div>
+<form id="picker"><label for="game-select">Arcade library</label><select id="game-select"><option value="wave-run-747">Wave Run 747</option><option value="pulse-runner">Pulse Runner</option><option value="beat-room">Beat Room</option></select><button type="submit">Play in Pocket <span aria-hidden="true">→</span></button></form>
+<p id="catalog-status" role="status" hidden></p>
+</section>
+</main><footer class="wrap"><span>Jerm747 Arcade</span><a href="/download/">Android downloads</a></footer>
+</body></html>

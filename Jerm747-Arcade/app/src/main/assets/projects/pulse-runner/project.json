@@ -1,0 +1,16 @@
+{
+  "title": "Pulse Runner",
+  "tagline": "Run and gun the Dustline Outpost.",
+  "description": "Pick an operator and fight your way up the Dustline Outpost in this pixel-art run-and-gun, built inside its own 747 Pocket handheld. Fire, dive, strike and throw grenades past raiders, sentries and a gunship.",
+  "kind": "game",
+  "status": "playable",
+  "version": "0.3.0",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "touch"
+  ],
+  "credit": "Jerm747",
+  "accent": "#FF9C55",
+  "order": 41
+}

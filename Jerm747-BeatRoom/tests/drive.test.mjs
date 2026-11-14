@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+let saved = null;
+globalThis.localStorage = { getItem: () => saved, setItem(_key, value) { saved = value; } };
+const drive = await import('../beat-room-source/src/engine/character.js');
+assert.equal(drive.get().drive, .25, 'New installation starts at 25%');
+drive.setMode('747');
+assert.equal(drive.get().drive, .25, '747 preset recalls 25%');
+drive.set({ drive: .75 });
+assert.equal(drive.get().drive, .75, '747 Drive can be raised above 25%');
+drive.set({ drive: 1 });
+assert.equal(drive.get().drive, 1, 'Full 100% adjustment remains available');
+await new Promise(resolve => setTimeout(resolve, 300));
+const restored = await import('../beat-room-source/src/engine/character.js?restored');
+assert.equal(restored.get().drive, 1, 'Saved manual adjustment survives reload');
+drive.setMode('warm');
+drive.setMode('747');
+assert.equal(drive.get().drive, .25, 'Re-selecting the preset returns to 25%');
+console.log('PASS: 25% default and preset recall, full range, saved custom adjustment');

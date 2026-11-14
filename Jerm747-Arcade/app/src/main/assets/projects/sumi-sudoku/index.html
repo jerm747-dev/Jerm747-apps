@@ -473,7 +473,7 @@ html.using-gamepad [data-pad-digit] { box-shadow:inset 0 0 0 3px #e99c2e!importa
 <div class="done" id="done" hidden></div>
 <div id="breakUI" hidden>
   <div class="bTitle"><div class="seal" aria-hidden="true">数独</div><div><h1>数独 Sudoku</h1><div class="sub">Jerm747 Arcade</div></div></div>
-  <div class="gardenTop"><button id="bScene" aria-expanded="false" aria-controls="gardenPanel">☀ Scene</button><button class="bMap" id="bMap" aria-pressed="false" aria-controls="plantPickerWrap">🌿 Plant map</button></div>
+  <div class="gardenTop"><button id="plantTour" type="button" aria-pressed="false">Auto tour</button><button id="bScene" aria-expanded="false" aria-controls="gardenPanel">☀ Scene</button><button class="bMap" id="bMap" aria-pressed="false" aria-controls="plantPickerWrap">🌿 Plant map</button></div>
   <section class="gardenPanel" id="gardenPanel" hidden aria-label="Garden scene settings">
     <h2>A living watercolor</h2><p>Pause here. Let the light change.</p>
     <label>Sky &amp; light</label><div class="skyChoices" role="group" aria-label="Sky and lighting"><button data-light="sunny" aria-pressed="true">Sunny</button><button data-light="overcast" aria-pressed="false">Overcast</button><button data-light="sunset" aria-pressed="false">Sunset</button></div>
@@ -1100,7 +1100,7 @@ function fxFrame(now){
   const raw = Math.min(.05, (now - (fxLast || now)) / 1000); fxLast = now;
   const dt = raw * fxSpeed; fxT += dt;
   const W = innerWidth, H = innerHeight, w = wind(fxT);
-  if (breakOn){ stepCam(raw); drawPanoView(); }
+  if (breakOn){ if(!tourFrame(now))stepCam(raw); drawPanoView(); }
   fctx.clearRect(0, 0, W, H); nctx.clearRect(0, 0, W, H);
   if (breakOn) drawGlow(raw);
 
@@ -1827,6 +1827,7 @@ function enterBreak(){
   document.getElementById('bBack').focus({ preventScroll:true });
 }
 function exitBreak(){
+  stopTour();
   resetGlow();
   endLightFade();
   pano=null;
@@ -2269,6 +2270,40 @@ function browsePlant(dir){
   }
   const again = document.getElementById(dir > 0 ? 'pNext' : 'pPrev'); if (again) again.focus({ preventScroll:true });
 }
+const tourButton=document.getElementById('plantTour');
+const plantTour={on:false,stops:[],index:0,direction:1,elapsed:0,last:null,from:0,pitch:0};
+function stopTour(){
+  plantTour.on=false;plantTour.last=null;tourButton.setAttribute('aria-pressed','false');tourButton.textContent='Auto tour';
+}
+function showTourStop(){
+  const pl=plantTour.stops[plantTour.index],yaw=pl.zones[0].yaw;
+  const it=nearestOf(pl.id,pano.cx+yaw*pano.p);if(!it)return;
+  selectPlant(it,650);
+  // The explicit tour includes the plant card even when free-roam tips are turned off.
+  if(!showInfo)openCard(pl);
+  plantTour.from=cam.yaw;plantTour.pitch=cam.pitch;
+}
+tourButton.onclick=()=>{
+  if(plantTour.on){stopTour();return}if(!pano||!breakOn)return;
+  const stops=FLORA.filter(pl=>pl.zones?.length).slice().sort((a,b)=>a.zones[0].yaw-b.zones[0].yaw);
+  if(!stops.length)return;
+  const closest=stops.reduce((best,pl,i)=>Math.abs(pl.zones[0].yaw-cam.yaw)<Math.abs(stops[best].zones[0].yaw-cam.yaw)?i:best,0);
+  Object.assign(plantTour,{on:true,stops,index:closest,direction:closest===stops.length-1?-1:1,elapsed:0,last:null});
+  cam.drag=false;cam.glide=null;cam.vy=cam.vp=0;
+  tourButton.setAttribute('aria-pressed','true');tourButton.textContent='Pause tour';showTourStop();startLoop();
+};
+function tourFrame(now){
+  if(!plantTour.on||!pano)return false;
+  const t=plantTour;if(t.last!=null)t.elapsed+=Math.max(0,(now-t.last)/1000);t.last=now;
+  const dwell=480/Math.max(1,2*(t.stops.length-1));
+  if(t.elapsed>=dwell){t.elapsed%=dwell;if(t.stops.length>1){if(t.index+t.direction<0||t.index+t.direction>=t.stops.length)t.direction*=-1;t.index+=t.direction}showTourStop()}
+  const plant=t.stops[t.index],goal=Math.max(-LOOK,Math.min(LOOK,plant.zones[0].yaw)),pitch=['grass','moss'].includes(plant.kind)?-10:0;
+  let k=Math.min(1,t.elapsed/(dwell*.48));k=k*k*(3-2*k);cam.yaw=t.from+(goal-t.from)*k;cam.pitch=t.pitch+(pitch-t.pitch)*k;clampCam();return true;
+}
+document.addEventListener('visibilitychange',()=>{plantTour.last=null});
+breakUI.addEventListener('pointerdown',ev=>{if(plantTour.on&&!ev.target.closest('#plantTour,.pCard'))stopTour()},true);
+breakUI.addEventListener('click',ev=>{if(plantTour.on&&ev.target.closest('#pPrev,#pNext,#pX,#bMap,#bScene,#bBack'))stopTour()},true);
+
 function resetGlow(){
   clearTimeout(sel.cardTimer); sel.item = null; sel.amp = sel.target = 0; hideCard(true);
   if (gl){ gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); }
@@ -2457,6 +2492,7 @@ boardBack.addEventListener('click', () => {
   titleResume.focus({preventScroll:true});
 });
 titleResume.addEventListener('click', resumeTitle);
+window.PocketTitleStart=()=>{if(!splash.hidden&&!splash.classList.contains('out')){atTitle?resumeTitle():hideSplash();return true}return false};
 splash.addEventListener('click', hideSplash);
 (document.fonts ? Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]) : Promise.resolve())
   .then(() => setTimeout(hideSplash, 1900));

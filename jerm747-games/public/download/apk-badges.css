@@ -1,0 +1,8 @@
+/* Standalone APK release markers. */
+.tile .apk-new, .chips .apk-new {
+  display: inline-flex; align-items: center; vertical-align: middle; margin-inline-start: .45em;
+  padding: 2px 5px; border: 1px solid #b28a59; border-radius: 4px;
+  color: #ffe6bb; background: #332725; font: 750 9px/1.1 system-ui, sans-serif;
+  letter-spacing: .06em; white-space: nowrap;
+}
+.chips .apk-new { margin-inline-start: 0; }

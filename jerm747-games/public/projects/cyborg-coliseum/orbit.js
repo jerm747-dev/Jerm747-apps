@@ -15,12 +15,12 @@ window.createArenaOrbit = function(canvas, camera, enabled) {
     const prev=pointers.get(e.pointerId);if(!prev||!enabled())return;
     const dx=e.clientX-prev.x,dy=e.clientY-prev.y,oldSpan=pointers.size===2?span():0;
     prev.x=e.clientX;prev.y=e.clientY;
-    if(oldSpan>1)radius=clamp(radius*oldSpan/Math.max(1,span()),2.6,8.8);
+    if(oldSpan>1)radius=clamp(radius*oldSpan/Math.max(1,span()),2.6,17.5);
     else if(pointers.size===1)rotate(dx*.008,dy*.006);
   });
   function release(e){pointers.delete(e.pointerId);if(!pointers.size){dragging=false;canvas.classList.remove('orbiting');}}
   for(const name of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(name,release);
-  canvas.addEventListener('wheel',e=>{if(enabled()){e.preventDefault();radius=clamp(radius*Math.exp(clamp(e.deltaY,-160,160)*.0016),2.6,8.8);}},{passive:false});
+  canvas.addEventListener('wheel',e=>{if(enabled()){e.preventDefault();radius=clamp(radius*Math.exp(clamp(e.deltaY,-160,160)*.0016),2.6,17.5);}},{passive:false});
   function update(x,y,z,dt,snap=false){
     if(!dragging)rotate(-stickX*dt*2.15,-stickY*dt*1.45);
     const follow=snap?1:1-Math.exp(-10*dt);focus.x+=(x-focus.x)*follow;focus.y+=(y-focus.y)*follow;focus.z+=(z-focus.z)*follow;
@@ -32,5 +32,5 @@ window.createArenaOrbit = function(canvas, camera, enabled) {
     camera.position.set(focus.x+sx*h,Math.max(.35,focus.y+radius*Math.sin(pitch)),focus.z+sz*h);
     camera.lookAt(focus);
   }
-  return {update,reset,clear,rotate,get yaw(){return yaw;},stick(x,y){stickX=Math.abs(x)>.16?x:0;stickY=Math.abs(y)>.16?y:0;}};
+  return {update,reset,clear,rotate,zoom(){radius=radius<7?9:radius<13?16:4.65;return radius<7?"Close":radius<13?"Wide":"Arena"},get yaw(){return yaw;},stick(x,y){stickX=Math.abs(x)>.16?x:0;stickY=Math.abs(y)>.16?y:0;}};
 };

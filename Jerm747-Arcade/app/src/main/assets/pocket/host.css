@@ -9,3 +9,8 @@
 #session.j747-pocket-active > .game-nav {display:none!important}
 
 .player:has(.j747-pocket-active) > .play-tools {display:none;}
+
+.j747-game-menu{position:absolute;z-index:5;box-sizing:border-box;overflow:auto;overscroll-behavior:contain;background:#121b22f8;color:#ecf7fb;padding:clamp(6px,1.3vw,18px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(126px,100%),1fr));align-content:start;gap:5px;font:600 clamp(10px,1.6vw,16px)/1.1 system-ui;text-align:left}
+.j747-game-menu[hidden]{display:none!important}.j747-game-menu strong{grid-column:1/-1;letter-spacing:.04em}.j747-game-menu button{font:inherit;min-height:28px;padding:5px;color:#eff9fa;border:1px solid #607a84;border-radius:5px;background:#233641}.j747-game-menu button:focus{outline:2px solid #95edef;outline-offset:-2px;background:#304d58}.j747-game-menu:has(iframe){display:flex;flex-wrap:wrap;align-content:stretch;align-items:center}.j747-game-menu iframe{width:100%;flex:1 0 100%;height:75%;border:0}
+
+.j747-game-menu button:focus-visible{outline-color:#ffd082}

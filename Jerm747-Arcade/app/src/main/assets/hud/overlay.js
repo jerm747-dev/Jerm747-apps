@@ -74,6 +74,7 @@ function showPanel(next,focus){
   if(focus)byId(focus).focus({preventScroll:true});
 }
 function overlayBack(){
+  if(lab.open){requestLabBack();return true;}
   if(panel==='library'){showPanel('sessions','browse-games');return true;}
   if(panel==='sessions'){showPanel('main','open-games');return true;}
   if(panel==='choices'){showPanel('main','more-actions');return true;}

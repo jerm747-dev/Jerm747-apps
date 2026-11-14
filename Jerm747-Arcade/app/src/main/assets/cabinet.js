@@ -12,11 +12,13 @@ const games = [
  ['Plugin Twist','Puzzle','Swap music tokens or twist a corner of the rack to free up slots.','projects/plugin-twist/index.html','covers/plugin-twist.webp'],
  ['Album Match','Puzzle','Line up matching album tiles and chase a cascade.','projects/album-match/index.html','covers/album-match.webp'],
  ['Controller Check','Controller utility','Check connected buttons, sticks, triggers, and rumble.','projects/controller-check/index.html','covers/controller.webp'],
- ['Beat Room','Music · Virtual boombox','Record a tape, load a sample, or make a beat on the 16-step sequencer.','projects/beat-room/index.html','projects/beat-room/cover.jpg'],
+ ['Beat Room','Music · Virtual boombox','Play the three-oscillator synth, shape a sample and record mapped pads into a 16–64-step pattern.','projects/beat-room/index.html','projects/beat-room/cover.jpg'],
  ["Big Bowl Smash", "Get your crew through all four quarters.", "Hurdle passing fans, dive through openings, and ride empty carts as you guide your crew from the field to the parking lot. Time each crossing before the clock runs out.", "projects/big-bowl-smash/index.html", "projects/big-bowl-smash/case.webp"],
  ["Tic-Tac-Steel", "Etch your next move into steel.", "Take on the CPU or a second player. Play three in a row on the Classic board, line up four on the 5×5 plate, or claim three little boards to win Ultimate.", "projects/tic-tac-steel/index.html", "projects/tic-tac-steel/case.webp"],
  ["Sumi Sudoku", "Ink-brush Sudoku with a watercolor park to rest in.", "Classic Sudoku with Japanese ink-brush styling. Take a break in a living watercolor park inspired by Maruyama Park in Kyoto: 12 painted plants, seasons that turn every 5 minutes, day and night every 12, and tap-to-glow plants with fireflies and info cards.", "projects/sumi-sudoku/index.html", "projects/sumi-sudoku/case.webp"],
- ["GS Fighter II", "Groove Squad · Fighter", "Fourteen fighters, cinematic intros, and the Parallax Run.", "projects/gs-fighter-2/index.html", "projects/gs-fighter-2/cover.jpg"]
+ ["GS Fighter II", "Groove Squad · Fighter", "Fourteen fighters, cinematic intros, and the Parallax Run.", "projects/gs-fighter-2/index.html", "projects/gs-fighter-2/cover.jpg"],
+ ['Wave Run 747','Racing · Jet ski','Race the jet ski through buoy gates, chase a ghost, or try an endless course.','projects/wave-run-747/index.html','projects/wave-run-747/case.webp'],
+ ['Pulse Runner','Arcade · Run and gun','Pick an operator and push through the jungle to the Dustline Outpost.','projects/pulse-runner/index.html','projects/pulse-runner/case.webp']
 ];
 const shelfArt = [
  'encore/assets/encore-sleeve.webp','encore/assets/cd-arcade.webp','images/groove-squad/level10/coat-gift.webp','gs3/game/menu-logo.png',
@@ -24,7 +26,9 @@ const shelfArt = [
  "projects/big-bowl-smash/cover.webp",
  "projects/tic-tac-steel/cover.webp",
  "projects/sumi-sudoku/cover.webp",
- "projects/gs-fighter-2/cover.jpg"
+ "projects/gs-fighter-2/cover.jpg",
+ "projects/wave-run-747/cover.webp",
+ "projects/pulse-runner/cover.webp"
 ];
 // Display order is independent of game IDs used by saves, routes and controls.
 const gameOrder=games.map((game,id)=>id).sort((a,b)=>
@@ -71,7 +75,7 @@ function setView(next,scroll=true){
  slider.parentElement.dataset.view=view==='list'?'list':'grid';
  select(current,scroll);
 }
-const newGamePaths = new Set(['big-bowl-smash','tic-tac-steel','sumi-sudoku'].map(slug => 'projects/'+slug+'/index.html'));
+const newGamePaths = new Set(['wave-run-747','pulse-runner'].map(slug => 'projects/'+slug+'/index.html'));
 gameOrder.forEach(i=>{
  const [name,,,,art]=games[i];
  const cart=document.createElement('button');cart.className='cart';const tile=new Image();tile.src=art;tile.alt='';const title=document.createElement('b');title.textContent=name;
@@ -150,7 +154,7 @@ function poll(){
  const flags={prev:pressed(12)||pressed(14)||p?.axes[1]<-.55||p?.axes[0]<-.55,next:pressed(13)||pressed(15)||p?.axes[1]>.55||p?.axes[0]>.55,a:pressed(0),b:pressed(1),select:pressed(8),start:all.some(p=>p.buttons[9]?.pressed)};
  if(releasePadGate){if(!Object.values(flags).some(Boolean))releasePadGate=false;}
  else if(visor.isOpen){
-  if(flags.start&&!lastFlags.start)visor.back();
+  if(flags.start&&!lastFlags.start){if(titleShowing){visor.input('accept')}else visor.back();}
   else if(flags.b&&!lastFlags.b)visor.input('cancel');
   else if(flags.a&&!lastFlags.a)visor.input('accept');
   else if(flags.prev&&!lastFlags.prev)visor.input('prev');
@@ -158,7 +162,8 @@ function poll(){
  }
  else if(byId('cover-view').open&&(flags.b&&!lastFlags.b||flags.start&&!lastFlags.start))byId('cover-view').close();
  else if(!frame&&!titleShowing&&flags.select&&!lastFlags.select)visor.open();
- else if(flags.start&&!lastFlags.start)startKey();
+ else if(flags.start&&!lastFlags.start&&!frame)startKey();
+ else if(frame&&pocketView?.systemOpen){}
  else if(!frame&&!byId('cover-view').open){if(flags.prev&&!lastFlags.prev)stepSelection(-1,true);if(flags.next&&!lastFlags.next)stepSelection(1,true);if(flags.a&&!lastFlags.a)launch();}
  else if(frameHook && maps[current]){
   const held=new Set(Object.entries(maps[current]).filter(([button])=>pressed(+button)).map(([,code])=>code));for(const code of held)if(!activeKeys.has(code))key(frameHook,code,true);for(const code of activeKeys)if(!held.has(code))key(frameHook,code,false);activeKeys=held;

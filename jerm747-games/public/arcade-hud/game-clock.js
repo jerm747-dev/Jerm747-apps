@@ -1,3 +1,4 @@
+(() => {const s=document.createElement('script');s.src=new URL('title-back.js?v=200',document.currentScript.src).href;document.head.append(s)})();
 /* The cabinet owns the visor. Keep each embedded game's time local so a timed
    run resumes on the same frame, even after a long visit to settings. */
 (() => {

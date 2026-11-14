@@ -5,13 +5,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { audio, out, blip, level, ready } from '../engine/audio.js';
 import { buildTapeChain, printTape, TAPE_DEFAULTS } from '../engine/tapefx.js';
-import { startRecording, micAnalyser, micError, releaseMic } from '../engine/mic.js';
+import { micError } from '../engine/mic.js';
+import { startTake, SOURCES } from '../engine/taperec.js';
+import { isArmed, nextBarTime, stepDur, getBpm } from '../engine/clock.js';
+import * as countin from '../engine/countin.js';
+import * as recclick from '../engine/recclick.js';
+import ClickCtl from '../ui/ClickCtl.jsx';
 import * as library from '../engine/library.js';
 import * as pads from '../engine/pads.js';
-import { Screws, Led, Ico, Knob, useLibrary, useRaf, reduce, fmtDb, fmtPct } from '../ui/parts.jsx';
+import { Screws, Led, Ico, Knob, useLibrary, useRaf, reduce, fmtDb, fmtPct, useFullscreen, FullBtn, useFold, FoldBtn } from '../ui/parts.jsx';
 
-const MAX_REC = 30; // seconds
+const MAX_REC = 60; // seconds
 const FX_KEY = 'beatroom.tape';
+const REC_KEY = 'beatroom.tape.rec';
+const BARS = [0, 1, 2, 4, 8]; // 0 = free (stop by hand)
+const loadRec = () => { try { return { source: 'mic', song: true, bars: 0, ...JSON.parse(localStorage.getItem(REC_KEY)) }; } catch { return { source: 'mic', song: true, bars: 0 }; } };
 const loadFx = () => { try { return { ...TAPE_DEFAULTS, ...JSON.parse(localStorage.getItem(FX_KEY)) }; } catch { return { ...TAPE_DEFAULTS }; } };
 
 // one live chain for the deck, built on first use
@@ -43,6 +51,9 @@ export default function TapeDeck() {
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(null);
   const [counter, setCounter] = useState('000');
+  const [recOpt, setRecOptState] = useState(loadRec);
+  const setRecOpt = (c) => setRecOptState((o) => { const n = { ...o, ...c }; try { localStorage.setItem(REC_KEY, JSON.stringify(n)); } catch { /* off */ } return n; });
+  const timers = useRef([]);
   const cur = clips.find((c) => c.id === curId) || clips[clips.length - 1] || null;
   const curIdx = cur ? clips.indexOf(cur) : -1;
 
@@ -51,6 +62,8 @@ export default function TapeDeck() {
   const refs = { reelL: useRef(null), reelR: useRef(null), tapeL: useRef(null), tapeR: useRef(null), nL: useRef(null), nR: useRef(null) };
   const anim = useRef({ ang: 0, lv: [0, 0], mic: null });
   const live = useRef({}); live.current = { mode, winding, cur, loop };
+  const [fsRef, full, toggleFull] = useFullscreen();
+  const [folded, toggleFold] = useFold('tape');
 
   useEffect(() => { library.loadAll(); }, []);
   useEffect(() => {
@@ -62,7 +75,7 @@ export default function TapeDeck() {
     deck.wet.gain.setTargetAtTime(fxOn ? 1 : 0, now, 0.02); deck.dry.gain.setTargetAtTime(fxOn ? 0 : 1, now, 0.02);
   }, [fxOn]);
   useEffect(() => { if (deck?.src) deck.src.loop = loop; }, [loop]);
-  useEffect(() => () => { stopPlay(); recRef.current?.stop().catch(() => {}); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => () => { stopPlay(); recRef.current?.cancel(); timers.current.forEach(clearTimeout); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useRaf((dt, now) => {
     const L = live.current, A = anim.current;
@@ -70,7 +83,7 @@ export default function TapeDeck() {
     const moving = L.winding || (L.mode === 'play' || L.mode === 'rec' ? 1 : 0);
     if (moving && !reduce()) A.ang += moving * dt * 220;
     let f = 0, secs = 0;
-    if (L.mode === 'rec' && ac) { secs = ac.currentTime - t0.current; f = Math.min(1, secs / MAX_REC); if (secs >= MAX_REC) stopRec(); }
+    if (L.mode === 'rec' && ac) { secs = Math.max(0, ac.currentTime - t0.current); f = Math.min(1, secs / MAX_REC); if (secs >= MAX_REC) stopRec(); }
     else if (L.mode === 'play' && ac && L.cur) { const d = L.cur.duration; secs = (ac.currentTime - t0.current); if (L.loop) secs %= d; f = Math.min(1, secs / d); }
     const rl = 28 + 16 * (1 - f), rr = 28 + 16 * f;
     refs.tapeL.current?.setAttribute('r', rl.toFixed(1)); refs.tapeR.current?.setAttribute('r', rr.toFixed(1));
@@ -100,35 +113,71 @@ export default function TapeDeck() {
     s.start(); d.src = s; t0.current = ac.currentTime; setMode('play');
   }
 
+  const later = (fn, atTime) => { const ac = audio(); timers.current.push(setTimeout(fn, Math.max(0, (atTime - ac.currentTime) * 1000))); };
   async function startRec() {
     setMsg(''); stopPlay(); setMode('arming');
+    const ac = audio(); if (!ac) { setMode('idle'); return; }
+    const { source, song, bars } = recOpt;
+    // when does the take start?
+    //  playing already: at the next bar line (or right now with the count-in off)
+    //  stopped: after the count-in, and the song starts with it if "Song on REC" is on
+    let at, synced = true, startedSong = false;
+    if (isArmed('pattern')) {
+      at = countin.beats() ? nextBarTime() : ac.currentTime + 0.03;
+      const beat = 60 / getBpm();
+      for (let k = 4; k >= 1; k--) { const tk = at - k * beat; if (tk > ac.currentTime) later(() => countin.show(k, 'Tape'), tk); }
+      later(() => countin.show(0), at);
+      recclick.begin('tape', at);
+    } else {
+      at = countin.run('Tape');
+      if (song) { pads.play(true, at); startedSong = true; }
+      // the click only makes sense alongside the beat (it never lands on tape)
+      if (song) recclick.begin('tape', at);
+      else synced = countin.beats() > 0;
+    }
     try {
-      const ac = audio();
-      anim.current.mic = await micAnalyser('tape');
-      recRef.current = await startRecording();
-      t0.current = ac.currentTime; setMode('rec');
-    } catch (e) { releaseMic('tape'); setMsg(micError(e)); setMode('idle'); }
+      const take = await startTake({ source, at });
+      take.synced = synced; take.startedSong = startedSong;
+      recRef.current = take; anim.current.mic = take.analyser;
+      t0.current = take.start;
+      later(() => { if (recRef.current === take) setMode('rec'); }, take.start);
+      if (bars) {
+        const end = take.start + bars * 16 * stepDur();
+        take.stopAt(end);
+        later(() => { if (recRef.current === take) stopRec(end); }, end);
+      }
+    } catch (e) { countin.cancel(); setMsg(micError(e)); setMode('idle'); }
   }
-  async function stopRec() {
+  async function stopRec(atTime) {
     const r = recRef.current; if (!r) return;
-    recRef.current = null; setMode('idle'); setBusy(true);
+    recRef.current = null; setMode('idle'); setBusy(true); recclick.end('tape');
+    timers.current.forEach(clearTimeout); timers.current = []; countin.cancel();
     try {
-      const buf = library.trimStart(await r.stop());
-      if (buf.duration < 0.05) { setMsg('That take came out silent. Check the mic and try again.'); return; }
-      const c = library.add({ buffer: buf, source: 'tape' });
-      setCurId(c.id); setMsg(`${c.name} saved to the library.`);
+      let buf = await r.stop(atTime);
+      if (r.startedSong) pads.play(false); // REC started the song, so the end of the take stops it
+      // a free mic take gets its lead-in silence cut; takes that start on a beat stay on the beat
+      if (recOpt.source === 'mic' && !r.synced) buf = library.trimStart(buf);
+      if (buf.duration < 0.05) { setMsg('That take came out silent. Check the source and try again.'); return; }
+      const c = library.add({ buffer: buf, source: recOpt.source === 'mic' ? 'tape' : 'room' });
+      setCurId(c.id); setMsg(`${c.name} saved to the library${recOpt.bars ? ` (${recOpt.bars} bar${recOpt.bars > 1 ? 's' : ''}, on the beat)` : ''}.`);
     } catch (e) { setMsg(`Could not save the take: ${e.message || e}`); }
     finally { setBusy(false); }
   }
 
+  function cancelRec() {
+    timers.current.forEach(clearTimeout); timers.current = []; countin.cancel();
+    recclick.end('tape');
+    if (recRef.current?.startedSong) pads.play(false);
+    recRef.current?.cancel(); recRef.current = null; setMode('idle'); setMsg('Recording cancelled.');
+  }
   const wind = (dir) => { setWinding(7 * dir); setTimeout(() => setWinding(0), 650); };
   const pick = (i) => { const c = clips[(i + clips.length) % clips.length]; if (c) { setCurId(c.id); if (mode === 'play') startPlay(c); } };
 
   const press = (act) => {
     blip(act === 'rec' ? 440 : 880);
-    if (act === 'rec') { if (mode === 'rec') stopRec(); else if (mode !== 'arming') startRec(); return; }
+    if (act === 'rec') { if (mode === 'rec') stopRec(); else if (mode === 'arming') cancelRec(); else startRec(); return; }
     if (act === 'play') { if (mode === 'rec') return; if (mode === 'play') { stopPlay(); setMode('idle'); } else if (cur) startPlay(); else setMsg('The library is empty. Press REC to record a take.'); return; }
-    if (act === 'stop') { if (mode === 'rec') stopRec(); else { stopPlay(); setMode('idle'); } return; }
+    if (act === 'stop') { if (mode === 'rec') stopRec(); else if (mode === 'arming') cancelRec(); else { stopPlay(); setMode('idle'); } return; }
     if (act === 'ff' || act === 'rew') { if (mode === 'rec') return; const dir = act === 'ff' ? 1 : -1; wind(dir); if (clips.length) pick(curIdx + dir); }
   };
 
@@ -147,15 +196,15 @@ export default function TapeDeck() {
   const latched = (act) => (act === 'play' && mode === 'play') || (act === 'rec' && (mode === 'rec' || mode === 'arming')) || (act === 'ff' && winding > 0) || (act === 'rew' && winding < 0);
   const keys = [['rec', 'Rec', 'Record a take'], ['play', 'Play', 'Play or pause'], ['stop', 'Stop', 'Stop'], ['rew', 'Rew', 'Previous clip'], ['ff', 'FF', 'Next clip']];
   const set = (k) => (v) => setFx((p) => ({ ...p, [k]: v }));
-  const label = mode === 'rec' || mode === 'arming' ? 'RECORDING…' : cur ? cur.name : 'BLANK TAPE';
+  const label = mode === 'rec' ? `REC · ${SOURCES[recOpt.source]}` : mode === 'arming' ? 'COUNTING IN…' : cur ? cur.name : 'BLANK TAPE';
 
   return (
-    <section className="section tape-section" aria-labelledby="tape-h">
-      <header className="sec-head"><h2 id="tape-h"><span className="sec-dot" style={{ background: 'var(--c-tape)' }} />Tape deck</h2><p>Record, shape, print, send.</p></header>
+    <section ref={fsRef} className={`section tape-section ${full ? 'is-full brushed' : ''} ${folded && !full ? 'is-folded' : ''}`} aria-labelledby="tape-h">
+      <header className="sec-head"><h2 id="tape-h"><span className="sec-dot" style={{ background: 'var(--c-tape)' }} />Tape deck</h2><p>Record, shape, print, send.</p><span className="sec-tools"><FoldBtn folded={folded} onClick={() => { blip(folded ? 880 : 440); toggleFold(); }} label="Tape deck" /><FullBtn full={full} onClick={toggleFull} label="Tape deck" /></span></header>
       <div className="tape-grid">
         <div className="deck-unit brushed">
           <Screws />
-          <div className="deck-top"><span className="engrave">Stereo cassette sampler</span><span className={`engrave rec-tag ${mode === 'rec' ? 'on' : ''}`}><Led on={mode === 'rec'} color="#ff4b3a" /> Rec</span></div>
+          <div className="deck-top"><span className="engrave">Stereo cassette sampler</span><span className={`engrave rec-tag ${mode === 'rec' ? 'on' : ''}`}><Led on={mode === 'rec' || mode === 'arming'} color={mode === 'arming' ? '#ffb547' : '#ff4b3a'} /> {mode === 'arming' ? 'Ready' : 'Rec'} · {SOURCES[recOpt.source]}</span></div>
           <div className="well"><div className={`cassette ${winding ? 'nudge' : ''}`}>
             <svg viewBox="0 0 600 340" role="img" aria-label={`Cassette: ${label}`}>
               <defs><linearGradient id="br-sh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2b2b30" /><stop offset="1" stopColor="#16161a" /></linearGradient></defs>
@@ -198,6 +247,26 @@ export default function TapeDeck() {
         </div>
 
         <div className="tape-side">
+          <div className="panel rec-opts">
+            <div className="panel-head"><span className="engrave">Record from</span><span className="engrave dim">{countin.beats() ? `${countin.beats() / 4}-bar count-in` : 'No count-in'}</span></div>
+            <div className="seg src-seg" role="radiogroup" aria-label="Record source">
+              {Object.entries(SOURCES).map(([k, n]) => (
+                <button key={k} type="button" role="radio" aria-checked={recOpt.source === k} disabled={mode !== 'idle' && mode !== 'play'} className={`switch ${recOpt.source === k ? 'on' : ''}`} onClick={() => { blip(620); setRecOpt({ source: k }); }}>
+                  <Led on={recOpt.source === k} />{n}
+                </button>
+              ))}
+            </div>
+            <div className="rec-row">
+              <button type="button" className={`switch ${recOpt.song ? 'on' : ''}`} aria-pressed={recOpt.song} onClick={() => { blip(700); setRecOpt({ song: !recOpt.song }); }} title="Start the song on the downbeat when you press REC"><Led on={recOpt.song} />Song on REC</button>
+              <ClickCtl compact />
+              <label className="bars-pick"><span className="engrave">Length</span>
+                <select value={recOpt.bars} onChange={(e) => setRecOpt({ bars: +e.target.value })} aria-label="Take length">
+                  {BARS.map((b) => <option key={b} value={b}>{b ? `${b} bar${b > 1 ? 's' : ''}` : 'Free'}</option>)}
+                </select>
+              </label>
+            </div>
+            <p className="hint">{recOpt.source === 'mic' ? 'Mic only. Headphones keep the beat off the take.' : recOpt.source === 'room' ? 'Records everything playing in the room (pads, synth, turntable), after 747 Drive. Clicks stay off the tape.' : 'The room mix plus the mic, on one take.'}</p>
+          </div>
           <div className="panel">
             <div className="panel-head">
               <span className="engrave">Tape character</span>

@@ -19,7 +19,7 @@ function loadRoute(leg,score=0,stomps=0,power=0){
  const {blockSet,patrols,allNotes}=route;
  state={route,leg,mode:'run',time:0,score,stomps,save:0,camera:0,toast:'',toastTime:0,winTime:0,
   blocks:blockSet.map(([x,kind,y=218])=>({x,y,w:36,h:36,kind,alive:true,spent:false,bump:0})),enemies:patrols.map(makeCritter),
-  notes:allNotes.map(([x,y])=>({x,y,got:false})),discs:[],particles:[],dtSinceRespawn:0};
+  notes:allNotes.map(([x,y])=>({x,y,got:false})),discs:[],particles:[],pulses:[],dtSinceRespawn:0};
  spawn(false);state.player.power=power;
  message(route.theme==='subway'?'Track 02  •  Last train east  →':'Hit the road  →',2.1);return state;
 }
@@ -32,7 +32,7 @@ function nextRoute(){
 function spawn(retry=true){
  const s=state,x=s.route.saves[s.save];
  if(s.player?.cargo){s.player.cargo.mode='gone'}
- s.player={x,y:groundY,vx:0,vy:0,face:1,ground:true,coyote:.1,buffer:0,phase:0,power:0,grace:retry?1.65:.35,cargo:null,duck:false};
+ s.pulses=[];s.player={windup:0,throwPose:0,throwCooldown:0,x,y:groundY,vx:0,vy:0,face:1,ground:true,coyote:.1,buffer:0,phase:0,power:0,grace:retry?1.65:.35,cargo:null,duck:false};
  s.camera=Math.max(0,x-155);
  if(retry){s.mode='retry';s.retryTime=.7;message(s.route.theme==='subway'?'Back on the platform':'Back on the road',1.65);sound('retry')}
 }
@@ -43,6 +43,7 @@ function press(which){
  down.add(which);
  if(which==='jump')state.player.buffer=.13;
  if(which==='lift')lift();
+ if(which==='pulse' && !state.player.throwCooldown){state.player.windup=.09;state.player.throwPose=.26;state.player.throwCooldown=.32;}
 }
 function release(which){
  const held=down.delete(which);
@@ -149,6 +150,16 @@ function updateEnemies(dt,previousY){
  }
  if(p.cargo){p.cargo.x=p.x;p.cargo.y=p.y-59}
 }
+function updatePulses(dt){
+ const s=state,p=s.player;p.throwCooldown=Math.max(0,p.throwCooldown-dt);p.throwPose=Math.max(0,p.throwPose-dt);
+ if(p.windup>0&&(p.windup-=dt)<=0){s.pulses.push({x:p.x+18*p.face,y:p.y-(p.duck?23:37),dir:p.face,life:.8});sound('throw')}
+ for(const q of s.pulses){
+   q.life-=dt;const ox=q.x;q.x+=q.dir*390*dt;
+   const e=s.enemies.find(e=>['walk','flip'].includes(e.mode)&&e.x>=Math.min(ox,q.x)-14&&e.x<=Math.max(ox,q.x)+14&&q.y>=e.y-e.height-6&&q.y<e.y+4);
+   if(e){e.mode='gone';q.life=0;s.score+=2;burst(e.x,q.y,['#b9ffff','#5ed8e8']);sound('flip')}
+ }
+ s.pulses=s.pulses.filter(q=>q.life>0)
+}
 function updateLoot(dt){
  const s=state,p=s.player;
  for(const n of s.notes)if(!n.got&&Math.abs(p.x-n.x)<23&&n.y>p.y-(p.duck?duckHeight:playerHeight)-9&&n.y<p.y+8){
@@ -173,7 +184,7 @@ function step(dt,viewWidth=850){
  if(s.mode==='win'){s.winTime+=dt;return}
  if(s.mode==='retry'){if((s.retryTime-=dt)<=0)s.mode='run';return}
  updatePlayer(dt);if(s.mode!=='run')return;
- updateLoot(dt);for(const b of s.blocks)b.bump=Math.max(0,b.bump-dt);
+ updatePulses(dt);updateLoot(dt);for(const b of s.blocks)b.bump=Math.max(0,b.bump-dt);
  for(const fx of s.particles){fx.x+=fx.vx*dt;fx.y+=fx.vy*dt;fx.vy+=300*dt;fx.life-=dt}
  s.particles=s.particles.filter(f=>f.life>0);
  const goal=clamp(s.player.x-viewWidth*.34,0,s.route.endX-viewWidth);
@@ -216,7 +227,8 @@ function draw(c,w,h){
  for(const d of s.discs)if(!d.got&&visible(d.x))disc(c,d.x,d.y,t);
  for(const e of s.enemies)if(!['gone','carried'].includes(e.mode)&&visible(e.x))crew.drawCritter(c,e.type,e.x,e.y,{facing:e.dir,phase:e.mode==='walk'?e.phase:0,flipped:e.mode!=='walk',time:t});
  const action=s.mode==='win'?'celebrate':p.cargo?'carry':!p.ground?(p.vy<0?'jump':'fall'):Math.abs(p.vx)>12?'run':'idle';
- Cast.drawNige(c,p.x,p.y,{facing:p.face,phase:p.phase,action,walking:Math.abs(p.vx)>12&&p.ground,ducking:p.duck,powered:p.power>0,invulnerable:p.grace>0,time:t});
+ Cast.drawNige(c,p.x,p.y,{facing:p.face,phase:p.phase,throwPose:p.throwPose,action,walking:Math.abs(p.vx)>12&&p.ground,ducking:p.duck,powered:p.power>0,invulnerable:p.grace>0,time:t});
+ for(const q of s.pulses){const gradient=c.createLinearGradient(q.x-26*q.dir,q.y,q.x,q.y);gradient.addColorStop(0,'rgba(70,225,252,0)');gradient.addColorStop(1,'#7ffaff');c.fillStyle=gradient;c.beginPath();c.ellipse(q.x-10*q.dir,q.y,15,4,0,0,tau);c.fill();c.fillStyle='#fff9cb';c.beginPath();c.arc(q.x,q.y,4,0,tau);c.fill()}
  if(p.cargo)crew.drawCritter(c,p.cargo.type,p.x,p.y-59+(p.duck?15:0),{flipped:true});
  for(const f of s.particles){c.fillStyle=f.color;c.fillRect(f.x,f.y,3.5,3.5)}
  c.restore();

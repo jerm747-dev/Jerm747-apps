@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="controls.css">
 <link rel="stylesheet" href="arcade.css">
-</head><body>
+<style>.arc-pulse{position:absolute;right:0;top:0;z-index:2;width:24%;aspect-ratio:1;border-radius:50%;background:#74dfe9;color:#143743;touch-action:none}</style></head><body>
 <main id="game" aria-label="CD Man game"><div class="cabinet"><div class="gamebar"><div class="gamebrand"><img src="../assets/record.svg" width="27" height="27" alt=""> CD MAN</div><div class="tools"><button id="audio" aria-label="Toggle sound" aria-pressed="false">Sound off</button><button id="cd-touch" aria-label="Cycle touch controls">Pad</button><button id="pause">Pause</button><button id="expand" aria-label="Toggle full screen">⛶</button><button id="instructions" data-help aria-label="Game controls">?</button></div></div>
 <div class="viewport" id="viewport"><canvas id="playfield" tabindex="0" aria-label="Side-scrolling platform game. Move with arrow keys, jump with Space, duck with Down, run with Shift, lift and throw with X."></canvas><div class="hud" aria-hidden="true"><span id="stop">SIDE A</span><span id="score">♪ 00</span><span id="power" hidden></span></div><div class="meter" aria-hidden="true"><i id="progress"></i></div><div id="toast" role="status" aria-live="polite"></div><div class="overlay" id="overlay" hidden><div class="overbox"><div id="overKicker" class="eyebrow">RETURNITY ARCADE</div><h2 id="overTitle"></h2><p id="overText"></p><div class="links"><button id="primary" class="start"></button><button id="secondary" class="minor"></button><button id="cd-return" class="minor" hidden>Back to Title</button></div></div></div></div>
 <div class="deck" aria-label="Arcade touch controls">
@@ -38,6 +38,7 @@
       <span class="thumb-arc" aria-hidden="true"></span>
       <button class="arc-speed" data-key="speed" aria-label="Speed — tap to turn on" aria-pressed="false"><span class="button-face"><span class="action-name">Speed</span><kbd>SHIFT</kbd><i class="speed-led" aria-hidden="true"></i></span></button>
       <button class="arc-lift" data-key="lift" aria-label="Lift or throw" aria-pressed="false"><span class="button-face"><span class="action-name">Lift<span class="action-second">/ Throw</span></span><kbd>X</kbd></span></button>
+      <button class="arc-pulse" data-key="pulse" aria-label="Throw pulse"><span class="button-face">Pulse</span></button>
       <button class="arc-jump" data-key="jump" aria-label="Jump" aria-pressed="false"><span class="button-face"><span class="action-name">Jump</span><kbd>SPACE</kbd></span></button>
     </div>
     <span class="deck-label">ACTION</span>

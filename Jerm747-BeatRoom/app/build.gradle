@@ -1,0 +1,48 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.jerm747.beatroom'
+    compileSdk 35
+    buildFeatures { buildConfig true }
+
+    defaultConfig {
+        applicationId 'com.jerm747.beatroom'
+        minSdk 26
+        targetSdk 35
+        versionCode 5
+        versionName '1.1.0'
+        resValue 'string', 'app_name', 'Beat Room'
+    }
+
+    // Release signing: put keystore.properties beside settings.gradle (storeFile, storePassword,
+    // keyAlias, keyPassword). Without it, release builds come out unsigned; debug builds always install.
+    def keyFile = rootProject.file('keystore.properties')
+    if (keyFile.exists()) {
+        def keys = new Properties()
+        keyFile.withInputStream { keys.load(it) }
+        signingConfigs {
+            studio {
+                storeFile rootProject.file(keys.getProperty('storeFile'))
+                storePassword keys.getProperty('storePassword')
+                keyAlias keys.getProperty('keyAlias')
+                keyPassword keys.getProperty('keyPassword')
+            }
+        }
+    }
+
+    // Public development key only. Replace with your private key for store releases.
+    signingConfigs {
+        debug {
+            storeFile rootProject.file('test-signing/beatroom-test.jks')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+    buildTypes {
+        release { minifyEnabled false; debuggable false; if (keyFile.exists()) signingConfig signingConfigs.studio }
+        debug { applicationIdSuffix '.debug'; versionNameSuffix '-test'; resValue 'string', 'app_name', 'Beat Room' }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    androidResources { noCompress += ['png', 'jpg', 'webp', 'wav'] }
+}

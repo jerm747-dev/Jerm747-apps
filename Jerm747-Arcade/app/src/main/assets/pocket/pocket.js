@@ -1,12 +1,201 @@
+/* Cabinet system controls. All game options call the original game's controls. */
+window.createPocketGameMenu=function(host,api){
+  const panel=document.createElement('section');
+  panel.className='j747-game-menu';panel.hidden=true;panel.setAttribute('role','dialog');
+  panel.setAttribute('aria-label','Pocket Player game menu');host.append(panel);
+  let state='',lab=null,frame=null,game='',isPocket=false,ownedClock=false,lastButtons=[],ticker=0,axesHeld=false,wasPocket=false;
+  const starts={
+    'beat-room':'#beat-start','wave-run-747':'#menu:not([hidden]) #startBtn,#resumeBtn',
+    'pulse-runner':'#launch,#primary',
+    'cyborg-coliseum':'#poster:not([hidden]) #start','flight-control-deck':'#mission-start',
+    'gs-fighter-2':'#gs-boot button,#lobby #start','gs-fighter-3':'#press-start','groove-squad-get-down':'#lobby #start',
+    'encore':'#press-start,#selector button[data-mode]','sumi-sudoku':'#titleResume','big-bowl-smash':'#go',
+    'catalog-clash':'.chapter-text button',
+    'cd-man':'#game[data-panel="title"] #primary'
+  };
+  const settings={
+    'sumi-sudoku':'[data-lv],#artSel,#themeToggle,#fxBtn,#fxSpeed,#breakBtn,#tNew,#tUndo,#tHint',
+    'tic-tac-steel':'[data-variant],[data-mode],#lvRow button,[data-human],#tSwap,#tNeg,[data-surf],[data-wall],[data-marks],#sound,#haptics,#motion,#lampBtn,#newRound,#newSeries',
+    'flight-control-deck':'#controller-view,#controller-mode,#modes',
+    'plugin-twist':'#pair,#trio,#corner,#hint,#new,#help',
+    'beat-room':'.pad-mapping .btn-row button',
+    'album-match':'.match-actions button:not([aria-label^="Swap"]),.am-how button',
+    'wave-run-747':'#resetBtn,#seaSeg button,#skySeg button',
+    'cyborg-coliseum':'#mission-zoom,#mission-melee,#mission-grab,#audio,#recenter',
+    'cd-man':'#audio,#instructions','encore':'#audio,#instructions',
+    'word-search':'#new,#help-button,#hint,#zoom',
+    'pulse-runner':'#audio,#changeOperator','big-bowl-smash':'#bSound,#bMenu',
+    'gs-fighter-2':'#haptic','groove-squad-get-down':'#haptic'
+  };
+  const visible=e=>e&&!e.disabled&&!e.closest('[hidden],[inert]')&&e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden'&&getComputedStyle(e).display!=='none';
+  const doc=()=>{try{return frame?.contentDocument}catch{return null}};
+
+  function maskSystem(w) {
+    const nav=w?.navigator;if(!nav || typeof nav.getGamepads!=='function'||nav.getGamepads.pocketMask)return;
+    const read=nav.getGamepads.bind(nav);
+    function filtered(){
+      return Array.from(read()||[],pad=>{
+        if(!pad||(!pad.buttons[8]?.pressed && !pad.buttons[9]?.pressed))return pad;
+        const buttons=Array.from(pad.buttons,(v,i)=>i===8||i===9?{pressed:false,touched:false,value:0}:v);
+        return {id:pad.id,index:pad.index,connected:pad.connected,mapping:pad.mapping,timestamp:pad.timestamp,axes:pad.axes,buttons,vibrationActuator:pad.vibrationActuator,hapticActuators:pad.hapticActuators};
+      });
+    }
+    filtered.pocketMask=true;try{Object.defineProperty(nav,'getGamepads',{configurable:true,value:filtered})}catch{}
+  }
+  function controlStart(){const d=doc();if(!d)return null;const sel=starts[game];if(!sel)return null;return [...d.querySelectorAll(sel)].find(visible)}
+  function layout(){const f=frame?.getBoundingClientRect(),h=host.getBoundingClientRect();if(!f)return;
+    panel.style.left=f.left-h.left+'px';panel.style.top=f.top-h.top+'px';panel.style.width=f.width+'px';panel.style.height=f.height+'px'}
+  function close(){if(!state)return;state='';panel.hidden=true;panel.replaceChildren();lab=null;
+    if(ownedClock){ownedClock=false;window.ArcadeSessions?.release(frame)}frame?.focus({preventScroll:true});}
+  function rows(){return [...panel.querySelectorAll('button:not(:disabled)')]}
+  function button(label,act){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=act;panel.append(b);return b}
+  function title(label){const h=document.createElement('strong');h.textContent=label;panel.append(h)}
+  function display(which){
+    if(!frame)return;
+    if(!state){api.release();window.ArcadeSessions?.hold(frame);ownedClock=true}
+    state=which;panel.hidden=false;panel.replaceChildren();layout();
+    title(which==='paused'?'Paused':which==='lab'?'Haptic Workshop':'Game options');
+    button(which==='paused'?'Resume':'Back to game',close);
+    if(which==='paused'){rows()[0].focus();return}
+    if(which==='lab'){
+      lab=document.createElement('iframe');lab.title='Pocket controller workshop';lab.allow='gamepad; fullscreen';
+      lab.src='/workshops/pocket/index.html?hud=1';panel.append(lab);lab.focus();return;
+    }
+    const d=doc();
+    if(d && settings[game])for(const e of d.querySelectorAll(settings[game])){
+      if(e.disabled||e.type==='hidden')continue;
+      const name=()=> (e.getAttribute('aria-label')||e.title||e.textContent.trim().replace(/\s+/g,' ')||e.id);
+      const value=()=>e.tagName==='SELECT'?(e.selectedOptions[0]?.text||''):e.type==='range'?e.value:e.getAttribute('aria-pressed')==='true'?'On':'';
+      const label=()=>e.tagName==='SELECT'?(e.getAttribute('aria-label')||e.id)+' · '+value():e.type==='range'?'Effect speed · '+value():name()+(value()?' · '+value():'');
+      const b=button(label(),()=>{
+        if(e.tagName==='SELECT'){e.selectedIndex=(e.selectedIndex+1)%e.options.length;e.dispatchEvent(new Event('change',{bubbles:true}))}
+        else if(e.type==='range'){if(+e.value>=+e.max)e.value=e.min;else e.stepUp();e.dispatchEvent(new Event('input',{bubbles:true}))}
+        else e.click();
+        if(['modes','help','new','instructions','breakBtn','bMenu','changeOperator','mission-grab'].includes(e.id)||game==='album-match')close();
+        else {const index=rows().indexOf(b);display('options');rows()[index]?.focus()}
+      });
+    }
+    const original=api.legacy();if(original && !['cyborg-coliseum','flight-control-deck','pulse-runner','wave-run-747','plugin-twist'].includes(game))button(original,()=>{close();api.oldSelect()});
+    if(isPocket)button('Direction · '+api.direction(),()=>{api.switchDirection();display('options')});
+    button('Haptic Workshop',()=>display('lab'));
+    button('Arcade HUD',()=>{close();api.hud()});
+    rows()[0]?.focus({preventScroll:true});
+  }
+  function start(){
+    if(state){close();return}
+    const d=doc();if(!d)return;
+    if(d.defaultView.PocketTitleStart?.())return;
+    const e=controlStart();if(e){e.click();return}
+    display('paused');
+  }
+  function navigate(action,down=true){
+    if(!state)return false;
+    if(!down)return true;
+    if(action==='select'||action==='b'){if(state==='lab')display('options');else close();return true}
+    if(state==='lab')return true;
+    const list=rows(),i=list.indexOf(document.activeElement);
+    if(action==='a')list[Math.max(i,0)]?.click();
+    if(['left','up','right','down'].includes(action))list[(i+(['left','up'].includes(action)?-1:1)+list.length)%list.length]?.focus();
+    return true;
+  }
+  function poll(){
+    ticker=requestAnimationFrame(poll);if(!frame||frame.hidden||document.hidden){lastButtons=[];return}
+    let pad;try{pad=Array.from(window.Arcade?.pads?.()||navigator.getGamepads?.()||[]).find(Boolean)}catch{}
+    if(!pad){lastButtons=[];return}
+    // An open native HUD owns hardware input including any Game Settings modal.
+    if(api.blocked()){lastButtons=pad.buttons.map(b=>!!b.pressed);return}
+    const a=pad.buttons.map(b=>!!b.pressed);
+    [12,13,14,15].forEach((i,n)=>a[i] ||= [-(pad.axes[1]||0),pad.axes[1]||0,-(pad.axes[0]||0),pad.axes[0]||0][n]>.6);
+    if(a[8]&&!lastButtons[8]){if(state)navigate('select');else display('options')}
+    else if(a[9]&&!lastButtons[9])start();
+    else if(state)for(const [i,k] of [[12,'up'],[13,'down'],[14,'left'],[15,'right'],[0,'a'],[1,'b']])if(a[i]&&!lastButtons[i]){navigate(k);break}
+    lastButtons=a;
+  }
+  function key(e){if(!state)return;const k={ArrowDown:'down',ArrowUp:'up',ArrowRight:'right',ArrowLeft:'left',Escape:'b'}[e.key];
+    if(k){e.preventDefault();navigate(k)}}
+  function message(e){if(e.origin!==location.origin||e.source!==lab?.contentWindow)return;
+    if(e.data?.type==='pocket-workshop-back')display('options');
+    if(e.data?.type==='pocket-workshop-applied')window.Jerm747Pocket.refreshControls();}
+  window.addEventListener('message',message);panel.addEventListener('keydown',key);window.addEventListener('resize',layout);ticker=requestAnimationFrame(poll);
+  const obs=new ResizeObserver(layout);obs.observe(host);
+  return {get open(){return !!state},layout,close,start,navigate,options:()=>state?close():display('options'),
+    axes(x,y){if(!state)return false;const mag=Math.max(Math.abs(x),Math.abs(y));if(mag<.3)axesHeld=false;else if(mag>.55&&!axesHeld){axesHeld=true;navigate(Math.abs(x)>Math.abs(y)?x<0?'left':'right':y<0?'up':'down')}return true},
+    sync(f,id,on){if(f!==frame||id!==game||wasPocket!==on)close();if(!on&&f)try{maskSystem(f.contentWindow)}catch{}frame=f;game=id;isPocket=wasPocket=on;if(state)layout()},
+    destroy(){close();cancelAnimationFrame(ticker);obs.disconnect();window.removeEventListener('resize',layout);window.removeEventListener('message',message);panel.remove()}
+  };
+};
+
 /* 747 Pocket: the original molded Encore Handheld controls adapted to an
    existing arcade frame. The playing document never changes parents. */
 (() => {
   'use strict';
-  const stylesheet = new URL('pocket-shell.css', document.currentScript.src).href;
+  const stylesheet = new URL('pocket-shell.css' + new URL(document.currentScript.src).search, document.currentScript.src).href;
   const faces = [
     ['y', 'top', '#b9c6ff'], ['x', 'left', '#ffa7cc'],
     ['a', 'right', '#ffdc91'], ['b', 'bottom', '#9ef0dc']
   ];
+  // Keep the finish current when another tab or a restored page changes it.
+  function restoreFinish() {
+    let stored;
+    try { stored = localStorage.getItem(finishKey); } catch { return; }
+    const next = valid(stored) ? stored : 'auto';
+    if (finish === next) return;
+    finish = next;
+    window.dispatchEvent(new Event('pocket-finish-change'));
+  }
+  window.addEventListener('pageshow', event => { if (event.persisted) restoreFinish(); });
+  window.addEventListener('storage', event => {
+    if (event.key === finishKey || event.key === null) restoreFinish();
+  });
+  const controlsKey='jerm747.pocket.controls.v1';
+  function readControls(){
+    try{
+      const v=JSON.parse(localStorage.getItem(controlsKey)||'{}');
+      const legacy=localStorage.getItem('747.pocket.workshop.v1.level');
+      return {mode:v.mode==='stick'?'stick':'pad',level:['off','light','firm'].includes(v.level)?v.level:['off','light','firm'].includes(legacy)?legacy:'light'};
+    }catch{return {mode:'pad',level:'light'};}
+  }
+  let controls=readControls();
+  function refreshControls(){
+    controls=readControls();
+    window.dispatchEvent(new Event('pocket-controls-change'));
+  }
+  function saveControls(next){
+    const value={mode:next.mode==='stick'?'stick':'pad',level:['off','light','firm'].includes(next.level)?next.level:'light'};
+    try{localStorage.setItem(controlsKey,JSON.stringify(value));}catch{}
+    controls=value;
+    window.dispatchEvent(new Event('pocket-controls-change'));
+  }
+  window.addEventListener('storage',e=>{if(e.key===controlsKey||e.key===null)refreshControls();});
+  window.addEventListener('pageshow',e=>{if(e.persisted)refreshControls();});
+  let lastHaptic=-Infinity;
+  function touchPulse(){
+    if(controls.level==='off'||performance.now()-lastHaptic<45)return;
+    lastHaptic=performance.now();
+    const light=controls.level==='light', duration=light?12:28;
+    try{
+      if(typeof window.EncoreAndroid?.rumble==='function')window.EncoreAndroid.rumble(duration,light?18:44);
+      else navigator.vibrate?.(duration);
+    }catch{}
+  }
+  const skins = {'wave-run-747':'ice'};
+  const finishKey = 'jerm747.pocket.finish.v1';
+  const finishes = Object.freeze({auto: 'Game default', ice: 'Ice Blue', classic: 'Classic'});
+  const valid = value => Object.prototype.hasOwnProperty.call(finishes, value);
+  let finish = 'auto';
+  try {
+    const saved = localStorage.getItem(finishKey);
+    if (valid(saved)) finish = saved;
+  } catch {}
+  function setFinish(value) {
+    if (!valid(value) || finish === value) return;
+    finish = value;
+    try { localStorage.setItem(finishKey, value); } catch {}
+    window.dispatchEvent(new Event('pocket-finish-change'));
+  }
+  function skinFor(gameId) {
+    return finish === 'auto' ? (skins[gameId] || '') : finish === 'ice' ? 'ice' : '';
+  }
   const actions = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'y', 'l', 'r', 'select'];
   const sectors = [['right'], ['up','right'], ['up'], ['up','left'],
                    ['left'], ['down','left'], ['down'], ['down','right']];
@@ -34,7 +223,9 @@
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = stylesheet;
-    shadow.append(link);
+    const finishSheet = link.cloneNode();
+    finishSheet.href = stylesheet.replace('pocket-shell.css', 'pocket-ice.css');
+    shadow.append(link, finishSheet);
 
     const shell = document.createElement('div');
     shell.className = 'safe';
@@ -57,14 +248,14 @@
           </div>
           <div class="screen" aria-hidden="true"></div>
         </div>
-        <div class="wordmark" aria-hidden="true"><b>747 <i>Pocket</i></b></div>
-        <div class="direction-control">${padMarkup}</div>
+        <div class="wordmark" aria-hidden="true"><img src="/pocket/wordmark.svg?v=200" alt=""></div>
+        <div class="direction-control">${padMarkup}<div class="pocket-stick" role="group" aria-label="Analog joystick" hidden><span></span></div></div>
         <div class="faces">
           ${faces.map(([key,position,color])=>`<button type="button" class="face face-${position}" data-key="${key}" style="--c:${color}"><span class="button-face"><span class="face-letter">${key.toUpperCase()}</span><span class="action-name"></span></span></button>`).join('')}
         </div>
-        <div class="system-row">
+        <div class="system-row"><button class="system-btn" type="button" data-command="eject" aria-label="Return to cabinet"><i></i><span>CABINET</span></button>
           <button class="system-btn" type="button" data-key="select"><i></i><span>SELECT</span></button>
-          <button class="system-btn" type="button" data-command="menu" aria-label="Start: open game HUD"><i></i><span>START</span></button>
+          <button class="system-btn" type="button" data-command="menu" aria-label="Start, pause or resume"><i></i><span>START</span></button>
           <button class="system-btn" type="button" data-command="screen" aria-label="Switch to full game view"><i></i><span>SCREEN</span></button>
         </div>
         <div class="grille" aria-hidden="true"></div>
@@ -84,12 +275,42 @@
     let labels = {}, hint = '', cartridge = {title: '', cover: '', id: ''};
     let restorePosition = null, guideOpen = false;
 
+    let flightMode=null;
+    const currentMode=()=>cartridge.id==='flight-control-deck'?(flightMode||'stick'):controls.mode;
+    const cycleMode=()=>{const mode=currentMode()==='stick'?'pad':'stick';if(cartridge.id==='flight-control-deck'){flightMode=mode;showControl()}else saveControls({...controls,mode})};
+    const stick=$('.pocket-stick');
+    let stickPointer=null,stickSector='';
+    function resetStick(){
+      stickPointer=null;stickSector='';stick.style.setProperty('--x','0%');stick.style.setProperty('--y','0%');
+      options.onAxes?.(0,0);
+    }
+    function showControl(){
+      dragging.clear();releaseInput();
+      pad.hidden=currentMode()==='stick';stick.hidden=!pad.hidden;updateGuide();
+    }
+    function steerStick(e){
+      const r=stick.getBoundingClientRect(), dx=(e.clientX-r.left-r.width/2)/(r.width*.36),dy=(e.clientY-r.top-r.height/2)/(r.height*.36);
+      const length=Math.hypot(dx,dy),gain=length>.14?Math.min(1,(length-.14)/.86)/length:0;
+      const x=dx*gain,y=dy*gain;
+      stick.style.setProperty('--x',(x*48)+'%');stick.style.setProperty('--y',(y*48)+'%');
+      const keys=length>.29?sectors[(Math.round(Math.atan2(-dy,dx)/(Math.PI/4))+8)%8]:[];
+      if(keys.length&&keys.join()!==stickSector&&e.pointerType==='touch')touchPulse();
+      stickSector=keys.join();
+      const usesAxes=options.onAxes?.(x,y);
+      reconcile('stick',usesAxes?[]:keys);
+    }
+    stick.addEventListener('pointerdown',e=>{
+      if(!mayInput()||stickPointer!==null||e.button!==0)return;
+      stickPointer=e.pointerId;e.preventDefault();stick.setPointerCapture(e.pointerId);steerStick(e);
+    });
+    stick.addEventListener('pointermove',e=>{if(e.pointerId===stickPointer&&mayInput())steerStick(e);});
     function reconcile(source, keys = []) {
       const nextKeys = keys.filter(key => !buttonMap.get(key)?.disabled);
       if (nextKeys.length) owners.set(source,nextKeys);
       else owners.delete(source);
       const next = new Set([...owners.values()].flat());
       const old = held;
+      if(typeof source==='string' && source.startsWith('pointer:') && touchIds.has(source.slice(8)) && [...next].some(k=>!old.has(k)))touchPulse();
       held = next;
       for (const key of old) if (!next.has(key)) options.onInput?.(key, false);
       for (const key of next) if (!old.has(key)) options.onInput?.(key, true);
@@ -104,7 +325,7 @@
     function releaseInput() {
       for (const t of pulseTimers) clearTimeout(t);
       pulseTimers.clear();
-      owners.clear();
+      resetStick();owners.clear();
       reconcile(null);
     }
     function closeGuide() {
@@ -124,13 +345,14 @@
       if (!radius || Math.hypot(dx,dy) < .18*radius || Math.hypot(dx,dy) > 1.12*radius) return [];
       return sectors[(Math.round(Math.atan2(-dy,dx)/(Math.PI/4)) + 8) % 8];
     }
-    const dragging = new Set();
+    const dragging = new Set(), touchIds=new Set();
     shell.addEventListener('pointerdown', event => {
       if (!mayInput() || (event.pointerType === 'mouse' && event.button !== 0)) return;
       const onPad = event.target.closest('.dpad');
       const button = event.target.closest('[data-key]');
       if (!onPad && (!button || button.disabled)) return;
       const owner = onPad || button;
+      if(event.pointerType==='touch')touchIds.add(String(event.pointerId));
       event.preventDefault();
       try { owner.setPointerCapture(event.pointerId); } catch {}
       if (onPad) dragging.add(event.pointerId);
@@ -142,6 +364,8 @@
       reconcile('pointer:' + event.pointerId, mayInput() ? padKeys(event) : []);
     });
     function lift(event) {
+      if(event.pointerId===stickPointer){resetStick();reconcile('stick');}
+      touchIds.delete(String(event.pointerId));
       dragging.delete(event.pointerId);
       if (owners.has('pointer:' + event.pointerId)) reconcile('pointer:' + event.pointerId);
     }
@@ -165,11 +389,11 @@
     function updateGuide() {
       $('.guide p').textContent = hint;
       $('.guide p').hidden = !hint;
-      const rows = [['D-pad', labels.dpad || 'Eight-way direction pad']];
+      const rows = [[currentMode()==='stick'?'Joystick':'D-pad', labels.dpad || (controls.mode==='stick'?'Tilt to move':'Eight-way direction pad')]];
       for (const key of ['a','b','x','y','l','r','select']) {
         if (!buttonMap.get(key).disabled) rows.push([key.toUpperCase(), labels[key] || key.toUpperCase()]);
       }
-      rows.push(['START','Open game HUD'], ['SCREEN','Return to full game view'], ['⏏','Eject cartridge to shelf']);
+      rows.push(['START','Start, pause or resume'], ['SCREEN','Return to full game view'], ['⏏','Eject cartridge to shelf']);
       const dl = $('.guide dl');
       dl.replaceChildren();
       for (const [key,value] of rows) {
@@ -209,7 +433,7 @@
     guide.addEventListener('close', closeGuide);
     function setLabels(next = {}) {
       releaseInput(); dragging.clear();
-      labels = {...next};
+      labels = {...next, select:'Game options'};
       for (const [key,b] of buttonMap) {
         const dir = sectors.some(s=>s.length===1 && s[0]===key);
         const label = String(labels[key] || '').trim();
@@ -224,6 +448,13 @@
       updateGuide();
     }
     function setProfile(profile = {}) { hint=profile?.hint||'';setLabels(profile?.labels || {}); }
+    function applyFinish() {
+      const skin = skinFor(cartridge.id);
+      $('.wordmark img').src='/pocket/'+(skin==='ice'?'wordmark.svg':'wordmark-light.svg')+'?v=200';
+      if (skin) { device.dataset.skin = skin; root.dataset.skin = skin; }
+      else { delete device.dataset.skin; delete root.dataset.skin; }
+    }
+    window.addEventListener('pocket-finish-change', applyFinish);
     function setCartridge(next = {}) {
       const title=String(next?.title||'');
       const cover=String(next?.cover||'');
@@ -237,7 +468,9 @@
           } catch {}
         }
       }
+      if(cartridge.id!==String(next?.id||''))flightMode=null;
       cartridge={title,cover,id:String(next?.id||'')};
+      applyFinish();
       $('.cart-label strong').textContent=title || '747 Pocket';
       $('.cart-label').title=title;
       $('.eject').setAttribute('aria-label',title?'Eject '+title+' and return to shelf':'Eject cartridge and return to shelf');
@@ -293,7 +526,7 @@
       root.hidden=!active;
       host.classList.toggle('j747-pocket-active',active);
       latestSize='';
-      if (active) measure();
+      if (active) {flightMode=null;showControl();measure();}
       else {
         reset();
         for (const key of ['x','y','w','h'])host.style.removeProperty('--pocket-screen-'+key);
@@ -302,19 +535,23 @@
     }
     setLabels(Object.fromEntries(actions.map(k=>[k,k.toUpperCase()])));
     setCartridge();
+    window.addEventListener('pocket-controls-change',showControl);
+    showControl();
     return {
-      setActive,setLabels,setProfile,setCartridge,release:reset,
+      setActive,setLabels,setProfile,setCartridge,cycleMode,currentMode,release:reset,
       destroy() {
         if(destroyed)return;
         setActive(false);destroyed=true;reset();observer?.disconnect();
         window.removeEventListener('pointerup',lift,true);window.removeEventListener('pointercancel',lift,true);
         window.removeEventListener('resize',measure);window.removeEventListener('blur',reset);
         window.removeEventListener('pagehide',reset);document.removeEventListener('visibilitychange',visible);
+        window.removeEventListener('pocket-finish-change', applyFinish);
+        window.removeEventListener('pocket-controls-change',showControl);
         root.remove();
       }
     };
   }
-  window.Jerm747Pocket = {mount};
+  window.Jerm747Pocket = {mount, finishes, getFinish: () => finish, setFinish, skinFor, getControls:()=>({...controls}),saveControls,refreshControls};
 })();
 
 /* 747 Pocket controls. Attach only inside the currently playing, same-origin game. */
@@ -328,13 +565,15 @@
   const profile = (mode, labels, hint, buttons={}) => ({mode,labels:{...blank,...labels},hint,buttons:{...standard,...buttons}});
   const fight = profile('pad',{a:'Jump',b:'Kick',x:'Punch',y:'V-wave',l:'Guard',r:'High',select:'Music'},
     'D-pad moves and ducks. Hold R for high strikes. Custom game bindings still apply.');
+  const storyFight = profile('pad', {...fight.labels, select:'Low'},
+    'D-pad moves and ducks. X punches, B kicks. Hold R for high or Select for low. Y fires a V-Wave.', {select:6});
   const climb = profile('pad',{a:'Jump / OK'},'D-pad moves. A selects a story or jumps on the mountain.');
   const focusProfile = profile('focus',{a:'Use',b:'Back'},'Move between controls with the D-pad. Press A to use the focused control, or touch the screen.');
   const profiles = {
     'encore':profile('pad',{a:'Jump',b:'Flip',x:'Fire',y:'Talk',l:'Speed',r:'Flip',select:'Light'},
       'Hold L to run. Combine Jump and Flip for the game’s special moves. A confirms menus.',{x:7,y:6,r:2,select:11}),
     'cd-man':profile('pad',{a:'Jump',b:'Lift',x:'Throw',y:'Run lock',l:'Speed',r:'Speed'},
-      'D-pad moves. Lift a nearby item and press again to throw. Hold L to run.'),
+      'D-pad moves. X throws a light pulse. B lifts or throws a carried item. Hold L to run.'),
     'big-bowl-smash':profile('pad',{a:'Hurdle',b:'Dive',x:'Speed',y:'Stiff arm',l:'Speed',r:'Dive',select:'Sound'},
       'D-pad moves. Hold a direction when diving; hold X for speed. A confirms menu choices.'),
     'tic-tac-steel':profile('pad',{a:'Mark',b:'Back',y:'Options'},
@@ -343,8 +582,8 @@
       'D-pad chooses a cell. L and R choose 1–9, A writes, and X toggles notes.'),
     'flight-control-deck':profile('pad',{a:'Center',b:'Shield',x:'Fire',y:'Warp',l:'Boost',r:'Brake',select:'View'},
       'D-pad steers. A launches from the mission screen. Use the touch display to aim or change flight settings.',{x:7,select:10}),
-    'cyborg-coliseum':profile('pad',{a:'Jump',b:'Kick',x:'Punch',y:'Arc lance',l:'Ascend',r:'Descend',select:'Fire'},
-      'D-pad moves. Hold Select for chest fire; drag the view to look around.',{l:10,r:11,select:7}),
+    'cyborg-coliseum':profile('pad',{a:'Grab / jump',b:'Melee',x:'Fire',y:'Arc lance',l:'Ascend',r:'Descend',select:'Fire'},
+      'D-pad moves. X fires the chest cannon. Y cracks a core. A grabs or delivers. Select changes the melee strike or camera.',{x:7,l:10,r:11,select:7}),
     'catalog-clash':climb,
     'gs-fighter-3':profile('pad',{a:'Mid kick',b:'High kick',x:'Mid punch',y:'High punch',l:'Guard',r:'V-wave',select:'Jump'},
       'D-pad moves; A confirms menus. Touch fighter select for the opponent. Custom game bindings still apply.',{l:5,r:7,select:10}),
@@ -355,12 +594,17 @@
       'D-pad chooses a token. A swaps a pair or twists left, B twists right. X changes mode.'),
     'album-match':profile('album',{a:'Swap ↓',b:'Swap →',x:'Swap ←',y:'Swap ↑'},
       'D-pad moves the tile cursor. Use the four face buttons to swap in that direction; A confirms on result screens.'),
-    'beat-room':focusProfile,
+    'beat-room':profile('pad',{a:'Use / play',b:'Sections',x:'− / clear',y:'+ / set',l:'Previous',r:'Next',select:'Pad mode'},
+      'L/R choose a section, A enters, B goes back. D-pad moves. In a section L/R browse controls or pages. Select plays your mapped pads.'),
+    'wave-run-747':profile('pad',{a:'Gas',b:'Brake',x:'Brake',y:'Reset',l:'Brake',r:'Gas',select:'Start'},
+      'D-pad steers; Up adds throttle. Hold A or R for gas, B or L to brake. Y puts you back on the course. Select starts the race or pauses.',{l:6,r:7,select:9}),
+    'pulse-runner':profile('pad',{a:'Fire',b:'Dive',x:'Melee',y:'Grenade',l:'Run',r:'Fire',select:'Start'},
+      'D-pad moves and picks an operator. A or R fires, B dives, X strikes, Y throws a grenade. Hold L to run. Select launches or pauses.',{r:7,select:9}),
     'controller-check':profile('focus',{a:'Use',b:'Back'},'The checker reads the connected physical controller. D-pad and A navigate test options.'),
   };
   const defaultProfile = focusProfile;
   function gameProfile(id, doc) {
-    if (id === 'catalog-clash' && doc?.location.pathname.endsWith('catalog-clash-level10.html')) return fight;
+    if (id === 'catalog-clash' && doc?.location.pathname.endsWith('catalog-clash-level10.html')) return storyFight;
     return profiles[aliases[id] || id] || defaultProfile;
   }
   const controlsSelector = 'button:not([disabled]),summary,select:not([disabled]),input:not([disabled]):not([type="hidden"]),a[href]';
@@ -450,9 +694,10 @@
   }
   function create({getFrame,getGameId}) {
     let active=false, game='', guest=null, reader=null, nextRepeat=null;
+    let stickX=0,stickY=0;
     const held = new Map(), pending = new Map(), touched = new Set();
     function releaseAll() {
-      held.clear();touched.clear();
+      stickX=0;stickY=0;held.clear();touched.clear();
       for(const t of pending.values()) clearTimeout(t);
       pending.clear();clearTimeout(nextRepeat);nextRepeat=null;
     }
@@ -475,13 +720,20 @@
         if (!active) return pads;
         const slot=Math.max(0,pads.findIndex(p=>p && p.connected!==false));
         const real=pads[slot];
-        if (real && !held.size) return pads;
+        // The cabinet consumes Start and Select once, including physical pads.
         const pressedSlots=new Set(Array.from(held.values(), binding=>binding.index));
         const buttons=Array.from({length:Math.max(17,real?.buttons?.length || 0)},(_,i)=>{
           const pressed=pressedSlots.has(i);
+          if(i===8||i===9){return {pressed,touched:pressed,value:pressed?1:0}}
           return pressed ? {pressed:true,touched:true,value:1} : real?.buttons?.[i] || {pressed:false,touched:false,value:0};
         });
         const axes=Array.from({length:Math.max(4,real?.axes?.length || 0)},(_,i)=>real?.axes?.[i] || 0);
+        if(stickX||stickY){axes[0]=stickX;axes[1]=stickY;
+          // These games use the standard D-pad for menu steps; Wave Run reads continuous axes.
+          if(game!=='wave-run-747'){
+            for(const [axis,index] of [[-stickY,12],[stickY,13],[-stickX,14],[stickX,15]])if(axis>.48)buttons[index]={pressed:true,touched:true,value:1};
+          }
+        }
         if (held.has('left')||held.has('right')) axes[0]=Number(held.has('right'))-Number(held.has('left'));
         if (held.has('up')||held.has('down')) axes[1]=Number(held.has('down'))-Number(held.has('up'));
         pads[slot]={id:real?.id || '747 Pocket',index:real?.index ?? slot,connected:true,mapping:real?.mapping || 'standard',
@@ -495,7 +747,7 @@
       let current=null;
       if (active) {try {current=getFrame()?.contentDocument || null;} catch {}}
       if (current!==guest || game!==id) {releaseAll();detach();guest=current;game=id;}
-      if (guest && gameProfile(game,guest).mode==='pad') install(guest.defaultView);
+      if (guest) install(guest.defaultView);
     }
     function getProfile() {
       let doc;try {doc=getFrame()?.contentDocument;}catch{}
@@ -538,7 +790,12 @@
         }
       }
     }
-    return {activate(){active=true;sync()},deactivate(){active=false;releaseAll();detach();guest=null;game='';},sync,input,releaseAll,getProfile};
+    function axes(x,y){
+      if(!active)return false;
+      sync();if(!guest||gameProfile(game,guest).mode!=='pad')return false;
+      stickX=x;stickY=y;return true;
+    }
+    return {axes,activate(){active=true;sync()},deactivate(){active=false;releaseAll();detach();guest=null;game='';},sync,input,releaseAll,getProfile};
   }
   window.Jerm747PocketInput=Object.freeze({create});
 })();
@@ -556,6 +813,29 @@
   // Hide duplicate touch decks only when the game has a mapped replacement.
   // Menus, board cells, camera regions, and additional on-screen actions stay interactive.
   const guestStyles = {
+'sumi-sudoku':`
+  html,body{overflow:hidden!important}
+  .app{box-sizing:border-box!important;width:100vw!important;height:100dvh!important;max-width:none!important;padding:3px!important;margin:0!important;display:grid!important;grid-template:1fr / minmax(0,1fr) minmax(90px,24%)!important;gap:5px!important}
+  .app header,.app .stats,.app .settings,.tools,#controller-guide{display:none!important}
+  .boardWrap,.app .side{grid-column:auto!important;grid-row:auto!important;align-self:center;min-width:0}
+  .board{width:min(99dvh,100%)!important;min-width:0!important}.app .side{display:block!important}.pad{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:3px!important}.pad button{height:clamp(28px,15dvh,64px)!important}
+`,
+'album-match':`
+ .album-match{padding:3px!important;inset:0!important;overflow:hidden!important}.am-v33{display:grid!important;height:100dvh!important;box-sizing:border-box;grid-template-columns:minmax(0,1fr) minmax(78px,20%);grid-template-rows:auto 1fr auto;align-items:center;gap:3px}
+ .am-v33 header,.am-objective,.am-selection,.am-progress,.am-how,.match-guide,.match-help,.am-controls,.match-actions,.am-scores{display:none!important}
+ .am-v33 .match-grid{grid-column:1;grid-row:1/4;box-sizing:border-box;width:min(99dvh,100%)!important;max-width:none!important;padding:3px!important;gap:2px!important;margin:auto!important}.match-row{gap:2px!important}.match-status,.match-message{grid-column:2;overflow-wrap:anywhere}.match-status{display:grid!important;padding:2px!important}
+`,
+'plugin-twist':`
+ html,body{overflow:hidden!important}.applet{box-sizing:border-box!important;height:100dvh!important;width:100%!important;max-width:none!important;margin:0!important;padding:3px!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(74px,19%)!important;grid-template-rows:1fr!important;gap:4px!important}
+ .applet .top,.storage,.applet .controls,.applet .bottom{display:none!important}.applet .stats{grid-area:1/2;display:flex;flex-direction:column;align-self:center}.applet .arena{grid-area:1/1;width:100%;height:100%;min-height:0;padding:0!important;display:grid;place-items:center}.applet #board{width:min(98dvh,100%)!important;max-height:100%!important}
+`,
+'tic-tac-steel':`.app .ruleset,.app>.row,.app>.cfg,.app>.workshop,.app>.maker,.app .seg:has([data-variant]),.app details,.lampBtn,#controller-guide{display:none!important}.app{padding:3px!important}.plate{max-width:min(94vw,85dvh)!important;margin:0 auto!important}`,
+'cyborg-coliseum':`
+ html,body,main,.cab{margin:0!important;padding:0!important;width:100%!important;height:100%!important;max-width:none!important;overflow:hidden!important}
+ body>header,.bar,.deck-head,.deck,footer,.sector,.aux,.eyeline,.playhud button{display:none!important}#screen{position:fixed!important;inset:0!important;height:100%!important;width:100%!important;aspect-ratio:auto!important;border:0!important}#poster small kbd{display:none}
+`,
+'flight-control-deck':`#drawer,#controller-tools,#controller-view,#controller-mode,#controller-pause,#left,#right,.foot,.center-fire,#mission-help,.race-input #race-throttle{display:none!important}#deck{inset:0!important;width:100%!important;height:100dvh!important;max-width:none!important}#deck canvas{height:100%!important}.race-input:after{display:none!important}`,
+
     // The board stays touchable. Give the grid most of the aperture and let
     // the word bank and the original toolbar scroll independently.
     'word-search':`
@@ -579,17 +859,34 @@
     'encore':'#game .deck {display:none!important}',
     'cd-man':'#game .deck {display:none!important}',
     'big-bowl-smash':'.controls.deck {display:none!important}',
-    'catalog-clash':'.climb-deck {display:none!important}'
+    'catalog-clash':'.climb-deck {display:none!important}',
+    'wave-run-747':'.pad {display:none!important}',
+    // Pulse Runner ships inside its own Pocket Player page. In the arcade
+    // Pocket, only its game screen is shown; the outer handheld supplies the controls.
+    'pulse-runner':`
+      html,body {overflow:hidden!important;background:#000!important}
+      .top,.sectionhead,footer,.shell-body,.screw,.cartridge-slot,.left-wing,.right-wing,.bezel-head,.bezel-foot {display:none!important}
+      main {padding:0!important;margin:0!important;width:100%!important;max-width:none!important}
+      .console-stage {position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;max-width:none!important;min-width:0!important;margin:0!important;padding:0!important;display:block!important;background:#000!important}
+      .device.deck {position:absolute!important;inset:0!important;width:100%!important;height:100%!important;padding:0!important;border-radius:0!important;display:block!important;transform:none!important}
+      .device .bezel {position:absolute!important;inset:0!important;padding:0!important;margin:0!important;border:0!important;border-radius:0!important}
+      .device .display {position:absolute!important;inset:0!important;width:100%!important;height:100%!important;aspect-ratio:auto!important;border-radius:0!important;border:0!important}
+    `
   };
   function create(host, options) {
     let frame = null, gameId = '', guest = null, active = false, held = false, guideOpen = false, aperture = null;
     const remembered = new Map();
     const input = window.Jerm747PocketInput.create({getFrame:()=>frame, getGameId:()=>gameId});
+    let menu;
     const shell = window.Jerm747Pocket.mount(host, {
+      onAxes(x,y){if(menu?.axes(x,y))return true;return active&&!held&&!guideOpen&&!document.hidden && input.axes(x,y);},
       onInput(action, down) {
-        if (active && !held && !guideOpen && !document.hidden) input.input(action, down);
+        if(!active||held||guideOpen||document.hidden)return;
+        if(menu?.navigate(action,down))return;
+        if(action==='select'){if(down)menu.options();return}
+        input.input(action,down);
       },
-      onMenu: () => { if (active && !held) options.onMenu(); },
+      onMenu: () => { if (active && !held) menu.start(); },
       onEject: () => { if (active && !held) options.onEject(); },
       onGuideChange(open) {
         guideOpen = !!open;
@@ -599,10 +896,16 @@
       onExit: () => { if (active && !held) setActive(false); },
       onResize(rect) { aperture = rect; sizeFrame(); }
     });
+    menu=window.createPocketGameMenu(host,{
+      release:()=>input.releaseAll(),blocked:()=>held||guideOpen,
+      hud:()=>options.onMenu(),direction:()=>shell.currentMode()==='stick'?'Joystick':'D-pad',switchDirection:()=>shell.cycleMode(),
+      legacy:()=>input.getProfile()?.labels?.select,
+      oldSelect:()=>{input.input('select',true);setTimeout(()=>input.input('select',false),90)}
+    });
     function sizeFrame() {
       if (!active || !frame || !aperture?.width || !aperture.height) return;
       const {x,y,width,height} = aperture;
-      const [ratio,minWidth] = layouts[gameId] || [16/9,800];
+      const [ratio,minWidth] = gameId==='pulse-runner' ? [width/height,800] : layouts[gameId] || [16/9,800];
       const fittedWidth = Math.min(width, height * ratio);
       const logicalWidth = Math.max(minWidth, Math.ceil(fittedWidth));
       const logicalHeight = logicalWidth / ratio;
@@ -629,14 +932,16 @@
       let doc;
       try { doc = frame.contentDocument; } catch { /* The shell also supports touch-only embeds. */ }
       if (guest && guest.ownerDocument !== doc) restoreGuest();
-      const rules = guestStyles[gameId];
+      const rules = 'kbd,.key-hints,.keyboard-hints,.keyboard-hint,.key-guide,.control-hint-key,[data-keyboard-hint]{display:none!important}'+(guestStyles[gameId]||'');
       if (rules && doc?.head && !guest) {
         guest = doc.createElement('style'); guest.textContent = rules; doc.head.append(guest);
+        // Let canvas games re-measure for the new layout.
+        try {doc.defaultView.dispatchEvent(new doc.defaultView.Event('resize'));} catch {}
       }
       frame.classList.add('j747-pocket-viewport');
       input.sync();
       shell.setProfile(input.getProfile());
-      sizeFrame();
+      sizeFrame();menu.layout();
     }
     function setActive(on, save=true) {
       on = !!on && !!frame;
@@ -657,13 +962,13 @@
           shell.setActive(false);
         }
       } else if (on) sync();
-      options.onChange?.(active);
+      menu.sync(frame,gameId,active);options.onChange?.(active);
     }
     function setGame(next, id, cartridge) {
       id = aliases[id] || id || '';
-      if (next === frame && id === gameId) {sync(); return;}
+      if (next === frame && id === gameId) {menu.sync(frame,gameId,active);sync(); return;}
       setActive(false,false);
-      frame = next; gameId = next ? id : ''; held = false;
+      frame = next; gameId = next ? id : ''; held = false;menu.sync(frame,gameId,false);
       if (!frame) return;
       if (cartridge) shell.setCartridge({
         id:gameId, title:cartridge.title || (frame.title || gameId),
@@ -673,7 +978,16 @@
       if (prefer === undefined) {
         try {prefer = localStorage.getItem(storageKey(gameId)) === 'on';} catch {}
       }
-      setActive(prefer,false);
+      // A Pocket page launch explicitly opens this cartridge in its advertised finish.
+      // Ordinary arcade links keep the player's existing per-game view choice.
+      const launch = /^#\/play\/([a-z0-9._-]+)\?pocket=(ice|classic)$/.exec(location.hash);
+      if (launch && (aliases[launch[1]] || launch[1]) === gameId) {
+        window.Jerm747Pocket.setFinish(launch[2]);
+        setActive(true);
+        history.replaceState(history.state, '', location.pathname + location.search + '#/play/' + launch[1]);
+      } else {
+        setActive(prefer,false);
+      }
     }
     function setHeld(on) {
       held = !!on;
@@ -685,9 +999,9 @@
     window.addEventListener('blur',blur);
     document.addEventListener('visibilitychange',visibility);
     return {
-      get active(){return active;}, get guideOpen(){return guideOpen;}, closeGuide(){if(!guideOpen)return false;shell.release();return true;}, setGame, setActive, setHeld, sync,
+      get active(){return active;},systemStart:()=>menu.start(),systemOptions:()=>menu.options(),get systemOpen(){return menu.open},get guideOpen(){return guideOpen||menu.open;}, closeGuide(){if(menu.open){menu.close();return true}if(!guideOpen)return false;shell.release();return true;}, setGame, setActive, setHeld, sync,
       toggle(){if(frame)setActive(!active);},
-      destroy(){setGame(null,'');shell.destroy();window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);}
+      destroy(){setGame(null,'');menu.destroy();shell.destroy();window.removeEventListener('blur',blur);document.removeEventListener('visibilitychange',visibility);}
     };
   }
   window.Jerm747PocketHost = {create};

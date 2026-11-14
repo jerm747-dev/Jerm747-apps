@@ -18,6 +18,52 @@ const binds=[
 let state='title',session=false,loading=null,scene,camera,renderer,stage,actor,rig,shot,orbit,systems,compat=false;
 let mode='idle',rate=2,air=null,strike=null,queued=null,finished=false,hits=0,seconds=0,cd=0,angle=Math.PI,px=0,pz=1.4;
 let pc=0,kc=0,lastPunch=-9,lastKick=-9,feedbackUntil=0,activePanel='',lastTime=0,sound=false,ac;
+let mission=null,preferredMelee='mp';
+/* Three elevated cores, each paired with a landing pad in another arena sector. */
+function buildRecoveryMission(){
+  const specs=[[-7,3.6,-5,5,6],[6,5.4,-4,-7,4],[2,7.1,6,-3,-7]];
+  const material=(color)=>new T.MeshBasicMaterial({color});
+  const nodes=specs.map(([x,y,z,dx,dz])=>{
+    const core=new T.Mesh(new T.OctahedronGeometry(.52),material(0x8de9f2));core.position.set(x,y,z);scene.add(core);
+    const shell=new T.Mesh(new T.IcosahedronGeometry(.82,0),new T.MeshBasicMaterial({color:0x76b0db,wireframe:true}));core.add(shell);
+    const pad=new T.Mesh(new T.CylinderGeometry(1.5,1.6,.16,28),material(0x283d50));pad.position.set(dx,.12,dz);scene.add(pad);
+    const rim=new T.Mesh(new T.TorusGeometry(1.42,.07,6,36),material(0x637380));rim.rotation.x=Math.PI/2;pad.add(rim);
+    const lamp=new T.PointLight(0x62eacc,0,15);lamp.position.set(dx,2,dz);scene.add(lamp);
+    return {core,shell,pad,rim,lamp,home:core.position.clone(),phase:'sealed'};
+  });
+  let held=null, delivered=0;
+  const button=document.getElementById('mission-grab'),hud=document.getElementById('mission-hud');
+  function reset(){held=null;delivered=0;for(const n of nodes){n.core.visible=true;n.core.position.copy(n.home);n.shell.visible=true;n.phase='sealed';n.pad.material.color.setHex(0x283d50);n.rim.material.color.setHex(0x637380);n.lamp.intensity=0}update(0)}
+  const near=(n,y)=>Math.hypot(px-n.core.position.x,y-n.core.position.y,pz-n.core.position.z);
+  function grab(){
+    if(state!=='play')return false;
+    if(held){const p=held.pad.position;if(Math.hypot(px-p.x,pz-p.z)<2.6 && systems.flight.y<1.8){
+      held.core.visible=false;held.phase='delivered';held.pad.material.color.setHex(0x338f80);held.rim.material.color.setHex(0x9fffe2);held.lamp.intensity=2;held=null;delivered++;
+      note(delivered===3?'ALL SECTORS ONLINE':'Sector online',2);beep(380,.23,820);return true;
+    }note('Lower over the amber landing pad');return true}
+    const target=nodes.find(n=>n.phase==='open'&&near(n,systems.flight.y+1)<2.6);
+    if(!target)return false;held=target;target.phase='held';target.rim.material.color.setHex(0xffb856);beep(540,.18,780);return true;
+  }
+  function hit(ox,oz,p){
+    const dx=p.x-ox,dz=p.z-oz,len=dx*dx+dz*dz;
+    for(const n of nodes){if(n.phase!=='sealed')continue;const t=clamp01(((n.home.x-ox)*dx+(n.home.z-oz)*dz)/(len||1));
+      if(Math.hypot(n.home.x-ox-t*dx,n.home.y-p.y,n.home.z-oz-t*dz)>.98)continue;
+      n.phase='open';n.shell.visible=false;n.core.material.color.setHex(0xffcf83);note('Shell open · move close and grab',1.6);beep(340,.2,680);return true}
+    return false;
+  }
+  function clamp01(x){return Math.min(1,Math.max(0,x))}
+  function update(dt){
+    for(const n of nodes){n.core.rotation.y+=dt*.85;if(n===held)n.core.position.set(px,systems.flight.y+1.9,pz)}
+    const n=held||nodes.filter(n=>n.phase!=='delivered').sort((a,b)=>near(a,(systems?.flight.y||0)+1)-near(b,(systems?.flight.y||0)+1))[0];
+    const pos=held?n.pad.position:n?.core.position;
+    const bearing=pos?((Math.round(Math.atan2(pos.x-px,pos.z-pz)*180/Math.PI)+360)%360):0;
+    const distance=pos?Math.round(Math.hypot(pos.x-px,pos.z-pz)):0;
+    const message=delivered===3?'3/3 · Coliseum powered':delivered+'/3 · '+(held?'Land on amber pad':n.phase==='open'?'Grab exposed core':'Arc Lance → core')+' · '+distance+' m · '+(held?'ground':n.home.y.toFixed(1)+' m high')+' · '+bearing+'°';
+    if(hud.textContent!==message)hud.textContent=message;
+  }
+  button.onclick=()=>{if(!grab())note('Crack a core and move close')};return {reset,hit,update,grab};
+}
+
 let pads=[],lastMovePad='';
 
 
@@ -98,12 +144,14 @@ async function start(){
     input.clear();held.clear();pads=[];lastMovePad='';px=-1.24;pz=.58;angle=Math.atan2(1.24,-.73);seconds=0;hits=0;cd=0;pc=kc=0;lastPunch=lastKick=-9;air=strike=queued=null;shot.group.visible=false;
     for(const t of stage.targets){t.flash=0;t.age=0;}
     rig.setLift(0);anim('idle',{instant:true,start:0});session=true;state='play';actor.rotation.y=angle;actor.position.set(px,0,pz);
-    systems.reset();orbit.reset();orbit.update(px,.94,pz,0,true);$('hitcounter').textContent='0 HITS';configureHUD();resize();lastTime=performance.now();
+    systems.reset();mission ||= buildRecoveryMission();mission.reset();orbit.reset();orbit.update(px,.94,pz,0,true);$('hitcounter').textContent='0 HITS';configureHUD();resize();lastTime=performance.now();
     renderer.domElement.focus({preventScroll:true});note('Drag to orbit · hold Ascend to fly',2.6);beep(245,.1,420);
   }catch(e){loading=null;state='title';configureHUD();readout('LOAD INTERRUPTED');$('feedback').textContent='Could not load the arena. Tap Enter arena to retry.';console.error(e);}
   finally{titleButton.disabled=false;titleButton.querySelector('span').textContent='Enter arena';}
 }
 titleButton.onclick=start;
+$('mission-zoom').onclick=()=>{if(orbit){$('mission-zoom').textContent='Camera · '+orbit.zoom();}};
+$('mission-melee').onclick=()=>{preferredMelee=preferredMelee==='mp'?'hk':'mp';$('mission-melee').textContent='Melee · '+(preferredMelee==='mp'?'Jab':'Roundhouse');};
 function jump(flip=false){
   if(air&&!flip)return;if(!air){air={t:0,duration:.74,attacked:false};beep(110,.12,260);}
   strike=null;queued=null;
@@ -129,6 +177,8 @@ function press(key){
   held.add(key);
   if(state==='title'){readout(({up:'FORWARD',down:'BACK',speed:'RUN',attack:'ATTACK',kick:'KICK',jump:'JUMP',lance:'ARC LANCE'})[key]||key.toUpperCase());return;}
   if(state!=='play'||['fall','recover'].includes(mode))return;
+  if(key==='jump'&&mission?.grab())return;
+  if(key==='grab'){mission?.grab();return}
   if(key==='fire'){systems.tapFire();return;}
   if(key==='ascend'){
     if(!systems.flight.on){const height=rig.lift;air=strike=queued=null;rig.setLift(0);anim('idle');systems.ascend(height);beep(135,.18,330);}
@@ -161,6 +211,7 @@ for(const [name,key] of [['Guard','block'],['Crouch','crouch'],['Evade','stepbac
 }
 window.addEventListener('keydown',e=>{
   if(e.repeat)return;
+  if(e.code==='KeyG'&&state==='play'){mission?.grab();return;}
   if(e.code==='Home'&&state==='play'){e.preventDefault();orbit.reset();return;}
   if((e.code==='Escape'||e.code==='KeyP')&&session&&!panel.open){e.preventDefault();openPanel('pause');}
   else if(e.code==='Enter'&&state==='title'&&!panel.open&&document.activeElement?.tagName!=='BUTTON'){e.preventDefault();start();}
@@ -176,7 +227,7 @@ function pollPad(){
   const now=gp.buttons.map(b=>b.pressed);
   if(now[9]&&!pads[9]){if(panel.open)closePanel();else if(session)openPanel('pause');else start();}
   if(state==='play'){
-    const level=now[5]?'h':now[4]?'l':'m',map=['jump',level+'k',level+'p','lance','speed','block','crouch','fire',null,null,'ascend','descend'];
+    const level=now[5]?'h':now[4]?'l':'m',map=['jump',level==='m'?preferredMelee:level+'k',level+'p','lance','speed','block','crouch','fire',null,null,'ascend','descend'];
     map.forEach((key,i)=>{if(key&&!!now[i]!==!!pads[i])input.setSource('gp'+i,now[i]?[key]:[]);});
     orbit.stick(gp.axes[2]||0,gp.axes[3]||0);
     const x=gp.axes[0]||0,y=gp.axes[1]||0,dirs=[];
@@ -204,6 +255,7 @@ function launch(){
 function updateShot(dt){
   if(!shot.group.visible)return;shot.age+=dt;const p=shot.group.position,dist=dt*13.5,ox=p.x,oz=p.z;
   p.x+=shot.dx*dist;p.z+=shot.dz*dist;shot.group.scale.setScalar(Math.min(1,.20+shot.age*4));shot.update(shot.age,1,.5+.5*Math.sin(shot.age*19));
+  if(mission?.hit(ox,oz,p)){shot.group.visible=false;return}
   for(const t of stage.targets){
     const tx=t.base.position.x-ox,tz=t.base.position.z-oz,along=Math.max(0,Math.min(dist,tx*shot.dx+tz*shot.dz));
     if(Math.hypot(tx-along*shot.dx,tz-along*shot.dz,p.y-t.core.position.y)<.62){contact(t,'ARC LANCE');shot.group.visible=false;break;}
@@ -246,7 +298,7 @@ function update(dt){
   else if(finished&&!air){finished=false;if(mode==='fall')anim('recover');else if(!['block','crouch'].includes(mode)){strike=null;anim('idle');}}
   systems.pose(dt,angle,mode,seconds);
   systems.weapon(dt,held.has('fire'),!['fall','recover'].includes(mode),angle,stage.targets,t=>contact(t,'CHEST CANNON'),()=>beep(660,.075,155,'triangle'));
-  updateShot(dt);
+  updateShot(dt);mission?.update(dt);
   stage.shadow.position.set(px,.045,pz);stage.shadow.scale.setScalar(1+Math.min(3,rig.lift+flight.y)*.22);
   for(let i=0;i<stage.targets.length;i++){const t=stage.targets[i];t.age+=dt;t.flash=Math.max(0,t.flash-dt);t.core.position.y=1.14+.08*Math.sin(t.age*2.3+i);t.core.rotation.y=t.age*.8+i;t.halo.rotation.x=.52+.25*Math.sin(t.age*1.8);t.light.emissive.setHex(t.flash>0?0xff981c:0x1699a8);t.core.scale.setScalar(1+t.flash*.45);}
   orbit.update(px,.94+flight.y+(air?rig.lift*.32:0),pz,dt);

@@ -1,0 +1,42 @@
+/* 747 Pocket Player drawer button (v2).
+   The button edge keeps the normal drawer look; toward the middle it fades into
+   cool ice blue (::before). The mark sits in a slightly convex glass lens
+   (.pocket-drawer-logo): frosted fill, deeper ice at the edge, a soft vignette
+   behind the letters, a bright top rim and a glossy crescent (::after). */
+.site-drawer nav .pocket-drawer-link{position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px 9px 9px;min-height:62px;margin-top:8px;border:1px solid #a4d8ea;border-radius:12px;color:#103a4f;background:linear-gradient(113deg,#d8f6ff,#82c9e7);box-shadow:inset 0 1px 1px #fff8;text-decoration:none;transition:filter .15s ease,transform .1s ease}
+.site-drawer nav .pocket-drawer-link::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 62% 130% at 44% 50%,#f3fcffee 0%,#c6ecfbb0 42%,#9ad6efa0 62%,transparent 86%)}
+.pocket-drawer-link .pocket-drawer-logo{--lens-mark:url(wordmark-inline.svg?v=2);position:relative;box-sizing:border-box;flex:0 1 auto;width:min(214px,86%);height:44px;padding:9px 17px 10px;display:block;border-radius:999px;border:1px solid #ffffffd9;
+  background:
+    var(--lens-mark) center/contain no-repeat content-box,
+    radial-gradient(ellipse 72% 70% at 50% 56%,#ffffffc8 0%,#f1fbff99 46%,transparent 74%),
+    radial-gradient(ellipse 120% 150% at 50% 38%,#e9f9ff 0%,#bfe7f8 52%,#7fc1e0 92%);
+  box-shadow:inset 0 2px 1px #fff,inset 0 -4px 7px #2d79a252,inset 0 0 0 2px #ffffff3d,inset 0 0 12px #9cdcf680,0 2px 5px #0b3c5a4d,0 0 14px #c4f0ff99;
+  -webkit-backdrop-filter:blur(4px) saturate(1.3);backdrop-filter:blur(4px) saturate(1.3)}
+.pocket-drawer-link .pocket-drawer-logo::after{content:"";position:absolute;left:9%;right:9%;top:2px;height:36%;border-radius:999px 999px 60% 60%/999px 999px 100% 100%;pointer-events:none;background:linear-gradient(180deg,#ffffffb8,#ffffff1f 78%,transparent)}
+.pocket-drawer-link .pocket-drawer-arrow{font:700 19px/1 system-ui,sans-serif;flex:none}
+.site-drawer nav .pocket-drawer-link:hover{filter:brightness(1.05) saturate(1.08)}
+.site-drawer nav .pocket-drawer-link:active{transform:translateY(1px)}
+.site-drawer nav .pocket-drawer-link:focus-visible{outline:2px solid #bff3ff;outline-offset:2px}
+html[data-pocket-menu=classic] .site-drawer nav .pocket-drawer-link{background:linear-gradient(120deg,#373e48,#171d25);border-color:#64707d;color:#f1f5f5;box-shadow:inset 0 1px 1px #ffffff24}
+html[data-pocket-menu=classic] .site-drawer nav .pocket-drawer-link::before{background:radial-gradient(ellipse 62% 130% at 44% 50%,#3f88aa8c 0%,#2a638380 42%,#1f4a6455 62%,transparent 86%)}
+html[data-pocket-menu=classic] .pocket-drawer-link .pocket-drawer-logo{--lens-mark:url(wordmark-inline-light.svg?v=2);border-color:#b8ecff8c;
+  background:
+    var(--lens-mark) center/contain no-repeat content-box,
+    radial-gradient(ellipse 72% 70% at 50% 56%,#08202ecc 0%,#0b26368c 50%,transparent 76%),
+    radial-gradient(ellipse 120% 150% at 50% 38%,#24506a 0%,#183a4f 55%,#3d86ab 96%);
+  box-shadow:inset 0 2px 1px #d9f6ffb3,inset 0 -4px 7px #00101a99,inset 0 0 0 2px #9fe3ff1f,inset 0 0 12px #5fc7f04d,0 2px 6px #0009,0 0 14px #59c8f259}
+html[data-pocket-menu=classic] .pocket-drawer-link .pocket-drawer-logo::after{background:linear-gradient(180deg,#e9fbff59,#e9fbff0d 78%,transparent)}
+@media(prefers-reduced-motion:reduce){.site-drawer nav .pocket-drawer-link{transition:none}}
+#pocket-intro{box-sizing:border-box;position:fixed;z-index:900;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));width:min(350px,calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));border:1px solid #bce5f4;border-radius:14px;overflow:hidden;color:#14394b;background:radial-gradient(ellipse at 75% 30%,#f4fcff8c,transparent 73%),linear-gradient(130deg,#eefaff,#b5e3f0);box-shadow:0 6px 28px #00101a5c,inset 0 1px 1px white;transform:translateX(calc(-100% - 30px));opacity:0;transition:transform .34s cubic-bezier(.22,.8,.25,1),opacity .22s ease;isolation:isolate}
+#pocket-intro[hidden]{display:none!important}#pocket-intro.is-visible{transform:translateX(0);opacity:1}
+#pocket-intro a{display:flex;align-items:center;gap:9px;padding:18px 32px 15px 12px;min-height:88px;text-decoration:none;color:inherit}
+#pocket-intro .intro-device{width:48%;height:auto;transform:rotate(-6deg);filter:drop-shadow(1px 4px 3px #24647b4d)}
+#pocket-intro .intro-caption{flex:1;min-width:0;display:flex;flex-flow:column;gap:7px;align-items:start}
+#pocket-intro .intro-wordmark{width:100%;display:block;height:auto}
+#pocket-intro .intro-cta{font:650 12px/1.3 system-ui,sans-serif;color:#163e52}
+#pocket-intro button{position:absolute;right:0;top:0;width:36px;height:36px;cursor:pointer;background:transparent;color:#1d5068;border:0;font:21px/1 Arial,sans-serif;padding:0}
+#pocket-intro :focus-visible{outline:2px solid #206e93;outline-offset:-3px}
+@media(max-height:460px){#pocket-intro{width:305px}#pocket-intro a{min-height:70px;padding-block:12px}}
+@media(prefers-reduced-motion:reduce){#pocket-intro{transition:none;transform:none}}
+.pocket-drawer-arrow,.intro-arrow{display:inline-block;width:.65em;height:.65em;border:solid currentColor;border-width:1.5px 1.5px 0 0;position:relative;margin-inline:3px}
+.pocket-drawer-arrow::after,.intro-arrow::after{content:"";position:absolute;top:0;right:0;width:1.23em;height:1.5px;background:currentColor;transform-origin:right center;transform:rotate(-45deg);font-size:inherit}.pocket-drawer-arrow::after{width:130%}.intro-arrow::after{width:130%}
