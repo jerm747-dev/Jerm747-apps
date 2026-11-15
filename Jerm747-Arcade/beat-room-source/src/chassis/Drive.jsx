@@ -1,5 +1,5 @@
 // 747 Drive panel: the master character stage. On/off, four starting modes, drive / iron /
-// warmth / output, an AIR button (off, +3, +6) and GLUE with a gain-reduction LED.
+// warmth / output, an AIR button (off, +3, +6), GLUE with a gain-reduction LED, and PUNCH.
 import { useRef } from 'react';
 import * as drive from '../engine/character.js';
 import { blip } from '../engine/audio.js';
@@ -45,6 +45,10 @@ export default function Drive() {
           </button>
           <button type="button" className={`drive-key ${st.glue ? 'lit' : ''}`} aria-pressed={st.glue} onClick={() => { blip(500); drive.set({ glue: !st.glue, on: true }); }}>
             <Led on={st.glue} color={C} />Glue<em ref={gr} className="gr" aria-hidden="true"><i /></em>
+          </button>
+          <button type="button" className={`drive-key ${st.punch ? 'lit' : ''}`} aria-pressed={!!st.punch} title="Punch: body and drive in parallel plus a transient lift, like the arcade Game Music punch"
+            onClick={() => { blip(st.punch ? 420 : 980); drive.set({ punch: !st.punch, on: true }); }}>
+            <Led on={!!st.punch} color={C} />Punch<em>{st.punch ? 'on' : 'off'}</em>
           </button>
         </div>
       </div>
