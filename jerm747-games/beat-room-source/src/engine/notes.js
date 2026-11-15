@@ -179,6 +179,34 @@ export function undo() {
   song = { ...song, sections: JSON.parse(prev) };
   commit(song, { undoable: false });
 }
+// ---------- note editing (Edit mode in the roll) ----------
+// beginEdit() marks one Undo step before a drag; move()/resize() then update live without
+// filling the history; add() and nudge() are single undoable edits.
+const clampNote = (n, len) => {
+  const d = Math.max(0.25, Math.min(len, n.d));
+  const p = Math.max(0, Math.min(len - 0.25, n.p));
+  return { ...n, p: Math.round(p * 1000) / 1000, d: Math.round(Math.min(d, len - p) * 1000) / 1000, n: Math.max(0, Math.min(127, Math.round(n.n))) };
+};
+/** Snap a step position to the lane grid when Quantize is on. */
+export const snapStep = (x, force = false) => (song.quant || force ? toGrid(x, gridOf()) : Math.round(x * 1000) / 1000);
+export const gridSteps = () => gridOf();
+export function beginEdit() { history.push(JSON.stringify(song.sections)); if (history.length > 20) history.shift(); refresh(); }
+function patchNote(idx, fn, undoable) {
+  const len = pads.getSecLen(edit());
+  commit({ ...song, sections: song.sections.map((s, i) => (i === edit() ? s.map((n, k) => (k === idx ? clampNote(fn(n), len) : n)) : s)) }, { undoable });
+}
+/** Live drag update (no Undo step; call beginEdit() first). */
+export function setNote(idx, next) { patchNote(idx, (n) => ({ ...n, ...next }), false); }
+/** One undoable nudge: dp steps, dn semitones, dd steps of length. */
+export function nudge(idx, { dp = 0, dn = 0, dd = 0 }) { patchNote(idx, (n) => ({ ...n, p: n.p + dp, n: n.n + dn, d: n.d + dd }), true); }
+/** Add a note to this section; returns its index. */
+export function add(note) {
+  const len = pads.getSecLen(edit());
+  const list = [...(song.sections[edit()] || []), clampNote({ v: 0.8, ...note }, len)];
+  commit({ ...song, sections: song.sections.map((s, i) => (i === edit() ? list : s)) });
+  return list.length - 1;
+}
+
 /** Hear one note from the lane (tapping it in the roll). */
 export function audition(n) { const ac = audio(); if (ac) { synth.warm(); synth.playAt(n.n, n.v, ac.currentTime + 0.01, 0.25); } }
 

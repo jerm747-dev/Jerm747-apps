@@ -15,13 +15,47 @@ const native = () => typeof window !== 'undefined' && window.BeatRoomAndroid && 
 export const supported = () => native() || (typeof navigator !== 'undefined' && typeof navigator.requestMIDIAccess === 'function');
 const set = (s) => { status = { ...status, ...s }; subs.forEach((fn) => fn(status)); };
 
-function onMessage(e) { handle(e.data[0], e.data[1] || 0, e.data[2] || 0); }
+// Keyboard transport buttons. Keyboards send these three ways, so all three are read:
+// MIDI realtime Start / Continue / Stop, MMC (sysex F0 7F id 06 cmd F7, when the browser
+// allows sysex), and a learned CC for any keyboard whose Play/Stop/Rec buttons send controllers.
+const TKEY = 'beatroom.midi.transport';
+let transportCC = (() => { try { return JSON.parse(localStorage.getItem(TKEY)) || {}; } catch { return {}; } })();
+let learning = null; // 'play' | 'stop' | 'rec' while waiting for a button
+const transport = { play: null, stop: null, rec: null };
+/** Beat Room registers what Play / Stop / Rec do. */
+export function onTransport(handlers) { Object.assign(transport, handlers); }
+export const getTransportCC = () => ({ ...transportCC });
+export const getLearning = () => learning;
+export function learnTransport(action) { learning = learning === action ? null : action; set({}); }
+export function clearTransport() { transportCC = {}; try { localStorage.removeItem(TKEY); } catch { /* off */ } set({}); }
+const fire = (a) => { try { transport[a]?.(); } catch { /* app not ready */ } set({ last: a }); };
+function sysex(d) {
+  // MMC: F0 7F <device> 06 <command> F7 — 01 stop, 02 play, 03 deferred play, 06 record strobe, 09 pause
+  if (d.length >= 6 && d[0] === 0xf0 && d[1] === 0x7f && d[3] === 0x06) {
+    const c = d[4];
+    if (c === 0x02 || c === 0x03) fire('play'); else if (c === 0x01 || c === 0x09) fire('stop'); else if (c === 0x06) fire('rec');
+  }
+}
+function onMessage(e) {
+  const d = e.data;
+  if (d[0] === 0xf0) { sysex(d); return; }
+  handle(d[0], d[1] || 0, d[2] || 0);
+}
 function handle(st, d1 = 0, d2 = 0) {
+  if (st === 0xf0) { sysex([0xf0, 0x7f, 0x7f, 0x06, d1, 0xf7]); return; } // MMC relayed by the Android app
+  if (st === 0xfa || st === 0xfb) { fire('play'); return; }
+  if (st === 0xfc) { fire('stop'); return; }
   const type = st & 0xf0;
+  if (type === 0xb0 && d1 !== 64 && d1 !== 1 && d1 < 120) {
+    if (learning && d2 > 0) { transportCC = { ...transportCC, [learning]: d1 }; try { localStorage.setItem(TKEY, JSON.stringify(transportCC)); } catch { /* off */ } learning = null; set({}); return; }
+    const act = Object.keys(transportCC).find((k) => transportCC[k] === d1);
+    if (act) { if (d2 > 0) fire(act); return; }
+  }
   if (type === 0x90 && d2 > 0) synth.noteOn(d1, d2 / 127);
   else if (type === 0x80 || type === 0x90) synth.noteOff(d1);
   else if (type === 0xb0) {
     if (d1 === 64) synth.setSustain(d2 >= 64);
+    else if (d1 === 1) synth.setModWheel(d2 / 127);
     else if (d1 === 120 || d1 === 123) synth.allOff();
   } else if (type === 0xe0) synth.setBend((((d2 << 7) | d1) - 8192) / 8192 * synth.BEND);
 }
@@ -41,6 +75,7 @@ if (typeof window !== 'undefined') {
   window.__beatRoomMidiPanic = () => { synth.setSustain(false); synth.allOff(); synth.setBend(0); };
   window.__beatRoomMidiBatch = (messages) => { for (const [st, d1, d2] of messages) handle(st, d1, d2); };
   window.__beatRoomMidi = (st, d1, d2) => handle(st, d1, d2);
+  window.__beatRoomMidiSysex = (bytes) => sysex(bytes || []);
   window.__beatRoomMidiDevices = (names) => {
     if (status.state === 'off') return;
     const devices = names || [];
@@ -60,7 +95,9 @@ export async function connect() {
   set({ state: 'wait', msg: 'Asking for MIDI access…' });
   synth.warm(); // build the synth and wake audio now (this is a tap), so the first note plays at once
   try {
-    access = await navigator.requestMIDIAccess({ sysex: false });
+    // Ask with sysex for MMC transport; fall back to plain MIDI if that is refused.
+    try { access = await navigator.requestMIDIAccess({ sysex: true }); }
+    catch { access = await navigator.requestMIDIAccess({ sysex: false }); }
     access.onstatechange = attach;
     attach();
   } catch {

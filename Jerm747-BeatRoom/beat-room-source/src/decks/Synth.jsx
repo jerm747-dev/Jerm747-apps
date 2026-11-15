@@ -16,6 +16,12 @@ import { blip } from '../engine/audio.js';
 import { Knob, Led, useExternal, useRaf, fmtPct, fmtDb, useFullscreen, FullBtn, useFold, FoldBtn } from '../ui/parts.jsx';
 
 const C = 'var(--c-synth)';
+// Keyboard transport buttons (MIDI Start/Stop, MMC or a learned CC) drive the shared transport.
+midi.onTransport({
+  play: () => { synth.warm(); if (!pads.isPlaying()) pads.play(true); },
+  stop: () => { if (pads.isPlaying()) pads.play(false); },
+  rec: () => lane.toggleRec(),
+});
 const OCT_KEY = 'beatroom.synth.oct';
 const SIZE_KEY = 'beatroom.synth.size';
 const VIEW_KEY = 'beatroom.synth.view';
@@ -453,9 +459,29 @@ function Keys({ full, scope, scopeBtn }) {
           <Led on={status.state === 'on' && status.devices.length > 0} color={C} />MIDI
         </button>
         {midi.bluetoothSupported() && <button type="button" className="btn midi-btn" onClick={midi.connectBluetooth}>Bluetooth MIDI</button>}
+        {midiOn && <TransportMap />}
         <span className="midi-status" role="status" aria-live="polite">{status.msg || (status.devices.length ? status.devices.join(', ') : `${keys.list.length} keys · A–K plays · Z/X octave`)}</span>
       </div>
     </div>
+  );
+}
+
+// Map the keyboard's Play / Stop / Rec buttons when they send controllers (CC).
+// Realtime Start/Stop and MMC need no mapping.
+function TransportMap() {
+  useExternal(midi.subscribe, midi.getStatus);
+  const cc = midi.getTransportCC(), learning = midi.getLearning();
+  const chip = (a, label) => (
+    <button key={a} type="button" className={`switch tmap ${learning === a ? 'on' : ''}`} aria-pressed={learning === a}
+      title={`Press ${label} here, then press that button on your keyboard`} onClick={() => { blip(700); midi.learnTransport(a); }}>
+      {learning === a ? `Press ${label}…` : `${label}${cc[a] != null ? ` · CC ${cc[a]}` : ''}`}
+    </button>
+  );
+  return (
+    <span className="tmap-row" role="group" aria-label="Keyboard transport buttons">
+      {chip('play', 'Play')}{chip('stop', 'Stop')}{chip('rec', 'Rec')}
+      {Object.keys(cc).length > 0 && <button type="button" className="switch tmap" onClick={() => { blip(330); midi.clearTransport(); }}>Reset</button>}
+    </span>
   );
 }
 
@@ -466,7 +492,8 @@ function NoteLane() {
   const playing = useExternal(onRun, pads.isPlaying);
   const [pick, setPick] = useState(-1);
   const [laneMsg, setLaneMsg] = useState('');
-  const head = useRef(null), midiFile = useRef(null);
+  const [editing, setEditing] = useState(false);
+  const head = useRef(null), midiFile = useRef(null), rollRef = useRef(null), drag = useRef(null), range = useRef(null);
   async function importMidi(e) {
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
     try {
@@ -481,7 +508,7 @@ function NoteLane() {
     try { await saveFile(`Beat Room ${pads.SECTIONS[v.edit]} notes`, 'mid', blob); setLaneMsg(`Saved Beat Room ${pads.SECTIONS[v.edit]} notes.mid.`); }
     catch (err) { setLaneMsg(/preview page|can’t save files/.test(err.message) ? 'This preview page can’t save .mid files. Your own Beat Room build and the app save them.' : err.message); }
   }
-  useEffect(() => { setPick(-1); }, [v.edit, v.notes.length]);
+  useEffect(() => { if (!drag.current) setPick((k) => (k < v.notes.length && editing ? k : -1)); }, [v.edit, v.notes.length]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => onStep((i, abs) => {
     const el = head.current; if (!el) return;
     const m = i >= 0 && pads.isPlaying() ? pads.posAt(abs) : null;
@@ -489,9 +516,57 @@ function NoteLane() {
     el.style.opacity = 1; el.setAttribute('x', ((m.pos / m.len) * 1000).toFixed(1));
   }), []);
   const notes = v.notes, len = v.len;
-  const lo = notes.length ? Math.min(...notes.map((n) => n.n)) - 2 : 58, hi = notes.length ? Math.max(...notes.map((n) => n.n)) + 2 : 74;
-  const span = Math.max(12, hi - lo), H = 120, rowH = H / (span + 1);
+  // Edit mode gives the roll more room (two octaves at least) and holds the pitch range still while dragging.
+  const pad = editing ? 5 : 2, minSpan = editing ? 24 : 12;
+  let lo = notes.length ? Math.min(...notes.map((n) => n.n)) - pad : 58, hi = notes.length ? Math.max(...notes.map((n) => n.n)) + pad : 74;
+  if (hi - lo < minSpan) { const mid = Math.round((hi + lo) / 2); lo = mid - minSpan / 2; hi = mid + minSpan / 2; }
+  if (drag.current && range.current) ({ lo, hi } = range.current);
+  const span = hi - lo, H = editing ? 260 : 120, rowH = H / (span + 1);
   const y = (n) => H - (n - lo + 1) * rowH;
+  // ----- editing: drag a note to move it (time and pitch), drag its right edge to change length,
+  // tap empty space to add a note. Positions snap to the grid while Quantize is on.
+  const at = (e) => {
+    const r = rollRef.current.getBoundingClientRect();
+    return { step: ((e.clientX - r.left) / r.width) * len, note: lo - 1 + Math.ceil(((r.bottom - e.clientY) / r.height) * (span + 1)), px: r.width / len };
+  };
+  function notePointerDown(e, k) {
+    e.stopPropagation();
+    setPick(k); lane.audition(notes[k]);
+    if (!editing) return;
+    e.preventDefault();
+    const n = notes[k], p0 = at(e);
+    const edgePx = Math.min(12, (n.d * p0.px) / 3);
+    const rightEdge = (n.p + n.d) * p0.px;
+    const mode = (p0.step * p0.px) > rightEdge - edgePx ? 'len' : 'move';
+    range.current = { lo, hi };
+    drag.current = { k, mode, start: p0, n: { ...n }, moved: false };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* fine */ }
+  }
+  function rollPointerMove(e) {
+    const d = drag.current; if (!d) return;
+    const p = at(e), ds = p.step - d.start.step, dn = p.note - d.start.note;
+    if (!d.moved) { if (Math.abs(ds * p.px) < 3 && dn === 0) return; d.moved = true; lane.beginEdit(); }
+    if (d.mode === 'move') lane.setNote(d.k, { p: lane.snapStep(d.n.p + ds), n: d.n.n + dn });
+    else lane.setNote(d.k, { d: Math.max(lane.snapStep(0.25, false), lane.snapStep(d.n.p + d.n.d + ds) - d.n.p) });
+  }
+  function rollPointerUp() {
+    const d = drag.current; drag.current = null; range.current = null;
+    if (d?.moved) { blip(620); setPick(d.k); lane.audition(lane.get().notes[d.k]); }
+  }
+  function rollPointerDown(e) {
+    if (!editing || drag.current) return;
+    const p = at(e), g = lane.gridSteps();
+    const step = Math.max(0, Math.min(len - g, Math.floor(p.step / g) * g));
+    const k = lane.add({ p: step, d: g, n: p.note, v: 0.8 });
+    blip(880); setPick(k); lane.audition({ n: p.note, v: 0.8 });
+  }
+  const g = lane.gridSteps();
+  function key(e) {
+    if (!editing || pick < 0) return;
+    const map = { ArrowLeft: { dp: -g }, ArrowRight: { dp: g }, ArrowUp: { dn: e.shiftKey ? 12 : 1 }, ArrowDown: { dn: e.shiftKey ? -12 : -1 } };
+    if (map[e.key]) { e.preventDefault(); lane.nudge(pick, map[e.key]); }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); lane.remove(pick); setPick(-1); }
+  }
   const recLbl = v.rec === 'armed' ? 'Ready' : v.rec === 'rec' ? 'Rec ●' : 'Rec';
   return (
     <div className={`panel lane ${v.rec}`}>
@@ -507,6 +582,8 @@ function NoteLane() {
             {Object.keys(lane.GRIDS).map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
           <button type="button" className="switch" onClick={() => { blip(800); lane.snap(); }} disabled={!notes.length} title={`Snap every note in this section to ${v.grid} now`}>Snap {v.grid}</button>
+          <button type="button" className={`switch ${editing ? 'on' : ''}`} aria-pressed={editing} onClick={() => { blip(editing ? 520 : 900); setEditing(!editing); }}
+            title="Move notes, change their length, or tap the roll to add one"><Led on={editing} color={C} />Edit notes</button>
           <button type="button" className="switch" onClick={() => { blip(520); lane.undo(); }} disabled={!v.canUndo}>Undo</button>
           <button type="button" className="switch" onClick={() => { blip(330); lane.clear(); }} disabled={!notes.length}>Clear</button>
           <button type="button" className="switch" onClick={() => midiFile.current?.click()} title="Load a .mid phrase into this section">Import MIDI</button>
@@ -514,16 +591,32 @@ function NoteLane() {
           <button type="button" className="switch" onClick={exportMidi} disabled={!notes.length} title="Save this section's notes as a .mid file">Export MIDI</button>
         </div>
       </div>
-      <svg className="roll" viewBox={`0 0 1000 ${H}`} preserveAspectRatio="none" role="img" aria-label={`Piano roll, ${notes.length} notes over ${len} steps`}>
+      <svg ref={rollRef} className={`roll ${editing ? 'editing' : ''}`} viewBox={`0 0 1000 ${H}`} preserveAspectRatio="none" role="img" tabIndex={editing ? 0 : undefined}
+        aria-label={`Piano roll, ${notes.length} notes over ${len} steps${editing ? '. Editing: drag notes to move, drag the right edge to change length, tap to add, arrow keys nudge.' : ''}`}
+        onPointerDown={rollPointerDown} onPointerMove={rollPointerMove} onPointerUp={rollPointerUp} onPointerCancel={rollPointerUp} onKeyDown={key}>
         {Array.from({ length: len }, (_, i) => <rect key={i} x={(i / len) * 1000} y="0" width={1000 / len} height={H} className={`roll-col ${Math.floor(i / 4) % 2 ? 'b' : 'a'}`} />)}
+        {editing && Array.from({ length: span + 1 }, (_, r) => { const n = lo + r; return [1, 3, 6, 8, 10].includes(((n % 12) + 12) % 12) ? <rect key={'r' + n} className="roll-row" x="0" y={y(n)} width="1000" height={rowH} /> : null; })}
         {notes.map((n, k) => (
-          <rect key={k} className={`roll-note ${pick === k ? 'pick' : ''}`} x={(n.p / len) * 1000} y={y(n.n)} width={Math.max(4, (n.d / len) * 1000)} height={Math.max(3, rowH - 1)} rx="2"
-            style={{ opacity: 0.45 + n.v * 0.55 }} onPointerDown={(e) => { e.stopPropagation(); setPick(k); lane.audition(n); }} />
+          <g key={k}>
+            <rect className={`roll-note ${pick === k ? 'pick' : ''}`} x={(n.p / len) * 1000} y={y(n.n)} width={Math.max(4, (n.d / len) * 1000)} height={Math.max(3, rowH - 1)} rx="2"
+              style={{ opacity: 0.45 + n.v * 0.55 }} onPointerDown={(e) => notePointerDown(e, k)} />
+            {editing && <rect className="roll-grip" x={((n.p + n.d) / len) * 1000 - 3} y={y(n.n) + rowH * 0.2} width="2" height={Math.max(2, rowH * 0.6 - 1)} />}
+          </g>
         ))}
         <rect ref={head} className="roll-head" x="0" y="0" width="3" height={H} style={{ opacity: 0 }} />
       </svg>
       <div className="lane-foot">
-        <p className="hint">{laneMsg && v.rec === 'off' && pick < 0 ? laneMsg : v.rec === 'armed' ? (playing ? 'Get ready: the take starts at the top of the section.' : 'Counting in…') : v.rec === 'rec' ? 'Recording this pass. Play the keys or your MIDI keyboard.' : pick >= 0 ? `${synth.noteName(notes[pick].n)} at step ${(notes[pick].p + 1).toFixed(2).replace(/\.00$/, '')}` : notes.length ? 'Plays with the song. REC again to add another take on top.' : 'Press Rec, wait for the count-in, then play. One pass of the section records.'}</p>
+        <p className="hint">{laneMsg && v.rec === 'off' && pick < 0 ? laneMsg : v.rec === 'armed' ? (playing ? 'Get ready: the take starts at the top of the section.' : 'Counting in…') : v.rec === 'rec' ? 'Recording this pass. Play the keys or your MIDI keyboard.' : pick >= 0 && notes[pick] ? `${synth.noteName(notes[pick].n)} at step ${(notes[pick].p + 1).toFixed(2).replace(/\.00$/, '')}${editing ? ` · ${notes[pick].d.toFixed(2).replace(/\.00$/, '')} step${notes[pick].d === 1 ? '' : 's'} long` : ''}` : editing ? `Drag a note to move it, drag its right edge to change length, tap empty space to add one. ${v.quant ? `Snaps to ${v.grid}.` : 'Quantize is off: moves are free.'}` : notes.length ? 'Plays with the song. REC again to add another take on top.' : 'Press Rec, wait for the count-in, then play. One pass of the section records.'}</p>
+        {pick >= 0 && editing && notes[pick] && (
+          <span className="note-tools" role="group" aria-label="Selected note">
+            <button type="button" className="switch" title={`Earlier by ${v.grid}`} onClick={() => lane.nudge(pick, { dp: -g })}>◀</button>
+            <button type="button" className="switch" title={`Later by ${v.grid}`} onClick={() => lane.nudge(pick, { dp: g })}>▶</button>
+            <button type="button" className="switch" title="Up a semitone" onClick={() => { lane.nudge(pick, { dn: 1 }); lane.audition({ ...notes[pick], n: notes[pick].n + 1 }); }}>▲</button>
+            <button type="button" className="switch" title="Down a semitone" onClick={() => { lane.nudge(pick, { dn: -1 }); lane.audition({ ...notes[pick], n: notes[pick].n - 1 }); }}>▼</button>
+            <button type="button" className="switch" title={`Shorter by ${v.grid}`} onClick={() => lane.nudge(pick, { dd: -g })}>Shorter</button>
+            <button type="button" className="switch" title={`Longer by ${v.grid}`} onClick={() => lane.nudge(pick, { dd: g })}>Longer</button>
+          </span>
+        )}
         {pick >= 0 && <button type="button" className="btn" onClick={() => { blip(300); lane.remove(pick); setPick(-1); }}>Delete note</button>}
       </div>
     </div>

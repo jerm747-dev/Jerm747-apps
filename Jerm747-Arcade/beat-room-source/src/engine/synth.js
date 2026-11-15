@@ -231,7 +231,13 @@ export function setSustain(on) {
 /** Pitch bend in semitones (-BEND..BEND), applied to every sounding oscillator. */
 export function setControllerExpression(semitones,modulation){
   if(semitones!==padBend){padBend=semitones;setBend(bend)}
-  if(modulation!==padMod){padMod=modulation;if(node)node.depth.gain.setTargetAtTime(padMod*35,node.ac.currentTime,.015)}
+  if(modulation!==padMod){padMod=modulation;if(node)node.depth.gain.setTargetAtTime(Math.max(padMod,wheelMod)*35,node.ac.currentTime,.015)}
+}
+/** MIDI mod wheel (CC 1), 0..1, adds vibrato alongside the controller's modulation. */
+let wheelMod = 0;
+export function setModWheel(v) {
+  wheelMod = Math.max(0, Math.min(1, v));
+  if (node) node.depth.gain.setTargetAtTime(Math.max(padMod, wheelMod) * 35, node.ac.currentTime, 0.015);
 }
 export function setBend(semis) {
   bend = semis;

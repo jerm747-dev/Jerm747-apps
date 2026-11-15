@@ -146,6 +146,19 @@
 .roll-head { fill: var(--c-pads); }
 .lane-foot { display: flex; align-items: center; gap: 10px; }
 .lane-foot .hint { flex: 1; min-height: 0; }
+/* Note editing */
+.roll.editing { height: clamp(200px, 34vh, 320px); touch-action: none; cursor: crosshair; outline: none; }
+.roll.editing:focus-visible { box-shadow: inset 0 1px 4px #000, 0 0 0 2px var(--c-synth); }
+.roll-row { fill: #ffffff07; pointer-events: none; }
+.roll.editing .roll-note { cursor: grab; stroke: #0008; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.roll.editing .roll-note:active { cursor: grabbing; }
+.roll-grip { fill: #0009; pointer-events: none; }
+.roll-note.pick + .roll-grip { fill: #7a5a1f; }
+.lane-foot { flex-wrap: wrap; }
+.note-tools { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.note-tools .switch { min-width: 34px; }
+.tmap-row { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tmap { font-size: 12px; padding: 4px 8px; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 980px) {
