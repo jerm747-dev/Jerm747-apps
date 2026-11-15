@@ -6,8 +6,8 @@ import { audio } from './audio.js';
 
 const BPM_KEY = 'beatroom.bpm';
 const t = { bpm: loadBpm(), running: false, step: 0, next: 0, timer: 0 };
-const parts = new Map();          // name -> { armed, schedule(step, time, stepDur) }
-const stepFns = new Set();        // UI: fn(step | -1) at the moment a step sounds
+const parts = new Map();          // name -> { armed, schedule(step, time, stepDur, abs) }
+const stepFns = new Set();        // UI: fn(step | -1, abs) at the moment a step sounds
 const bpmFns = new Set();
 const runFns = new Set();
 
@@ -28,25 +28,38 @@ export function setBpm(bpm) {
   bpmFns.forEach((fn) => fn(t.bpm));
 }
 
-/** Register a part. schedule(step, time, stepDur) is called ahead of time for every 16th. */
+/** Register a part. schedule(step, time, stepDur, abs) is called ahead of time for every 16th.
+ *  step is 0..15 (one bar); abs counts up from 0 since the transport started, so longer
+ *  patterns (32 steps) can take abs % length. */
 export function definePart(name, schedule) {
   const p = parts.get(name) || { armed: false };
   p.schedule = schedule; parts.set(name, p);
 }
 
-export function arm(name, on) {
+/** Arm or disarm a part. `at` (audio time) starts the transport on that exact moment, for count-ins. */
+export function arm(name, on, at) {
   const p = parts.get(name); if (!p) return;
   p.armed = on;
   const any = [...parts.values()].some((x) => x.armed);
-  if (any && !t.running) start();
+  if (any && !t.running) start(at);
   if (!any && t.running) stop();
   runFns.forEach((fn) => fn(t.running));
 }
 
-function start() {
+function start(at) {
   const ac = audio(); if (!ac) return;
-  t.running = true; t.step = 0; t.next = ac.currentTime + 0.06;
+  t.running = true; t.step = 0; t.next = at && at > ac.currentTime + 0.02 ? at : ac.currentTime + 0.06;
   clearInterval(t.timer); t.timer = setInterval(tick, 25); tick();
+}
+/** Length of one 16th note in seconds at the current tempo. */
+export const stepDur = () => 60 / t.bpm / 4;
+/** Audio time of the next bar line (16 steps) the transport will play, or null if stopped. */
+export function nextBarTime() {
+  const ac = audio(); if (!t.running || !ac) return null;
+  const dur = stepDur();
+  let s = Math.ceil(t.step / 16) * 16, time = t.next + (s - t.step) * dur;
+  while (time < ac.currentTime + 0.03) { s += 16; time += 16 * dur; }
+  return time;
 }
 function stop() {
   clearInterval(t.timer); t.timer = 0; t.running = false;
@@ -55,10 +68,10 @@ function stop() {
 function tick() {
   const ac = audio();
   while (t.next < ac.currentTime + 0.12) {
-    const i = t.step % 16, time = t.next, dur = 60 / t.bpm / 4;
-    for (const p of parts.values()) if (p.armed) p.schedule?.(i, time, dur);
+    const i = t.step % 16, abs = t.step, time = t.next, dur = 60 / t.bpm / 4;
+    for (const p of parts.values()) if (p.armed) p.schedule?.(i, time, dur, abs);
     const delay = Math.max(0, (time - ac.currentTime) * 1000);
-    setTimeout(() => { if (t.running) stepFns.forEach((fn) => fn(i)); }, delay);
+    setTimeout(() => { if (t.running) stepFns.forEach((fn) => fn(i, abs, time, dur)); }, delay);
     t.next += dur; t.step++;
   }
 }

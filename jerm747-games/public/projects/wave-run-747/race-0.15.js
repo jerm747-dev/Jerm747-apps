@@ -6,18 +6,21 @@ const coarse=matchMedia('(pointer:coarse)').matches;
 const controller=new AbortController();
 let closed=false;
 const params=new URLSearchParams(location.search);
-function flatView(why) {
-  if (closed || drawFlat) return;
-  console.info('Wave Run top-down view:',why);
+function flatView(why,forceFlat=false) {
+  if(closed || document.documentElement.dataset.renderer==='top-down')return;
+  if(drawFlat && !forceFlat)return;
   controller.abort();
   if(device){const previous=device;device=null;previous.destroy();}
-  const replacement=canvas.cloneNode(false);
-  canvas.replaceWith(replacement);
-  canvas=replacement;renderer=null;
-  drawFlat=makeFlatView(canvas);
-  document.documentElement.dataset.renderer='top-down';
-  $('viewLabel').textContent='Top-down view';
-  $('viewLabel').title=why;
+  renderer=null;
+  function replaceCanvas(){const next=canvas.cloneNode(false);canvas.replaceWith(next);canvas=next;bindOrbitCanvas(next)}
+  replaceCanvas();
+  if(!forceFlat && params.get('view')!=='top-down'){
+    try{drawFlat=makeChaseView(canvas)}catch{drawFlat=null}
+    if(drawFlat){document.documentElement.dataset.renderer='webgl2';$('viewLabel').textContent='WebGL chase view';return}
+    replaceCanvas();
+  }
+  drawFlat=makeFlatView(canvas);document.documentElement.dataset.renderer='top-down';
+  $('viewLabel').textContent='Top-down view';$('viewLabel').title=why;
 }
 /* ================= WGSL ================= */
 const PRELUDE = /* wgsl */`
@@ -1554,8 +1557,9 @@ const BASE_PITCH=0.3, BASE_DIST=9.5;
 const cam={eye:[0,4,0],tgt:[0,1,0]}; let camSnap=true;
 const orbit={yaw:0,pitch:BASE_PITCH,dist:BASE_DIST,last:-1e9,dragging:false};
 const camPtrs=new Map();
-canvas.addEventListener('pointerdown',e=>{ canvas.setPointerCapture(e.pointerId); camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); orbit.dragging=true; orbit.last=performance.now(); });
-canvas.addEventListener('pointermove',e=>{
+function bindOrbitCanvas(surface){
+surface.addEventListener('pointerdown',e=>{ surface.setPointerCapture(e.pointerId); camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); orbit.dragging=true; orbit.last=performance.now(); });
+surface.addEventListener('pointermove',e=>{
   const p=camPtrs.get(e.pointerId); if(!p) return;
   if (camPtrs.size===1){ orbit.yaw-=(e.clientX-p.x)*0.008; orbit.pitch=clamp(orbit.pitch+(e.clientY-p.y)*0.006,0.04,1.35); }
   else if (camPtrs.size===2){ const [a,b]=[...camPtrs.values()], before=Math.hypot(a.x-b.x,a.y-b.y);
@@ -1564,8 +1568,10 @@ canvas.addEventListener('pointermove',e=>{
   p.x=e.clientX; p.y=e.clientY; orbit.last=performance.now();
 });
 const camUp=e=>{ camPtrs.delete(e.pointerId); if(!camPtrs.size) orbit.dragging=false; orbit.last=performance.now(); };
-canvas.addEventListener('pointerup',camUp); canvas.addEventListener('pointercancel',camUp);
-canvas.addEventListener('wheel',e=>{ e.preventDefault(); orbit.dist=clamp(orbit.dist*Math.exp(e.deltaY*0.001),3.5,28); orbit.last=performance.now(); },{passive:false});
+surface.addEventListener('pointerup',camUp); surface.addEventListener('pointercancel',camUp);
+surface.addEventListener('wheel',e=>{ e.preventDefault(); orbit.dist=clamp(orbit.dist*Math.exp(e.deltaY*0.001),3.5,28); orbit.last=performance.now(); },{passive:false});
+}
+bindOrbitCanvas(canvas);
 const wrapA=a=>{ a=(a+Math.PI)%TAU; if(a<0)a+=TAU; return a-Math.PI; };
 function updateCam(dt,now){
   const idle=!orbit.dragging && now-orbit.last>1200;
@@ -1616,6 +1622,100 @@ function drawMini(){
 }
 
 /* ================= frame ================= */
+// Low-poly chase view. Physics, gates, race timing and the camera belong to the race.
+function makeChaseView(surface) {
+ const gl=surface.getContext('webgl2',{alpha:false,antialias:false,powerPreference:'low-power'});
+ if(!gl)return null;
+ const program=gl.createProgram();
+ function attach(type,code){
+   const shader=gl.createShader(type);gl.shaderSource(shader,code);gl.compileShader(shader);
+   if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(shader));
+   gl.attachShader(program,shader);gl.deleteShader(shader);
+ }
+ attach(gl.VERTEX_SHADER,`#version 300 es
+ layout(location=0) in vec3 p;layout(location=1) in vec3 rgb;
+ uniform mat4 vp;uniform vec3 eye;out vec3 col;out float fog;
+ void main(){gl_Position=vp*vec4(p,1.);gl_Position.z=2.*gl_Position.z-gl_Position.w;
+ col=rgb;fog=clamp(length(p-eye)/230.,0.,.82);}`);
+ attach(gl.FRAGMENT_SHADER,`#version 300 es
+ precision mediump float;in vec3 col;in float fog;uniform vec3 sky;out vec4 outColor;
+ void main(){outColor=vec4(mix(col,sky,fog),1.);}`);
+ gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
+ gl.useProgram(program);
+ const vp=gl.getUniformLocation(program,'vp'),eye=gl.getUniformLocation(program,'eye'),sky=gl.getUniformLocation(program,'sky');
+ const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+ for(let i=0;i<2;i++){gl.enableVertexAttribArray(i);gl.vertexAttribPointer(i,3,gl.FLOAT,false,24,i*12)}
+ gl.enable(gl.DEPTH_TEST);
+ let vertices=new Float32Array(65536),cursor=0;
+ function tri(a,b,c,color,shade=1){
+   if(cursor+18>vertices.length){const next=new Float32Array(vertices.length*2);next.set(vertices);vertices=next}
+   for(const p of [a,b,c]){vertices[cursor++]=p[0];vertices[cursor++]=p[1];vertices[cursor++]=p[2];for(const v of color)vertices[cursor++]=v*shade}
+ }
+ function quad(a,b,c,d,color){tri(a,b,c,color);tri(a,c,d,color)}
+ function body(transform,x,y,z,rx,ry,rz,color){
+   const belt=[[rx,0,0],[0,0,rz],[-rx,0,0],[0,0,-rz]].map(([a,b,c])=>transform(x+a,y+b,z+c));
+   const top=transform(x,y+ry,z),bottom=transform(x,y-ry,z);
+   for(let i=0;i<4;i++){tri(belt[i],belt[(i+1)%4],top,color,1-i*.065);tri(belt[i],bottom,belt[(i+1)%4],color,.57+i*.035)}
+ }
+ const world=(x,y,z)=>[x,y,z];
+ const coral=[1,.36,.19],gold=[1,.84,.31],aqua=[.31,.88,.86],cream=[.9,.98,.93],dark=[.12,.12,.22];
+ return function drawChase(){
+   if(gl.isContextLost()){flatView('WebGL context lost.',true);return}
+   const ratio=Math.min(devicePixelRatio||1,1.35),w=Math.max(1,Math.round(surface.clientWidth*ratio)),h=Math.max(1,Math.round(surface.clientHeight*ratio));
+   if(surface.width!==w||surface.height!==h){surface.width=w;surface.height=h}
+   gl.viewport(0,0,w,h);const day=skyS.day,sc=[.19+.40*day,.30+.46*day,.45+.45*day];
+   gl.clearColor(...sc,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);cursor=0;
+   gl.uniformMatrix4fv(vp,false,M.mul(M.persp(Math.PI/2.55,w/h,.1,450),M.lookAt(cam.eye,cam.tgt,[0,1,0])));
+   gl.uniform3fv(eye,cam.eye);gl.uniform3fv(sky,sc);
+   const x0=Math.floor(ski.x/8)*8,z0=Math.floor(ski.z/8)*8;
+   const seaPoint=(x,z)=>{
+     const distance=Math.hypot(x-ski.x,z-ski.z);
+     const far=-.32+(.21+sea.storm*.20)*Math.sin(x*.14+simT)*Math.cos(z*.09-simT*.8);
+     const mix=Math.min(1,Math.max(0,(24-distance)/14));
+     return [x,mix?far+(surfH(x,z)-far)*mix:far,z];
+   };
+   const tide=[.055+.03*day,.32+.13*day,.43+.10*day];
+   // A far plane meets the horizon behind the faceted, moving near water.
+   quad([x0-420,-2,z0-420],[x0+420,-2,z0-420],[x0+420,-2,z0+420],[x0-420,-2,z0+420],tide);
+   for(let j=-12;j<12;j++)for(let i=-12;i<12;i++){
+     const x=x0+i*8,z=z0+j*8,a=seaPoint(x,z),b=seaPoint(x+8,z),c=seaPoint(x+8,z+8),d=seaPoint(x,z+8);
+     tri(a,b,c,tide,1+(b[1]-d[1])*.32);tri(a,c,d,tide,1+(a[1]-c[1])*.36);
+   }
+   function nearby(x,z){return (x-ski.x)**2+(z-ski.z)**2<145**2}
+   for(const b of laneBuoys)if(nearby(b.x,b.z))body(world,b.x,.24,b.z,.33,.51,.33,coral);
+   gates.forEach((g,i)=>{
+     if(!nearby(g.x,g.z))return;const color=i===nextGate?gold:aqua;
+     for(const dir of [-1,1]){const x=g.x+dir*g.nx*HALF,z=g.z+dir*g.nz*HALF;
+       body(world,x,.55,z,.65,.91,.65,color);body(world,x,1.45,z,.27,.46,.27,cream)}
+     if(i===nextGate||gateStyle!==0){
+       const p=(v,y)=>[g.x+v*g.nx,y,g.z+v*g.nz];
+       for(const dir of [-1,1])quad(p(dir*(HALF-.13),.6),p(dir*(HALF+.13),.6),p(dir*(HALF+.13),4.9),p(dir*(HALF-.13),4.9),color);
+       quad(p(-HALF,4.4),p(HALF,4.4),p(HALF,5),p(-HALF,5),color);
+     }
+   });
+   for(const [items,ramp] of [[ramps,true],[pads,false]])for(const r of items){
+     if(!nearby(r.x,r.z))continue;const c=Math.cos(r.a),s=Math.sin(r.a),base=surfH(r.x,r.z);
+     const p=(x,y,z)=>[r.x+c*x+s*z,base+y,r.z-s*x+c*z];
+     const wide=(ramp?RAMP_W:PAD_W)/2,front=ramp?0:-PAD_L/2,end=ramp?RAMP_L:PAD_L/2,height=ramp?RAMP_H:.22;
+     quad(p(-wide,.2,front),p(wide,.2,front),p(wide,height,end),p(-wide,height,end),ramp?coral:aqua);
+   }
+   function rider(x,y,z){
+     const cs=Math.cos(ski.heading),sn=Math.sin(ski.heading),roll=ski.roll,pitch=ski.pitch;
+     return [ski.x+x*cs+z*sn-y*Math.sin(roll)*cs,ski.y+y+x*Math.sin(roll)+z*Math.sin(pitch),ski.z-x*sn+z*cs+y*Math.sin(roll)*sn];
+   }
+   body(rider,0,.27,0,.64,.38,1.74,dark);body(rider,0,.47,.15,.60,.30,1.48,aqua);
+   body(rider,0,.69,-.14,.35,.19,.83,dark);body(rider,0,.91,.64,.37,.30,.45,coral);
+   for(const side of [-1,1]){
+     body(rider,side*.25,.79,-.36,.17,.34,.27,dark);body(rider,side*.25,1.18,.19,.13,.18,.33,coral);
+   }
+   body(rider,0,1.22,-.08,.33,.43,.27,coral);body(rider,0,1.72,.04,.22,.25,.21,[.48,.30,.21]);body(rider,0,1.85,.02,.23,.15,.21,dark);
+   if(ski.speed>1){const tail=1.5+Math.min(3,ski.speed*.11);
+     for(const side of [-1,1])tri(rider(side*.42,.12,-.9),rider(side*1.18,.05,-tail),rider(side*.76,.05,-tail+.4),cream)}
+   if(ghostPos)body(world,ghostPos[0],.5,ghostPos[1],.55,.52,1.25,aqua);
+   gl.bufferData(gl.ARRAY_BUFFER,vertices.subarray(0,cursor),gl.DYNAMIC_DRAW);gl.drawArrays(gl.TRIANGLES,0,cursor/6);
+ };
+}
+
 function makeFlatView(surface) {
   const c=surface.getContext('2d',{alpha:false});
   if(!c)throw Error('This browser could not create a racing canvas.');
@@ -1660,7 +1760,7 @@ function makeFlatView(surface) {
   };
 }
 async function chooseRenderer(){
-  if(params.get('view')==='top-down' || !navigator.gpu){
+  if(['top-down','webgl2'].includes(params.get('view')) || !navigator.gpu){
     flatView(params.get('view')==='top-down'?'Selected top-down view':'WebGPU is unavailable in this browser.');
     return;
   }

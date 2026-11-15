@@ -83,3 +83,4 @@
 .chstrip .engrave { color: #8d8c92; }
 .chstrip-src { display: grid; gap: 10px; }
 @media (max-width: 640px) { .chstrip { grid-template-columns: 1fr; } }
+

@@ -4,6 +4,17 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.ClipData;
+import android.database.Cursor;
+import android.provider.DocumentsContract;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import android.content.pm.PackageManager;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
@@ -60,6 +71,8 @@ public final class MainActivity extends Activity implements InputManager.InputDe
     private static final int MIC_REQUEST = 71, AUDIO_FILE_REQUEST = 72;
     private PermissionRequest micRequest;
     private ValueCallback<Uri[]> fileResult;
+    private boolean selectingFolder;
+    private final ExecutorService fileWorker = Executors.newSingleThreadExecutor();
 
     private boolean externalAudioDialog() {
         return micRequest != null || fileResult != null;
@@ -79,15 +92,78 @@ public final class MainActivity extends Activity implements InputManager.InputDe
         if (code == MIC_REQUEST) finishMicrophone(results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED);
     }
 
+    private static final String[] AUDIO_COLUMNS = {
+        DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+        DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+        DocumentsContract.Document.COLUMN_MIME_TYPE
+    };
+    private static boolean isAudioName(String name) {
+        return name != null && name.toLowerCase(java.util.Locale.ROOT)
+                .matches(".*\\.(mp3|wav|wave|ogg|oga|opus|m4a|aac|flac|aif|aiff|weba|amr)$");
+    }
+    private static boolean isAudio(String mime, String name) {
+        return mime != null && mime.startsWith("audio/") || isAudioName(name);
+    }
+    private void finishFiles(ValueCallback<Uri[]> callback, Uri[] songs) {
+        if (fileResult != callback) return;
+        fileResult = null;
+        selectingFolder = false;
+        callback.onReceiveValue(trusted && !isFinishing() ? songs : null);
+    }
+    private Uri[] audioInFolder(Uri tree) {
+        ArrayDeque<String> directories = new ArrayDeque<>();
+        Set<String> visited = new HashSet<>();
+        List<Uri> songs = new ArrayList<>();
+        directories.add(DocumentsContract.getTreeDocumentId(tree));
+        while (!directories.isEmpty() && !Thread.currentThread().isInterrupted()) {
+            String id = directories.removeFirst();
+            if (!visited.add(id)) continue;
+            Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, id);
+            try (Cursor cursor = getContentResolver().query(children, AUDIO_COLUMNS, null, null, null)) {
+                if (cursor == null) throw new IllegalStateException("Provider unavailable");
+                while (cursor.moveToNext()) {
+                    String child = cursor.getString(0), name = cursor.getString(1), mime = cursor.getString(2);
+                    if (DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) directories.add(child);
+                    else if (isAudio(mime, name)) songs.add(DocumentsContract.buildDocumentUriUsingTree(tree, child));
+                }
+            }
+        }
+        return songs.toArray(new Uri[0]);
+    }
     @Override protected void onActivityResult(int code, int result, Intent data) {
         super.onActivityResult(code, result, data);
         if (code != AUDIO_FILE_REQUEST || fileResult == null) return;
         ValueCallback<Uri[]> callback = fileResult;
-        fileResult = null;
-        Uri uri = result == RESULT_OK && data != null ? data.getData() : null;
-        callback.onReceiveValue(uri != null && "content".equals(uri.getScheme()) ? new Uri[]{uri} : null);
+        if (result != RESULT_OK || data == null || !trusted) { finishFiles(callback, null); return; }
+        Uri uri = data.getData();
+        if (selectingFolder && uri != null && "content".equals(uri.getScheme()) && DocumentsContract.isTreeUri(uri)) {
+            fileWorker.execute(() -> {
+                Uri[] found;
+                try { found = audioInFolder(uri); }
+                catch (RuntimeException problem) { found = null; }
+                Uri[] songs = found;
+                ui.post(() -> {
+                    if (fileResult != callback) return;
+                    if (songs == null || songs.length == 0) {
+                        String message = songs == null ? "Could not read this folder." : "No audio files in this folder.";
+                        android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show();
+                    }
+                    finishFiles(callback, songs);
+                });
+            });
+            return;
+        }
+        if (selectingFolder) { finishFiles(callback, null); return; }
+        Set<Uri> selection = new LinkedHashSet<>();
+        ClipData clip = data.getClipData();
+        if (clip != null) {
+            for (int i = 0; i < clip.getItemCount(); i++) {
+                Uri item = clip.getItemAt(i).getUri();
+                if (item != null && "content".equals(item.getScheme())) selection.add(item);
+            }
+        } else if (uri != null && "content".equals(uri.getScheme())) selection.add(uri);
+        finishFiles(callback, selection.isEmpty() ? null : selection.toArray(new Uri[0]));
     }
-
 
     private static final class Pad {
         final int index; final String name;
@@ -203,17 +279,22 @@ public final class MainActivity extends Activity implements InputManager.InputDe
                     return true;
                 }
                 fileResult = result;
-                web.evaluateJavascript("Boolean(window.Arcade?.beatRoomOpen())", active -> {
+                web.evaluateJavascript("window.Arcade?.audioPickerMode?.() || (window.Arcade?.beatRoomOpen() ? 'beat' : '')", mode -> {
                     if (fileResult != result) return;
-                    if ("true".equals(active)) {
-                        Intent pick = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-                        pick.addCategory(Intent.CATEGORY_OPENABLE);
-                        pick.setType("audio/*");
+                    boolean beat = "\"beat\"".equals(mode);
+                    boolean files = "\"files\"".equals(mode);
+                    selectingFolder = "\"folder\"".equals(mode);
+                    if (trusted && (beat || files || selectingFolder)) {
+                        Intent pick = new Intent(selectingFolder ? Intent.ACTION_OPEN_DOCUMENT_TREE : Intent.ACTION_OPEN_DOCUMENT);
+                        if (!selectingFolder) {
+                            pick.addCategory(Intent.CATEGORY_OPENABLE);
+                            pick.setType("audio/*");
+                            pick.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, files && params.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE);
+                        }
                         try { startActivityForResult(pick, AUDIO_FILE_REQUEST); return; }
                         catch (ActivityNotFoundException ignored) { }
                     }
-                    fileResult = null;
-                    result.onReceiveValue(null);
+                    finishFiles(result, null);
                 });
                 return true;
             }
@@ -242,9 +323,10 @@ public final class MainActivity extends Activity implements InputManager.InputDe
         if (focus) { immersive(); js("window.Arcade?.background('focus', false);"); }
         else if (!externalAudioDialog()) { js("window.Arcade?.background('focus', true);"); clearPads(); }
     }
-    @Override protected void onPause() { if (!externalAudioDialog()) js("window.Arcade?.background('activity', true);"); clearPads(); if (web != null) { web.onPause(); web.pauseTimers(); } super.onPause(); }
-    @Override protected void onResume() { super.onResume(); if (web != null) { web.resumeTimers(); web.onResume(); } js("window.Arcade?.background('activity', false);"); immersive(); }
+    @Override protected void onPause() { js("window.Arcade?.setMusicAway?.(true);"); if (!externalAudioDialog()) js("window.Arcade?.background('activity', true);"); clearPads(); if (web != null) { web.onPause(); web.pauseTimers(); } super.onPause(); }
+    @Override protected void onResume() { super.onResume(); if (web != null) { web.resumeTimers(); web.onResume(); } js("window.Arcade?.background('activity', false); window.Arcade?.setMusicAway?.(false);"); immersive(); }
     @Override protected void onDestroy() {
+        fileWorker.shutdownNow();
         finishMicrophone(false);
         if (fileResult != null) { fileResult.onReceiveValue(null); fileResult = null; }
         feedback(0, 0);
@@ -364,6 +446,7 @@ public final class MainActivity extends Activity implements InputManager.InputDe
     }
 
     private final class Bridge {
+        @JavascriptInterface public boolean soundTestFolderPicker() { return true; }
         @JavascriptInterface public void setImmersive(boolean active) {
             if (trusted) ui.post(() -> { useImmersive = active; immersive(); });
         }

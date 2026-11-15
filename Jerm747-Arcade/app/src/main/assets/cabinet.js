@@ -18,7 +18,8 @@ const games = [
  ["Sumi Sudoku", "Ink-brush Sudoku with a watercolor park to rest in.", "Classic Sudoku with Japanese ink-brush styling. Take a break in a living watercolor park inspired by Maruyama Park in Kyoto: 12 painted plants, seasons that turn every 5 minutes, day and night every 12, and tap-to-glow plants with fireflies and info cards.", "projects/sumi-sudoku/index.html", "projects/sumi-sudoku/case.webp"],
  ["GS Fighter II", "Groove Squad · Fighter", "Fourteen fighters, cinematic intros, and the Parallax Run.", "projects/gs-fighter-2/index.html", "projects/gs-fighter-2/cover.jpg"],
  ['Wave Run 747','Racing · Jet ski','Race the jet ski through buoy gates, chase a ghost, or try an endless course.','projects/wave-run-747/index.html','projects/wave-run-747/case.webp'],
- ['Pulse Runner','Arcade · Run and gun','Pick an operator and push through the jungle to the Dustline Outpost.','projects/pulse-runner/index.html','projects/pulse-runner/case.webp']
+ ['Pulse Runner','Arcade · Run and gun','Pick an operator and push through the jungle to the Dustline Outpost.','projects/pulse-runner/index.html','projects/pulse-runner/case.webp'],
+ ['Game Music','Music · Arcade soundtrack','Play 60 original game themes by Jerm747 or load music from your device.','projects/sound-test/index.html','projects/sound-test/case.webp']
 ];
 const shelfArt = [
  'encore/assets/encore-sleeve.webp','encore/assets/cd-arcade.webp','images/groove-squad/level10/coat-gift.webp','gs3/game/menu-logo.png',
@@ -28,13 +29,15 @@ const shelfArt = [
  "projects/sumi-sudoku/cover.webp",
  "projects/gs-fighter-2/cover.jpg",
  "projects/wave-run-747/cover.webp",
- "projects/pulse-runner/cover.webp"
+ "projects/pulse-runner/cover.webp",
+ 'projects/sound-test/cover.jpg'
 ];
 // Display order is independent of game IDs used by saves, routes and controls.
-const gameOrder=games.map((game,id)=>id).sort((a,b)=>
+const gameOrder=games.map((game,id)=>id).filter(id=>!games[id][3].includes("/cyborg-coliseum/")).sort((a,b)=>
  Number(games[a][3]==='projects/controller-check/index.html')-Number(games[b][3]==='projects/controller-check/index.html'));
 const session = byId('session'), cabinet = byId('cabinet'), list = byId('case-list'), shelf = byId('shelf');
 let current = Math.max(0,Math.min(games.length-1,Number(localStorage.getItem('arcade.selection'))||0));
+if(!gameOrder.includes(current))current=gameOrder[0];
 let view = localStorage.getItem('arcade.view') || (Math.min(innerHeight,innerWidth)<650?'list':'shelf');
 const backgroundReasons=new Set();
 let frame, frameHook, listScroll = Number(sessionStorage.getItem('arcade.scroll')) || 0, nativePads = [], lastFlags = {}, activeKeys = new Set();
@@ -42,7 +45,7 @@ const browserPads = navigator.getGamepads?.bind(navigator);
 function pads(){return nativePads.length?nativePads:(browserPads?.() || []);}
 function gamePads(){
  const connected=pads();
- if(!releasePadGate&&!heldByVisor)return connected;
+ if(!releasePadGate&&!heldByVisor&&!gameMusic.visible&&!backgroundReasons.size)return connected;
  return Array.from(connected,p=>p?{id:p.id,index:p.index,mapping:p.mapping,connected:p.connected,timestamp:p.timestamp,
   axes:Array.from(p.axes,()=>0),buttons:Array.from(p.buttons,()=>({pressed:false,touched:false,value:0})),
   vibrationActuator:p.vibrationActuator}:null);
@@ -93,6 +96,7 @@ setView(view,false);if(view==='list')requestAnimationFrame(()=>list.scrollTop=li
 function launch(){
  if(frame||titleShowing||visor.isOpen||viewer.open)return;
  listScroll=list.scrollTop;rumble();
+ if(routes[current]?.id==='sound-test'){gameMusic.show();return;}
  const saved=ArcadeSessions.take(current);
  if(saved){
   frame=saved.frame;frameHook=frame.contentWindow;diskGameId=saved.data;
@@ -132,27 +136,38 @@ function isParkedWindow(w){
  try {while(w&&w!==window){if(w.frameElement?.hidden)return true;w=w.parent;}}catch{}
  return false;
 }
-window.Arcade={beatRoomOpen:()=>!!frame&&routes[current]?.id==='beat-room'&&!visor.isOpen,returnToCabinet,back:backOne,holding:w=>backgroundReasons.size>0||heldByVisor||!!pocketView?.guideOpen||isParkedWindow(w),
+function audioPickerMode() {
+ if (!gameMusic.visible) return '';
+ const input = gameMusic.player.contentDocument?.getElementById('localFiles');
+ if (!input) return '';
+ const chooseFolder = input.dataset.pickFolder === 'true';
+ delete input.dataset.pickFolder;
+ return chooseFolder ? 'folder' : 'files';
+}
+window.Arcade={audioPickerMode,setMusicAway:away=>gameMusic.background(away||backgroundReasons.size>0),beatRoomOpen:()=>!gameMusic.visible&&!!frame&&routes[current]?.id==='beat-room'&&!visor.isOpen,returnToCabinet,back:backOne,holding:w=>gameMusic.visible||backgroundReasons.size>0||heldByVisor||!!pocketView?.guideOpen||isParkedWindow(w),
  gameTitle(source){if(frame?.contentWindow!==source||!routes[current])return false;openTitle();return true;},
  background(reason,held){
   if(held)backgroundReasons.add(reason);else backgroundReasons.delete(reason);
+  gameMusic.background(backgroundReasons.size > 0);
   if(!frame)return;
-  pocketView?.setHeld(!!backgroundReasons.size || heldByVisor);
+  pocketView?.setHeld(!!backgroundReasons.size || heldByVisor || gameMusic.visible);
   if(backgroundReasons.size){activeKeys.clear();ArcadeSessions.hold(frame);}
   else if(!visor.isOpen)ArcadeSessions.release(frame);
  },
  pause(){if(!frame||visor.isOpen)return;visor.open();},pads};
 window.addEventListener('message',e=>{if(!frame||e.origin!==location.origin||e.source!==frame.contentWindow)return;if(['arcade-return','jerm747-catalog-close','jerm747-arcade-close','jerm747-close-game','jerm747-game-close'].includes(e.data?.type))returnToCabinet();if(e.data?.type==='jerm747-catalog-arcade'){returnToCabinet();select(4,true);launch();}});
-window.addEventListener('keydown',e=>{if(visor.isOpen||byId('cover-view').open||e.target.id==='view-slider')return;if(frame){if(e.key==='Escape'){e.preventDefault();backOne()}return}if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();stepSelection(['ArrowLeft','ArrowUp'].includes(e.key)?-1:1,true)}else if(e.key==='Enter'&&!e.repeat && !e.target.closest?.('button'))launch();});
+window.addEventListener('keydown',e=>{if(gameMusic.visible||visor.isOpen||byId('cover-view').open||e.target.id==='view-slider')return;if(frame){if(e.key==='Escape'){e.preventDefault();backOne()}return}if(['ArrowLeft','ArrowRight','ArrowDown','ArrowUp'].includes(e.key)){e.preventDefault();stepSelection(['ArrowLeft','ArrowUp'].includes(e.key)?-1:1,true)}else if(e.key==='Enter'&&!e.repeat && !e.target.closest?.('button'))launch();});
 function key(w,code,down){
  const key=code==='Space'?' ':code.startsWith('Key')?code.slice(3).toLowerCase():code;
  (w.document.activeElement||w.document.body).dispatchEvent(new w.KeyboardEvent(down?'keydown':'keyup',{code,key,bubbles:true,cancelable:true}));
 }
 const maps={8:{0:'KeyA',1:'KeyS',2:'KeyX',3:'KeyH',4:'KeyZ',12:'ArrowUp',13:'ArrowDown',14:'ArrowLeft',15:'ArrowRight'}};
 function poll(){
+ requestAnimationFrame(poll);
  const all=Array.from(pads()||[]).filter(Boolean),p=all[0],pressed=i=>!!p?.buttons[i]?.pressed;
  const flags={prev:pressed(12)||pressed(14)||p?.axes[1]<-.55||p?.axes[0]<-.55,next:pressed(13)||pressed(15)||p?.axes[1]>.55||p?.axes[0]>.55,a:pressed(0),b:pressed(1),select:pressed(8),start:all.some(p=>p.buttons[9]?.pressed)};
  if(releasePadGate){if(!Object.values(flags).some(Boolean))releasePadGate=false;}
+ else if(gameMusic.visible){if(flags.start&&!lastFlags.start)gameMusic.back();}
  else if(visor.isOpen){
   if(flags.start&&!lastFlags.start){if(titleShowing){visor.input('accept')}else visor.back();}
   else if(flags.b&&!lastFlags.b)visor.input('cancel');
@@ -168,12 +183,12 @@ function poll(){
  else if(frameHook && maps[current]){
   const held=new Set(Object.entries(maps[current]).filter(([button])=>pressed(+button)).map(([,code])=>code));for(const code of held)if(!activeKeys.has(code))key(frameHook,code,true);for(const code of activeKeys)if(!held.has(code))key(frameHook,code,false);activeKeys=held;
  }
- lastFlags=flags;requestAnimationFrame(poll);
+ lastFlags=flags;
 }
 window.addEventListener('DOMContentLoaded',()=>requestAnimationFrame(poll),{once:true});
-window.Arcade.onStart=()=>startKey();
+window.Arcade.onStart=()=>gameMusic.visible?gameMusic.back():startKey();
 
-window.Arcade.inGame=()=>Boolean(frame)||titleShowing;
+window.Arcade.inGame=()=>Boolean(frame)||titleShowing||gameMusic.visible;
 
 const viewer = byId('cover-view');
 byId('open-cover').onclick = () => {
@@ -186,6 +201,7 @@ byId('game-back').onclick=backOne;
 byId('game-hud').onclick=()=>visor.open();
 document.querySelector('.game-nav').addEventListener('pointerdown',e=>e.preventDefault());
 function backOne(){
+ if(gameMusic.visible){gameMusic.back();return;}
  if(pocketView?.closeGuide())return;
  if(visor.back())return;
  if(titleShowing){returnToCabinet();return;}

@@ -1,0 +1,18 @@
+{
+  "title": "Game Music",
+  "tagline": "60 original game themes by Jerm747.",
+  "description": "Play the game themes from Press Start to Kyoto Dusk. Keep the music playing from the shelf or the in-game HUD.",
+  "kind": "music",
+  "status": "playable",
+  "version": "1.4.0",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "touch"
+  ],
+  "credit": "Original game music for jerm747.games.",
+  "accent": "#F2B35E",
+  "order": 6,
+  "gamepad": {},
+  "gamepadLabels": {}
+}

@@ -11,7 +11,43 @@ finishButton.addEventListener('click', () => {
   pocket.setFinish(choices[(choices.indexOf(pocket.getFinish()) + 1) % choices.length]);
   renderFinish();
 });
+const musicRow = document.createElement('button');
+musicRow.type = 'button';
+musicRow.id = 'hud-game-music';
+musicRow.className = 'overlay-row';
+musicRow.hidden = true;
+musicRow.innerHTML='<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17V6l11-2v11M9 9l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2.4"/><ellipse cx="17" cy="16" rx="3" ry="2.4"/></svg><span>Game Music</span>';
+musicRow.style.textAlign='left';
+musicRow.setAttribute('aria-label','Game Music');
+byId('game-actions').after(musicRow);
+const viewPrefs=()=>embeddedVisor&&parent.Jerm747PlayView;
+function controlRow(id,label,click){
+ const el=document.createElement('button');el.type='button';el.className='overlay-row';el.id=id;el.hidden=true;
+ const title=document.createElement('span'),value=document.createElement('span');title.textContent=label;value.className='pref-value';el.append(title,value);el.onclick=click;musicRow.after(el);return el;
+}
+const controlsMenu=controlRow('play-controls','Controls',()=>showPanel('play-controls','play-show'));
+controlsMenu.lastElementChild.textContent='›';
+const showControls=controlRow('play-show','Show on-screen controls',()=>{viewPrefs().set('shown',!viewPrefs().shown);renderPlayControls()});
+const follow=controlRow('play-follow','Follow player input',()=>{viewPrefs().set('follow',!viewPrefs().follow);renderPlayControls()});
+const boardView=controlRow('play-board','Full-screen game board',()=>{viewPrefs().cycle();closeMenu(context)});
+function renderPlayControls(){
+ const prefs=viewPrefs();controlsMenu.hidden=!prefs||panel!=='main';
+ boardView.hidden=!prefs||panel!=='main'||context!=='game'||!prefs.eligible();
+ if(prefs)boardView.firstElementChild.textContent=prefs.board?'Return to regular view':'Full-screen game board';
+ for(const [row,value] of [[showControls,prefs?.shown],[follow,prefs?.follow]]){
+   row.hidden=panel!=='play-controls';row.setAttribute('role','switch');row.setAttribute('aria-checked',String(!!value));row.lastElementChild.textContent=value?'On':'Off';
+ }
+ if(panel==='play-controls')byId('hud-heading').textContent='Controls';
+}
+const openGamesRow=byId('open-games');const chevron=document.createElement('span');chevron.textContent='›';chevron.setAttribute('aria-hidden','true');chevron.style.cssText='margin-inline-start:auto;padding-inline:6px;font-size:1.35em';openGamesRow.append(chevron);
+
+musicRow.addEventListener('click', () => {
+  closeMenu(context, 'command', menuSpec.gameMusic ? 'game-music' : 'launch:sound-test');
+});
+
 function renderHostMenu() {
+  renderPlayControls();
+  musicRow.hidden = panel !== 'main' || !(menuSpec.gameMusic || menuSpec.catalog?.some(item => item.id === 'sound-test'));
   renderFinish();renderPocketControls();
   const pocket = byId('pocket-view');
   const canSwitch = panel==='main' && context==='game' && typeof menuSpec.pocket==='boolean';

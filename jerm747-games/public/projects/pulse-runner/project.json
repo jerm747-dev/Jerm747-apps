@@ -1,10 +1,10 @@
 {
   "title": "Pulse Runner",
   "tagline": "Run and gun the Dustline Outpost.",
-  "description": "Pick an operator and fight your way up the Dustline Outpost in this pixel-art run-and-gun, built inside its own 747 Pocket handheld. Fire, dive, strike and throw grenades past raiders, sentries and a gunship.",
+  "description": "Cross Dustline Outpost, reach the control room and follow a rescue signal through Relay Ridge. Dodge jungle wildlife, destroy missile towers and post your two-mission score on the General’s List.",
   "kind": "game",
   "status": "playable",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "controls": [
     "gamepad",
     "keyboard",
@@ -12,9 +12,5 @@
   ],
   "credit": "Jerm747",
   "accent": "#FF9C55",
-  "order": 41,
-  "download": {
-    "label": "Android · Jerm747 Arcade 2.0.0",
-    "url": "/download/arcade/"
-  }
+  "order": 41
 }

@@ -1,0 +1,604 @@
+{
+  "tracks": [
+    {
+      "id": "theme-01-press-start",
+      "title": "Press Start",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-01-press-start.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 73.273
+    },
+    {
+      "id": "theme-02-album-match",
+      "title": "Album Match",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-02-album-match.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 85.629
+    },
+    {
+      "id": "theme-03-ink-and-brush",
+      "title": "Ink and Brush",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-03-ink-and-brush.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 149.656
+    },
+    {
+      "id": "theme-04-indigo-subway",
+      "title": "Indigo Subway",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-04-indigo-subway.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 111.517
+    },
+    {
+      "id": "theme-05-word-search",
+      "title": "Word Search",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-05-word-search.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 168.02
+    },
+    {
+      "id": "theme-06-final-lap",
+      "title": "Final Lap",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-06-final-lap.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 129.437
+    },
+    {
+      "id": "theme-07-rooftop-party",
+      "title": "Rooftop Party",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-07-rooftop-party.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 171.024
+    },
+    {
+      "id": "theme-08-kickoff",
+      "title": "Kickoff",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-08-kickoff.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 141.035
+    },
+    {
+      "id": "theme-09-player-select",
+      "title": "Player Select",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-09-player-select.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 160.104
+    },
+    {
+      "id": "theme-10-fourth-quarter",
+      "title": "Fourth Quarter",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-10-fourth-quarter.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 157.44
+    },
+    {
+      "id": "theme-11-haunted-hallway",
+      "title": "Haunted Hallway",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-11-haunted-hallway.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 18.782
+    },
+    {
+      "id": "theme-12-maruyama-park",
+      "title": "Maruyama Park",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-12-maruyama-park.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 135.367
+    },
+    {
+      "id": "theme-13-ranked-run",
+      "title": "Ranked Run",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-13-ranked-run.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-14-beat-room",
+      "title": "Beat Room",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-14-beat-room.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 41.43
+    },
+    {
+      "id": "theme-15-simcitys-session",
+      "title": "SimCity's Session",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-15-simcitys-session.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.976
+    },
+    {
+      "id": "theme-16-highway-encore",
+      "title": "Highway Encore",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-16-highway-encore.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-17-chest-cannon",
+      "title": "Chest Cannon",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-17-chest-cannon.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 42.919
+    },
+    {
+      "id": "theme-18-round-one",
+      "title": "Round One",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-18-round-one.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 93.78
+    },
+    {
+      "id": "theme-19-round-six",
+      "title": "Round Six",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-19-round-six.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 178.286
+    },
+    {
+      "id": "theme-20-returnity",
+      "title": "Returnity",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-20-returnity.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-21-pocket-player",
+      "title": "Pocket Player",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-21-pocket-player.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 182.387
+    },
+    {
+      "id": "theme-22-three-in-a-row",
+      "title": "Three in a Row",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-22-three-in-a-row.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-23-aura-mode",
+      "title": "Aura Mode",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-23-aura-mode.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 188.134
+    },
+    {
+      "id": "theme-24-continue",
+      "title": "Continue",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-24-continue.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 118.073
+    },
+    {
+      "id": "theme-25-kianas-climb",
+      "title": "Kiana's Climb",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-25-kianas-climb.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 171.468
+    },
+    {
+      "id": "theme-26-groove-squad",
+      "title": "Groove Squad",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-26-groove-squad.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 193.593
+    },
+    {
+      "id": "theme-27-asteroid-blast",
+      "title": "Asteroid Blast",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-27-asteroid-blast.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 94.485
+    },
+    {
+      "id": "theme-28-diamond-crest",
+      "title": "Diamond Crest",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-28-diamond-crest.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 162.011
+    },
+    {
+      "id": "theme-29-parking-lot",
+      "title": "Parking Lot",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-29-parking-lot.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-30-kyoto-seasons",
+      "title": "Kyoto Seasons",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-30-kyoto-seasons.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 79.961
+    },
+    {
+      "id": "theme-31-free-flight",
+      "title": "Free Flight",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-31-free-flight.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-32-blue-thrusters",
+      "title": "Blue Thrusters",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-32-blue-thrusters.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-33-hard-ladder",
+      "title": "Hard Ladder",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-33-hard-ladder.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-34-fighter-lab",
+      "title": "Fighter Lab",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-34-fighter-lab.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 93.936
+    },
+    {
+      "id": "theme-35-watercolor-garden",
+      "title": "Watercolor Garden",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-35-watercolor-garden.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-36-v-wave",
+      "title": "V-Wave",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-36-v-wave.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 119.066
+    },
+    {
+      "id": "theme-37-tape-deck",
+      "title": "Tape Deck",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-37-tape-deck.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-38-highway-to-subway",
+      "title": "Highway to Subway",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-38-highway-to-subway.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 115.696
+    },
+    {
+      "id": "theme-39-jimmy-legend",
+      "title": "Jimmy Legend",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-39-jimmy-legend.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-40-warp-speed",
+      "title": "Warp Speed",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-40-warp-speed.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 142.054
+    },
+    {
+      "id": "theme-41-pick-a-topic",
+      "title": "Pick a Topic",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-41-pick-a-topic.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 81.946
+    },
+    {
+      "id": "theme-42-fight-for-your-voice",
+      "title": "Fight for Your Voice",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-42-fight-for-your-voice.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 144.744
+    },
+    {
+      "id": "theme-43-the-manager",
+      "title": "The Manager",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-43-the-manager.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-44-cockpit-cam",
+      "title": "Cockpit Cam",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-44-cockpit-cam.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 157.518
+    },
+    {
+      "id": "theme-45-neon-highway",
+      "title": "Neon Highway",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-45-neon-highway.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-46-chase-the-cascade",
+      "title": "Chase the Cascade",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-46-chase-the-cascade.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-47-next-challenger",
+      "title": "Next Challenger",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-47-next-challenger.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-48-full-squad",
+      "title": "Full Squad",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-48-full-squad.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-49-ultimate-board",
+      "title": "Ultimate Board",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-49-ultimate-board.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-50-letters-in-purple",
+      "title": "Letters in Purple",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-50-letters-in-purple.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-51-shields-up",
+      "title": "Shields Up",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-51-shields-up.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 75.938
+    },
+    {
+      "id": "theme-52-ruby-level",
+      "title": "Ruby Level",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-52-ruby-level.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 22.309
+    },
+    {
+      "id": "theme-53-red-zone",
+      "title": "Red Zone",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-53-red-zone.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 29.649
+    },
+    {
+      "id": "theme-54-two-player-mode",
+      "title": "Two-Player Mode",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-54-two-player-mode.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 51.174
+    },
+    {
+      "id": "theme-55-story-mode",
+      "title": "Story Mode",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-55-story-mode.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 169.979
+    },
+    {
+      "id": "theme-56-sakura-season",
+      "title": "Sakura Season",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-56-sakura-season.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 133.799
+    },
+    {
+      "id": "theme-57-handheld-edition",
+      "title": "Handheld Edition",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-57-handheld-edition.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 128.131
+    },
+    {
+      "id": "theme-58-countdown",
+      "title": "Countdown",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-58-countdown.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 40.046
+    },
+    {
+      "id": "theme-59-uptown-turntable",
+      "title": "Uptown Turntable",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-59-uptown-turntable.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 180.062
+    },
+    {
+      "id": "theme-60-kyoto-dusk",
+      "title": "Kyoto Dusk",
+      "stage": "Jerm747",
+      "album": "jerm747.games Game Themes",
+      "file": "music/theme-60-kyoto-dusk.mp3",
+      "cover": "case.webp",
+      "color": "#F2B35E",
+      "seconds": 193.019
+    }
+  ]
+}

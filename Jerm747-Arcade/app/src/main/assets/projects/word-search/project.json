@@ -10,7 +10,8 @@
   "controls": [
     "keyboard",
     "mouse",
-    "touch"
+    "touch",
+    "gamepad"
   ],
   "credit": "Jerm747 original. All rights reserved."
 }

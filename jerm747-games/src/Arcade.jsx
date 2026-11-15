@@ -2,12 +2,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useGamepad, buzz, toggleFullscreen, setDisplayOrientation, HOLD_TO_EXIT_MS, BTN } from './input.js';
 import PadIcon from './PadIcon.jsx';
 import Cabinet from './Cabinet.jsx';
+import ArcadeMusic from './ArcadeMusic.jsx';
 import {useVisor,useGameFrame} from './Visor.jsx';
 import './arcade-list.css';
 import './view-switch.css';
 import './cabinet.css';
 
-const NEW_TITLES = new Set(['wave-run-747', 'pulse-runner']);
+const NEW_TITLES = new Set(['sound-test', 'wave-run-747', 'pulse-runner', 'big-bowl-smash', 'tic-tac-steel', 'sumi-sudoku']);
 function NewBadge({slug}) { return NEW_TITLES.has(slug) ? <span className="game-new">NEW</span> : null; }
 
 const KIND_LABEL = { game: 'Games', app: 'Apps', site: 'Sites', tool: 'Tools', music: 'Music', experiment: 'Experiments' };
@@ -137,6 +138,8 @@ export default function Arcade() {
   const [cat, setCat] = useState('all');
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(null);
+  const [musicOpen, setMusicOpen] = useState(false);
+  const music = useRef(null);
   const [visorOpen,setVisorOpen]=useState(false);
   const [view,setView]=useState(()=>localStorage.getItem('j747.web.arcadeView')==='list'?'list':'cabinet');
   const live=useRef(null),cases=useRef(null),swipe=useRef(null),pocket=useRef(null);
@@ -153,7 +156,7 @@ export default function Arcade() {
     track('view');
     fetch('/api/games.php')
       .then((r) => r.json())
-      .then((d) => { if (!d.ok) throw new Error(d.error); setProjects([...d.projects].sort((a,b)=>Number(a.slug==='controller-check')-Number(b.slug==='controller-check'))); })
+      .then((d) => { if (!d.ok) throw new Error(d.error); setProjects(d.projects.filter(p=>p.slug!=="cyborg-coliseum").sort((a,b)=>Number(a.slug==='controller-check')-Number(b.slug==='controller-check'))); })
       .catch(() => setError("The game list didn't load. Refresh to try again."));
   }, []);
 
@@ -163,8 +166,10 @@ export default function Arcade() {
     if (!projects) return;
     const sync = () => {
       let slug = slugFromHash();
+      if (slug === 'game-music') slug = 'sound-test';
       if(slug==='fighter-lab'){slug='cyborg-coliseum';history.replaceState(null,'','#/play/'+slug);}
       const p = slug && projects.find((x) => x.slug === slug);
+      if (p?.slug === 'sound-test') { setCat('all'); setIndex(projects.indexOf(p)); music.current?.open(); return; }
       if (p) {
         setPlaying((cur) => { if (!cur || cur.slug !== p.slug) track('launch', p.slug); return p; });
         const i = projects.indexOf(p);
@@ -190,7 +195,7 @@ export default function Arcade() {
   }, []);
 
   const copyLink = async (p) => {
-    const url = `${window.location.origin}/#/play/${p.slug}`;
+    const url = `${window.location.origin}/#/play/${p.slug === 'sound-test' ? 'game-music' : p.slug}`;
     try { await navigator.clipboard.writeText(url); setCopied(p.slug); setTimeout(() => setCopied(''), 2000); }
     catch { window.prompt('Copy this link', url); }
   };
@@ -245,6 +250,7 @@ export default function Arcade() {
 
   const launch = useCallback((p) => {
     if (!p) return;
+    if (p.slug === 'sound-test') { music.current?.open(); return; }
     if (!document.fullscreenElement && navigator.userActivation?.isActive && document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().then(() => { playFullscreen.current = true; }).catch(() => {});
     }
@@ -266,6 +272,7 @@ export default function Arcade() {
   };
 
   const onAction = (action, from) => {
+    if (musicOpen) return;
     if(hud.current?.isOpen){
       if(from==='gamepad'){if(action==='start')hud.current.back();else {const k=({a:'accept',b:'cancel',up:'prev',left:'prev',down:'next',right:'next'})[action];if(k)hud.current.input(k);}}
       return;
@@ -285,14 +292,14 @@ export default function Arcade() {
     if (action === 'y') toggleFullscreen();
   };
 
-  const pads = useGamepad({ mode: 'menu', onAction });
+  const pads = useGamepad({ mode: musicOpen ? 'off' : 'menu', onAction });
 
   useEffect(() => {
     if (pads.length) setSource('gamepad');
   }, [pads.length]);
 
   useEffect(() => {
-    if (playing) return;
+    if (playing || musicOpen) return;
     const onKey = (e) => {
       if(hud.current?.isOpen || e.target.closest?.('.view-switch'))return;
       const map = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down', Enter: 'a', ' ': 'a', f: 'y', F: 'y', q: 'lb', Q: 'lb', e: 'rb', E: 'rb' };
@@ -312,8 +319,9 @@ export default function Arcade() {
 
   return (
     <Cabinet project={playing}>
-    <Player project={playing} source={source} onExit={exitGame} live={live} pocket={pocket} visorOpen={visorOpen} openHUD={()=>hud.current?.open()} />
-    <div className="sb" hidden={!!playing}>
+    <ArcadeMusic api={music} live={live} onVisibility={setMusicOpen} inGame={!!playing} />
+    <Player project={playing} source={source} onExit={exitGame} live={live} pocket={pocket} visorOpen={visorOpen || musicOpen} openHUD={()=>hud.current?.open()} openMusic={()=>music.current?.open()} />
+    <div className="sb" hidden={!!playing} inert={musicOpen}>
       <header className="sb-top">
         <a className="sb-brand" href="/">
           <PadIcon />
@@ -321,6 +329,7 @@ export default function Arcade() {
           <span className="sb-sub">Choose your game</span>
         </a>
         <div className="sb-status">
+          <button className="sb-btn" onClick={()=>music.current?.open()} aria-label="Open Game Music">♫ Game Music</button>
           <span className={`sb-input ${pads.length ? 'is-live' : ''}`}>
             {pads.length ? `Controller: ${pads[0].id.replace(/\(.*?\)/g, '').trim().slice(0, 32) || 'connected'}` : 'No controller, press any button to connect'}
           </span>
@@ -436,7 +445,7 @@ export default function Arcade() {
   );
 }
 
-function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHUD }) {
+function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHUD, openMusic }) {
   const stack=useRef(null);
   const actions = useRef(null);
   actions.current = {openHUD,onExit};
@@ -456,7 +465,7 @@ function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHU
   const [displayMode, setDisplayMode] = useState('auto');
   const [displayNotice, setDisplayNotice] = useState('');
   const bridge = project?.gamepad || {};
-  const hasBridge = Object.keys(bridge).length > 0;
+  const hasBridge = project?.slug !== "word-search" && Object.keys(bridge).length > 0;
 
   useGamepad({ mode: project&&!visorOpen?'player':'off', onExitProgress: setHold, onExit });
 
@@ -540,12 +549,12 @@ function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHU
     <div className="player" hidden={!project}>
       <div className="game-stack" ref={stack} />
       <details className="play-tools" key={project?.slug}><summary aria-label="Game controls">☰</summary><div className="player-bar is-on">
-        <button className="sb-btn" onClick={onExit}>Back to shelf</button><button className="sb-btn" onClick={openHUD}>HUD</button>
+        <button className="sb-btn" onClick={onExit}>Back to shelf</button><button className="sb-btn" onClick={openHUD}>HUD</button><button className="sb-btn" onClick={openMusic}>♫ Game Music</button>
         <span className="player-title">{project?.title}</span>
         <Hints source={source} inPlayer />
         {hasBridge && <button className="sb-btn" onClick={() => { setShowMap(!showMap); }}>{showMap ? 'Hide controls' : 'Controller map'}</button>}
         <label className="player-orientation">Display <select aria-label="Game orientation" value={displayMode} onChange={async e => {const mode=e.target.value;setDisplayMode(mode);setDisplayNotice(await setDisplayOrientation(mode));}}><option value="auto">Auto</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
-        <button className="sb-btn" onClick={async()=>{const entering=!document.fullscreenElement;await toggleFullscreen();if(entering&&displayMode!=='auto')setDisplayNotice(await setDisplayOrientation(displayMode));}}>Fullscreen</button>
+        <button className="sb-btn" onClick={async()=>{if(window.Jerm747PlayView?.onFull(!!document.fullscreenElement))return;const entering=!document.fullscreenElement;await toggleFullscreen();if(entering&&displayMode!=='auto')setDisplayNotice(await setDisplayOrientation(displayMode));}}>Fullscreen</button>
       </div></details>
       {displayNotice && <p className="display-notice" role="status"><span>{displayNotice}</span><button onClick={()=>setDisplayNotice('')} aria-label="Dismiss display message">×</button></p>}
       {showMap && (

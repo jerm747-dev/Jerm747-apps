@@ -1,0 +1,45 @@
+.arcade-music-layer { position: fixed; inset: 0; z-index: 11000; display: grid; place-items: center; padding: max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left)); }
+.arcade-music-layer[hidden] { display: none; }
+.arcade-music-scrim { position: absolute; inset: 0; width: 100%; border: 0; background: #030811ad; backdrop-filter: blur(3px); cursor: pointer; }
+.arcade-music-window { z-index: 1; width: min(440px,100%); height: min(690px,100%); overflow: hidden; border: 1px solid #72716b88; border-radius: 19px; box-shadow: 0 30px 100px #000b; background: #13151b; }
+.arcade-music-window iframe { border: 0; width: 100%; height: 100%; display: block; background: transparent; }
+.arcade-music-dock { position: fixed; bottom: max(14px,env(safe-area-inset-bottom)); right: max(14px,env(safe-area-inset-right)); z-index: 9000; display: flex; align-items: center; padding: 7px; gap: 10px; background: #161a22f5; border: 1px solid #a88e615e; border-radius: 12px; color: #fff0d7; box-shadow: 0 8px 30px #0007; }
+.arcade-music-dock button { cursor: pointer; font: inherit; color: inherit; border: 0; background: none; }
+.arcade-music-open { display: flex; align-items: center; gap: 10px; padding: 0; text-align: left; }
+.arcade-music-open img { width: 54px; height: 38px; object-fit: cover; border-radius: 6px; }
+.arcade-music-open span { display: flex; flex-direction: column; gap: 3px; }
+.arcade-music-open small { color: #c5a37c; font-size: 9px; text-transform: uppercase; letter-spacing: .12em; }
+.arcade-music-open strong { font-size: 12px; font-weight: 600; }
+.arcade-music-toggle { width: 40px; height: 40px; border-radius: 50%; }
+.arcade-music-toggle:hover { background: #ffffff16; }
+.arcade-music-dock button:focus-visible { outline: 2px solid #f2b35e; outline-offset: 3px; }
+@media (orientation: landscape) and (max-height: 520px) { .arcade-music-window { width: min(680px,100%); height: 100%; } }
+@media (min-height: 521px) { .arcade-music-window { height: min(576px,100%); } }
+/* Keep the selected detail and cover aligned in cabinet builds that only ship the original tile styles. */
+.sb-slider { position: relative; min-width: 0; min-height: 0; display: grid; grid-template-rows: minmax(0,1fr) auto; }
+.sb-slides { display: flex; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; min-height: 0; }
+.sb-slides::-webkit-scrollbar { display: none; }
+.sb-slides > .sb-slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; position: relative; }
+.sb-slide .art-cover, .tile .art-cover { overflow: hidden; position: relative; width: 100%; }
+.sb-hero .art-cover { height: 100%; }
+.art-cover .art-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(16px); opacity: .5; }
+.art-cover .art-img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; }
+.sb-step { position: absolute; top: 48%; transform: translateY(-50%); width: 32px; height: 38px; border: 1px solid #ffffff34; border-radius: 9px; background: #101017d9; color: #fff1db; font-size: 24px; cursor: pointer; }
+.sb-step-prev { left: -12px; }.sb-step-next { right: -12px; }.sb-step:disabled { visibility: hidden; }
+.sb-dots { display: flex; gap: 4px; justify-content: center; padding: 5px; }
+.sb-dots i { width: 5px; height: 5px; border-radius: 50%; background: #68666a; }.sb-dots .is-on { background: #eab574; }
+@media(max-width:760px){.sb-slider { display:block; }.sb-slide { align-content:start; }.sb-slide .sb-hero { width:100%; }.sb-step { top:80px; }}
+@media(min-width:761px) {
+  .cabinet .sb:has(.sb-slider) { grid-template-rows: auto auto minmax(0,1fr) auto; }
+  .cabinet .sb-main:has(.sb-slider) { overflow: hidden; min-width: 0; grid-template-rows: minmax(0,1fr) auto; gap: 8px; }
+  .cabinet .sb-slide.sb-detail { grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); align-items: center; gap: 16px; }
+  .cabinet .sb-slide .sb-hero { max-height: 100%; }
+  .cabinet .sb-slide .sb-info { max-height: 100%; overflow: auto; }
+  .cabinet .sb-slide .sb-info h1 { font-size: clamp(24px,2.4vw,38px); }
+  .sb-shelf { min-width: 0; }
+}
+@media(max-width:760px) {
+  .sb-slides { align-items: start; }
+  .cabinet .sb-slide:not([aria-hidden=false]) { max-height: 1px; overflow: hidden; }
+}
+@media(min-width:761px) { .cabinet .sb-shelf .tile { flex-basis: clamp(145px,14vw,202px); } }

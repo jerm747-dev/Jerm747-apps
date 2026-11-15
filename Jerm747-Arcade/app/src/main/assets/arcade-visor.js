@@ -19,7 +19,8 @@ const routes = [
  {"id": "sumi-sudoku", "start": [["play", "Play Sumi Sudoku"]]},
  {id:"gs-fighter-2",start:[["play","Play GS Fighter II"]]},
  {id:'wave-run-747',start:[['play','Launch Wave Run 747']]},
- {id:'pulse-runner',start:[['play','Choose operator']]}
+ {id:'pulse-runner',start:[['play','Choose operator']]},
+ {id:'sound-test',start:[['play','Open Game Music']]}
 ];
 let titleShowing=false, heldByVisor=false, releasePadGate=false;
 const entryArt=byId('entry-art'), titleScreen=byId('game-entry');
@@ -62,6 +63,7 @@ function optionList(){
 }
 function getVisorMenu(){
  const menu=getGameMenu();
+ menu.gameMusic=true;
  menu.catalog=gameOrder.map(i=>({id:String(i),title:games[i][0]}));
  menu.active=frame?String(current):null;
  if(frame && pocketView)menu.pocket=pocketView.active;
@@ -96,9 +98,11 @@ const visor=Jerm747HUD.mount(document.body,{
   heldByVisor=false;releasePadGate=true;
   if(action==='command' && command==='pocket-view' && frame)pocketView?.toggle();
   pocketView?.setHeld(backgroundReasons.size>0);
+  if(action==='command' && command==='game-music'){gameMusic.show();return;}
   if(action==='command'&&command?.startsWith('launch:')){
    const target=Number(command.slice(7));
    if(!Number.isInteger(target)||!games[target])return;
+   if(routes[target]?.id==='sound-test'){gameMusic.show();return;}
    if(frame&&current===target){ArcadeSessions.release(frame);frame.contentWindow.focus();return;}
    if(frame||titleShowing)returnToCabinet();
    select(target);launch();return;

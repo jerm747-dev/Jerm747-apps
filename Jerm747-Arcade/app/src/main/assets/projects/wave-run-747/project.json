@@ -1,10 +1,10 @@
 {
   "title": "Wave Run 747",
   "tagline": "Ride the 747 jet ski through the buoys.",
-  "description": "Ride three laps, take the Clover course, chase a ghost in Time Trial, or race Endless courses. WebGPU powers the 3D view. A top-down view uses the same courses and controls on other browsers.",
+  "description": "Race the same buoy courses with WebGPU or a lightweight WebGL 2 chase camera. A top-down view is available on devices without either renderer.",
   "kind": "game",
   "status": "playable",
-  "version": "0.15",
+  "version": "0.16",
   "controls": [
     "gamepad",
     "keyboard",

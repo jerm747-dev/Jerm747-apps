@@ -75,6 +75,7 @@ function showPanel(next,focus){
 }
 function overlayBack(){
   if(lab.open){requestLabBack();return true;}
+  if(panel==='play-controls'){showPanel('main','play-controls');return true;}
   if(panel==='library'){showPanel('sessions','browse-games');return true;}
   if(panel==='sessions'){showPanel('main','open-games');return true;}
   if(panel==='choices'){showPanel('main','more-actions');return true;}

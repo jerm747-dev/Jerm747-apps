@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#100e18" />
+  <title>Game Music · jerm747.games</title>
+  <link rel="icon" href="case.webp" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./get-down-music.css" />
+  <link rel="stylesheet" href="./sound-test.css?v=gm14" />
+<style>.eq-band{display:grid;grid-template-columns:4em 1fr 4em;align-items:center;gap:8px;padding:12px 0}.eq-band input{min-width:0;width:100%;accent-color:#ebad78}.eq-band output{text-align:right;font-variant-numeric:tabular-nums}#eqDialog{width:min(88vw,370px)}</style></head>
+<body>
+  <div class="st-splash" id="splash">
+    <div class="st-splash-inner">
+      <img class="st-cover" src="cover.jpg?v=gm14" alt="Jerm747 Game Music. An amber cassette, a moonlit clocktower, an underground hangar and a jet in the sky." />
+      <p>Original arcade music by Jerm747</p>
+      <button type="button" id="start" disabled class="st-launch st-press">Loading tracks…</button>
+      <a class="st-splash-back" href="/">Back to arcade</a>
+    </div>
+  </div>
+
+  <div class="st gm-panel gm-panel--mini" id="app" hidden>
+    <header class="st-top gm-head">
+      <div class="st-brand"><div><span class="st-eyebrow gm-eyebrow">Jerm747 Arcade</span><strong>Game Music</strong></div><span class="st-count" id="count"></span></div>
+      <div class="st-exits"><button class="st-btn" id="resumeGame" type="button" hidden>Back to game</button><button class="st-btn" id="back" type="button">Cabinet shelf</button></div>
+    </header>
+
+    <img class="st-banner" src="cover.jpg?v=gm14" alt="Game Music" />
+    <main class="st-main" id="playerMain">
+      <section class="st-deck gm-now" id="deck" aria-label="Now playing">
+        <div class="st-art">
+          <img id="art" alt="" width="512" height="512" />
+          <canvas id="meter" width="64" height="24" aria-hidden="true"></canvas>
+        </div>
+        <div class="st-now">
+          <p class="st-no" id="nowNo">Now playing</p>
+          <button type="button" class="st-title st-title-button" id="nowTitle" aria-label="About current track">—</button>
+          <p class="st-meta" id="nowMeta"></p>
+        </div>
+        <div class="st-seek">
+          <span id="tCur">0:00</span>
+          <input type="range" id="seek" min="0" max="100" step="0.1" value="0" aria-label="Seek" />
+          <span id="tDur">0:00</span>
+        </div>
+        <div class="st-controls gm-controls">
+          <button type="button" id="shuffle" class="st-ic" aria-label="Shuffle" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
+          <button type="button" id="prev" class="st-ic" aria-label="Previous track"><svg viewBox="0 0 24 24"><path d="M19 20 9 12l10-8v16zM5 19V5"/></svg></button>
+          <button type="button" id="play" class="st-ic st-play" aria-label="Play"><svg class="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></svg><svg class="i-pause" viewBox="0 0 24 24"><path d="M7 4h4v16H7zM14 4h4v16h-4z"/></svg></button>
+          <button type="button" id="next" class="st-ic" aria-label="Next track"><svg viewBox="0 0 24 24"><path d="m5 4 10 8-10 8V4zM19 5v14"/></svg></button>
+          <button type="button" id="repeat" class="st-ic" aria-label="Repeat: all"><svg viewBox="0 0 24 24"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg><b id="repeatOne">1</b></button>
+        </div>
+        <div class="st-vol">
+          <button type="button" id="mute" class="st-ic st-ic-sm" aria-label="Mute" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path class="wave" d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg></button>
+          <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8" aria-label="Volume" />
+          <button id="eq" type="button" class="st-punch" aria-haspopup="dialog">EQ</button>
+          <dialog id="eqDialog" class="st-load-dialog" aria-labelledby="eqTitle">
+            <header><h2 id="eqTitle">Sound settings</h2><button id="eqDone" type="button" class="st-btn">Done</button></header><label class="eq-band">Bass<input id="eqBass" type="range" min="-12" max="12" step="1" value="0" aria-label="Bass gain"><output for="eqBass">0 dB</output></label><label class="eq-band">Mid<input id="eqMid" type="range" min="-12" max="12" step="1" value="0" aria-label="Mid gain"><output for="eqMid">0 dB</output></label><label class="eq-band">Treble<input id="eqTreble" type="range" min="-12" max="12" step="1" value="0" aria-label="Treble gain"><output for="eqTreble">0 dB</output></label></dialog>
+          <button id="punch" class="st-punch" type="button" aria-label="Punch" aria-pressed="false" title="Adds light saturation and low-end punch">Punch <span id="punchState">Off</span></button>
+        </div>
+      </section>
+
+      <section class="st-side" aria-label="Tracks">
+        <div class="st-list-head">
+          <h2>Soundtrack</h2>
+          <button class="st-load" id="loadMusic" type="button" aria-haspopup="dialog" aria-controls="loadDialog">＋ Load</button>
+        </div>
+        <dialog id="loadDialog" class="st-load-dialog" aria-labelledby="loadHeading">
+          <header><h2 id="loadHeading">Load music</h2><button type="button" class="st-btn" id="loadClose" aria-label="Close load menu">×</button></header>
+          <p>Add songs from your device to Game Music.</p>
+          <button type="button" class="st-load-choice" id="chooseFiles">Choose files</button>
+          <button type="button" class="st-load-choice" id="chooseFolder">Choose folder</button>
+          <input type="file" hidden id="localFiles" accept="audio/*,.mp3,.wav,.ogg,.oga,.opus,.m4a,.aac,.flac,.aif,.aiff,.weba,.amr" multiple>
+          <input type="file" hidden id="localFolder" webkitdirectory multiple>
+        </dialog>
+        <p class="st-import-status" id="importStatus" role="status" hidden></p>
+        <ul class="st-list gm-list" id="list"></ul>
+        <p class="st-hint" id="hint"></p>
+      </section>
+    </main>
+
+    <p class="st-notice" id="notice" role="status" aria-live="polite" hidden></p>
+    <!-- Song page -->
+    <section class="st-song" id="song" hidden aria-labelledby="songTitle">
+      <header class="st-song-head">
+        <button type="button" class="st-btn" id="songBack">‹ Track list</button>
+        <div class="st-song-nav">
+          <button type="button" class="st-ic st-ic-sm" id="songPrev" aria-label="Previous song">‹</button>
+          <button type="button" class="st-ic st-ic-sm" id="songNext" aria-label="Next song">›</button>
+        </div>
+      </header>
+      <div class="st-song-body">
+        <img id="songArt" alt="" width="512" height="512" />
+        <div>
+          <p class="st-no" id="songNo"></p>
+          <h2 class="st-title" id="songTitle"></h2>
+          <p class="st-song-mood" id="songMood"></p>
+          <p class="st-song-about" id="songAbout"></p>
+          <dl class="st-facts" id="songFacts"></dl>
+          <button type="button" class="st-launch" id="songPlay">Play</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+  <script src="./cabinet-input.js"></script>
+  <script src="./sound-test.js?v=206"></script>
+</body>
+</html>

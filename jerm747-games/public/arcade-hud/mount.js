@@ -8,7 +8,7 @@ window.Jerm747HUD=(()=>{
     const url=new URL('index.html',assets);
     let context=options.context||'game',gameId=String(options.gameId||'game');
     if(!allowed.has(context))throw new TypeError('Use game, title, or cabinet.');
-    url.search=new URLSearchParams({embed:'1',v:'pocket-controls-2',context,game:gameId});
+    url.search=new URLSearchParams({embed:'1',v:'206',context,game:gameId});
     if(!document.querySelector('link[data-j747-hotkey]')){
       const css=document.createElement('link');css.rel='stylesheet';css.href=new URL('hotkey.css?v=workshop-1',assets);
       css.dataset.j747Hotkey='';document.head.append(css);
@@ -120,6 +120,7 @@ window.Jerm747HUD=(()=>{
         ready=true;send('context');fullState();if(queuedPanel)open(queuedPanel);return;
       }
       if(m.action==='fullscreen'){
+        if(context==='game'&&window.Jerm747PlayView?.onFull(options.isFullscreen?.()??!!document.fullscreenElement)){fullState();return}
         try{
           const result=options.onFullscreen?options.onFullscreen():document.fullscreenElement?document.exitFullscreen():surface.requestFullscreen?.();
           Promise.resolve(result).then(fullState).catch(()=>{});

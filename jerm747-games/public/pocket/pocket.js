@@ -1,3 +1,100 @@
+// Shared by the website and Android shell. Change only the presentation of the live game.
+(() => {
+ const settings={shown:localStorage.getItem('arcade.controls.shown')!=='off',follow:localStorage.getItem('arcade.controls.follow')==='on'};
+ const exclude=new Set(['gs-fighter-iii','gs-fighter-3','gs-fighter-2','groove-squad-get-down','get-down','beat-room','sound-test','controller-check']);
+ let frame,host,game,board=false,override=null,button,shadow,style,guestStyle,raf=0,guestWindow;
+ const held=new Set();let lastHighlights=[],lastStick=null,lastSignature='';
+ const keyMap={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'b',Enter:'b',KeyJ:'b',KeyK:'a',ShiftLeft:'a',KeyF:'x',KeyG:'y'};
+ function keyboard(e){if(keyMap[e.code]){if(e.type==='keydown')held.add(e.code);else held.delete(e.code)}}
+ function clear(){held.clear();for(const e of lastHighlights)e.removeAttribute('data-input-lit');lastHighlights=[];lastStick?.style.removeProperty('translate');lastStick=null;lastSignature=''}
+ function listen(w,on){if(!w)return;for(const type of ['keydown','keyup','blur'])w[on?'addEventListener':'removeEventListener'](type,type==='blur'?clear:keyboard,true)}
+ function show(){return override??(board?false:settings.shown)}
+ function eligible(){return !!frame&&!exclude.has(game)&&!/fighter|get-down/i.test(game)}
+ const boards={
+ 'plugin-twist':`
+ .applet{position:fixed!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;padding:0!important;display:grid!important;grid-template: minmax(0,1fr) 30px / 1fr!important;gap:0!important}
+ .applet>.top,.applet>.storage,.applet>.controls,.applet>.bottom{display:none!important}.applet .arena{grid-area:1/1!important;display:grid!important;place-items:center!important;padding:0!important;width:100%!important;height:100%!important;min-height:0!important;container-type:size}
+ .applet #board{width:min(100cqw,100cqh)!important;height:min(100cqw,100cqh)!important;max-width:none!important;max-height:none!important;margin:0!important}.applet .stats{grid-area:2/1!important;display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:center!important;gap:8px!important;padding:1px 35px!important;font-size:11px!important}.stats>*{margin:0!important;font-size:inherit!important}`,
+ 'album-match':`
+ .album-match.am-v33:has(.match-grid){position:fixed!important;inset:0!important;height:100%!important;width:100%!important;padding:0!important;margin:0!important;max-width:none!important;display:grid!important;grid-template:minmax(0,1fr) 30px / minmax(0,1fr)!important;gap:0!important;align-items:center!important;overflow:hidden!important}
+ .am-v33:has(.match-grid)>:not(.match-grid):not(.match-status):not(.match-settings):not(.am-result){display:none!important}
+ .am-v33 .match-grid{grid-area:1/1!important;width:min(100vw,calc(100dvh - 30px))!important;height:min(100vw,calc(100dvh - 30px))!important;max-width:none!important;max-height:none!important;align-self:center!important;justify-self:center!important;margin:0!important;box-sizing:border-box!important}
+ .am-v33 .match-status{grid-area:2/1!important;display:flex!important;justify-content:center!important;gap:7px!important;align-items:center!important;padding:1px 36px!important;margin:0!important;font-size:11px!important;min-height:0!important}.match-status>*{font-size:inherit!important}`,
+ 'word-search':`
+ .app{position:fixed!important;inset:0!important;display:block!important;margin:0!important;padding:0!important;height:100%!important;max-width:none!important}.app>header,.app>.toolbar,.app>progress,.focus-bar,.board-panel>.bottom,.board-panel>.status{display:none!important}
+ .content,.board-panel,.grid-scroll{position:absolute!important;inset:0 0 30px!important;padding:0!important;margin:0!important;width:100%!important;height:auto!important;display:grid!important;place-items:center!important;border:0!important}.board-panel,.grid-scroll{inset:0!important}.grid-scroll{container-type:size}.grid{width:min(100cqw,100cqh)!important;min-width:0!important;max-width:none!important}.grid .cell{font-size:clamp(10px,4cqi,34px)!important}
+ .words-panel{position:fixed!important;inset:auto 42px 0 5px!important;height:28px!important;display:block!important;overflow:auto!important;margin:0!important;padding:0!important;border:0!important}.words-panel h2,.words-panel p{display:none!important}.word-list{display:flex!important;flex-wrap:nowrap!important;white-space:nowrap!important;gap:12px!important;width:max-content!important;margin:0!important;padding:3px!important}.word-list li{font-size:12px!important}`
+ };
+ const guestControls={
+   'pulse-runner':'.device .left-wing,.device .right-wing', 'wave-run-747':'#stick,#btnA,#btnB',
+   'plugin-twist':'.applet .controls','album-match':'.am-controls,.am-how',
+   'flight-control-deck':'#controller-tools,#controller-view,#left,#right,.center-fire',
+   'encore':'#game .deck','cd-man':'#game .deck,#cd-touch','big-bowl-smash':'.controls.deck','catalog-clash':'.climb-deck','gs-fighter-2':'#controller,.gd-ov-controller',
+   'tic-tac-steel':'#controller-guide'
+ };
+ function apply(){
+   if(!frame)return;
+   let doc;try{doc=frame.contentDocument}catch{return}if(!doc?.head)return;
+   listen(guestWindow,false);guestWindow=doc.defaultView;listen(guestWindow,true);
+   if(!guestStyle||guestStyle.ownerDocument!==doc){guestStyle=doc.createElement('style');doc.head.append(guestStyle)}
+   const hidden=!show(),selectors=guestControls[game]||'.touch-controls,.touch-pad,.actionpad,.dpad,[data-touch-controls]';
+   doc.documentElement.toggleAttribute('data-arcade-full-board',board);
+   const pocketRules=doc.querySelector('style[data-pocket-layout]');
+   if(pocketRules)pocketRules.disabled=board||hidden;
+   guestStyle.textContent=(hidden?selectors+'{display:none!important}':'')+(hidden&&game==='pulse-runner'?'.immersive .bezel{bottom:24px!important}.immersive .bezel-full{top:100%!important}':'')+(board?boards[game]||'':'')+'[data-input-lit]{filter:brightness(1.6)!important;outline:2px solid #ffda83!important}';
+   host.classList.toggle('j747-clear-deck',hidden||board);frame.classList.toggle('j747-clear-frame',hidden||board);
+   if(button){button.hidden=!board||!eligible();button.textContent='Controls';button.setAttribute('aria-pressed',String(show()))}
+   clear();startPoll();
+ }
+ function startPoll(){if(!raf&&frame&&settings.follow&&show())raf=requestAnimationFrame(poll)}
+ function poll(){
+   raf=0;if(!frame||!settings.follow||!show())return;startPoll();
+   if(document.hidden||frame.inert||frame.hidden||frame.contentWindow?.ArcadeGameClock?.held){if(lastSignature)clear();return}
+   let p;try{p=Array.from(window.Arcade?.pads?.()||navigator.getGamepads?.()||[]).find(Boolean)}catch{}
+   const keys=new Set([...held].map(k=>keyMap[k]));
+   const map={0:'b',1:'a',2:'x',3:'y',12:'up',13:'down',14:'left',15:'right'};
+   for(const [i,k] of Object.entries(map))if(p?.buttons[i]?.pressed)keys.add(k);
+   const x=(+(keys.has('right'))-keys.has('left'))||(Math.abs(p?.axes[0]||0)>.17?p.axes[0]:0);
+   const y=(+(keys.has('down'))-keys.has('up'))||(Math.abs(p?.axes[1]||0)>.17?p.axes[1]:0);
+   if(Math.abs(x)>.4)keys.add(x<0?'left':'right');if(Math.abs(y)>.4)keys.add(y<0?'up':'down');
+   const sig=[...keys].sort().join()+':'+x.toFixed(2)+','+y.toFixed(2);if(sig===lastSignature)return;
+   for(const e of lastHighlights)e.removeAttribute('data-input-lit');lastHighlights=[];lastSignature=sig;
+   shadow=host.querySelector('j747-pocket-surface')?.shadowRoot;
+   const doc=frame.contentDocument, pulse={a:'dive',b:'fire',x:'melee',y:'grenade'};
+   for(const k of keys){const selectors=['[data-key="'+k+'"]','.pad-'+k];
+     const facePosition={a:'right',b:'bottom',x:'left',y:'top'}[k];
+     if(facePosition)selectors.push('.face-'+facePosition);
+     if(game==='pulse-runner'&&pulse[k])selectors.push('[data-action="'+pulse[k]+'"]');
+     if(game==='wave-run-747'&&['a','b'].includes(k))selectors.push(k==='b'?'#btnA':'#btnB');
+     if(game==='album-match'&&pulse[k])selectors.push('[aria-label="Swap '+({a:'right',b:'down',x:'left',y:'up'})[k]+'"]');
+     for(const scope of [shadow,doc])for(const el of scope?.querySelectorAll(selectors.join(','))||[]){el.setAttribute('data-input-lit','');lastHighlights.push(el)}
+   }
+   const stick=(shadow?.querySelector('.pocket-stick:not([hidden]) span')?.getClientRects().length&&shadow.querySelector('.pocket-stick span'))||doc?.getElementById('knob');
+   if(stick&&!(doc?.querySelector('#stick:active')||shadow?.querySelector('.pocket-stick:active'))){stick.style.translate=x*38+'% '+y*38+'%';lastStick=stick}
+ }
+ function cycle(){if(!eligible())return false;board=!board;override=null;apply();return true}
+ function attach(next,id,container){
+   if(frame===next&&game===id){apply();return}
+   clear();listen(guestWindow,false);guestWindow=null;if(frame){frame.removeEventListener('load',apply);frame.classList.remove('j747-clear-frame')}
+   if(guestStyle?.ownerDocument){const d=guestStyle.ownerDocument;d.documentElement.removeAttribute('data-arcade-full-board');const st=d.querySelector('style[data-pocket-layout]');if(st)st.disabled=false}
+   guestStyle?.remove();guestStyle=null;host?.classList.remove('j747-clear-deck');button?.remove();
+   frame=next;host=container;game=id;board=false;override=null;if(!frame)return;
+   if(!style){style=document.createElement('style');style.textContent=`
+   .j747-clear-deck>j747-pocket-surface{visibility:hidden!important}
+   :is(#session,.game-stack).j747-clear-deck.j747-clear-deck > iframe.j747-clear-frame{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;transform:none!important;margin:0!important;border:0!important}
+   .j747-controls-light{position:absolute;right:max(2px,env(safe-area-inset-right));bottom:max(1px,env(safe-area-inset-bottom));font:600 10px system-ui;color:white;background:#273332ed;border:1px solid #86988d;border-radius:5px;z-index:7;height:25px;padding:2px 5px}
+   `;document.head.append(style);listen(window,true)}
+   button=document.createElement('button');button.type='button';button.className='j747-controls-light';button.title='Restore controls and regular view';button.onclick=()=>{board=false;override=true;apply()};host.append(button);
+   const root=host.querySelector('j747-pocket-surface')?.shadowRoot;
+   if(root&&!root.querySelector('[data-input-style]')){const css=document.createElement('style');css.dataset.inputStyle='';css.textContent='[data-input-lit]{filter:brightness(1.7)!important;outline:2px solid #ffda83!important}';root.append(css)}
+   frame.addEventListener('load',apply);apply();
+ }
+ window.Jerm747PlayView={attach,cycle,eligible,get board(){return board},get shown(){return show()},get follow(){return settings.follow},
+   set(name,on){settings[name]=on;localStorage.setItem('arcade.controls.'+name,on?'on':'off');if(name==='shown'){if(board&&on)board=false;override=null;}apply()},
+   onFull(active){if(!eligible())return false;if(!board&&active)return cycle();if(board){cycle();return false}return false}
+ };
+})();
+
 /* Cabinet system controls. All game options call the original game's controls. */
 window.createPocketGameMenu=function(host,api){
   const panel=document.createElement('section');
@@ -15,7 +112,7 @@ window.createPocketGameMenu=function(host,api){
   };
   const settings={
     'sumi-sudoku':'[data-lv],#artSel,#themeToggle,#fxBtn,#fxSpeed,#breakBtn,#tNew,#tUndo,#tHint',
-    'tic-tac-steel':'[data-variant],[data-mode],#lvRow button,[data-human],#tSwap,#tNeg,[data-surf],[data-wall],[data-marks],#sound,#haptics,#motion,#lampBtn,#newRound,#newSeries',
+    'tic-tac-steel':'#boardNav:not([hidden]) #allBoards,[data-variant],[data-mode],#lvRow button,[data-human],#tSwap,#tNeg,[data-surf],[data-wall],[data-marks],#sound,#haptics,#motion,#lampBtn,#newRound,#newSeries',
     'flight-control-deck':'#controller-view,#controller-mode,#modes',
     'plugin-twist':'#pair,#trio,#corner,#hint,#new,#help',
     'beat-room':'.pad-mapping .btn-row button',
@@ -592,7 +689,7 @@ window.createPocketGameMenu=function(host,api){
       'D-pad moves the letter cursor. A marks each end of a word. Diagonals and finger tracing both work.'),
     'plugin-twist':profile('plugin',{a:'Swap / left',b:'Right',x:'Mode',y:'Hint',l:'Corner',select:'Help'},
       'D-pad chooses a token. A swaps a pair or twists left, B twists right. X changes mode.'),
-    'album-match':profile('album',{a:'Swap ↓',b:'Swap →',x:'Swap ←',y:'Swap ↑'},
+    'album-match':profile('album',{a:'Swap →',b:'Swap ↓',x:'Swap ←',y:'Swap ↑'},
       'D-pad moves the tile cursor. Use the four face buttons to swap in that direction; A confirms on result screens.'),
     'beat-room':profile('pad',{a:'Use / play',b:'Sections',x:'− / clear',y:'+ / set',l:'Previous',r:'Next',select:'Pad mode'},
       'L/R choose a section, A enters, B goes back. D-pad moves. In a section L/R browse controls or pages. Select plays your mapped pads.'),
@@ -688,7 +785,7 @@ window.createPocketGameMenu=function(host,api){
       const tile=doc.querySelector('.match-tile.is-cursor') || doc.querySelector('.match-tile');
       if (!tile) return;
       if (action in arrow) {focus(tile);keyTap(tile,arrow[action]);return}
-      const dir={a:'down',b:'right',x:'left',y:'up'}[action];
+      const dir={a:'right',b:'down',x:'left',y:'up'}[action];
       if (dir) click(doc,'button[aria-label="Swap '+dir+'"]');
     }
   }
@@ -829,7 +926,18 @@ window.createPocketGameMenu=function(host,api){
  html,body{overflow:hidden!important}.applet{box-sizing:border-box!important;height:100dvh!important;width:100%!important;max-width:none!important;margin:0!important;padding:3px!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(74px,19%)!important;grid-template-rows:1fr!important;gap:4px!important}
  .applet .top,.storage,.applet .controls,.applet .bottom{display:none!important}.applet .stats{grid-area:1/2;display:flex;flex-direction:column;align-self:center}.applet .arena{grid-area:1/1;width:100%;height:100%;min-height:0;padding:0!important;display:grid;place-items:center}.applet #board{width:min(98dvh,100%)!important;max-height:100%!important}
 `,
-'tic-tac-steel':`.app .ruleset,.app>.row,.app>.cfg,.app>.workshop,.app>.maker,.app .seg:has([data-variant]),.app details,.lampBtn,#controller-guide{display:none!important}.app{padding:3px!important}.plate{max-width:min(94vw,85dvh)!important;margin:0 auto!important}`,
+'tic-tac-steel':`
+      html,body {overflow:hidden!important;margin:0!important;padding:0!important}
+      .app {position:fixed!important;inset:0;display:block!important;margin:0!important;padding:0!important;max-width:none!important}
+      .app > :not(.plateWrap):not(.status),.lamp,#controller-guide {display:none!important}
+      .app .plateWrap {position:absolute;inset:0;display:grid;grid-template-columns:1fr;grid-template-rows:1fr;place-items:center;padding:0;margin:0}
+      .app .plateWrap .plate {grid-area:1/1;box-sizing:border-box;width:calc(min(100vw,100dvh) - 6px)!important;height:auto;min-width:0!important;max-width:none!important;aspect-ratio:1;margin:0!important}
+      .app .board-nav,.app > .status {position:absolute;right:1px;width:max(0px,calc((100vw - 100dvh) / 2 - 2px));box-sizing:border-box;margin:0;padding:2px;min-height:0;z-index:4;text-align:center}
+      .app .board-nav {top:2px;display:flex;flex-direction:column;align-items:stretch;gap:6px}
+      .app .board-nav button {padding:5px 1px}
+      .app > .status {bottom:3px;font-size:clamp(11px,2dvh,16px);line-height:1.15}
+      .app .board-nav strong,.app .board-nav button {font-size:clamp(11px,2dvh,16px)}
+    `,
 'cyborg-coliseum':`
  html,body,main,.cab{margin:0!important;padding:0!important;width:100%!important;height:100%!important;max-width:none!important;overflow:hidden!important}
  body>header,.bar,.deck-head,.deck,footer,.sector,.aux,.eyeline,.playhud button{display:none!important}#screen{position:fixed!important;inset:0!important;height:100%!important;width:100%!important;aspect-ratio:auto!important;border:0!important}#poster small kbd{display:none}
@@ -934,7 +1042,7 @@ window.createPocketGameMenu=function(host,api){
       if (guest && guest.ownerDocument !== doc) restoreGuest();
       const rules = 'kbd,.key-hints,.keyboard-hints,.keyboard-hint,.key-guide,.control-hint-key,[data-keyboard-hint]{display:none!important}'+(guestStyles[gameId]||'');
       if (rules && doc?.head && !guest) {
-        guest = doc.createElement('style'); guest.textContent = rules; doc.head.append(guest);
+        guest = doc.createElement('style');guest.dataset.pocketLayout='';guest.textContent=rules;doc.head.append(guest);guest.disabled=window.Jerm747PlayView.board||!window.Jerm747PlayView.shown;
         // Let canvas games re-measure for the new layout.
         try {doc.defaultView.dispatchEvent(new doc.defaultView.Event('resize'));} catch {}
       }
@@ -966,6 +1074,7 @@ window.createPocketGameMenu=function(host,api){
     }
     function setGame(next, id, cartridge) {
       id = aliases[id] || id || '';
+      window.Jerm747PlayView.attach(next,id,host);
       if (next === frame && id === gameId) {menu.sync(frame,gameId,active);sync(); return;}
       setActive(false,false);
       frame = next; gameId = next ? id : ''; held = false;menu.sync(frame,gameId,false);

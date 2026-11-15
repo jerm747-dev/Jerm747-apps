@@ -47,6 +47,12 @@ export async function micAnalyser(user) {
   return analyser;
 }
 
+/** The mic as a source node in the shared AudioContext (for the tape's PCM recorder). */
+export async function micNode(user) {
+  await micAnalyser(user);
+  return source;
+}
+
 function pickType() {
   const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'];
   return types.find((t) => window.MediaRecorder?.isTypeSupported?.(t)) || '';

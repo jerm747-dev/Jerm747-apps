@@ -9,9 +9,11 @@ export function createChannel(ac, destination) {
   const mid = ac.createBiquadFilter(); mid.type = 'peaking'; mid.frequency.value = 1200; mid.Q.value = 0.9;
   const high = ac.createBiquadFilter(); high.type = 'highshelf'; high.frequency.value = 6000;
   const vol = ac.createGain();
+  const an = ac.createAnalyser(); an.fftSize = 256; // meter only, nothing after it
   input.connect(low).connect(mid).connect(high).connect(vol).connect(destination);
+  vol.connect(an);
   return {
-    input,
+    input, an,
     set({ low: l = 0, mid: m = 0, high: h = 0, vol: v = 0.8, mute = false }) {
       const now = ac.currentTime;
       low.gain.setTargetAtTime(l * EQ_RANGE, now, 0.02);
