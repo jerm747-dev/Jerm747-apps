@@ -58,3 +58,12 @@
  .visor-enter #visor-controls { animation:visor-open 280ms cubic-bezier(.2,.7,.25,1) both; }
  @keyframes visor-open {from{opacity:0;clip-path:inset(0 48% 0 48%);transform:scale(.97)}to{opacity:1;clip-path:inset(0);transform:scale(1)}}
 }
+
+/* Every menu row shares the glass-button layout: icon, left label, value or chevron at the right. */
+.settings-list .overlay-row>span.row-label{margin-left:0;margin-right:auto;text-align:left;min-width:0}
+.settings-list .row-chevron{margin-left:auto;padding-inline:4px 2px;font-size:1.35em;line-height:1;color:#c2e1e6}
+.settings-list .pref-value+.row-chevron{margin-left:6px}
+.settings-list .overlay-row>.pref-value:empty{display:none}
+#pocket-panel{display:flex;flex-direction:column;gap:5px;width:100%}
+#pocket-note{font:500 13px/1.4 system-ui;color:#bcd7db;text-align:left;margin:2px 8px 6px}
+.settings-list #host-actions .glass-button__label{padding:0}

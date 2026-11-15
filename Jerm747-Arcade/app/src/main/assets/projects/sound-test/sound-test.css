@@ -150,3 +150,15 @@ html.widget .st { gap: 16px; }
 .st-punch:disabled {opacity:.55}
 
 .st-list > .st-row {flex:0 0 auto}
+
+/* Library tabs: bundled soundtrack vs music loaded from this device */
+.st-tabs{display:flex;gap:4px;padding:3px;background:var(--surface);border:1px solid var(--surface-2);border-radius:20px}
+.st-tab{min-height:30px;padding:4px 12px;border:0;border-radius:16px;background:transparent;color:var(--muted);font-weight:700;font-size:12px;white-space:nowrap}
+.st-tab[aria-selected=true]{background:var(--surface-2);color:var(--text);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent)}
+.st-tab:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.st-list-head .st-tab-count{color:var(--accent);font-size:inherit;font-weight:600;margin-left:2px}
+.st-tab-count:empty{display:none}
+.st-list-head{gap:8px}
+.st-row[hidden]{display:none!important}
+.st-empty{padding:18px 12px;text-align:center;color:var(--muted);font-size:12px;line-height:1.45;border:1px dashed var(--surface-2);border-radius:12px}
+.st-empty p{margin:0 0 4px}.st-empty b{color:var(--text)}

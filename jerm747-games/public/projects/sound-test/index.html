@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./get-down-music.css" />
-  <link rel="stylesheet" href="./sound-test.css?v=gm14" />
+  <link rel="stylesheet" href="./sound-test.css?v=gm15" />
 <style>.eq-band{display:grid;grid-template-columns:4em 1fr 4em;align-items:center;gap:8px;padding:12px 0}.eq-band input{min-width:0;width:100%;accent-color:#ebad78}.eq-band output{text-align:right;font-variant-numeric:tabular-nums}#eqDialog{width:min(88vw,370px)}</style></head>
 <body>
   <div class="st-splash" id="splash">
@@ -64,7 +64,10 @@
 
       <section class="st-side" aria-label="Tracks">
         <div class="st-list-head">
-          <h2>Soundtrack</h2>
+          <div class="st-tabs" role="tablist" aria-label="Music library">
+            <button type="button" role="tab" class="st-tab" id="tabGame" aria-selected="true" aria-controls="list">Soundtrack</button>
+            <button type="button" role="tab" class="st-tab" id="tabMine" aria-selected="false" aria-controls="list">My Music <span class="st-tab-count" id="mineCount"></span></button>
+          </div>
           <button class="st-load" id="loadMusic" type="button" aria-haspopup="dialog" aria-controls="loadDialog">＋ Load</button>
         </div>
         <dialog id="loadDialog" class="st-load-dialog" aria-labelledby="loadHeading">
@@ -77,6 +80,7 @@
         </dialog>
         <p class="st-import-status" id="importStatus" role="status" hidden></p>
         <ul class="st-list gm-list" id="list"></ul>
+        <div class="st-empty" id="mineEmpty" hidden><p>No music loaded yet.</p><p>Tap <b>＋ Load</b> to add songs from this device. They stay here for next time.</p></div>
         <p class="st-hint" id="hint"></p>
       </section>
     </main>
@@ -107,6 +111,6 @@
 
   <audio id="audio" preload="metadata"></audio>
   <script src="./cabinet-input.js"></script>
-  <script src="./sound-test.js?v=206"></script>
+  <script src="./sound-test.js?v=207"></script>
 </body>
 </html>
