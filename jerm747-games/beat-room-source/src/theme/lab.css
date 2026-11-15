@@ -392,3 +392,32 @@
   padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   background: radial-gradient(120% 70% at 50% -10%, #26262c 0%, var(--bg) 55%), var(--bg); overflow: hidden; }
 .lane.is-max .roll-scroll, .lane:fullscreen .roll-scroll { flex: 1; height: auto; min-height: 0; }
+
+/* Drum lane */
+.drum-lane { margin-top: 10px; }
+.dl-scroll { overflow-x: auto; overflow-y: hidden; border-radius: 8px; background: #0b0b0d; box-shadow: inset 0 1px 4px #000; overscroll-behavior-x: contain; }
+.dl-canvas { display: grid; grid-template-columns: 64px 1fr; align-items: end; }
+.dl-names { position: sticky; left: 0; z-index: 2; display: grid; background: #151519; border-right: 1px solid #26262c; }
+.dl-names span { display: flex; align-items: center; justify-content: flex-end; padding-right: 7px; box-sizing: border-box;
+  font: 600 11px/1 'Share Tech Mono', ui-monospace, monospace; color: #c9c5bb; border-bottom: 1px solid #1d1d22; text-transform: uppercase; letter-spacing: .04em; }
+.dl-names span.empty { color: #55545a; }
+.dl-names::before { content: ''; height: 18px; display: block; }
+.dl-roll { display: grid; }
+.dl-ruler { position: relative; height: 18px; border-bottom: 1px solid #222228; }
+.dl-ruler span { position: absolute; top: 3px; padding-left: 3px; font: 10px/1 'Share Tech Mono', ui-monospace, monospace; color: #66656c; white-space: nowrap; }
+.dl-ruler span.bar { color: #b9b4a8; border-left: 1px solid #4a4a54; top: 0; padding-top: 3px; height: 15px; }
+.dl-svg { display: block; width: 100%; touch-action: none; cursor: crosshair; outline: none; }
+.dl-svg:focus-visible { box-shadow: 0 0 0 2px var(--c-pads); }
+.dl-row.a { fill: #121216; } .dl-row.b { fill: #0f0f12; } .dl-row.empty { fill: #0b0b0d; }
+.dl-line { pointer-events: none; }
+.dl-line.sub { fill: #ffffff08; } .dl-line.step { fill: #ffffff10; } .dl-line.beat { fill: #ffffff1f; } .dl-line.bar { fill: #ffffff3a; }
+.dl-hit { fill: var(--c-pads); cursor: grab; stroke: #0009; stroke-width: 1; vector-effect: non-scaling-stroke; }
+.dl-hit.nudged { fill: #ffd27a; }
+.dl-hit.pick { fill: #fff3d0; stroke: #fff; }
+.dl-ghost { fill: none; stroke: #ffe7a6; stroke-width: 1.5; stroke-dasharray: 3 2; vector-effect: non-scaling-stroke; pointer-events: none; }
+.step.nudge-late, .step.nudge-early { position: relative; }
+.step.nudge-late::after, .step.nudge-early::after { content: ''; position: absolute; top: 3px; width: 5px; height: 5px; border-radius: 50%; background: #ffd27a; box-shadow: 0 0 4px #ffb84d; }
+.step.nudge-late::after { right: 3px; } .step.nudge-early::after { left: 3px; }
+/* faint timing lines in the note editor */
+.roll-tick { pointer-events: none; }
+.roll-tick.sub { fill: #ffffff07; } .roll-tick.beat { fill: #ffffff18; }

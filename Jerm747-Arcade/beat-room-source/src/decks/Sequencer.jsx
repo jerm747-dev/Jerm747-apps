@@ -1,4 +1,5 @@
 import PadMapping from '../ui/PadMapping.jsx';
+import DrumLane from './DrumLane.jsx';
 // The Returnity rhythm composer with a mixer bolted on: tap a row's name to open its channel
 // strip (source, 3-band EQ, level, mute). Any row can play a synth voice or a library clip; the
 // fifth row is the Tape row, where the tape deck's SEND button drops clips.
@@ -31,6 +32,7 @@ export default function Sequencer() {
   const [sel, setSel] = useState(null);
   const [page, setPage] = useState(0);
   const [velocity,setVelocity]=useState(false);
+  const [laneOpen, setLaneOpen] = useState(false);
   const [follow, setFollow] = useState(true);
   const [flash, setFlash] = useState(-1);
   const [fsRef, full, toggleFull] = useFullscreen();
@@ -97,6 +99,8 @@ export default function Sequencer() {
             ))}
             <button type="button" className={`switch ${follow ? 'on' : ''}`} aria-pressed={follow} onClick={() => setFollow(!follow)}>Follow</button>
             <button type="button" className={'switch '+(velocity?'on':'')} aria-pressed={velocity} onClick={()=>setVelocity(!velocity)}>Velocity</button>
+            <button type="button" className={`switch ${laneOpen ? 'on' : ''}`} aria-pressed={laneOpen} onClick={() => { blip(laneOpen ? 440 : 900); setLaneOpen(!laneOpen); }}
+              title="Open this section on a timeline to select, drag and nudge hits">{laneOpen ? 'Hide lane' : 'Send to lane'}</button>
           </div>
         )}
 
@@ -108,11 +112,12 @@ export default function Sequencer() {
             </button>
             {view(r.steps).map((v, k) => {
               const i = first + k;
-              return <button key={i} type="button" className={`step g${Math.floor(k / 4) + 1} ${v ? 'on' : ''} ${now === i ? 'now' : ''}`} aria-pressed={!!v} aria-label={`${r.name} step ${i + 1}`+(velocity?(v?' · '+v+'%':' · empty'):'')} onClick={() => velocity?pads.cycleVelocity(ri,i):pads.toggleStep(ri,i)}>{velocity&&v>0&&<span className="velocity-meter" aria-hidden="true">{[25,50,75,100].map(n=><i key={n} className={v>=n?'lit':''} style={{height:(28+n*.66)+'%'}}/>)}</span>}</button>;
+              return <button key={i} type="button" className={`step g${Math.floor(k / 4) + 1} ${v ? 'on' : ''} ${now === i ? 'now' : ''} ${v && pads.nudgeOf(ri, i) ? (pads.nudgeOf(ri, i) > 0 ? 'nudge-late' : 'nudge-early') : ''}`} aria-pressed={!!v} aria-label={`${r.name} step ${i + 1}`+(velocity?(v?' · '+v+'%':' · empty'):'')} onClick={() => velocity?pads.cycleVelocity(ri,i):pads.toggleStep(ri,i)}>{velocity&&v>0&&<span className="velocity-meter" aria-hidden="true">{[25,50,75,100].map(n=><i key={n} className={v>=n?'lit':''} style={{height:(28+n*.66)+'%'}}/>)}</span>}</button>;
             })}
           </div>
         ))}
         <div className="steps-index"><span />{Array.from({ length: PAGE }, (_, k) => <i key={k}>{first + k + 1}</i>)}</div>
+        {laneOpen && <DrumLane onClose={() => setLaneOpen(false)} />}
 
         <div className={`perf-pads ${recState}`} role="group" aria-label="Live pads">
           {rows.map((r, ri) => (

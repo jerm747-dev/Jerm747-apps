@@ -289,6 +289,8 @@ export default function NoteLane() {
       onPointerMove={editing ? undefined : noteDragMove} onPointerUp={editing ? undefined : noteDragEnd} onKeyDown={key}>
       {Array.from({ length: len }, (_, i) => <rect key={i} x={(i / len) * 1000} y="0" width={1000 / len} height={H} className={`roll-col ${Math.floor(i / 4) % 2 ? 'b' : 'a'}`} />)}
       {editing && Array.from({ length: rows }, (_, r) => { const n = lo + r; return BLACK.includes(n % 12) ? <rect key={'r' + n} className="roll-row" x="0" y={y(n)} width="1000" height={rowH} /> : null; })}
+      {editing && Array.from({ length: Math.round(len / g) }, (_, k) => { const x = k * g; if (!k || Math.abs(x % 16) < 1e-6) return null; const beat = Math.abs(x % 4) < 1e-6;
+        return <rect key={'tk' + k} className={`roll-tick ${beat ? 'beat' : 'sub'}`} x={(x / len) * 1000 - 0.5} y="0" width="1" height={H} />; })}
       {editing && Array.from({ length: Math.floor(len / 16) }, (_, b) => b > 0 && <rect key={'bar' + b} className="roll-bar" x={(b * 16 / len) * 1000 - 0.75} y="0" width="1.5" height={H} />)}
       {notes.map((n, k) => (
         <g key={k}>

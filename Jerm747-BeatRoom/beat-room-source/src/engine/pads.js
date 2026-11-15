@@ -55,7 +55,9 @@ function loadSong() {
         const n = LENGTHS.includes(sec?.len) ? sec.len : 16;
         const steps = {};
         for (const r of DEFAULT_ROWS) { const a = sec?.steps?.[r.id]; steps[r.id] = Array.from({ length: n }, (_, i) => velocity(Array.isArray(a) && a[i])); }
-        return { len: n, steps, reps: clampReps(sec?.reps) };
+        const off = {};
+        for (const [k, x] of Object.entries(sec?.off || {})) if (Number.isFinite(x) && Math.abs(x) < 0.5) off[k] = x;
+        return { len: n, steps, reps: clampReps(sec?.reps), off };
       });
       return { sections, edit: Math.max(0, Math.min(3, v.edit | 0)), mode: v.mode === 'song' ? 'song' : 'loop' };
     }
@@ -151,7 +153,11 @@ function firstSec() {
 definePart('pattern', (step, time, dur, abs) => {
   if (abs === 0) { cursor.sec = firstSec(); cursor.pos = 0; cursor.rep = 0; marks.clear(); }
   const S = song.sections[cursor.sec];
-  for (const r of rows) if (S.steps[r.id]?.[cursor.pos]) sound(r, time, velocity(S.steps[r.id][cursor.pos]));
+  // a nudged hit (drum lane) plays early or late by its offset, in fractions of a step
+  for (const r of rows) if (S.steps[r.id]?.[cursor.pos]) {
+    const o = S.off?.[r.id + ':' + cursor.pos] || 0;
+    sound(r, Math.max(audio()?.currentTime || 0, time + o * dur), velocity(S.steps[r.id][cursor.pos]));
+  }
   const reps = song.mode === 'song' ? S.reps || 1 : 1;
   marks.set(abs, { sec: cursor.sec, pos: cursor.pos, len: S.len, rep: cursor.rep, reps });
   schedHooks.forEach((fn) => fn(cursor.sec, cursor.pos, time, dur, abs, S.len));
@@ -195,6 +201,9 @@ export const getLength = () => len;
 /** Change the length. Longer repeats what's there so the groove carries on; shorter keeps the start. */
 export function setLength(n) {
   if (!LENGTHS.includes(n) || n === len) return;
+  const S = song.sections[song.edit], old = len, off = {};
+  for (const r of rows) for (let i = 0; i < n; i++) { const x = S.off?.[r.id + ':' + (i % old)]; if (x) off[r.id + ':' + i] = x; }
+  S.off = off;
   len = n;
   commit(rows.map((r) => ({ ...r, steps: Array.from({ length: n }, (_, i) => r.steps[i % r.steps.length]) })));
 }
@@ -259,12 +268,13 @@ export function cycleVelocity(ri,i){
   const ac=audio();if(ac&&!isArmed('pattern'))sound(rows[ri],ac.currentTime,level);
 }
 export function toggleStep(ri, i) {
+  const S = song.sections[song.edit]; if (S.off) delete S.off[rows[ri].id + ':' + i];
   const next = rows.map((r, k) => (k === ri ? { ...r, steps: r.steps.map((v, j) => (j === i ? (v ? 0 : 75) : v)) } : r));
   commit(next);
   if (next[ri].steps[i] && !isArmed('pattern')) hit(ri);
 }
 export function setRow(ri, patch) { commit(rows.map((r, k) => (k === ri ? { ...r, ...patch } : r))); }
-export function clear() { commit(rows.map((r) => ({ ...r, steps: blank(len) }))); }
+export function clear() { song.sections[song.edit].off = {}; commit(rows.map((r) => ({ ...r, steps: blank(len) }))); }
 export function hit(ri) { const ac = audio(); if (ac) sound(rows[ri], ac.currentTime); }
 
 /** Put a clip on a row (defaults to the Tape row) and name the row after it. */
@@ -294,3 +304,69 @@ library.subscribe((list) => {
 });
 library.loadAll().then(() => { loadedOnce = true; });
 refreshSong();
+
+// ---------- drum lane ----------
+// The drum lane shows the section's hits on a timeline so they can be selected, dragged and
+// nudged off the step grid (to a 1/32 or 1/64). A hit keeps its step in the grid; the nudge is
+// stored as an offset of up to half a step either side, and moving further hands it to the
+// neighbouring step. Edits are undoable in the lane.
+const laneHistory = [];
+const offsets = () => (song.sections[song.edit].off ||= {});
+/** Every hit in the section being edited: { ri, i, v, x } where x = step + nudge. */
+export function laneHits() {
+  const off = offsets(), out = [];
+  rows.forEach((r, ri) => r.steps.forEach((v, i) => { if (v) out.push({ ri, i, v, x: i + (off[r.id + ':' + i] || 0) }); }));
+  return out;
+}
+export function laneBegin() {
+  laneHistory.push(JSON.stringify({ steps: rows.map((r) => r.steps), off: offsets(), edit: song.edit }));
+  if (laneHistory.length > 20) laneHistory.shift();
+}
+export const laneCanUndo = () => laneHistory.length > 0 && JSON.parse(laneHistory[laneHistory.length - 1]).edit === song.edit;
+export function laneUndo() {
+  const raw = laneHistory.pop(); if (!raw) return;
+  const v = JSON.parse(raw); if (v.edit !== song.edit) return;
+  song.sections[song.edit].off = v.off;
+  commit(rows.map((r, k) => ({ ...r, steps: [...v.steps[k]] })));
+}
+/** Move hits: moves = [{ ri, i, x, to }] (to = destination row, default ri). x is the new time in
+ *  steps; it lands on step round(x) with the rest kept as a nudge. Hits past the end wrap. */
+export function laneMove(moves) {
+  const off = { ...offsets() };
+  const steps = rows.map((r) => [...r.steps]);
+  const lifted = moves.map((m) => { const v = steps[m.ri][m.i]; steps[m.ri][m.i] = 0; delete off[rows[m.ri].id + ':' + m.i]; return { ...m, v }; });
+  for (const m of lifted) {
+    if (!m.v) continue;
+    const to = m.to ?? m.ri, x = ((m.x % len) + len) % len;
+    // a nudge within half a step stays on its own step; further hands it to the nearest one
+    const home = m.i >= 0 && Math.abs(x - m.i) <= 0.5 ? m.i : Math.round(x) % len;
+    const i = home; const o = Math.round((x - home) * 1000) / 1000;
+    steps[to][i] = m.v;
+    const key = rows[to].id + ':' + i;
+    if (Math.abs(o) > 0.001) off[key] = o; else delete off[key];
+  }
+  song.sections[song.edit].off = off;
+  commit(rows.map((r, k) => ({ ...r, steps: steps[k] })));
+}
+/** Add a hit on row ri at time x (steps). */
+export function laneAdd(ri, x) {
+  laneBegin();
+  const xx = ((x % len) + len) % len, i = Math.round(xx) % len, o = Math.round((xx - Math.round(xx)) * 1000) / 1000;
+  const off = { ...offsets() }, key = rows[ri].id + ':' + i;
+  if (Math.abs(o) > 0.001) off[key] = o; else delete off[key];
+  song.sections[song.edit].off = off;
+  commit(rows.map((r, k) => (k === ri ? { ...r, steps: r.steps.map((v, j) => (j === i ? (v || 75) : v)) } : r)));
+  if (!isArmed('pattern')) hit(ri);
+}
+export function laneRemove(list) {
+  laneBegin();
+  const off = { ...offsets() };
+  const steps = rows.map((r) => [...r.steps]);
+  for (const { ri, i } of list) { steps[ri][i] = 0; delete off[rows[ri].id + ':' + i]; }
+  song.sections[song.edit].off = off;
+  commit(rows.map((r, k) => ({ ...r, steps: steps[k] })));
+}
+/** A hit's nudge in steps (0 when on the grid). */
+export const nudgeOf = (ri, i) => song.sections[song.edit].off?.[rows[ri]?.id + ':' + i] || 0;
+/** Audition a row now. */
+export const laneHear = (ri) => hit(ri);
