@@ -30,7 +30,8 @@
    'plugin-twist':'.applet .controls','album-match':'.am-controls,.am-how',
    'flight-control-deck':'#controller-tools,#controller-view,#left,#right,.center-fire',
    'encore':'#game .deck','cd-man':'#game .deck,#cd-touch','big-bowl-smash':'.controls.deck','catalog-clash':'.climb-deck','gs-fighter-2':'#controller,.gd-ov-controller',
-   'tic-tac-steel':'#controller-guide'
+   'tic-tac-steel':'#controller-guide',
+   'groove-squad-get-down':'#controller,.gd-ov-controller','gs-fighter-3':'#touch-controller'
  };
  function apply(){
    if(!frame)return;
@@ -141,19 +142,40 @@ window.createPocketGameMenu=function(host,api){
   }
   function controlStart(){const d=doc();if(!d)return null;const sel=starts[game];if(!sel)return null;return [...d.querySelectorAll(sel)].find(visible)}
   function layout(){const f=frame?.getBoundingClientRect(),h=host.getBoundingClientRect();if(!f)return;
+    // In the Pocket, the full pause screen fills the whole 4:3 display, not just the game's frame.
+    const v=n=>parseFloat(host.style.getPropertyValue('--pocket-screen-'+n));
+    if(state==='paused'&&isPocket&&v('w')>0){panel.style.left=v('x')+'px';panel.style.top=v('y')+'px';panel.style.width=v('w')+'px';panel.style.height=v('h')+'px';return}
     panel.style.left=f.left-h.left+'px';panel.style.top=f.top-h.top+'px';panel.style.width=f.width+'px';panel.style.height=f.height+'px'}
   function close(){if(!state)return;state='';panel.hidden=true;panel.replaceChildren();lab=null;
     if(ownedClock){ownedClock=false;window.ArcadeSessions?.release(frame)}frame?.focus({preventScroll:true});}
   function rows(){return [...panel.querySelectorAll('button:not(:disabled)')]}
   function button(label,act){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=act;panel.append(b);return b}
   function title(label){const h=document.createElement('strong');h.textContent=label;panel.append(h)}
+  // Full pause screen rows that call each game's own pause actions.
+  const fighterPause=[['Restart round','#restart'],['Choose fighter','#choose']];
+  const pauseActions={
+    'gs-fighter-2':fighterPause,'groove-squad-get-down':fighterPause,
+    'gs-fighter-3':[['Restart match','[data-act=restart]'],['Fighter select','[data-act=select]'],['Quit to title','[data-act=title]']]
+  };
+  const gameResume={'gs-fighter-2':'#pause-screen:not(.hidden) #resume','groove-squad-get-down':'#pause-screen:not(.hidden) #resume','gs-fighter-3':'#start-menu:not([hidden]) [data-act=resume]'};
+  function resume(){close();const d=doc(),sel=gameResume[game];if(d&&sel)setTimeout(()=>{try{const b=d.querySelector(sel);if(b&&visible(b))b.click()}catch{}},40)}
+  function action(sel){const d=doc();const e=d?.querySelector(sel);close();if(e&&!e.disabled)setTimeout(()=>e.click(),40)}
   function display(which){
     if(!frame)return;
     if(!state){api.release();window.ArcadeSessions?.hold(frame);ownedClock=true}
-    state=which;panel.hidden=false;panel.replaceChildren();layout();
+    state=which;panel.hidden=false;panel.replaceChildren();panel.dataset.state=which;layout();
     title(which==='paused'?'Paused':which==='lab'?'Haptic Workshop':'Game options');
-    button(which==='paused'?'Resume':'Back to game',close);
-    if(which==='paused'){rows()[0].focus();return}
+    if(which==='paused'){
+      const sub=document.createElement('small');sub.textContent=api.title?.()||'';panel.append(sub);
+      button('Resume',resume).classList.add('primary');
+      const d=doc();for(const [label,sel] of pauseActions[game]||[])if(d?.querySelector(sel))button(label,()=>action(sel));
+      button('Game options',()=>display('options'));
+      if(isPocket)button('Controls guide',()=>{close();api.guide?.()});
+      button('Arcade HUD',()=>{close();api.hud()});
+      button('Eject to cabinet',()=>{close();api.eject?.()});
+      rows()[0].focus();return;
+    }
+    button('Back to game',close);
     if(which==='lab'){
       lab=document.createElement('iframe');lab.title='Pocket controller workshop';lab.allow='gamepad; fullscreen';
       lab.src='/workshops/pocket/index.html?hud=1';panel.append(lab);lab.focus();return;
@@ -181,7 +203,7 @@ window.createPocketGameMenu=function(host,api){
   // A game can claim Select during play (Wave Run switches its camera); otherwise Select opens options.
   function gameSelect(){const d=doc();try{return !!d?.defaultView?.PocketSelect?.()}catch{return false}}
   function start(){
-    if(state){close();return}
+    if(state){state==='paused'?resume():close();return}
     const d=doc();if(!d)return;
     if(d.defaultView.PocketTitleStart?.())return;
     const e=controlStart();if(e){e.click();return}
@@ -190,7 +212,7 @@ window.createPocketGameMenu=function(host,api){
   function navigate(action,down=true){
     if(!state)return false;
     if(!down)return true;
-    if(action==='select'||action==='b'){if(state==='lab')display('options');else close();return true}
+    if(action==='select'||action==='b'){if(state==='lab')display('options');else if(state==='paused')resume();else close();return true}
     if(state==='lab')return true;
     const list=rows(),i=list.indexOf(document.activeElement);
     if(action==='a')list[Math.max(i,0)]?.click();
@@ -231,7 +253,9 @@ window.createPocketGameMenu=function(host,api){
   const stylesheet = new URL('pocket-shell.css' + new URL(document.currentScript.src).search, document.currentScript.src).href;
   const faces = [
     ['y', 'top', '#b9c6ff'], ['x', 'left', '#ffa7cc'],
-    ['a', 'right', '#ffdc91'], ['b', 'bottom', '#9ef0dc']
+    ['a', 'right', '#ffdc91'], ['b', 'bottom', '#9ef0dc'],
+    // Player Plus: the two extra caps used by the six-button fight cluster.
+    ['z', 'extra-z', '#ffc59a'], ['c', 'extra-c', '#a9dcff']
   ];
   // Keep the finish current when another tab or a restored page changes it.
   function restoreFinish() {
@@ -295,7 +319,7 @@ window.createPocketGameMenu=function(host,api){
   function skinFor(gameId) {
     return finish === 'auto' ? (skins[gameId] || '') : finish === 'ice' ? 'ice' : '';
   }
-  const actions = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'y', 'l', 'r', 'select'];
+  const actions = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'y', 'z', 'c', 'l', 'r', 'select'];
   const sectors = [['right'], ['up','right'], ['up'], ['up','left'],
                    ['left'], ['down','left'], ['down'], ['down','right']];
   const padMarkup = `<div class="dpad" role="group" aria-label="Eight-way direction pad. Slide toward a corner to combine two directions.">
@@ -347,7 +371,7 @@ window.createPocketGameMenu=function(host,api){
           </div>
           <div class="screen" aria-hidden="true"></div>
         </div>
-        <div class="wordmark" aria-hidden="true"><img src="/pocket/wordmark.svg?v=200" alt=""></div>
+        <div class="wordmark" aria-hidden="true"><img src="/pocket/wordmark.svg?v=200" alt=""><i class="plus">+</i></div>
         <div class="direction-control">${padMarkup}<div class="pocket-stick" role="group" aria-label="Analog joystick" hidden><span></span></div></div>
         <div class="faces">
           ${faces.map(([key,position,color])=>`<button type="button" class="face face-${position}" data-key="${key}" style="--c:${color}"><span class="button-face"><span class="face-letter">${key.toUpperCase()}</span><span class="action-name"></span></span></button>`).join('')}
@@ -372,7 +396,7 @@ window.createPocketGameMenu=function(host,api){
     const owners = new Map(), pulseTimers = new Set();
     let held = new Set(), active = false, destroyed = false, latestSize = '';
     let labels = {}, hint = '', cartridge = {title: '', cover: '', id: ''};
-    let restorePosition = null, guideOpen = false;
+    let restorePosition = null, guideOpen = false, fightLayout = false, captions = {}, letters = {};
 
     let flightMode=null;
     const currentMode=()=>cartridge.id==='flight-control-deck'?(flightMode||'stick'):controls.mode;
@@ -489,7 +513,8 @@ window.createPocketGameMenu=function(host,api){
       $('.guide p').textContent = hint;
       $('.guide p').hidden = !hint;
       const rows = [[currentMode()==='stick'?'Joystick':'D-pad', labels.dpad || (controls.mode==='stick'?'Tilt to move':'Eight-way direction pad')]];
-      for (const key of ['a','b','x','y','l','r','select']) {
+      const order = fightLayout ? ['x','y','z','a','b','c','l','r','select'] : ['a','b','x','y','l','r','select'];
+      for (const key of order) {
         if (!buttonMap.get(key).disabled) rows.push([key.toUpperCase(), labels[key] || key.toUpperCase()]);
       }
       rows.push(['START','Start, pause or resume'], ['SCREEN','Return to full game view'], ['⏏','Eject cartridge to shelf']);
@@ -540,13 +565,20 @@ window.createPocketGameMenu=function(host,api){
         b.setAttribute('aria-label', label ? key.toUpperCase()+' — '+label : key.toUpperCase());
         b.title = label || key.toUpperCase();
         const caption=b.querySelector('.action-name, small');
-        if (caption) caption.textContent = label;
+        if (caption) caption.textContent = captions[key] || label;
         const letter=b.querySelector('.face-letter');
-        if (letter) letter.classList.toggle('solo',!label);
+        if (letter) {letter.textContent = letters[key] || key.toUpperCase(); letter.classList.toggle('solo',!label);}
       }
       updateGuide();
     }
-    function setProfile(profile = {}) { hint=profile?.hint||'';setLabels(profile?.labels || {}); }
+    function setProfile(profile = {}) {
+      hint=profile?.hint||'';
+      const fight=profile?.layout==='fight';
+      captions=profile?.captions||{};letters=profile?.letters||{};
+      if(fight!==fightLayout){fightLayout=fight;device.classList.toggle('fight',fight);root.toggleAttribute('data-plus',fight);latestSize='';}
+      setLabels(profile?.labels || {});measure();
+    }
+    function openGuide(){if(!active||guideOpen)return;releaseInput();dragging.clear();updateGuide();guideOpen=true;guide.showModal();options.onGuideChange?.(true);}
     function applyFinish() {
       const skin = skinFor(cartridge.id);
       $('.wordmark img').src='/pocket/'+(skin==='ice'?'wordmark.svg':'wordmark-light.svg')+'?v=200';
@@ -598,7 +630,9 @@ window.createPocketGameMenu=function(host,api){
       setBox($('.bezel'),sx-2*u,sy-5*u,sw+4*u,sh+7*u);
       setBox($('.screen'),2*u,5*u,sw,sh);
       setBox($('.direction-control'),wide?3*u:6*u,wide?dh/2-16*u:98*u,36*u,36*u);
-      setBox($('.faces'),wide?dw-41*u:52*u,wide?dh/2-23*u:95*u,40*u,40*u);
+      // Player Plus spreads six caps over the right thumb's two arcs (5:4 box).
+      if (fightLayout) setBox($('.faces'),wide?dw-42*u:47*u,wide?dh/2-19*u:96*u,wide?41*u:50*u,wide?32.8*u:40*u);
+      else setBox($('.faces'),wide?dw-41*u:52*u,wide?dh/2-23*u:95*u,40*u,40*u);
       setBox($('.wordmark'),wide?2*u:7*u,wide?dh/2+23*u:86*u,wide?39*u:84*u,6*u);
       setBox($('.system-row'),wide?dw-42*u:15*u,wide?dh/2+22*u:137*u,wide?40*u:65*u,9*u);
       const cssNames=['x','y','w','h'];
@@ -637,7 +671,7 @@ window.createPocketGameMenu=function(host,api){
     window.addEventListener('pocket-controls-change',showControl);
     showControl();
     return {
-      setActive,setLabels,setProfile,setCartridge,cycleMode,currentMode,release:reset,
+      setActive,setLabels,setProfile,setCartridge,cycleMode,currentMode,openGuide,release:reset,
       destroy() {
         if(destroyed)return;
         setActive(false);destroyed=true;reset();observer?.disconnect();
@@ -656,14 +690,26 @@ window.createPocketGameMenu=function(host,api){
 /* 747 Pocket controls. Attach only inside the currently playing, same-origin game. */
 (() => {
   'use strict';
-  const blank = {a:'',b:'',x:'',y:'',l:'',r:'',select:''};
+  const blank = {a:'',b:'',x:'',y:'',z:'',c:'',l:'',r:'',select:''};
   const direction = {up:12,down:13,left:14,right:15};
   const arrow = {up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
-  const standard = {a:0,b:1,x:2,y:3,l:4,r:5,select:8,...direction};
+  const standard = {a:0,b:1,x:2,y:3,z:6,c:7,l:4,r:5,select:8,...direction};
   const aliases = {'gs-fighter-iii':'gs-fighter-3',flight:'flight-control-deck','get-down':'groove-squad-get-down'};
-  const profile = (mode, labels, hint, buttons={}) => ({mode,labels:{...blank,...labels},hint,buttons:{...standard,...buttons}});
+  const profile = (mode, labels, hint, buttons={}, extra={}) => ({mode,labels:{...blank,...labels},hint,buttons:{...standard,...buttons},...extra});
   const fight = profile('pad',{a:'Jump',b:'Kick',x:'Punch',y:'V-wave',l:'Guard',r:'High',select:'Music'},
     'D-pad moves and ducks. Hold R for high strikes. Custom game bindings still apply.');
+  // Pocket Player Plus: six strikes on the right thumb, Guard and V-wave on the shoulders.
+  // Punches ride the upper arc (X Y Z), kicks the lower arc (A B C), low to high.
+  const plusLabels = {x:'Low punch',y:'Mid punch',z:'High punch',a:'Low kick',b:'Mid kick',c:'High kick',l:'Guard',r:'V-wave',select:'Music'};
+  const plusLook = {layout:'fight',
+    captions:{x:'Low',y:'Mid',z:'High',a:'Low',b:'Mid',c:'High'},
+    letters:{x:'PUNCH',y:'PUNCH',z:'PUNCH',a:'KICK',b:'KICK',c:'KICK'}};
+  // GS Fighter II and Get Down take Pocket strikes through their own touch input,
+  // so no controller has to be assigned to Player 1 first.
+  const plusTouch = {left:'left',right:'right',down:'duck',up:'jump',x:'pLow',y:'pMid',z:'pHigh',a:'kLow',b:'kMid',c:'kHigh',l:'block',r:'wave'};
+  const fightPlus = profile('pad',plusLabels,
+    'Pocket Player Plus. D-pad moves; up jumps, down ducks. Top row punches, bottom row kicks (low, mid, high). L guards, R fires a V-wave.',
+    {a:0,b:1,x:2,y:2,z:2,c:1,l:4,r:3},{...plusLook,touch:plusTouch});
   const storyFight = profile('pad', {...fight.labels, select:'Low'},
     'D-pad moves and ducks. X punches, B kicks. Hold R for high or Select for low. Y fires a V-Wave.', {select:6});
   const climb = profile('pad',{a:'Jump / OK'},'D-pad moves. A selects a story or jumps on the mountain.');
@@ -684,9 +730,11 @@ window.createPocketGameMenu=function(host,api){
     'cyborg-coliseum':profile('pad',{a:'Grab / jump',b:'Melee',x:'Fire',y:'Arc lance',l:'Ascend',r:'Descend',select:'Fire'},
       'D-pad moves. X fires the chest cannon. Y cracks a core. A grabs or delivers. Select changes the melee strike or camera.',{x:7,l:10,r:11,select:7}),
     'catalog-clash':climb,
-    'gs-fighter-3':profile('pad',{a:'Mid kick',b:'High kick',x:'Mid punch',y:'High punch',l:'Guard',r:'V-wave',select:'Jump'},
-      'D-pad moves; A confirms menus. Touch fighter select for the opponent. Custom game bindings still apply.',{l:5,r:7,select:10}),
-    'gs-fighter-2':fight, 'groove-squad-get-down':fight,
+    // GS Fighter III reads the standard pad: 4 LP, 2 MP, 3 HP, 6 LK, 0 MK, 1 HK, 5 guard, 7 V-wave.
+    'gs-fighter-3':profile('pad',plusLabels,
+      'Pocket Player Plus. D-pad moves; up jumps. Top row punches, bottom row kicks (low, mid, high). L guards, R fires a V-wave. Mid kick confirms menus.',
+      {x:4,y:2,z:3,a:6,b:0,c:1,l:5,r:7},plusLook),
+    'gs-fighter-2':fightPlus, 'groove-squad-get-down':fightPlus,
     'word-search':profile('word',{a:'Mark',b:'Clear',x:'Hint',y:'Pause',l:'Help',r:'Zoom',select:'Puzzle'},
       'D-pad moves the letter cursor. A marks each end of a word. Diagonals and finger tracing both work.'),
     'plugin-twist':profile('plugin',{a:'Swap / left',b:'Right',x:'Mode',y:'Hint',l:'Corner',select:'Help'},
@@ -794,13 +842,17 @@ window.createPocketGameMenu=function(host,api){
   function create({getFrame,getGameId}) {
     let active=false, game='', guest=null, reader=null, nextRepeat=null;
     let stickX=0,stickY=0;
-    const held = new Map(), pending = new Map(), touched = new Set();
+    const held = new Map(), pending = new Map(), touched = new Set(), touchHeld = new Set();
+    function touchApi(){try{return guest?.defaultView?.Jerm747TouchInput||null}catch{return null}}
+    function releaseTouch(){const api=touchApi();for(const id of touchHeld)try{api?.release(id)}catch{}touchHeld.clear()}
     function releaseAll() {
+      releaseTouch();
       stickX=0;stickY=0;held.clear();touched.clear();
       for(const t of pending.values()) clearTimeout(t);
       pending.clear();clearTimeout(nextRepeat);nextRepeat=null;
     }
     function detach() {
+      releaseTouch();
       if (!reader) return;
       const {nav, wrapper, prior} = reader;
       if (nav.getGamepads === wrapper) {
@@ -850,13 +902,15 @@ window.createPocketGameMenu=function(host,api){
     }
     function getProfile() {
       let doc;try {doc=getFrame()?.contentDocument;}catch{}
-      const {labels,hint}=gameProfile(getGameId() || '',doc);
-      return {labels:{...labels},hint};
+      const {labels,hint,layout,captions,letters}=gameProfile(getGameId() || '',doc);
+      return {labels:{...labels},hint,layout,captions,letters};
     }
     function input(action,down) {
       if (!active || !(action in standard)) return;
       sync();if (!guest) return;
       if (!down) {
+        const id='pocket-'+action;
+        if (touchHeld.delete(id)) {try{touchApi()?.release(id)}catch{}}
         touched.delete(action);
         if (action in arrow) {clearTimeout(nextRepeat);nextRepeat=null;}
         const bind=held.get(action);
@@ -873,6 +927,12 @@ window.createPocketGameMenu=function(host,api){
       touched.add(action);
       const p=gameProfile(game,guest);
       if (!(action in arrow) && !p.labels[action]) return;
+      // During a fight, Player Plus strikes go straight into the game's touch input.
+      if (p.touch?.[action]) {
+        const api=touchApi();let ok=false;
+        try{ok=!!(api?.playable?.()&&api.press('pocket-'+action,p.touch[action]))}catch{}
+        if (ok) {touchHeld.add('pocket-'+action);return}
+      }
       if (p.mode==='pad') {
         // Cyborg's title starts only on hardware Start; the Pocket Start button is the visor.
         const start=game==='cyborg-coliseum' && action==='a' && guest.querySelector('#start');
@@ -910,6 +970,7 @@ window.createPocketGameMenu=function(host,api){
   const aliases = {'gs-fighter-iii':'gs-fighter-3','get-down':'groove-squad-get-down','flight':'flight-control-deck'};
   const storageKey = id => 'jerm747.pocket.view.v1.' + (aliases[id] || id);
   const defaultViewKey = 'jerm747.pocket.view.v1.default';
+  const pocketFirst = new Set(['pulse-runner']);
   // Hide duplicate touch decks only when the game has a mapped replacement.
   // Menus, board cells, camera regions, and additional on-screen actions stay interactive.
   const guestStyles = {
@@ -972,6 +1033,10 @@ window.createPocketGameMenu=function(host,api){
     'big-bowl-smash':'.controls.deck {display:none!important}',
     'catalog-clash':'.climb-deck {display:none!important}',
     'wave-run-747':'.pad {display:none!important}',
+    // Player Plus supplies every fight action, so the fighters' touch pads never show in the Pocket.
+    'gs-fighter-2':'#controller,.gd-ov-controller {display:none!important}',
+    'groove-squad-get-down':'#controller,.gd-ov-controller {display:none!important}',
+    'gs-fighter-3':'#touch-controller {display:none!important}',
     // Pulse Runner ships inside its own Pocket Player page. In the arcade
     // Pocket, only its game screen is shown; the outer handheld supplies the controls.
     'pulse-runner':`
@@ -985,7 +1050,7 @@ window.createPocketGameMenu=function(host,api){
     `
   };
   function create(host, options) {
-    let frame = null, gameId = '', guest = null, active = false, held = false, guideOpen = false, aperture = null;
+    let frame = null, gameId = '', guest = null, active = false, held = false, guideOpen = false, aperture = null, cartTitle = '';
     const remembered = new Map();
     const input = window.Jerm747PocketInput.create({getFrame:()=>frame, getGameId:()=>gameId});
     let menu;
@@ -1009,7 +1074,7 @@ window.createPocketGameMenu=function(host,api){
     });
     menu=window.createPocketGameMenu(host,{
       release:()=>input.releaseAll(),blocked:()=>held||guideOpen,
-      hud:()=>options.onMenu(),direction:()=>shell.currentMode()==='stick'?'Joystick':'D-pad',switchDirection:()=>shell.cycleMode(),
+      hud:()=>options.onMenu(),eject:()=>options.onEject(),guide:()=>shell.openGuide(),title:()=>cartTitle,direction:()=>shell.currentMode()==='stick'?'Joystick':'D-pad',switchDirection:()=>shell.cycleMode(),
       legacy:()=>input.getProfile()?.labels?.select,
       oldSelect:()=>{input.input('select',true);setTimeout(()=>input.input('select',false),90)}
     });
@@ -1082,6 +1147,7 @@ window.createPocketGameMenu=function(host,api){
       setActive(false,false);
       frame = next; gameId = next ? id : ''; held = false;menu.sync(frame,gameId,false);
       if (!frame) return;
+      if (cartridge) cartTitle = cartridge.title || frame.title || gameId;
       if (cartridge) shell.setCartridge({
         id:gameId, title:cartridge.title || (frame.title || gameId),
         cover:cartridge.cover ? new URL(cartridge.cover,location.href).href : ''
@@ -1091,6 +1157,8 @@ window.createPocketGameMenu=function(host,api){
         // A game without its own choice follows the last Pocket Player choice.
         try {prefer = (localStorage.getItem(storageKey(gameId)) ?? localStorage.getItem(defaultViewKey)) === 'on';} catch {}
       }
+      // Pulse Runner carries its own small built-in handheld, so it always opens in the full-size Pocket.
+      if (pocketFirst.has(gameId)) prefer = true;
       // A Pocket page launch explicitly opens this cartridge in its advertised finish.
       // Ordinary arcade links keep the player's existing per-game view choice.
       const launch = /^#\/play\/([a-z0-9._-]+)\?pocket=(ice|classic)$/.exec(location.hash);

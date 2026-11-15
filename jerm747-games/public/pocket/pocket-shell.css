@@ -259,3 +259,25 @@ button:disabled { cursor:default; }
 .system-row,.wide .system-row{gap:.75em;justify-content:space-evenly}.system-btn[data-command=eject] i{width:3.6em;height:2.8em;border-radius:.75em}.system-row .system-btn span{letter-spacing:0}
 
 .device .wordmark img{display:block;object-fit:contain;object-position:left center;width:100%;height:100%}
+/* ---------- Pocket Player Plus: six-button fight cluster ----------
+   Punches sit on the right thumb's upper arc, kicks on the lower arc, low to
+   high from left to right. Caps are about 18% smaller than the four-button set. */
+.device .faces .face-extra-z,.device .faces .face-extra-c {display:none;}
+.device.fight .faces .face {width:26%;height:32.5%;padding:.55em;}
+.device.fight .faces .face-extra-z,.device.fight .faces .face-extra-c {display:block;}
+.device.fight .faces [data-key=x] {left:6%;top:17.5%;right:auto;bottom:auto;--c:#ffa7cc!important;}
+.device.fight .faces [data-key=y] {left:39%;top:6.25%;right:auto;bottom:auto;--c:#ffb99a!important;}
+.device.fight .faces [data-key=z] {left:72%;top:1.25%;right:auto;bottom:auto;--c:#ffd78a!important;}
+.device.fight .faces [data-key=a] {left:2%;top:57.5%;right:auto;bottom:auto;--c:#9ef0dc!important;}
+.device.fight .faces [data-key=b] {left:35%;top:46.25%;right:auto;bottom:auto;--c:#a9dcff!important;}
+.device.fight .faces [data-key=c] {left:68%;top:41.25%;right:auto;bottom:auto;--c:#c3c4ff!important;}
+.device.fight .face-letter {font-size:clamp(6px,1.25em,9px);letter-spacing:.05em;}
+.device.fight .action-name {font-size:clamp(9px,2.35em,16px);}
+
+/* The raised plus after PLAYER marks the Player Plus layout. */
+.wordmark .plus {display:none;position:absolute;z-index:2;top:-.35em;left:calc(54.1% + .2em);
+  font:900 6em/1 system-ui,sans-serif;font-style:normal;text-shadow:none;
+  background:linear-gradient(180deg,#ffa7cc,#ffd78a 50%,#9ef0dc);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 .05em .05em #0009);}
+.device.fight .wordmark .plus {display:block;}
+.wide .wordmark .plus {left:calc(100% + .3em);top:-.4em;}
