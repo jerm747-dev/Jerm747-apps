@@ -310,6 +310,10 @@ public final class MainActivity extends Activity implements InputManager.InputDe
     private static WebResourceResponse response(int status, String text) {
         return new WebResourceResponse("text/plain", "UTF-8", status, text, new HashMap<>(), new ByteArrayInputStream(text.getBytes(StandardCharsets.UTF_8)));
     }
+    private void beatRoomSaved(boolean ok, String where) {
+        String call = "f.__beatRoomSaved&&f.__beatRoomSaved(" + ok + "," + BeatRoomFolder.quote(where) + ")";
+        js("(function(){var fr=[window];document.querySelectorAll('iframe').forEach(function(x){try{fr.push(x.contentWindow)}catch(e){}});fr.forEach(function(f){try{" + call + "}catch(e){}})})()");
+    }
     private void js(String code) { if (web != null && !isFinishing() && loaded) web.evaluateJavascript(code, null); }
     @SuppressWarnings("deprecation")
     private void immersive() {
@@ -447,6 +451,18 @@ public final class MainActivity extends Activity implements InputManager.InputDe
 
     private final class Bridge {
         @JavascriptInterface public boolean soundTestFolderPicker() { return true; }
+        /** Beat Room in the Arcade: save a song, MIDI file or project into Download/Beat Room.
+         *  The answer goes to __beatRoomSaved(ok, where) in whichever frame Beat Room runs in. */
+        @JavascriptInterface public void saveToBeatRoom(String name, String mime, String base64) {
+            if (!trusted) return;
+            final byte[] bytes;
+            try { bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT); }
+            catch (IllegalArgumentException e) { ui.post(() -> beatRoomSaved(false, null)); return; }
+            new Thread(() -> {
+                final String where = BeatRoomFolder.save(MainActivity.this, name, mime, bytes);
+                ui.post(() -> beatRoomSaved(where != null, where));
+            }, "beatroom-save").start();
+        }
         @JavascriptInterface public void setImmersive(boolean active) {
             if (trusted) ui.post(() -> { useImmersive = active; immersive(); });
         }

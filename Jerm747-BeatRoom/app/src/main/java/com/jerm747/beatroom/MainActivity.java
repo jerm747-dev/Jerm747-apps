@@ -488,13 +488,23 @@ public final class MainActivity extends Activity {
 
     // ---------- the page's bridge ----------
     private final class Bridge {
-        /** Save a file the page made (bounce, MIDI): Android's "Save to…" picker, then __beatRoomSaved(ok). */
+        /** Save a file the page made (song, MIDI, project) into Download/Beat Room, then __beatRoomSaved(ok, where). */
         @JavascriptInterface public void saveFile(String name, String mime, String base64) {
             if (!trusted) return;
             final byte[] bytes;
             try { bytes = Base64.decode(base64, Base64.DEFAULT); }
             catch (IllegalArgumentException e) { ui.post(() -> js("window.__beatRoomSaved && window.__beatRoomSaved(false)")); return; }
-            ui.post(() -> {
+            // Android 10+: straight into Download/Beat Room, no picker; older Android uses the picker
+            new Thread(() -> {
+                final String where = BeatRoomFolder.save(MainActivity.this, name, mime, bytes);
+                ui.post(() -> {
+                    if (where != null) { js("window.__beatRoomSaved && window.__beatRoomSaved(true," + BeatRoomFolder.quote(where) + ")"); return; }
+                    pickAndSave(name, mime, bytes);
+                });
+            }, "beatroom-save").start();
+        }
+        private void pickAndSave(String name, String mime, byte[] bytes) {
+            {
                 pendingSave = bytes;
                 Intent save = new Intent(Intent.ACTION_CREATE_DOCUMENT);
                 save.addCategory(Intent.CATEGORY_OPENABLE);
@@ -502,7 +512,7 @@ public final class MainActivity extends Activity {
                 save.putExtra(Intent.EXTRA_TITLE, name);
                 try { startActivityForResult(save, SAVE_REQUEST); }
                 catch (ActivityNotFoundException e) { pendingSave = null; js("window.__beatRoomSaved && window.__beatRoomSaved(false)"); }
-            });
+            }
         }
         @JavascriptInterface public void midiBluetooth() { if (trusted) ui.post(MainActivity.this::bluetoothMidi); }
         @JavascriptInterface public void midiConnect() { if (trusted) ui.post(MainActivity.this::midiConnect); }

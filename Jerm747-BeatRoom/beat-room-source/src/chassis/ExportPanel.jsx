@@ -75,7 +75,7 @@ function ExportPop({ onClose }) {
   const cancel = () => { blip(330); bounceRef.current?.cancel(); };
   const save = async (rec) => {
     blip(1100);
-    try { await exp.saveFile(rec.name, rec.format, rec.blob); setMsg(`Saved ${exp.fileName(rec.name, rec.format)}.`); }
+    try { const where = await exp.saveFile(rec.name, rec.format, rec.blob); setMsg(`Saved ${exp.fileName(rec.name, rec.format)}${where && where !== 'saved' ? ` to ${where}` : ''}.`); }
     catch (e) { setMsg(e.message); }
   };
 

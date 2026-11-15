@@ -185,16 +185,24 @@ export const fileName = (name, format) => `${(name || 'Untitled').trim().replace
 /**
  * Save the file to the device. Inside a published claude.ai page this goes through the viewer's
  * save prompt (which may not accept audio files); in your own build it's a normal download.
- * Resolves 'saved'; rejects with a readable message.
+ * Resolves with where it went ('Download/Beat Room', 'your Downloads folder') or 'saved';
+ * rejects with a readable message.
  */
 export async function saveFile(name, format, blob) {
   const filename = fileName(name, format);
   // Android app: the WebView ignores downloads, so the app opens Android's "Save to…" picker
-  if (window.BeatRoomAndroid?.saveFile) {
+  // Android apps: straight into Download/Beat Room (resolves with that path). The Beat Room app
+  // falls back to Android's "Save to…" picker on Android 9 and older.
+  const arcade = (() => { try { return window.EncoreAndroid?.saveToBeatRoom ? window.EncoreAndroid : window.parent?.EncoreAndroid?.saveToBeatRoom ? window.parent.EncoreAndroid : null; } catch { return null; } })();
+  if (window.BeatRoomAndroid?.saveFile || arcade) {
     const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = () => rej(new Error('Could not read the file.')); r.readAsDataURL(blob); });
-    const ok = await new Promise((res) => { window.__beatRoomSaved = (v) => res(!!v); window.BeatRoomAndroid.saveFile(filename, blob.type || 'application/octet-stream', b64); });
-    if (!ok) throw new Error('Save cancelled.');
-    return 'saved';
+    const mime = blob.type || 'application/octet-stream';
+    const [ok, where] = await new Promise((res) => {
+      window.__beatRoomSaved = (v, w) => res([!!v, w || '']);
+      if (window.BeatRoomAndroid?.saveFile) window.BeatRoomAndroid.saveFile(filename, mime, b64); else arcade.saveToBeatRoom(filename, mime, b64);
+    });
+    if (!ok) throw new Error(arcade ? 'Could not save to Download/Beat Room on this device.' : 'Save cancelled.');
+    return where ? where.replace(/\/[^/]*$/, '') : 'saved';
   }
   if (window.claude?.use) {
     const dl = await window.claude.use('downloads');
@@ -211,5 +219,5 @@ export async function saveFile(name, format, blob) {
   const a = document.createElement('a'); a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
-  return 'saved';
+  return 'your Downloads folder';
 }

@@ -55,7 +55,7 @@ export default function NoteLane() {
   async function exportMidi() {
     const blob = lane.exportMidi(); if (!blob) return;
     blip(1100);
-    try { await saveFile(`Beat Room ${pads.SECTIONS[v.edit]} notes`, 'mid', blob); setLaneMsg(`Saved Beat Room ${pads.SECTIONS[v.edit]} notes.mid.`); }
+    try { const where = await saveFile(`Beat Room ${pads.SECTIONS[v.edit]} notes`, 'mid', blob); setLaneMsg(`Saved Beat Room ${pads.SECTIONS[v.edit]} notes.mid${where && where !== 'saved' ? ` to ${where}` : ''}.`); }
     catch (err) { setLaneMsg(/preview page|can’t save files/.test(err.message) ? 'This preview page can’t save .mid files. Your own Beat Room build and the app save them.' : err.message); }
   }
 
