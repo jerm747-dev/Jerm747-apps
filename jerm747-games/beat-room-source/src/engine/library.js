@@ -77,6 +77,14 @@ export function add({ buffer, name, source = 'tape' }) {
   tx('readwrite', (s) => s.put(toRecord(c)));
   return c;
 }
+/** Add a clip with a known id (opening a project); stored before it resolves. */
+export async function addWithId({ id, buffer, name, source = 'file', created = Date.now() }) {
+  if (clips.has(id)) return clips.get(id);
+  const c = { id, name: (name || 'Sound').slice(0, 32), created, source, buffer, duration: buffer.duration };
+  clips.set(id, c); emit();
+  await tx('readwrite', (s) => s.put(toRecord(c)));
+  return c;
+}
 export function rename(id, name) {
   const c = clips.get(id); if (!c || !name.trim()) return;
   c.name = name.trim().slice(0, 32); emit();

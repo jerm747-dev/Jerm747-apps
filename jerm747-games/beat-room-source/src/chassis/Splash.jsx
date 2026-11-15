@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import artwork from '../assets/splash-boombox.jpg';
 
 export default function Splash({ readyToEnter = true }) {
-  const [phase, setPhase] = useState('show');
+  // opening a project reloads the room; skip the splash that one time
+  const [phase, setPhase] = useState(() => { try { if (sessionStorage.getItem('beatroom.skipSplash')) { sessionStorage.removeItem('beatroom.skipSplash'); return 'gone'; } } catch { /* off */ } return 'show'; });
   const [ready, setReady] = useState(false);
   const [lingerDone, setLingerDone] = useState(false);
   useEffect(() => {
