@@ -67,3 +67,5 @@
 #pocket-panel{display:flex;flex-direction:column;gap:5px;width:100%}
 #pocket-note{font:500 13px/1.4 system-ui;color:#bcd7db;text-align:left;margin:2px 8px 6px}
 .settings-list #host-actions .glass-button__label{padding:0}
+#display-panel{display:flex;flex-direction:column;gap:5px;width:100%}
+#display-note{font:500 13px/1.4 system-ui;color:#bcd7db;text-align:left;margin:2px 8px 6px}

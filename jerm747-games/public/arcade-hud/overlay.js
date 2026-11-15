@@ -77,6 +77,7 @@ function overlayBack(){
   if(lab.open){requestLabBack();return true;}
   if(panel==='play-controls'){showPanel('main','play-controls');return true;}
   if(panel==='pocket'){showPanel('main','pocket-menu');return true;}
+  if(panel==='display'){showPanel('main','display-menu');return true;}
   if(panel==='library'){showPanel('sessions','browse-games');return true;}
   if(panel==='sessions'){showPanel('main','open-games');return true;}
   if(panel==='choices'){showPanel('main','more-actions');return true;}
@@ -112,6 +113,7 @@ window.addEventListener('message',event=>{
       if(!menuOpen)openMenu(['choices','overlay','controller'].includes(m.panel)?m.panel:'main');
       else renderMenu();
     }else{renderMenu();updateHotkeys();}
+  }else if(m.action==='menu'&&menuOpen){menuSpec=m.menu||{};renderMenu();
   }else if(m.action==='input'&&menuOpen){navigateHUD(m.key);
   }else if(m.action==='fullscreen-state'){setExpanded(!!m.active);
   }else if(m.action==='back'&&menuOpen){if(!overlayBack())closeMenu();}

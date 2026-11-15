@@ -50,7 +50,7 @@ musicRow.addEventListener('click', () => {
 function renderHostMenu() {
   renderPlayControls();
   musicRow.hidden = panel !== 'main' || !(menuSpec.gameMusic || menuSpec.catalog?.some(item => item.id === 'sound-test'));
-  renderFinish();renderPocketControls();
+  renderFinish();renderPocketControls();renderDisplayMenu();
   renderPocketMenu();
   const choices=byId('host-actions'), more=byId('more-actions');
   const title=panel==='main'&&context==='title'&&!!menuSpec.name;
@@ -137,3 +137,28 @@ window.addEventListener('message',e=>{
   if(e.data?.type==='pocket-workshop-applied'){parent.Jerm747Pocket?.refreshControls();renderPocketControls();}
 });
 
+
+// Display submenu: website-wide screen controls supplied by the host page (menuSpec.display).
+const displayMenu=byId('display-menu'),displayPanel=byId('display-panel');
+const orientationNames={auto:'Auto',portrait:'Portrait',landscape:'Landscape'};
+function hostOption(command){sendHostState('option',command);}
+function renderDisplayMenu(){
+  const d=menuSpec.display;
+  displayMenu.hidden=panel!=='main'||!d;
+  displayPanel.hidden=panel!=='display'||!d;
+  // On the website Fullscreen lives under Display, so the main list doesn't repeat it.
+  if(d&&panel==='main')byId('hud-fullscreen').hidden=true;
+  if(!d||panel!=='display')return;
+  byId('hud-heading').textContent='Display';
+  byId('display-orientation').querySelector('.pref-value').textContent=orientationNames[d.orientation]||'Auto';
+  const full=!!d.fullscreen,fullRow=byId('display-full');
+  fullRow.hidden=d.canFullscreen===false;
+  fullRow.setAttribute('aria-checked',String(full));fullRow.querySelector('.pref-value').textContent=full?'On':'Off';
+  const map=byId('display-map');map.hidden=!d.hasMap;
+  map.setAttribute('aria-checked',String(!!d.mapShown));map.querySelector('.pref-value').textContent=d.mapShown?'On':'Off';
+  const note=byId('display-note');note.textContent=d.notice||'';note.hidden=!d.notice;
+}
+displayMenu.addEventListener('click',()=>showPanel('display','display-orientation'));
+byId('display-orientation').addEventListener('click',()=>hostOption('display:orientation'));
+byId('display-full').addEventListener('click',()=>hostOption('display:fullscreen'));
+byId('display-map').addEventListener('click',()=>hostOption('display:map'));

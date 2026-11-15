@@ -22,9 +22,9 @@ function prepareLegacyGames() {
 }
 
 // Keep one visor alive across the shelf, live games and the Open games list.
-export function useVisor({projects, playing, launch, onExit, live, pocket, onVisibility}) {
+export function useVisor({projects, playing, launch, onExit, live, pocket, onVisibility, display, openMusic}) {
   const host = useRef(null), latest = useRef(null);
-  latest.current = {projects, playing, launch, onExit};
+  latest.current = {projects, playing, launch, onExit, display, openMusic};
   useLayoutEffect(() => {
     const sessions = window.ArcadeSessions;
     const bridge = {
@@ -42,14 +42,25 @@ export function useVisor({projects, playing, launch, onExit, live, pocket, onVis
       getMenu() {
         const {projects,playing} = latest.current;
         return {name: playing?.title, active: playing?.slug, pocket: playing && pocket.current ? pocket.current.active : undefined, canHold: sessions.supported(live.current),
+          gameMusic: true, display: latest.current.display?.current?.state(),
           catalog: (projects||[]).map(p => ({id:p.slug,title:p.title}))};
       },
       getScene() {
         try {return live.current?.contentDocument?.querySelector('canvas') || document.querySelector('.sb-case[aria-current=true] img,.sb-slide[aria-hidden=false] .art-img');} catch {return null;}
       },
       onOpening() {pocket.current?.setHeld(true);sessions.hold(live.current);onVisibility(true);},
+      // HUD > Display options apply in place; the HUD then re-reads getMenu().
+      async onOption(command) {
+        const d = latest.current.display?.current;
+        if (!d) return;
+        if (command === 'display:orientation') await d.orientation();
+        else if (command === 'display:fullscreen') await d.fullscreen();
+        else if (command === 'display:map') d.map();
+        await new Promise(r => setTimeout(r, 60));
+      },
       onAction(action, {command}) {
         onVisibility(false);
+        if (action === 'command' && command === 'game-music') {pocket.current?.setHeld(false);sessions.release(live.current);latest.current.openMusic?.();return;}
         if(action==='command' && command==='pocket-view' && latest.current.playing) pocket.current?.toggle();
         pocket.current?.setHeld(false);
         const {projects, playing, launch, onExit} = latest.current;
