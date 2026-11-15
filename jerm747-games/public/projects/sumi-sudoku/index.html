@@ -135,6 +135,9 @@ button:focus-visible,select:focus-visible{outline:2px solid var(--shu);outline-o
 .done p{margin:0;color:var(--ink-soft);font-size:14px}
 .done .big{font-family:var(--mincho);font-size:22px;color:var(--ink);font-weight:800}
 .done button{font-family:var(--ui);font-weight:700;font-size:15px;background:var(--ink);color:var(--paper);border:0;border-radius:8px;padding:10px 22px;cursor:pointer}
+.done button.doneBreak{font-size:12.5px;padding:6px 14px;background:transparent;color:var(--ink-soft);border:1px solid var(--rule);margin-top:-2px}
+.done button.doneBreak:focus-visible,.done button:focus-visible{outline:2px solid var(--shu);outline-offset:3px}
+#leafFall{position:fixed;inset:0;width:100%;height:100%;z-index:7;pointer-events:none}
 @media (min-width:900px) and (orientation:landscape){
   .app{max-width:980px;display:grid;grid-template-columns:auto 360px;grid-template-rows:auto auto 1fr;column-gap:32px;align-items:start}
   header{grid-column:2;grid-row:1}.stats{grid-column:2;grid-row:2}
@@ -622,7 +625,7 @@ function hint(){
   commit();
 }
 function commit(){
-  if (G.val.every((v, k) => v === G.sol[k])){ G.done = true; setTimeout(showDone, 400); }
+  if (G.val.every((v, k) => v === G.sol[k])){ G.done = true; setTimeout(() => { showDone(); startLeaves(); }, 400); }
   save(); render();
 }
 
@@ -691,11 +694,65 @@ const doneEl = document.getElementById('done');
 function showDone(){
   doneEl.innerHTML = `<div class="panel"><div class="kanji">完</div><div class="big">Solved · ${fmt(G.time)}</div>
     <p>${G.level[0].toUpperCase() + G.level.slice(1)} · ${G.mistakes} mistake${G.mistakes === 1 ? '' : 's'} · ${G.hinted.length} hint${G.hinted.length === 1 ? '' : 's'}</p>
-    <button id="again">New ${G.level} puzzle</button></div>`;
+    <button id="again">New ${G.level} puzzle</button>
+    <button id="doneBreak" class="doneBreak">☁ Take a break</button></div>`;
   doneEl.hidden = false;
-  document.getElementById('again').onclick = () => newGame(G.level);
+  document.getElementById('again').onclick = () => { stopLeaves(); newGame(G.level); };
+  // a short walk in the garden; coming back brings this panel back
+  document.getElementById('doneBreak').onclick = () => { stopLeaves(); hideDone(); returnToDone = true; enterBreak(); };
+  document.getElementById('again').focus({ preventScroll:true });
 }
 function hideDone(){ doneEl.hidden = true; }
+let returnToDone = false;
+
+/* Glowing leaves drift down when a puzzle is solved: maple and ginkgo shapes in the garden's
+   plant colours, lit with the same warm rim the garden puts around a picked plant. The canvas
+   ignores touches, so both buttons stay usable while they fall. */
+let leafRaf = 0, leafCv = null;
+function stopLeaves(){ cancelAnimationFrame(leafRaf); leafRaf = 0; if (leafCv){ leafCv.remove(); leafCv = null; } }
+function startLeaves(){
+  stopLeaves();
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  leafCv = document.createElement('canvas'); leafCv.id = 'leafFall'; leafCv.setAttribute('aria-hidden', 'true'); document.body.append(leafCv);
+  const d = Math.min(devicePixelRatio || 1, 2), W = innerWidth, H = innerHeight;
+  leafCv.width = W * d; leafCv.height = H * d;
+  const g = leafCv.getContext('2d'); g.scale(d, d);
+  const colors = ['#c8402e', '#d9692c', '#e3a33a', '#d4b03c', '#b3472f', '#e58c55'];
+  // a momiji (Japanese maple) outline: five pointed lobes, with the stem drawn separately
+  const MAPLE = [[0,-1],[.12,-.55],[.45,-.75],[.38,-.35],[.95,-.4],[.6,-.05],[.75,.25],[.3,.15],[.1,.45],[0,.35],[-.1,.45],[-.3,.15],[-.75,.25],[-.6,-.05],[-.95,-.4],[-.38,-.35],[-.45,-.75],[-.12,-.55]];
+  const leaves = Array.from({ length: 22 }, (_, i) => ({
+    x: Math.random() * W, y: -20 - Math.random() * H * .45, s: 9 + Math.random() * 9, r: Math.random() * 6.28,
+    vr: (Math.random() - .5) * 1.6, vy: H / 7 + Math.random() * H / 9, sway: 18 + Math.random() * 28, ph: Math.random() * 6.28,
+    c: colors[i % colors.length], kind: i % 3 === 0 ? 'ginkgo' : 'maple'
+  }));
+  function leaf(l){
+    g.beginPath();
+    if (l.kind === 'ginkgo'){ g.moveTo(0, l.s * .5); g.quadraticCurveTo(-l.s, -l.s * .2, -l.s * .7, -l.s * .7); g.quadraticCurveTo(0, -l.s * 1.05, l.s * .7, -l.s * .7); g.quadraticCurveTo(l.s, -l.s * .2, 0, l.s * .5); }
+    else { for (const [px, py] of MAPLE) g.lineTo(px * l.s, py * l.s); }
+    g.closePath();
+  }
+  let t0 = 0, last = 0;
+  const frame = (now) => {
+    if (!t0) t0 = last = now;
+    const dt = Math.min(.05, (now - last) / 1000), t = (now - t0) / 1000; last = now;
+    g.clearRect(0, 0, W, H);
+    const fade = t > 6.5 ? Math.max(0, 1 - (t - 6.5) / 1.5) : Math.min(1, t / .6);
+    let alive = false;
+    for (const l of leaves){
+      l.y += l.vy * dt; l.r += l.vr * dt; const x = l.x + Math.sin(t * 1.3 + l.ph) * l.sway;
+      if (l.y < H + 40) alive = true;
+      g.save(); g.translate(x, l.y); g.rotate(l.r); g.scale(1, .55 + .45 * Math.abs(Math.cos(t * 1.7 + l.ph)));
+      g.globalAlpha = .85 * fade;
+      g.shadowColor = 'rgba(255,209,128,.95)'; g.shadowBlur = 14;
+      leaf(l); g.fillStyle = l.c; g.fill();
+      g.shadowBlur = 0; g.lineWidth = 1.1; g.strokeStyle = 'rgba(255,226,170,.8)'; g.stroke();
+      if (l.kind === 'maple'){ g.beginPath(); g.moveTo(0, .35 * l.s); g.lineTo(.08 * l.s, .9 * l.s); g.strokeStyle = l.c; g.lineWidth = 1.4; g.stroke(); }
+      g.restore();
+    }
+    if (alive && t < 8) leafRaf = requestAnimationFrame(frame); else stopLeaves();
+  };
+  leafRaf = requestAnimationFrame(frame);
+}
 
 /* ================= Controls ================= */
 let armed = null, armTimer = 0;
@@ -1834,6 +1891,7 @@ function exitBreak(){
   breakOn = false; document.querySelector('.app').inert = false; document.body.classList.remove('breakOn');
   document.getElementById('gardenPanel').hidden = true; document.getElementById('bScene').setAttribute('aria-expanded','false');
   document.getElementById('breakBtn').focus({preventScroll:true});
+  if (returnToDone){ returnToDone = false; if (G.done) showDone(); }
   sky.style.opacity = 0;
   setTimeout(() => { if (breakOn) return; breakUI.hidden = true; drawSky(); sky.style.opacity = 1; bird = mkBird(); fctx.clearRect(0, 0, innerWidth, innerHeight); nctx.clearRect(0, 0, innerWidth, innerHeight); startLoop(); }, 450);
 }
@@ -2270,6 +2328,23 @@ function browsePlant(dir){
   }
   const again = document.getElementById(dir > 0 ? 'pNext' : 'pPrev'); if (again) again.focus({ preventScroll:true });
 }
+// Controller: step through the plantings left to right (L / R). Same glide as the tour, with a
+// softer outline glow than a tap so the scene stays the focus.
+window.SumiGardenStep = (dir) => {
+  if (!pano || !breakOn) return;
+  stopTour();
+  const stops = FLORA.filter(pl => pl.zones?.length).slice().sort((a, b) => a.zones[0].yaw - b.zones[0].yaw);
+  if (!stops.length) return;
+  let i = sel.item ? stops.indexOf(sel.item.pl) : -1;
+  if (i < 0) i = stops.reduce((best, pl, k) => Math.abs(pl.zones[0].yaw - cam.yaw) < Math.abs(stops[best].zones[0].yaw - cam.yaw) ? k : best, 0) - (dir > 0 ? 1 : -1);
+  i = (i + dir + stops.length) % stops.length;
+  const pl = stops[i], z = pl.zones[0];
+  cam.drag = false; cam.vy = cam.vp = 0;
+  cam.glide = { yaw: Math.max(-LOOK, Math.min(LOOK, z.yaw)), pitch: ['grass','moss'].includes(pl.kind) ? -10 : 0 };
+  const it = nearestOf(pl.id, pano.cx + z.yaw * pano.p);
+  if (it){ selectPlant(it, 900); sel.target = .55; }
+  startLoop();
+};
 const tourButton=document.getElementById('plantTour');
 const plantTour={on:false,stops:[],index:0,direction:1,elapsed:0,last:null,from:0,pitch:0};
 function stopTour(){
@@ -2533,7 +2608,9 @@ document.fonts && document.fonts.ready.then(drawArt);
     }
     if (!doneEl.hidden) { pad.menu(pad.controls(doneEl),action); return; }
     if (breakOn) {
-      if (action === 'back') { exitBreak(); toolsOpen = false; focusCell(); return; }
+      if (action === 'back') { exitBreak(); toolsOpen = false; if (doneEl.hidden) focusCell(); return; }
+      // L / R glide to the previous or next planting; the D-pad and A still work the garden menu
+      if (action === 'previous' || action === 'next') { window.SumiGardenStep?.(action === 'next' ? 1 : -1); return; }
       pad.menu(pad.controls(breakUI),action); return;
     }
     if (action === 'tools' || (toolsOpen && action === 'back')) {

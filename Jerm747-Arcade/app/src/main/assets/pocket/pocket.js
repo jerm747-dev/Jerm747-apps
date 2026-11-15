@@ -724,7 +724,7 @@ window.createPocketGameMenu=function(host,api){
     'tic-tac-steel':profile('pad',{a:'Mark',b:'Back',y:'Options'},
       'D-pad chooses a square or an Ultimate board. A confirms. Y opens game options.'),
     'sumi-sudoku':profile('pad',{a:'Write',b:'Erase',x:'Notes',y:'Options',l:'Digit −',r:'Digit +'},
-      'D-pad chooses a cell. L and R choose 1–9, A writes, and X toggles notes.'),
+      'D-pad chooses a cell. L and R choose 1–9, A writes, and X toggles notes. In the garden, L and R step through the plantings.'),
     'flight-control-deck':profile('pad',{a:'Center',b:'Shield',x:'Fire',y:'Warp',l:'Boost',r:'Brake',select:'View'},
       'D-pad steers. A launches from the mission screen. Use the touch display to aim or change flight settings.',{x:7,select:10}),
     'cyborg-coliseum':profile('pad',{a:'Grab / jump',b:'Melee',x:'Fire',y:'Arc lance',l:'Ascend',r:'Descend',select:'Fire'},
