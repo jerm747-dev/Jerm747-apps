@@ -207,6 +207,62 @@ export function add(note) {
   return list.length - 1;
 }
 
+/** Live update of several notes at once (group drag). updates: [[idx, partial], ...] */
+export function setMany(updates) {
+  const len = pads.getSecLen(edit()), m = new Map(updates);
+  commit({ ...song, sections: song.sections.map((s, i) => (i === edit() ? s.map((n, k) => (m.has(k) ? clampNote({ ...n, ...m.get(k) }, len) : n)) : s)) }, { undoable: false });
+}
+/** One undoable nudge of several notes. */
+export function nudgeMany(idxs, { dp = 0, dn = 0, dd = 0 }) {
+  const len = pads.getSecLen(edit()), set = new Set(idxs);
+  commit({ ...song, sections: song.sections.map((s, i) => (i === edit() ? s.map((n, k) => (set.has(k) ? clampNote({ ...n, p: n.p + dp, n: n.n + dn, d: n.d + dd }, len) : n)) : s)) });
+}
+export function removeMany(idxs) {
+  const set = new Set(idxs);
+  commit({ ...song, sections: song.sections.map((s, i) => (i === edit() ? s.filter((_, k) => !set.has(k)) : s)) });
+}
+
+// ---------- clipboard ----------
+// Copied notes keep their spacing (positions from the first copied note) and stay on the
+// clipboard when you switch sections, so a phrase can be carried into the next section.
+let clip = null;
+const clipSubs = new Set();
+export const subscribeClip = (fn) => (clipSubs.add(fn), () => clipSubs.delete(fn));
+export const getClip = () => clip;
+export function copy(idxs) {
+  const list = song.sections[edit()] || [];
+  const picked = idxs.map((k) => list[k]).filter(Boolean);
+  if (!picked.length) return 0;
+  const p0 = Math.min(...picked.map((n) => n.p));
+  clip = { notes: picked.map((n) => ({ ...n, p: Math.round((n.p - p0) * 1000) / 1000 })), span: Math.max(...picked.map((n) => n.p - p0 + n.d)), from: pads.SECTIONS[edit()] };
+  clipSubs.forEach((fn) => fn(clip));
+  return picked.length;
+}
+export function cut(idxs) { const n = copy(idxs); if (n) removeMany(idxs); return n; }
+/** Where pasted notes would land: start step p, transposed dn semitones. Notes that would start
+ *  past the end of the section are left out; lengths are trimmed to the section's end. */
+export function pastePlan(p, dn = 0) {
+  if (!clip) return { fit: [], dropped: 0 };
+  const len = pads.getSecLen(edit());
+  const fit = [];
+  let dropped = 0;
+  for (const c of clip.notes) {
+    const at = Math.round((p + c.p) * 1000) / 1000, n = c.n + dn;
+    if (at >= len || n < 0 || n > 127) { dropped++; continue; }
+    fit.push({ ...c, p: at, n, d: Math.round(Math.min(c.d, len - at) * 1000) / 1000 });
+  }
+  return { fit, dropped };
+}
+/** Paste at step p (transposed dn). Returns the new notes' indices and how many did not fit. */
+export function paste(p, dn = 0) {
+  const { fit, dropped } = pastePlan(p, dn);
+  if (!fit.length) return { idxs: [], dropped };
+  const list = [...(song.sections[edit()] || [])];
+  const start = list.length;
+  commit({ ...song, sections: song.sections.map((s, i) => (i === edit() ? [...list, ...fit] : s)) });
+  return { idxs: fit.map((_, k) => start + k), dropped };
+}
+
 /** Hear one note from the lane (tapping it in the roll). */
 export function audition(n) { const ac = audio(); if (ac) { synth.warm(); synth.playAt(n.n, n.v, ac.currentTime + 0.01, 0.25); } }
 
