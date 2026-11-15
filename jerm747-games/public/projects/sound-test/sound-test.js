@@ -61,6 +61,9 @@
   let shuffle = store.get('shuffle', false);
   let repeat = store.get('repeat', 'all'); // all | one | off
   let started = false;
+  let tab = store.get('tab', 'game') === 'mine' ? 'mine' : 'game'; // game = bundled soundtrack, mine = loaded from device
+  const inTab = (t) => (tab === 'mine') === !!t?.local;
+  const visibleRows = () => tracks.map((t, i) => i).filter(i => inTab(tracks[i]));
 
   const fmt = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   const no = (i) => 'No. ' + String(i + 1).padStart(2, '0');
@@ -261,9 +264,8 @@
         added++;
       }
       if (added) {
-        renderList();
+        setTab('mine');
         buildOrder();
-        markSel();
       }
       const parts = [];
       if (added) parts.push('Added ' + added + (added === 1 ? ' song.' : ' songs.'));
@@ -303,16 +305,19 @@
   // ---------------------------------------------------------------- list + song page
   function renderList() {
     list.innerHTML = '';
+    let shown = 0;
     tracks.forEach((t, i) => {
       const li = document.createElement('li');
       li.className = 'st-row';
+      li.hidden = !inTab(t);
+      const n = li.hidden ? i : shown++;
       li.style.setProperty('--pick', t.color);
       const safe = {title:escapeText(t.title), cover:escapeText(t.cover), stage:escapeText(t.stage), key:escapeText(t.key)};
       li.innerHTML = `
         <button type="button" class="st-row-play" aria-label="Play ${safe.title}">
           <img src="${safe.cover}" alt="" width="60" height="60" loading="lazy" />
           <span class="st-row-text">
-            <span class="st-row-no">${no(i)}</span>
+            <span class="st-row-no">${no(n)}</span>
             <span class="st-row-title">${safe.title}</span>
             <span class="st-row-meta">${[safe.stage,safe.key].filter(Boolean).join(' · ')}</span>
           </span>
@@ -325,7 +330,27 @@
       list.appendChild(li);
     });
     $('count').textContent = tracks.length + (tracks.length === 1 ? ' track' : ' tracks');
+    const mine = tracks.filter(t => t.local).length;
+    $('mineCount').textContent = mine ? String(mine) : '';
+    $('mineEmpty').hidden = !(tab === 'mine' && !mine);
+    list.hidden = tab === 'mine' && !mine;
   }
+  function setTab(next, focusTab = false) {
+    tab = next === 'mine' ? 'mine' : 'game';
+    store.set('tab', tab);
+    for (const [id, name] of [['tabGame', 'game'], ['tabMine', 'mine']]) {
+      $(id).setAttribute('aria-selected', String(tab === name));
+      $(id).tabIndex = tab === name ? 0 : -1;
+    }
+    renderList();
+    const rows = visibleRows();
+    sel = rows.includes(cur) ? cur : (rows[0] ?? cur);
+    markSel();
+    list.children[sel]?.scrollIntoView?.({ block: 'nearest' });
+    if (focusTab) $(tab === 'mine' ? 'tabMine' : 'tabGame').focus();
+  }
+  $('tabGame').addEventListener('click', () => setTab('game'));
+  $('tabMine').addEventListener('click', () => setTab('mine'));
 
   function markSel() {
     [...list.children].forEach((li, i) => {
@@ -366,7 +391,9 @@
 
   // ---------------------------------------------------------------- playback
   function buildOrder() {
-    order = tracks.map((_, i) => i);
+    // Next/previous stay in the library the current song came from.
+    const group = !!tracks[cur]?.local;
+    order = tracks.map((_, i) => i).filter(i => !!tracks[i].local === group);
     if (shuffle) {
       for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
       const at = order.indexOf(cur); // keep the playing song first
@@ -405,6 +432,7 @@
     ensureAudio();
     started = true;
     load(i);
+    if (!order.includes(cur)) buildOrder();
     sel = cur;
     markSel();
     playAudio();
@@ -531,7 +559,7 @@
     app.hidden = false;
     setTimeout(() => splash.remove(), 360);
     playIndex(cur);
-    requestAnimationFrame(() => list.children[cur]?.querySelector('.st-row-play')?.focus({ preventScroll: true }));
+    requestAnimationFrame(() => list.children[inTab(tracks[cur]) ? cur : (firstRow() ?? cur)]?.querySelector('.st-row-play')?.focus({ preventScroll: true }));
   }
   $('start').addEventListener('click', start);
   if (widget) { splash.remove(); app.hidden = false; }
@@ -542,6 +570,7 @@
     if (splash.isConnected) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); start(); } return; }
     if (e.target.closest?.('input[type=range]') && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) return;
     const k = e.key;
+    if (e.target.getAttribute?.('role') === 'tab' && (k === 'ArrowLeft' || k === 'ArrowRight')) { e.preventDefault(); setTab(tab === 'mine' ? 'game' : 'mine', true); return; }
     if (widget && k === 'Tab' && songAt < 0) {
       const items = [...app.querySelectorAll('button:not(:disabled),input:not(:disabled)')].filter(el => el.offsetWidth && el.offsetHeight);
       const first = items[0], last = items[items.length - 1];
@@ -565,14 +594,20 @@
     else if (k === 's' || k === 'S') setShuffle(!shuffle);
     else if (k === 'r' || k === 'R') cycleRepeat();
     else if (k === 'm' || k === 'M') toggleMute();
+    else if ((k === 't' || k === 'T') && songAt < 0) setTab(tab === 'mine' ? 'game' : 'mine');
     else if (k.toLowerCase() === 'd' && !e.repeat) togglePunch();
     else if (k === 'i' || k === 'I') songAt >= 0 ? closeSong() : openSong(sel);
   });
   function moveSel(d) {
-    sel = Math.max(0, Math.min(tracks.length - 1, sel + d));
+    const rows = visibleRows();
+    if (!rows.length) { $('loadMusic').focus(); return; }
+    let at = rows.indexOf(sel);
+    at = at < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, at + d));
+    sel = rows[at];
     list.children[sel]?.querySelector('.st-row-play')?.focus();
     markSel();
   }
+  const firstRow = () => visibleRows()[0];
 
   // ---------------------------------------------------------------- controller (shared cabinet input)
   window.Jerm747Pad?.listen((action) => {
@@ -610,12 +645,23 @@
       if (action === 'accept') { togglePunch(); return; }
       if (action === 'down') { $('loadMusic').focus(); return; }
     }
+    const focusedTab = document.activeElement?.getAttribute?.('role') === 'tab';
+    if (focusedTab) {
+      if (action === 'left' || action === 'right' || action === 'accept' || action === 'previous' || action === 'next') {
+        if (action === 'right' && tab === 'mine') { $('loadMusic').focus(); return; }
+        if (action === 'left' && tab === 'game') return;
+        setTab(tab === 'mine' ? 'game' : 'mine', true); return;
+      }
+      if (action === 'up' && !punchButton.disabled) { punchButton.focus(); return; }
+      if (action === 'down') { sel = firstRow() ?? sel; moveSel(0); return; }
+    }
     if (document.activeElement === $('loadMusic')) {
       if (action === 'up' && !punchButton.disabled) { punchButton.focus(); return; }
+      if (action === 'left') { $(tab === 'mine' ? 'tabMine' : 'tabGame').focus(); return; }
       if (action === 'accept') { $('loadMusic').click(); return; }
-      if (action === 'down') { sel = 0; moveSel(0); return; }
+      if (action === 'down') { sel = firstRow() ?? sel; moveSel(0); return; }
     }
-    if (action === 'up' && sel === 0) { $('loadMusic').focus(); return; }
+    if (action === 'up' && (sel === firstRow() || firstRow() === undefined)) { $(tab === 'mine' ? 'tabMine' : 'tabGame').focus(); return; }
     if (action === 'up') moveSel(-1);
     else if (action === 'down') moveSel(1);
     else if (action === 'accept') { if (sel === cur && started) toggle(); else playIndex(sel); }
@@ -656,14 +702,15 @@
       if (startButton) { startButton.disabled = false; startButton.textContent = 'Start listening'; }
       const last = tracks.findIndex((t) => t.id === store.get('track', ''));
       cur = sel = Math.max(0, last);
-      renderList();
+      if (tab === 'mine' && !tracks.some(t => t.local)) tab = 'game';
+      setTab(tab);
       buildOrder();
       $('shuffle').setAttribute('aria-pressed', shuffle);
       paintRepeat();
       setVol(store.get('vol', 0.8), false);
       load(cur);
       const hint = $('hint');
-      hint.innerHTML = '<kbd>Space</kbd> play · <kbd>←</kbd><kbd>→</kbd> track · <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> seek · <kbd>S</kbd> shuffle · <kbd>R</kbd> repeat · <kbd>I</kbd> about';
+      hint.innerHTML = '<kbd>Space</kbd> play · <kbd>←</kbd><kbd>→</kbd> track · <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> seek · <kbd>S</kbd> shuffle · <kbd>R</kbd> repeat · <kbd>T</kbd> My Music · <kbd>I</kbd> about';
       report();
       if (widget && embedded) parent.postMessage({type:'sound-test-ready'},location.origin);
       drawMeter();

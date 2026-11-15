@@ -262,7 +262,8 @@ export default function Arcade() {
     pushed.current = true;
   }, []);
 
-  const hud=useVisor({projects,playing,launch,onExit:exitGame,live,pocket,onVisibility:setVisorOpen});
+  const display = useRef(null);
+  const hud=useVisor({projects,playing,launch,onExit:exitGame,live,pocket,onVisibility:setVisorOpen,display,openMusic:()=>music.current?.open()});
   const moveCat = (dir) => {
     const i = cats.indexOf(cat);
     const next = cats[(i + dir + cats.length) % cats.length];
@@ -320,7 +321,7 @@ export default function Arcade() {
   return (
     <Cabinet project={playing}>
     <ArcadeMusic api={music} live={live} onVisibility={setMusicOpen} inGame={!!playing} />
-    <Player project={playing} source={source} onExit={exitGame} live={live} pocket={pocket} visorOpen={visorOpen || musicOpen} openHUD={()=>hud.current?.open()} openMusic={()=>music.current?.open()} />
+    <Player project={playing} source={source} onExit={exitGame} live={live} pocket={pocket} visorOpen={visorOpen || musicOpen} openHUD={()=>hud.current?.open()} display={display} />
     <div className="sb" hidden={!!playing} inert={musicOpen}>
       <header className="sb-top">
         <a className="sb-brand" href="/">
@@ -445,7 +446,7 @@ export default function Arcade() {
   );
 }
 
-function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHUD, openMusic }) {
+function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHUD, display }) {
   const stack=useRef(null);
   const actions = useRef(null);
   actions.current = {openHUD,onExit};
@@ -466,6 +467,25 @@ function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHU
   const [displayNotice, setDisplayNotice] = useState('');
   const bridge = project?.gamepad || {};
   const hasBridge = project?.slug !== "word-search" && Object.keys(bridge).length > 0;
+  // HUD > Display reads and changes these site-wide screen controls (they used to live in the ☰ game-tools menu).
+  const displayState = useRef(null);
+  displayState.current = {orientation:displayMode, mapShown:showMap, notice:displayNotice, hasMap:!!project&&hasBridge};
+  display.current = {
+    state: () => ({...displayState.current, fullscreen:!!document.fullscreenElement, canFullscreen:document.fullscreenEnabled!==false}),
+    async orientation() {
+      const order=['auto','portrait','landscape'], mode=order[(order.indexOf(displayState.current.orientation)+1)%order.length];
+      displayState.current={...displayState.current, orientation:mode};
+      setDisplayMode(mode);
+      const notice=await setDisplayOrientation(mode);
+      displayState.current={...displayState.current, notice};setDisplayNotice('');
+    },
+    async fullscreen() {
+      if(window.Jerm747PlayView?.onFull(!!document.fullscreenElement))return;
+      const entering=!document.fullscreenElement;await toggleFullscreen();
+      if(entering&&displayState.current.orientation!=='auto')displayState.current={...displayState.current, notice:await setDisplayOrientation(displayState.current.orientation)};
+    },
+    map() { const next=!displayState.current.mapShown; displayState.current={...displayState.current, mapShown:next}; setShowMap(next); }
+  };
 
   useGamepad({ mode: project&&!visorOpen?'player':'off', onExitProgress: setHold, onExit });
 
@@ -548,14 +568,6 @@ function Player({ project, source, onExit, live:frame, pocket, visorOpen, openHU
   return (
     <div className="player" hidden={!project}>
       <div className="game-stack" ref={stack} />
-      <details className="play-tools" key={project?.slug}><summary aria-label="Game controls">☰</summary><div className="player-bar is-on">
-        <button className="sb-btn" onClick={onExit}>Back to shelf</button><button className="sb-btn" onClick={openHUD}>HUD</button><button className="sb-btn" onClick={openMusic}>♫ Game Music</button>
-        <span className="player-title">{project?.title}</span>
-        <Hints source={source} inPlayer />
-        {hasBridge && <button className="sb-btn" onClick={() => { setShowMap(!showMap); }}>{showMap ? 'Hide controls' : 'Controller map'}</button>}
-        <label className="player-orientation">Display <select aria-label="Game orientation" value={displayMode} onChange={async e => {const mode=e.target.value;setDisplayMode(mode);setDisplayNotice(await setDisplayOrientation(mode));}}><option value="auto">Auto</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
-        <button className="sb-btn" onClick={async()=>{if(window.Jerm747PlayView?.onFull(!!document.fullscreenElement))return;const entering=!document.fullscreenElement;await toggleFullscreen();if(entering&&displayMode!=='auto')setDisplayNotice(await setDisplayOrientation(displayMode));}}>Fullscreen</button>
-      </div></details>
       {displayNotice && <p className="display-notice" role="status"><span>{displayNotice}</span><button onClick={()=>setDisplayNotice('')} aria-label="Dismiss display message">×</button></p>}
       {showMap && (
         <div className="player-map">

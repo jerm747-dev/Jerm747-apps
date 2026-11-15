@@ -178,6 +178,8 @@ window.createPocketGameMenu=function(host,api){
     button('Arcade HUD',()=>{close();api.hud()});
     rows()[0]?.focus({preventScroll:true});
   }
+  // A game can claim Select during play (Wave Run switches its camera); otherwise Select opens options.
+  function gameSelect(){const d=doc();try{return !!d?.defaultView?.PocketSelect?.()}catch{return false}}
   function start(){
     if(state){close();return}
     const d=doc();if(!d)return;
@@ -203,7 +205,7 @@ window.createPocketGameMenu=function(host,api){
     if(api.blocked()){lastButtons=pad.buttons.map(b=>!!b.pressed);return}
     const a=pad.buttons.map(b=>!!b.pressed);
     [12,13,14,15].forEach((i,n)=>a[i] ||= [-(pad.axes[1]||0),pad.axes[1]||0,-(pad.axes[0]||0),pad.axes[0]||0][n]>.6);
-    if(a[8]&&!lastButtons[8]){if(state)navigate('select');else display('options')}
+    if(a[8]&&!lastButtons[8]){if(state)navigate('select');else if(!gameSelect())display('options')}
     else if(a[9]&&!lastButtons[9])start();
     else if(state)for(const [i,k] of [[12,'up'],[13,'down'],[14,'left'],[15,'right'],[0,'a'],[1,'b']])if(a[i]&&!lastButtons[i]){navigate(k);break}
     lastButtons=a;
@@ -215,7 +217,7 @@ window.createPocketGameMenu=function(host,api){
     if(e.data?.type==='pocket-workshop-applied')window.Jerm747Pocket.refreshControls();}
   window.addEventListener('message',message);panel.addEventListener('keydown',key);window.addEventListener('resize',layout);ticker=requestAnimationFrame(poll);
   const obs=new ResizeObserver(layout);obs.observe(host);
-  return {get open(){return !!state},layout,close,start,navigate,options:()=>state?close():display('options'),
+  return {get open(){return !!state},layout,close,start,navigate,options:()=>state?close():(gameSelect()||display('options')),
     axes(x,y){if(!state)return false;const mag=Math.max(Math.abs(x),Math.abs(y));if(mag<.3)axesHeld=false;else if(mag>.55&&!axesHeld){axesHeld=true;navigate(Math.abs(x)>Math.abs(y)?x<0?'left':'right':y<0?'up':'down')}return true},
     sync(f,id,on){if(f!==frame||id!==game||wasPocket!==on)close();if(!on&&f)try{maskSystem(f.contentWindow)}catch{}frame=f;game=id;isPocket=wasPocket=on;if(state)layout()},
     destroy(){close();cancelAnimationFrame(ticker);obs.disconnect();window.removeEventListener('resize',layout);window.removeEventListener('message',message);panel.remove()}
@@ -277,7 +279,7 @@ window.createPocketGameMenu=function(host,api){
   }
   const skins = {'wave-run-747':'ice'};
   const finishKey = 'jerm747.pocket.finish.v1';
-  const finishes = Object.freeze({auto: 'Game default', ice: 'Ice Blue', classic: 'Classic'});
+  const finishes = Object.freeze({auto: 'Game default', classic: 'Classic Gray', ice: 'Ice Blue'});
   const valid = value => Object.prototype.hasOwnProperty.call(finishes, value);
   let finish = 'auto';
   try {
@@ -693,8 +695,8 @@ window.createPocketGameMenu=function(host,api){
       'D-pad moves the tile cursor. Use the four face buttons to swap in that direction; A confirms on result screens.'),
     'beat-room':profile('pad',{a:'Use / play',b:'Sections',x:'− / clear',y:'+ / set',l:'Previous',r:'Next',select:'Pad mode'},
       'L/R choose a section, A enters, B goes back. D-pad moves. In a section L/R browse controls or pages. Select plays your mapped pads.'),
-    'wave-run-747':profile('pad',{a:'Gas',b:'Brake',x:'Brake',y:'Reset',l:'Brake',r:'Gas',select:'Start'},
-      'D-pad steers; Up adds throttle. Hold A or R for gas, B or L to brake. Y puts you back on the course. Select starts the race or pauses.',{l:6,r:7,select:9}),
+    'wave-run-747':profile('pad',{a:'Gas',b:'Brake',x:'Brake',y:'Reset',l:'Brake',r:'Gas',select:'View'},
+      'D-pad steers; Up adds throttle. Hold A or R for gas, B or L to brake. Y puts you back on the course. Start pauses with the full pause screen. Select switches between Chase and Rider camera.',{l:6,r:7,select:9}),
     'pulse-runner':profile('pad',{a:'Fire',b:'Dive',x:'Melee',y:'Grenade',l:'Run',r:'Fire',select:'Start'},
       'D-pad moves and picks an operator. A or R fires, B dives, X strikes, Y throws a grenade. Hold L to run. Select launches or pauses.',{r:7,select:9}),
     'controller-check':profile('focus',{a:'Use',b:'Back'},'The checker reads the connected physical controller. D-pad and A navigate test options.'),
@@ -907,6 +909,7 @@ window.createPocketGameMenu=function(host,api){
   };
   const aliases = {'gs-fighter-iii':'gs-fighter-3','get-down':'groove-squad-get-down','flight':'flight-control-deck'};
   const storageKey = id => 'jerm747.pocket.view.v1.' + (aliases[id] || id);
+  const defaultViewKey = 'jerm747.pocket.view.v1.default';
   // Hide duplicate touch decks only when the game has a mapped replacement.
   // Menus, board cells, camera regions, and additional on-screen actions stay interactive.
   const guestStyles = {
@@ -1055,7 +1058,7 @@ window.createPocketGameMenu=function(host,api){
       on = !!on && !!frame;
       if (save && gameId) {
         remembered.set(gameId,on);
-        try {localStorage.setItem(storageKey(gameId),on?'on':'off');} catch {}
+        try {localStorage.setItem(storageKey(gameId),on?'on':'off');localStorage.setItem(defaultViewKey,on?'on':'off');} catch {}
       }
       if (on !== active) {
         active = on;
@@ -1085,7 +1088,8 @@ window.createPocketGameMenu=function(host,api){
       });
       let prefer = remembered.get(gameId);
       if (prefer === undefined) {
-        try {prefer = localStorage.getItem(storageKey(gameId)) === 'on';} catch {}
+        // A game without its own choice follows the last Pocket Player choice.
+        try {prefer = (localStorage.getItem(storageKey(gameId)) ?? localStorage.getItem(defaultViewKey)) === 'on';} catch {}
       }
       // A Pocket page launch explicitly opens this cartridge in its advertised finish.
       // Ordinary arcade links keep the player's existing per-game view choice.

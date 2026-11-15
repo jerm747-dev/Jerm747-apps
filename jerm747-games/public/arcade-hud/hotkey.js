@@ -21,7 +21,9 @@ window.Jerm747Hotkey=(()=>{
     return null;
   }
   function position(id=''){
-    return savedPosition(id)||(id&&savedPosition())||{x:1,y:0};
+    // Wave Run places its camera and pause buttons in the top-right corner.
+    const initial = id === 'wave-run-747' ? {x:1,y:0.35} : {x:1,y:0};
+    return savedPosition(id)||(id&&savedPosition())||initial;
   }
   function place(bounds,pos){bounds.style.setProperty('--hud-x',pos.x);bounds.style.setProperty('--hud-y',pos.y);}
   return {point,place,position,savedPosition,save:(id,pos)=>write(positionKey(id),JSON.stringify(pos)),

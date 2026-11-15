@@ -959,7 +959,11 @@ async function initRenderer(device, signal) {
       padIData.set([p.x,surfH(p.x,p.z)-0.05,p.z,p.a, gx*c-gz*sn, gx*sn+gz*c,0,0],i*8); });
     if (pads.length) device.queue.writeBuffer(padInst,0,padIData,0,pads.length*8);
     { const g=gates[0]; startIData.set([g.x,surfH(g.x,g.z)-0.08,g.z,Math.atan2(g.tx,g.tz),0,0,0,0]); device.queue.writeBuffer(startInst,0,startIData); }
-    spray.forEach((p,i)=>{ const k=p.age/p.life; sprayData.set([p.p[0],p.p[1],p.p[2],p.kind?p.size*(1+k*1.3):p.size, p.v[0],p.v[1],p.v[2],p.kind?(1-k)*p.a:(1-k*k)*p.a, p.kind,0,0,0],i*12); });
+    // Spray and bubbles thin out as they near the lens, so fewer splash straight into your face.
+    const ce=cam.eye;
+    spray.forEach((p,i)=>{ const k=p.age/p.life;
+      const d=Math.hypot(p.p[0]-ce[0],p.p[1]-ce[1],p.p[2]-ce[2]), near=Math.min(1,Math.max(0,(d-1.4)/3.2)), fade=0.12+0.88*near*near*(3-2*near);
+      sprayData.set([p.p[0],p.p[1],p.p[2],(p.kind?p.size*(1+k*1.3):p.size)*(0.6+0.4*fade), p.v[0],p.v[1],p.v[2],(p.kind?(1-k)*p.a:(1-k*k)*p.a)*fade, p.kind,0,0,0],i*12); });
     if (spray.length) device.queue.writeBuffer(sprayInst,0,sprayData,0,spray.length*12);
 
     const enc=device.createCommandEncoder();
@@ -994,14 +998,24 @@ async function initRenderer(device, signal) {
 /* ================= sound (all synthesized, nothing to download) ================= */
 const VERSION='0.15';
 const sfx=(()=>{
-  let ac=null, master, eng, engF, engGain, rushF, rushGain, noiseBuf, muted=false;
-  try{ muted=localStorage.getItem('waverun747-mute')==='1'; }catch{}
+  let ac=null, master, engBus, fxBus, eng, engF, engGain, rushF, rushGain, noiseBuf, muted=false;
+  // Two mixer channels: Engine (motor + hull rushing through water) and Effects (splashes, gates, boost, beeps).
+  const mix={engine:1, fx:1};
+  // Volume sliders replace the old On/Off switch; slide both to 0% for silence.
+  try{ if(localStorage.getItem('waverun747-mute')==='1'){ localStorage.removeItem('waverun747-mute'); localStorage.setItem('waverun747-vol-engine','0'); localStorage.setItem('waverun747-vol-fx','0'); } }catch{}
+  for (const k of ['engine','fx']) try{ const v=parseFloat(localStorage.getItem('waverun747-vol-'+k)); if(v>=0&&v<=1) mix[k]=v; }catch{}
+  // Reasons the sound is held silent: paused race, app in background, arcade HUD open.
+  const hush=new Set();
+  function applyHush(){ if (!ac||ac.state==='closed') return; if (hush.size) ac.suspend().catch(()=>{}); else ac.resume().catch(()=>{}); }
+  const level=()=>muted?0:0.8;
   function init(){
-    if (ac){ if (ac.state==='suspended') ac.resume(); return; }
+    if (ac){ if (ac.state==='suspended'&&!hush.size) ac.resume(); return; }
     const AC=window.AudioContext||window.webkitAudioContext; if (!AC) return;
     try{ ac=new AC(); }catch{ return; }
-    master=ac.createGain(); master.gain.value=muted?0:0.8;
+    master=ac.createGain(); master.gain.value=level();
     const comp=ac.createDynamicsCompressor(); master.connect(comp); comp.connect(ac.destination);
+    engBus=ac.createGain(); engBus.gain.value=mix.engine; engBus.connect(master);
+    fxBus=ac.createGain(); fxBus.gain.value=mix.fx; fxBus.connect(master);
     noiseBuf=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate); const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
     // engine: saw + sub square, an amplitude wobble for the two-stroke burble, through a resonant low-pass
     engF=ac.createBiquadFilter(); engF.type='lowpass'; engF.frequency.value=500; engF.Q.value=4;
@@ -1009,12 +1023,13 @@ const sfx=(()=>{
     const o1=ac.createOscillator(); o1.type='sawtooth'; const o2=ac.createOscillator(); o2.type='square';
     const g2=ac.createGain(), wob=ac.createGain(); g2.gain.value=0.5; wob.gain.value=0.75;
     const lfo=ac.createOscillator(); lfo.frequency.value=22; const lfoG=ac.createGain(); lfoG.gain.value=0.25;
-    lfo.connect(lfoG); lfoG.connect(wob.gain); o1.connect(wob); o2.connect(g2); g2.connect(wob); wob.connect(engF); engF.connect(engGain); engGain.connect(master);
+    lfo.connect(lfoG); lfoG.connect(wob.gain); o1.connect(wob); o2.connect(g2); g2.connect(wob); wob.connect(engF); engF.connect(engGain); engGain.connect(engBus);
     o1.start(); o2.start(); lfo.start(); eng={o1,o2,lfo};
     // hull rushing through water: looped noise through a band-pass that opens with speed
     const n=ac.createBufferSource(); n.buffer=noiseBuf; n.loop=true;
     rushF=ac.createBiquadFilter(); rushF.type='bandpass'; rushF.frequency.value=900; rushF.Q.value=0.7;
-    rushGain=ac.createGain(); rushGain.gain.value=0; n.connect(rushF); rushF.connect(rushGain); rushGain.connect(master); n.start();
+    rushGain=ac.createGain(); rushGain.gain.value=0; n.connect(rushF); rushF.connect(rushGain); rushGain.connect(engBus); n.start();
+    if (hush.size) applyHush();
   }
   function update(on,speed,throttle,air,boost,brake){
     if (!ac) return; const t=ac.currentTime;
@@ -1029,15 +1044,19 @@ const sfx=(()=>{
     const s=ac.createBufferSource(); s.buffer=noiseBuf; const fl=ac.createBiquadFilter(); fl.type=type; fl.Q.value=q;
     fl.frequency.setValueAtTime(f0,t); fl.frequency.exponentialRampToValueAtTime(f1,t+dur);
     const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.015); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    s.connect(fl); fl.connect(g); g.connect(master); s.start(t,Math.random()); s.stop(t+dur+0.05); }
+    s.connect(fl); fl.connect(g); g.connect(fxBus); s.start(t,Math.random()); s.stop(t+dur+0.05); }
   function tone(freq,dur,type='sine',vol=0.2,delay=0,slide=0){ if (!ac) return; const t=ac.currentTime+delay;
     const o=ac.createOscillator(); o.type=type; o.frequency.setValueAtTime(freq,t); if (slide) o.frequency.exponentialRampToValueAtTime(freq*slide,t+dur);
     const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g); g.connect(master); o.start(t); o.stop(t+dur+0.05); }
+    o.connect(g); g.connect(fxBus); o.start(t); o.stop(t+dur+0.05); }
   return {
     init, update,
     get muted(){ return muted; },
-    toggle(){ muted=!muted; try{ localStorage.setItem('waverun747-mute',muted?'1':'0'); }catch{} if (master) master.gain.setTargetAtTime(muted?0:0.8,ac.currentTime,0.05); return muted; },
+    toggle(){ muted=!muted; try{ localStorage.setItem('waverun747-mute',muted?'1':'0'); }catch{} if (master) master.gain.setTargetAtTime(level(),ac.currentTime,0.05); return muted; },
+    level(k){ return mix[k]; },
+    setLevel(k,v){ mix[k]=Math.max(0,Math.min(1,v)); try{ localStorage.setItem('waverun747-vol-'+k,String(mix[k])); }catch{} const bus=k==='engine'?engBus:fxBus; if (bus) bus.gain.setTargetAtTime(mix[k],ac.currentTime,0.05); },
+    hold(reason,on){ if(on) hush.add(reason); else hush.delete(reason); applyHush(); },
+    rehold: applyHush,
     splash(k){ k=Math.min(1,Math.max(0.2,k)); noise(0.5+k*0.5,'lowpass',2500,300,0.8,0.25+0.35*k); noise(0.25,'highpass',3000,6000,0.5,0.12*k,0.03); tone(90,0.25,'sine',0.25*k,0,0.5); },
     bump(){ tone(110,0.22,'sine',0.35,0,0.45); noise(0.18,'lowpass',1200,200,1,0.25); },
     boost(){ noise(0.7,'bandpass',400,3500,1.5,0.3); tone(220,0.5,'sawtooth',0.06,0,2.2); },
@@ -1219,15 +1238,17 @@ for (const [id,key] of [['btnA','A'],['btnB','B']]){
   el.addEventListener('contextmenu',e=>e.preventDefault());
 }
 addEventListener('keydown',e=>{
+  if (e.key.startsWith('Arrow') && e.target.matches?.('input[type=range]')) return;
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
   keys.add(e.key.toLowerCase());
   if (e.key==='r'||e.key==='R') resetToTrack();
+  if ((e.key==='v'||e.key==='V') && !e.repeat) cycleView();
   if ((e.key==='p'||e.key==='P'||e.key==='Escape') && (state==='race'||state==='countdown')) pause();
   else if ((e.key==='p'||e.key==='P'||e.key==='Escape') && state==='paused') resume();
 });
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 addEventListener('blur',()=>keys.clear());
-let padStartPrev=false, padSelPrev=false;
+let padStartPrev=false, padSelPrev=false, padViewPrev=false;
 function readInput(){
   let x=stick.x, y=stick.y, gas=touchBtn.A, boost=touchBtn.B;
   const k=n=>keys.has(n);
@@ -1242,7 +1263,8 @@ function readInput(){
       if (Math.abs(ax)>0.12) x+=ax; if (Math.abs(ay)>0.12) y-=ay;
       if (gp.buttons[0]?.pressed || (gp.buttons[7]?.value||0)>0.2) gas=true;
       if (gp.buttons[1]?.pressed || gp.buttons[2]?.pressed || (gp.buttons[6]?.value||0)>0.2) boost=true;
-      const sel=!!gp.buttons[8]?.pressed||!!gp.buttons[3]?.pressed; if (sel&&!padSelPrev) resetToTrack(); padSelPrev=sel;
+      const rst=!!gp.buttons[3]?.pressed; if (rst&&!padSelPrev) resetToTrack(); padSelPrev=rst;
+      const vw=!!gp.buttons[8]?.pressed; if (vw&&!padViewPrev&&(state==='race'||state==='countdown')) cycleView(); padViewPrev=vw;
       const st=!!gp.buttons[9]?.pressed;
       if (st && !padStartPrev){ if(state==='race'||state==='countdown') pause(); else if(state==='paused') resume(); else if(state==='menu'||state==='finish') startRace(); }
       padStartPrev=st;
@@ -1303,7 +1325,7 @@ const msgEl=$('msg'); let msgTimer=0;
 function flash(text,ms=900,warn=false){ msgEl.textContent=text; msgEl.classList.toggle('warn',warn); msgEl.classList.remove('show'); void msgEl.offsetWidth; msgEl.classList.add('show'); clearTimeout(msgTimer); msgTimer=setTimeout(()=>msgEl.classList.remove('show'),ms); }
 function show(id){ for (const o of ['menu','pauseMenu','finishMenu']) $(o).hidden = o!==id; }
 
-function startRace(){ if($('startBtn').disabled)return; resetSki(); rec=[]; curSplits=[]; ghostPos=null; if (mode===2) loadGhost(); else ghost=null; orbit.yaw=0; orbit.pitch=BASE_PITCH; orbit.dist=BASE_DIST; state='countdown'; cdT=3.0; show(null); $('arrow').hidden=false; flash('3',800); sfx.init(); sfx.beep(false); camSnap=true; }
+function startRace(){ if($('startBtn').disabled)return; sfx.hold('pause',false); defaultView(); resetSki(); rec=[]; curSplits=[]; ghostPos=null; if (mode===2) loadGhost(); else ghost=null; orbit.yaw=0; orbit.pitch=view().pitch; orbit.dist=view().dist; camSnap=true; state='countdown'; cdT=3.0; show(null); $('arrow').hidden=false; flash('3',800); sfx.init(); sfx.beep(false); camSnap=true; }
 // drop back onto the racing line on the stretch leading to the next gate, facing along it
 let lastReset=-1e9;
 function resetToTrack(){
@@ -1314,9 +1336,9 @@ function resetToTrack(){
   placeSki(a[0],a[1],Math.atan2(b[0]-a[0],b[1]-a[1]));
   orbit.yaw=0; camSnap=true; flash('RESET',600); sfx.reset();
 }
-function pause(){ lastOffCourseFrame=null; state='paused'; show('pauseMenu'); }
-function resume(){ lastOffCourseFrame=null; state=cdT>0?'countdown':'race'; show(null); }
-function toMenu(){ state='menu'; if (mode===3) courseForMode(); resetSki(); show('menu'); $('arrow').hidden=true; $('gatedist').textContent=''; refreshBest(); }
+function pause(){ if(state!=='race'&&state!=='countdown') return; lastOffCourseFrame=null; state='paused'; show('pauseMenu'); sfx.hold('pause',true); requestAnimationFrame(()=>$('resumeBtn').focus({preventScroll:true})); }
+function resume(){ lastOffCourseFrame=null; state=cdT>0?'countdown':'race'; show(null); sfx.hold('pause',false); }
+function toMenu(){ sfx.hold('pause',false); state='menu'; if (mode===3) courseForMode(); resetSki(); show('menu'); $('arrow').hidden=true; $('gatedist').textContent=''; refreshBest(); }
 function finishRace(){
   state='finish'; $('arrow').hidden=true; $('gatedist').textContent='';
   if (mode===3){
@@ -1342,6 +1364,33 @@ document.querySelectorAll('.soundSeg button').forEach(b=>b.onclick=()=>{ sfx.ini
 paintMute();
 document.querySelectorAll('.ver').forEach(e=>e.textContent='v'+VERSION);
 $('pauseBtn').onclick=()=>{ if(state==='race'||state==='countdown') pause(); else if(state==='paused') resume(); };
+// Leaving the app pauses the race and silences the jet ski until you come back.
+function leave(){ sfx.hold('away',true); pause(); }
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) leave(); else sfx.hold('away',false); });
+addEventListener('pagehide',leave);
+addEventListener('pageshow',()=>{ if(!document.hidden) sfx.hold('away',false); });
+// The arcade HUD holds the game clock (and its audio). Keep the race's own pause silent when it lets go.
+addEventListener('arcade-visor-hold',()=>sfx.hold('visor',true));
+addEventListener('arcade-visor-resume',()=>{ sfx.hold('visor',false); sfx.rehold(); });
+// Pocket Player Start: pause / resume with the full pause screen, or start from a menu.
+// Pocket Player Select during a race switches the camera; elsewhere it opens Pocket options.
+window.PocketSelect=()=>{ if(state==='race'||state==='countdown'){ cycleView(); return true; } return false; };
+$('viewBtn').onclick=cycleView;
+window.PocketTitleStart=()=>{
+  if(state==='race'||state==='countdown'){ pause(); return true; }
+  if(state==='paused'){ resume(); return true; }
+  if(state==='menu'){ startRace(); return true; }
+  if(state==='finish'){ $('againBtn').click(); return true; }
+  return false;
+};
+const mixSliders=[['engineVol','engine'],['fxVol','fx'],['engineVolM','engine'],['fxVolM','fx']];
+const paintMix=()=>{ for (const [id,k] of mixSliders){ const el=$(id); if(!el) continue; el.value=String(Math.round(sfx.level(k)*100)); el.setAttribute('aria-valuetext',el.value+'%'); el.nextElementSibling.textContent=el.value+'%'; } };
+paintMix();
+for (const [id,k] of mixSliders){ const el=$(id); if(!el) continue;
+  el.oninput=()=>{ sfx.init(); sfx.setLevel(k,el.value/100); paintMix(); };
+  // Preview the effects channel so the level can be judged while paused.
+  if (k==='fx') el.onchange=()=>{ const held=state==='paused'; if(held) sfx.hold('pause',false); sfx.gate(); if(held) setTimeout(()=>{ if(state==='paused') sfx.hold('pause',true); },420); };
+}
 $('resumeBtn').onclick=resume; $('restartBtn').onclick=startRace; $('quitBtn').onclick=toMenu; $('menuBtn').onclick=toMenu;
 const segPick=(segId,cb)=>{ const seg=$(segId); seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{ seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b))); cb(+b.dataset.v); }); };
 let gateStyle=1;
@@ -1554,8 +1603,25 @@ function ghostAtt(){
 // yaw is relative to "behind the rider". Drag to orbit, pinch/scroll to zoom; once he's moving
 // and nobody is touching the view, the camera eases back around behind him.
 const BASE_PITCH=0.3, BASE_DIST=9.5;
+// Camera views. Chase is the wide original; Rider sits just behind his shoulders with the craft at the bottom of the frame.
+const VIEWS={chase:{name:'Chase view',dist:BASE_DIST,pitch:BASE_PITCH,h:1.0,look:11,speed:0.08},
+             rider:{name:'Rider view',dist:3.6,pitch:0.15,h:1.75,look:18,speed:0.025}};
+const inPocket=()=>{ try{ return !!frameElement?.classList.contains('j747-pocket-viewport'); }catch{ return false; } };
+let viewChosen=false;
+let viewName=(()=>{ try{ const v=localStorage.getItem('waverun747-view'); if(VIEWS[v]){ viewChosen=true; return v; } }catch{} return 'chase'; })();
+// Until a view is picked, Pocket Player races start in the closer Rider view.
+function defaultView(){ if(!viewChosen) viewName=inPocket()?'rider':'chase'; paintView(); }
+const view=()=>VIEWS[viewName];
 const cam={eye:[0,4,0],tgt:[0,1,0]}; let camSnap=true;
-const orbit={yaw:0,pitch:BASE_PITCH,dist:BASE_DIST,last:-1e9,dragging:false};
+const orbit={yaw:0,pitch:view().pitch,dist:view().dist,last:-1e9,dragging:false};
+function cycleView(){
+  viewName=viewName==='chase'?'rider':'chase'; viewChosen=true;
+  try{ localStorage.setItem('waverun747-view',viewName); }catch{}
+  orbit.yaw=0; orbit.pitch=view().pitch; orbit.dist=view().dist; orbit.last=-1e9;
+  flash(viewName==='rider'?'RIDER VIEW':'CHASE VIEW',700); paintView();
+}
+function paintView(){ const b=$('viewBtn'); if(!b) return; b.setAttribute('aria-label','Camera: '+view().name); b.title='Camera: '+view().name+' (V or Select)'; b.dataset.view=viewName; }
+paintView();
 const camPtrs=new Map();
 function bindOrbitCanvas(surface){
 surface.addEventListener('pointerdown',e=>{ surface.setPointerCapture(e.pointerId); camPtrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); orbit.dragging=true; orbit.last=performance.now(); });
@@ -1579,14 +1645,15 @@ function updateCam(dt,now){
   if (state==='menu' && idle) orbit.yaw+=dt*0.15;
   if (state!=='menu' && idle && ski.speed>3){
     // swing back around behind him: quick enough to notice, slow enough to feel smooth
-    orbit.yaw=damp(orbit.yaw,0,1.3,dt); orbit.pitch=damp(orbit.pitch,BASE_PITCH,1.3,dt); orbit.dist=damp(orbit.dist,BASE_DIST+ski.speed*0.08,0.9,dt);
+    const V=view(); orbit.yaw=damp(orbit.yaw,0,1.3,dt); orbit.pitch=damp(orbit.pitch,V.pitch,1.3,dt); orbit.dist=damp(orbit.dist,V.dist+ski.speed*V.speed,0.9,dt);
   }
   const fx=Math.sin(ski.heading), fz=Math.cos(ski.heading);
   const a=ski.heading+Math.PI+orbit.yaw, cp=Math.cos(orbit.pitch), sp=Math.sin(orbit.pitch);
-  const look=Math.max(0,Math.cos(orbit.yaw))*(state==='menu'?0:11);
-  const base=[ski.x, Math.max(ski.y,0)+1.0, ski.z];
+  const V=state==='menu'?VIEWS.chase:view();
+  const look=Math.max(0,Math.cos(orbit.yaw))*(state==='menu'?0:V.look);
+  const base=[ski.x, Math.max(ski.y,0)+V.h, ski.z];
   const eye=[base[0]+Math.sin(a)*cp*orbit.dist, base[1]+sp*orbit.dist, base[2]+Math.cos(a)*cp*orbit.dist];
-  const tgt=[ski.x+fx*look, ski.y+1.0, ski.z+fz*look];
+  const tgt=[ski.x+fx*look, ski.y+V.h*(look?0.85:1), ski.z+fz*look];
   if (camSnap){ cam.eye=eye; cam.tgt=tgt; camSnap=false; }
   const rate=orbit.dragging?14:5;
   cam.eye=cam.eye.map((v,i)=>damp(v,eye[i],rate,dt));
