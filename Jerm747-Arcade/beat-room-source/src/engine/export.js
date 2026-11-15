@@ -128,7 +128,8 @@ export async function toMp3(buf, kbps = 192, onProgress = () => {}) {
 // Each saved song: { id, name, created, format, duration, blob, project }. project is a snapshot
 // of the room's saved settings, so Recall puts the whole room back the way it was.
 const DB = 'beatroom-songs', STORE = 'songs';
-const PROJECT_KEYS = ['beatroom.pads', 'beatroom.song', 'beatroom.notes', 'beatroom.bpm', 'beatroom.synth.current', 'beatroom.drive.v2', 'beatroom.tape', 'beatroom.master'];
+// the same settings a project file carries
+import { PROJECT_KEYS } from './project.js';
 
 function openDb() {
   return new Promise((res, rej) => {

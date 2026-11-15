@@ -15,6 +15,7 @@ import Splash from './chassis/Splash.jsx';
 import Drive from './chassis/Drive.jsx';
 import SongBar from './chassis/SongBar.jsx';
 import Settings from './chassis/Settings.jsx';
+import ProjectMenu from './chassis/ProjectMenu.jsx';
 import { Screws } from './ui/parts.jsx';
 import { unlockOnGesture, getSettings, onSettings } from './engine/audio.js';
 import { useExternal } from './ui/parts.jsx';
@@ -43,7 +44,7 @@ export default function App() {
             <div className="plate">
               <h1><b>Jerm747</b> Beat Room</h1>
               <p className="engrave">Virtual boombox kit · Your music. Your way.</p>
-              <Settings />
+              <div className="plate-btns"><ProjectMenu /><Settings /></div>
             </div>
             <ToolTray />
           </header>
