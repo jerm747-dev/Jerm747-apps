@@ -439,3 +439,26 @@
 .proj-item span { display: grid; gap: 2px; min-width: 0; }
 .proj-item b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .proj-item em { font-style: normal; font-size: 12px; color: #8d8c92; }
+
+/* Arrange mode */
+.console-main { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.mode-switch { justify-self: start; }
+.arrange-section .ar-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ar-bin { display: inline-flex; gap: 6px; align-items: center; }
+.ar-bin select { max-width: 220px; padding: 7px 8px; border-radius: 8px; background: #0e0e11; color: var(--text); border: 1px solid #333339; }
+.export-mp3 { border-color: var(--c-drive, #e98a3a); }
+.ar-track { position: relative; display: flex; gap: 4px; min-height: 92px; padding: 8px; border-radius: 10px; background: #0b0b0d; box-shadow: inset 0 1px 4px #000; overflow-x: auto; touch-action: pan-x; }
+.ar-track.empty { align-items: center; justify-content: center; border: 1px dashed #333339; }
+.ar-block { position: relative; min-width: 72px; display: grid; align-content: end; gap: 3px; padding: 22px 8px 8px; text-align: left; border-radius: 8px; cursor: grab;
+  background: linear-gradient(180deg, #3a2a1c, #241a12); border: 1px solid #5a3f22; color: #f3e6d2; overflow: hidden; touch-action: none; }
+.ar-block b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ar-block em { font-style: normal; font-size: 11px; color: #c9a77f; font-family: 'Share Tech Mono', ui-monospace, monospace; }
+.ar-block.sel { border-color: #ffd27a; box-shadow: 0 0 0 1px #ffd27a inset; }
+.ar-block.now { background: linear-gradient(180deg, #5a3a1c, #3a2412); }
+.ar-block.lifted { opacity: .55; outline: 2px dashed #ffd27a; }
+.ar-block.missing { background: #2a1414; border-color: #5a2222; }
+.ar-reps { position: absolute; left: 0; right: 0; top: 0; height: 14px; display: flex; }
+.ar-reps i { flex: 1; border-right: 1px solid #00000066; background: #e98a3a33; }
+.ar-reps i:last-child { border-right: 0; }
+.ar-head { position: absolute; top: 4px; bottom: 4px; width: 2px; background: var(--c-pads, #ff5b3a); box-shadow: 0 0 6px var(--c-pads, #ff5b3a); pointer-events: none; transform: translateX(8px); }
+.ar-count { display: inline-flex; align-items: center; gap: 4px; font: 600 13px 'Share Tech Mono', ui-monospace, monospace; padding: 0 4px; }

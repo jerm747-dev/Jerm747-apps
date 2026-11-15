@@ -16,6 +16,8 @@ import Drive from './chassis/Drive.jsx';
 import SongBar from './chassis/SongBar.jsx';
 import Settings from './chassis/Settings.jsx';
 import ProjectMenu from './chassis/ProjectMenu.jsx';
+import { ModeSwitch, ArrangePanel } from './chassis/Arrange.jsx';
+import * as arrange from './engine/arrange.js';
 import { Screws } from './ui/parts.jsx';
 import { unlockOnGesture, getSettings, onSettings } from './engine/audio.js';
 import { useExternal } from './ui/parts.jsx';
@@ -25,6 +27,8 @@ import { installController } from './ui/controller.js';
 export default function App() {
   const [roomReady, setRoomReady] = useState(false);
   const set = useExternal(onSettings, getSettings);
+  const room = useExternal(arrange.subscribe, arrange.get);
+  const arranging = room.mode === 'arrange';
   useEffect(() => {
     let mounted = true;
     library.loadAll().catch(() => {}).finally(() => { if (mounted) setRoomReady(true); });
@@ -48,8 +52,8 @@ export default function App() {
             </div>
             <ToolTray />
           </header>
-          <div className="console">
-            <SongBar />
+          <div className={`console ${arranging ? 'arranging' : ''}`}>
+            <div className="console-main"><ModeSwitch />{!arranging && <SongBar />}</div>
             <Drive />
           </div>
           <div className={`front ${set.speakers ? '' : 'no-speakers'}`}>
@@ -61,7 +65,7 @@ export default function App() {
       </div>
 
       <div className="rack">
-        <Sequencer />
+        {arranging ? <ArrangePanel /> : <Sequencer />}
         <VinylDeck />
         <Synth />
       </div>

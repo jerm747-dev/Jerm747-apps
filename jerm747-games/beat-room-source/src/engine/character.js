@@ -26,7 +26,8 @@ export const AIR_STEPS = [0, 1, 2]; // off, +3 dB, +6 dB around 16 kHz
 
 const DEF = { on: false, mode: '747', ...MODES[747], out: 0, punch: false };
 let st = load();
-let nodes = null;
+let nodes = null;            // the live chain (meters read it)
+const groups = new Set();    // every chain built: the live one, plus offline renders while they run
 const subs = new Set();
 export const subscribe = (fn) => (subs.add(fn), () => subs.delete(fn));
 export const get = () => st;
@@ -84,7 +85,23 @@ async function loadShaper(ac) {
 const tanhCurve = (amount) => Float32Array.from({ length: 2048 }, (_, i) => Math.tanh(amount * (2 * i / 2047 - 1)) / Math.tanh(amount));
 
 /** Build the chain once, inside the shared AudioContext. Returns { input, output }. */
-export function build(ac) {
+export function build(ac) { const g = make(ac); nodes = g; attachShaper(g); return { input: g.input, output: g.out }; }
+/** The same chain in an OfflineAudioContext, ready before rendering (Arrange export).
+ *  Call release() after rendering so it stops following the controls. */
+export async function buildOffline(ac) {
+  const g = make(ac);
+  if (await loadShaper(ac)) insertShaper(g);
+  return { input: g.input, output: g.out, release: () => groups.delete(g) };
+}
+function attachShaper(g) { loadShaper(g.ac).then((ok) => { if (ok && groups.has(g)) insertShaper(g); }); }
+function insertShaper(g) {
+  try {
+    const node = new AudioWorkletNode(g.ac, 'p747-punch', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
+    g.pMix.disconnect(); g.pMix.connect(node).connect(g.out);
+    g.shaperNode = node; applyTo(g, true);
+  } catch { /* stays the parallel stage alone */ }
+}
+function make(ac) {
   const input = ac.createGain();
   const pre = ac.createGain();
   const emph = ac.createBiquadFilter(); emph.type = 'lowshelf'; emph.frequency.value = 110;
@@ -103,22 +120,14 @@ export function build(ac) {
   trim.connect(pDry).connect(pMix); trim.connect(body).connect(sat).connect(pWet).connect(pMix);
   pMix.connect(out);
   // the glue comp has a built-in lookahead delay, so it is only in the path while Glue is on
-  nodes = { ac, input, pre, emph, shaper, deemph, warmth, air, glue, trim, pDry, pWet, pMix, out, shaperNode: null, k: -1, glued: null };
-  loadShaper(ac).then((ok) => {
-    if (!ok || !nodes) return;
-    try {
-      const node = new AudioWorkletNode(ac, 'p747-punch', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2] });
-      pMix.disconnect(); pMix.connect(node).connect(out);
-      nodes.shaperNode = node; apply(true);
-    } catch { /* stays the parallel stage alone */ }
-  });
-  apply(true);
-  return { input, output: out };
+  const g = { ac, input, pre, emph, shaper, deemph, warmth, air, glue, trim, pDry, pWet, pMix, out, shaperNode: null, k: -1, glued: null };
+  groups.add(g); applyTo(g, true);
+  return g;
 }
 
-function apply(now = false) {
-  if (!nodes) return;
-  const n = nodes, t = n.ac.currentTime, tc = now ? 0 : 0.03;
+function apply(now = false) { for (const g of groups) applyTo(g, now); }
+function applyTo(n, now = false) {
+  const t = n.ac.currentTime, tc = now ? 0 : 0.03;
   const set = (p, v) => (now ? (p.value = v) : p.setTargetAtTime(v, t, tc));
   const on = st.on;
   const drive = on ? st.drive : 0;
