@@ -1,3 +1,10 @@
+Jerm747 Arcade 2.0.7 · HUD update
+HUD menu rows (Game Music, Controls, Open games) now match the glass buttons with icons and chevrons.
+New HUD > 747 Pocket Player submenu: Pocket Player On/Off (in a game), Theme (Game default, Classic Gray, Ice Blue), Direction control (D-pad or Joystick) and Haptic workshop. Theme and direction apply to every game; the last On/Off choice carries to games without their own.
+Game Music has Soundtrack and My Music tabs; songs loaded from the device appear under My Music.
+Wave Run 747: pausing or leaving the app silences the sound; Pocket Start opens the full pause screen; Engine and Effects volume sliders replace Sound On/Off; Chase/Rider camera (camera button, V, or Select during a race); spray fades near the camera.
+Website: the corner game-tools menu moved into HUD > Display (Screen orientation, Fullscreen, Controller map). Full-screen game board stays in the HUD main list during play.
+
 Jerm747 Arcade 1.0.7
 The device-test package uses com.jerm747.arcade.test and installs alongside the 1.0.6 test. The private test-signing backup applies to this package ID. Import device-test-keystore.properties and its keystore beside settings.gradle and run gradlew assembleDeviceTest to sign the same install target.
 
