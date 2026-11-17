@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>747 Mesh Lab — Face Count Reducer</title>
+<style>
+  :root{
+    --bg:#0d0f12; --panel:#15181d; --panel2:#1c2027; --line:#2a2f38;
+    --text:#e8eaed; --dim:#8b93a1; --accent:#ffb020; --ok:#3ddc84; --warn:#ff6b5a;
+    --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Space Grotesk',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans)}
+  .app{display:grid;grid-template-columns:1fr 360px;height:100vh}
+  @media (max-width:820px){ .app{grid-template-columns:1fr;grid-template-rows:52vh auto;height:auto} }
+  .stage{position:relative;min-height:320px;background:radial-gradient(ellipse at 50% 40%,#1b2028 0%,#0d0f12 70%)}
+  .stage canvas{display:block;width:100%;height:100%}
+  .drop{position:absolute;inset:16px;border:2px dashed var(--line);border-radius:14px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:10px;text-align:center;color:var(--dim);padding:20px;cursor:pointer;transition:.15s}
+  .drop.hover{border-color:var(--accent);color:var(--text);background:rgba(255,176,32,.05)}
+  .drop b{color:var(--text);font-size:18px}
+  .drop.hidden{display:none}
+  .hud{position:absolute;left:12px;top:12px;display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:12px;background:rgba(13,15,18,.8);border:1px solid var(--line);padding:4px 8px;border-radius:6px}
+  .chip.ok{border-color:var(--ok);color:var(--ok)} .chip.warn{border-color:var(--warn);color:var(--warn)}
+  .viewbtns{position:absolute;right:12px;top:12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .tog{font:600 12px var(--sans);background:rgba(13,15,18,.85);color:var(--dim);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+  .tog.on{color:#111;background:var(--accent);border-color:var(--accent)}
+  .busy{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);font-family:var(--mono);font-size:12px;background:var(--accent);color:#111;padding:6px 12px;border-radius:999px;display:none}
+  .busy.show{display:block}
+
+  aside{background:var(--panel);border-left:1px solid var(--line);padding:18px;overflow:auto;display:flex;flex-direction:column;gap:16px}
+  @media (max-width:820px){ aside{border-left:0;border-top:1px solid var(--line)} }
+  h1{margin:0;font-size:20px;letter-spacing:.3px} h1 span{color:var(--accent)}
+  .sub{color:var(--dim);font-size:13px;margin-top:4px;line-height:1.4}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .card h2{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:1.2px;color:var(--dim)}
+  .row{display:flex;align-items:center;gap:8px}
+  .big{font-family:var(--mono);font-size:30px;font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--accent);height:28px}
+  input[type=number],select{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;font:14px var(--mono);width:100%}
+  label.ck{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--text);cursor:pointer;line-height:1.35}
+  label.ck small{color:var(--dim);display:block}
+  .presets{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  .presets button{font:600 12px var(--sans);background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px;cursor:pointer;text-align:left}
+  .presets button small{display:block;color:var(--dim);font:11px var(--mono)}
+  .presets button:hover{border-color:var(--accent)}
+  .stats{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:13px}
+  .stats span:nth-child(odd){color:var(--dim)} .stats span:nth-child(even){font-family:var(--mono);text-align:right}
+  .primary{font:700 15px var(--sans);background:var(--accent);color:#111;border:0;border-radius:10px;padding:13px;cursor:pointer}
+  .primary:disabled{opacity:.4;cursor:not-allowed}
+  .ghost{font:600 13px var(--sans);background:transparent;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;cursor:pointer}
+  .msg{font-size:12.5px;color:var(--dim);line-height:1.45}
+  .msg.err{color:var(--warn)} .msg.good{color:var(--ok)}
+  .disabled{opacity:.45;pointer-events:none}
+  .batchlist{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow:auto}
+  .bitem{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;padding:6px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line)}
+  .bname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bst{font-family:var(--mono);color:var(--dim);white-space:nowrap}
+  .bitem.run{border-color:var(--accent)} .bitem.run .bst{color:var(--accent)}
+  .bitem.good .bst{color:var(--ok)} .bitem.off .bst{color:var(--accent)} .bitem.bad .bst{color:var(--warn)}
+  details summary{cursor:pointer;color:var(--dim);font-size:13px}
+  details p{font-size:12.5px;color:var(--dim);line-height:1.5;margin:8px 0 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage" id="stage">
+    <div class="hud" id="hud"></div>
+    <div class="viewbtns">
+      <button class="tog" id="tWire">Wireframe</button>
+      <button class="tog" id="tClay">Clay</button>
+      <button class="tog" id="tOrig">Show original</button>
+      <button class="tog" id="tSpin">Spin</button>
+    </div>
+    <div class="drop" id="drop">
+      <b>Drop a Meshy model here</b>
+      <div>.glb, .fbx or a .zip with an FBX and its textures · .obj also works</div>
+      <div style="font-size:12px">If your textures are separate image files, drop them in with the model</div>
+      <div style="font-size:12px">Drop several models or zips at once to batch them at your baseline</div>
+      <div style="font-size:12px">or tap to pick a file</div>
+    </div>
+    <div class="busy" id="busy">Reducing…</div>
+  </div>
+
+  <aside>
+    <div>
+      <h1><span>747</span> Mesh Lab</h1>
+      <div class="sub">Pick a target triangle count, check it in the viewer, then export a GLB for Blender or your games. Everything runs in your browser, so it doesn't use any Meshy credits.</div>
+    </div>
+
+    <div class="card" id="cBatch" style="display:none">
+      <h2>Batch — one after another</h2>
+      <div class="row">
+        <input type="number" id="batchTarget" min="4" step="1" value="41460">
+        <button class="ghost" id="btnRerun" style="white-space:nowrap">Run again</button>
+      </div>
+      <div class="batchlist" id="batchList"></div>
+      <button class="primary" id="btnBatchDl" disabled>Download all (.zip)</button>
+      <div class="msg" id="batchMsg">Each model is reduced to the target above, using the options below.</div>
+    </div>
+
+    <div class="card disabled" id="cTarget">
+      <h2>Target faces (triangles)</h2>
+      <div class="row"><div class="big" id="bigTarget">—</div></div>
+      <input type="range" id="slider" min="0" max="1000" value="1000">
+      <div class="row">
+        <input type="number" id="numTarget" min="4" step="1" placeholder="Exact number">
+        <div style="width:120px"><select id="tolSel">
+          <option value="0.01">± 1%</option>
+          <option value="0.02" selected>± 2%</option>
+          <option value="0.05">± 5%</option>
+          <option value="0.10">± 10%</option>
+        </select></div>
+      </div>
+      <div class="presets">
+        <button data-t="800">PS1 hero<small>~800</small></button>
+        <button data-t="3000">Dreamcast<small>~3,000</small></button>
+        <button data-t="10000">Game-ready<small>~10,000</small></button>
+        <button data-t="30000">Blender sculpt base<small>~30,000</small></button>
+        <button data-t="41460" style="grid-column:1/-1;border-color:var(--accent)">My baseline<small>41,460 (default)</small></button>
+      </div>
+    </div>
+
+    <div class="card disabled" id="cOpts">
+      <h2>Options</h2>
+      <label class="ck"><input type="checkbox" id="optGuard"><span>Shape guard<small>Stops early if the shape would get damaged, so you might land above your target.</small></span></label>
+      <label class="ck"><input type="checkbox" id="optBorder"><span>Lock open edges<small>Keeps holes and open edges (like a neck opening) from shrinking.</small></span></label>
+      <label class="ck"><input type="checkbox" id="optNormals" checked><span>Respect shading<small>Uses normals as a guide so smooth areas stay smooth.</small></span></label>
+    </div>
+
+    <div class="card disabled" id="cStats">
+      <h2>Result</h2>
+      <div class="stats" id="stats"></div>
+      <div class="msg" id="statusMsg"></div>
+    </div>
+
+    <div class="card disabled" id="cExport">
+      <h2>Export</h2>
+      <button class="primary" id="btnExport">Download GLB</button>
+      <div class="msg" id="exportMsg">Saves a .zip with the reduced .glb inside, with textures included. In Blender, unzip it, then use File → Import → glTF 2.0.</div>
+      <button class="ghost" id="btnNew">Load another model</button>
+    </div>
+
+    <details>
+      <summary>How does this compare to Blender?</summary>
+      <p>This works like Blender's <b>Decimate</b> modifier (Collapse mode): it removes triangles but keeps your UVs and textures. Blender's <b>Remesh</b> works differently: it rebuilds the surface as new geometry and throws away UVs.</p>
+      <p>Counts here are triangles. To compare in Blender, turn on Statistics in the viewport overlay and look at "Triangles". Meshy's "polycount" for quad models is roughly half the triangle count.</p>
+    </details>
+    <input type="file" id="file" accept=".zip,.glb,.gltf,.fbx,.obj,.bin,.png,.jpg,.jpeg,.webp" multiple hidden>
+  </aside>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
