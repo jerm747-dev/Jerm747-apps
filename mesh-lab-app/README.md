@@ -62,3 +62,20 @@ What it does: welds seams, vertex-clusters huge meshes to about 40x the target, 
 edge collapse to the target, keeping UVs. Normals are smoothed except across 60° creases. The
 material is clean PBR: emissive off, base colour, normal map, and Meshy's metallic/roughness
 packed into one texture (G = roughness, B = metal).
+
+### Settings on the page, and handing big files to the CLI
+
+The page's **Settings** card holds your **baseline**, the triangle count every batch is reduced to
+and where single models start; the "My baseline" preset follows it. It also holds the **size
+limit** above which files go to the CLI instead of the browser (default 150 MB). Both are saved in
+your browser.
+
+Files over the limit (a zip, FBX or GLB) are not opened in the browser:
+
+- **With `npm run dev` (or `npm run preview`)**, the page sends them to `cli/meshlab.mjs` on your
+  computer (through `cli/vite-plugin.mjs`), reduces them to your baseline with `--yup`, and shows
+  the result in the viewer. "Download GLB" then saves the CLI's file unchanged, unless you move the
+  slider lower first. Big files in a batch are handled the same way.
+- **Anywhere else** (the single-file `dist/index.html`, or the page inside Claude), the page shows
+  the exact command to run, plus a "Try it in the browser anyway" button.
+

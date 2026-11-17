@@ -52,7 +52,23 @@ let baseName = 'model';
 let viewOrig = false, wire = false, clay = false;
 const clayMat = new THREE.MeshStandardMaterial({ color:0xb8bcc4, roughness:.75, metalness:0, flatShading:true });
 
-const DEFAULT_TARGET = 41460; // Jeremy's baseline (wheel sample)
+const DEFAULT_TARGET = 41460; // Jeremy's baseline (wheel sample); change it on the page under Settings
+const EXPORT_TEX_SIZE = 1024;  // longest side of exported textures (Meshy ships 2048-4096)
+
+// ---------- settings (saved in this browser) ----------
+const settings = { baseline: DEFAULT_TARGET, cliMB: 150 };
+try { Object.assign(settings, JSON.parse(localStorage.getItem('meshlab.settings') || '{}')); } catch(e){}
+const saveSettings = () => { try { localStorage.setItem('meshlab.settings', JSON.stringify(settings)); } catch(e){} };
+const baseline = () => Math.max(4, Math.round(+settings.baseline) || DEFAULT_TARGET);
+const cliLimitMB = () => +settings.cliMB > 0 ? +settings.cliMB : 150;
+function showSettings(){
+  $('setBaseline').value = baseline(); $('setCliMB').value = cliLimitMB();
+  const pb = $('presetBaseline'); pb.dataset.t = baseline(); pb.querySelector('small').textContent = baseline().toLocaleString();
+  $('batchTargetNote').textContent = `Target: your baseline, ${baseline().toLocaleString()} triangles`;
+}
+$('setBaseline').onchange = () => { const v = Math.round(+$('setBaseline').value); if (v >= 4) { settings.baseline = v; saveSettings(); } showSettings(); };
+$('setCliMB').onchange = () => { const v = +$('setCliMB').value; if (v > 0) { settings.cliMB = v; saveSettings(); } showSettings(); };
+showSettings();
 let simplifierReady = false;
 MeshoptSimplifier.ready.then(() => {
   simplifierReady = true;
@@ -92,10 +108,13 @@ function pickModels(files){
   });
   return Object.values(best);
 }
-// each zip keeps its own textures; loose models share loose textures
-async function buildGroups(files){
+// each zip keeps its own textures; loose models share loose textures.
+// Zips / FBX / GLB over the CLI size limit are marked big and left unopened: the CLI reads them.
+const tooBig = f => f.size > cliLimitMB() * 1048576;
+async function buildGroups(files, routeBig = true){
   const groups = [], loose = [];
   for (const f of files){
+    if (extOf(f.name) === 'zip' && routeBig && tooBig(f)) { groups.push({ file:f, side:[], big:true }); continue; }
     if (extOf(f.name) === 'zip'){
       const inner = unzipToFiles(new Uint8Array(await f.arrayBuffer()));
       const side = inner.filter(x => !isModel(x));
@@ -103,7 +122,7 @@ async function buildGroups(files){
     } else loose.push(f);
   }
   const side = loose.filter(x => !isModel(x));
-  pickModels(loose).forEach(m => groups.push({ file:m, side }));
+  pickModels(loose).forEach(m => groups.push({ file:m, side, big: routeBig && tooBig(m) && ['fbx','glb'].includes(extOf(m.name)) }));
   return groups;
 }
 
@@ -151,6 +170,8 @@ async function loadFiles(files){
   if (!groups.length) { hideBusy(); return showLoadError('No model file found. Drop a .glb, .fbx, .obj, or a .zip that contains one (plus any texture images).'); }
   if (groups.length > 1) { hideBusy(); return startBatch(groups); }
   $('cBatch').style.display = 'none';
+  hideCliHelp();
+  if (groups[0].big) { hideBusy(); return loadBig(groups[0]); }
   await loadGroup(groups[0], true);
   hideBusy();
 }
@@ -163,6 +184,7 @@ async function loadGroup(group, auto){
   try {
     const obj = await parseModel(group.file, manager);
     await settle();
+    await fixMaterials(obj, group.side);
     baseName = nameFor(group.file);
     await setModel(obj, auto);
     activeCleanup = cleanup;
@@ -176,6 +198,7 @@ async function loadGroup(group, auto){
 }
 
 async function setModel(obj, auto = true){
+  cliResult = null;
   if (root) { scene.remove(root); entries.forEach(e => { e.orig.dispose(); e.simplified && e.simplified.dispose(); }); }
   root = obj; entries = []; totalFaces = 0;
   root.traverse(o => {
@@ -196,7 +219,7 @@ async function setModel(obj, auto = true){
   setMsg($('exportMsg'), 'Saves a .zip with the reduced .glb inside, with textures included. In Blender, unzip it, then use File → Import → glTF 2.0.');
   applyView();
   if (!simplifierReady) await MeshoptSimplifier.ready;
-  if (auto) setTarget(Math.min(totalFaces, DEFAULT_TARGET), true);
+  if (auto) setTarget(Math.min(totalFaces, baseline()), true);
 }
 
 function frame(){
@@ -208,6 +231,70 @@ function frame(){
   camera.near = r/200; camera.far = r*200; camera.updateProjectionMatrix();
   grid.position.y = box.min.y; grid.scale.setScalar(r/4);
 }
+
+// ---------- CLI hand-off for files too big for the browser ----------
+// When the page is served by `npm run dev` / `npm run preview`, cli/vite-plugin.mjs runs cli/meshlab.mjs on this
+// computer. Anywhere else (single-file build, inside Claude) the page shows the command to run instead.
+let cliOK = null, cliResult = null, pendingBig = null;
+async function cliAvailable(){
+  if (cliOK === null) {
+    try { const r = await fetch('/api/meshlab/ping', { cache:'no-store' }); cliOK = r.ok && (await r.json()).ok === true; } catch(e){ cliOK = false; }
+    setMsg($('cliStatus'), cliOK ? 'CLI helper connected: big files are reduced by cli/meshlab.mjs on this computer.'
+      : 'CLI helper not running, so big files show the command to run instead. Open this page with npm run dev to hand them off automatically.', cliOK ? 'good' : '');
+  }
+  return cliOK;
+}
+cliAvailable();
+const safeName = n => n.replace(/[^\w .()+-]/g, '_');
+const cliCommand = (g, t) => `node cli/meshlab.mjs "${g.file.name}" --target ${t} --yup`;
+async function runCLI(g, t){
+  const job = Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, '0')).join('');
+  for (const f of [g.file, ...g.side.filter(x => /\.(png|jpe?g)$/i.test(x.name))]){
+    const r = await fetch(`/api/meshlab/file?job=${job}&name=${encodeURIComponent(safeName(f.name))}`, { method:'PUT', body:f });
+    if (!r.ok) throw new Error(`upload of ${f.name} failed: ${await r.text()}`);
+  }
+  const r = await fetch(`/api/meshlab/run?job=${job}&input=${encodeURIComponent(safeName(g.file.name))}&target=${t}&tex=${EXPORT_TEX_SIZE}&yup=1`, { method:'POST' });
+  if (!r.ok) throw new Error((await r.text()).replace(/^error:\s*/, ''));
+  return { data: new Uint8Array(await r.arrayBuffer()), faces: +r.headers.get('X-Meshlab-Tris') || 0, orig: +r.headers.get('X-Meshlab-From') || 0 };
+}
+async function parseGLBBytes(u8){
+  const loader = new GLTFLoader(); loader.setMeshoptDecoder(MeshoptDecoder);
+  const gltf = await new Promise((res, rej) => loader.parse(u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength), '', res, rej));
+  return gltf.scene;
+}
+function hideCliHelp(){ $('cliCmd').style.display = 'none'; $('btnTryBrowser').style.display = 'none'; pendingBig = null; }
+// one big file: reduce it to the baseline with the CLI, then show the result in the viewer
+async function loadBig(g){
+  const mb = Math.round(g.file.size / 1048576), t = baseline();
+  if (!(await cliAvailable())) {
+    showLoadError(`${g.file.name} is ${mb} MB, over your ${cliLimitMB()} MB limit for the browser. Run this in the mesh-lab-app folder (with the file there), then drop the .glb it makes back in here:`);
+    $('cliCmd').textContent = cliCommand(g, t); $('cliCmd').style.display = '';
+    $('btnTryBrowser').style.display = ''; pendingBig = g;
+    return;
+  }
+  showBusy(`${mb} MB file: reducing with the CLI…`);
+  try {
+    const r = await runCLI(g, t);
+    const obj = await parseGLBBytes(r.data);
+    if (activeCleanup) { activeCleanup(); activeCleanup = null; }
+    baseName = nameFor(g.file);
+    await setModel(obj, false);
+    setTarget(totalFaces, false); lastMs = 0; updateStats();
+    cliResult = { data: r.data, faces: totalFaces };
+    setMsg($('statusMsg'), `The CLI reduced this ${mb} MB file` + (r.orig ? ` from ${r.orig.toLocaleString()}` : '') + ` to ${totalFaces.toLocaleString()} triangles. ` +
+      'Download GLB saves the CLI\'s file as is; move the slider to go lower in the browser.', 'good');
+  } catch (err) { console.error(err); showLoadError(`The CLI couldn't reduce ${g.file.name}: ${err.message || err}`); }
+  hideBusy();
+}
+$('btnTryBrowser').onclick = async () => {
+  const g = pendingBig; hideCliHelp(); if (!g) return;
+  showBusy('Loading in the browser…');
+  try {
+    const gs = extOf(g.file.name) === 'zip' ? await buildGroups([g.file], false) : [{ ...g, big:false }];
+    if (!gs.length) showLoadError('No model file found in that zip.'); else await loadGroup(gs[0], true);
+  } catch (err) { showLoadError(String(err.message || err)); }
+  hideBusy();
+};
 
 // ---------- target slider (log scale) ----------
 const slider = $('slider'), numT = $('numTarget');
@@ -361,6 +448,47 @@ function updateStats(){
   renderHud();
 }
 
+// ---------- material cleanup ----------
+// The FBX reader turns Meshy's materials into Phong materials with a white emissive colour and never attaches
+// Meshy's _metallic / _roughness images, so exports came out glowing and matte. Convert to a standard PBR
+// material, zero the glow unless there is a real emissive map, and attach metal/roughness from the side files.
+async function loadSideTexture(side, suffix, flipY){
+  const f = side.find(x => x.name.toLowerCase().replace(/\.(png|jpe?g|webp)$/, '').endsWith(suffix));
+  if (!f) return null;
+  const url = URL.createObjectURL(f);
+  try {
+    const tex = await new THREE.TextureLoader().loadAsync(url);
+    tex.flipY = flipY; tex.colorSpace = THREE.NoColorSpace; tex.needsUpdate = true;
+    return tex;
+  } catch(e){ return null; } finally { URL.revokeObjectURL(url); }
+}
+async function fixMaterials(obj, side){
+  const mats = new Map();
+  obj.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m && mats.set(m, null)); });
+  const anyMap = [...mats.keys()].find(m => m.map);
+  const flipY = anyMap ? anyMap.map.flipY : false;
+  const metal = await loadSideTexture(side, '_metallic', flipY);
+  const rough = await loadSideTexture(side, '_roughness', flipY);
+  for (const m of mats.keys()){
+    let n = m;
+    if (!m.isMeshStandardMaterial){
+      n = new THREE.MeshStandardMaterial({ name:m.name, color:m.color ? m.color.clone() : 0xffffff, map:m.map || null,
+        normalMap:m.normalMap || null, transparent:m.transparent, opacity:m.opacity, alphaTest:m.alphaTest || 0, side:m.side,
+        metalness:0, roughness:1 });
+      if (m.normalScale) n.normalScale.copy(m.normalScale);
+    }
+    if (!n.emissiveMap) { n.emissive.setRGB(0,0,0); n.emissiveIntensity = 1; }
+    if (metal && !n.metalnessMap) { n.metalnessMap = metal; n.metalness = 1; }
+    if (rough && !n.roughnessMap) { n.roughnessMap = rough; n.roughness = 1; }
+    n.needsUpdate = true;
+    mats.set(m, n);
+  }
+  obj.traverse(o => {
+    if (!o.isMesh) return;
+    o.material = Array.isArray(o.material) ? o.material.map(m => mats.get(m) || m) : (mats.get(o.material) || o.material);
+  });
+}
+
 // ---------- export ----------
 // builds a GLB of what's in the viewer (reduced geometry, real materials)
 async function exportCurrentGLB(){
@@ -368,7 +496,11 @@ async function exportCurrentGLB(){
   viewOrig = false; clay = false; wire = false; applyView();
   const savedRot = root.rotation.y; root.rotation.y = 0;
   try {
-    const glb = await new GLTFExporter().parseAsync(root, { binary:true, onlyVisible:true });
+    // colour + normal maps go out as JPEG (no alpha needed); everything is capped at EXPORT_TEX_SIZE
+    root.traverse(o => { if (!o.isMesh) return; (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => {
+      ['map','normalMap'].forEach(k => { if (m && m[k] && !m.transparent) m[k].userData.mimeType = 'image/jpeg'; });
+    }); });
+    const glb = await new GLTFExporter().parseAsync(root, { binary:true, onlyVisible:true, maxTextureSize:EXPORT_TEX_SIZE });
     return { data: new Uint8Array(glb), faces: Math.round(currentCounts().f) };
   } finally {
     root.rotation.y = savedRot;
@@ -406,7 +538,8 @@ $('btnExport').onclick = async () => {
   if (!entries.length) return;
   const btn = $('btnExport'); btn.disabled = true; showBusy('Building GLB…');
   try {
-    const { data, faces } = await exportCurrentGLB();
+    // a CLI result that wasn't reduced further here is saved byte for byte
+    const { data, faces } = cliResult && target >= totalFaces ? cliResult : await exportCurrentGLB();
     const name = `${baseName}_${faces}tris`;
     await saveFile(name + '.zip', makeZip([{ name: name + '.glb', data }]), $('exportMsg'));
   } catch (err) {
@@ -423,19 +556,20 @@ function renderBatch(current = -1){
     let st = 'waiting', cls = '';
     if (i === current) { st = 'working…'; cls = 'run'; }
     else if (r && r.error) { st = 'failed'; cls = 'bad'; }
-    else if (r) { st = `${r.orig.toLocaleString()} → ${r.faces.toLocaleString()}`; cls = r.onTarget ? 'good' : 'off'; }
-    return `<div class="bitem ${cls}"><span class="bname">${g.file.name.replace(/[<&]/g,'')}</span><span class="bst">${st}</span></div>`;
+    else if (r) { st = (r.orig ? `${r.orig.toLocaleString()} → ` : '') + r.faces.toLocaleString() + (r.cli ? ' · CLI' : ''); cls = r.onTarget ? 'good' : 'off'; }
+    return `<div class="bitem ${cls}"><span class="bname">${g.file.name.replace(/[<&]/g,'')}</span><span class="bst">${st}</span></div>` +
+      (r && r.cmd ? `<div class="cmd">${r.cmd.replace(/[<&]/g,'')}</div>` : '');
   }).join('');
 }
 async function startBatch(groups){
   batchGroups = groups;
   $('cBatch').style.display = '';
-  $('batchTarget').value = $('batchTarget').value || DEFAULT_TARGET;
+  showSettings();
   $('cBatch').scrollIntoView({ behavior:'smooth', block:'start' });
   await runBatch();
 }
 async function runBatch(){
-  const bt = Math.max(4, Math.round(+$('batchTarget').value || DEFAULT_TARGET));
+  const bt = baseline();
   batchResults = [];
   $('btnBatchDl').disabled = true; $('btnRerun').disabled = true;
   if (!simplifierReady) await MeshoptSimplifier.ready;
@@ -445,6 +579,15 @@ async function runBatch(){
     await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
     const g = batchGroups[i];
     g.error = null;
+    if (g.big) {   // too big for the browser: the CLI does it, or we show the command
+      if (!(await cliAvailable())) { batchResults[i] = { error: `over ${cliLimitMB()} MB`, cmd: cliCommand(g, bt) }; continue; }
+      try {
+        const r = await runCLI(g, bt);
+        batchResults[i] = { name: `${nameFor(g.file)}_${r.faces}tris.glb`, data: r.data, faces: r.faces, orig: r.orig, cli: true,
+                            onTarget: Math.abs(r.faces - bt) <= Math.max(2, bt * +$('tolSel').value) || r.faces <= bt };
+      } catch (err) { console.error(err); batchResults[i] = { error: err.message || String(err) }; }
+      continue;
+    }
     const ok = await loadGroup(g, false);
     if (!ok) { batchResults[i] = { error: g.error }; continue; }
     try {
@@ -459,7 +602,9 @@ async function runBatch(){
   renderBatch(); hideBusy();
   const good = batchResults.filter(r => r && !r.error);
   const bad = batchResults.length - good.length;
+  const needCli = batchResults.some(r => r && r.cmd);
   setMsg($('batchMsg'), `${good.length} done at ${bt.toLocaleString()} target` + (bad ? `, ${bad} failed (tap Load another model to try those one at a time).` : '.') +
+    (needCli ? ' Files over your CLI limit need the command shown under them (or open this page with npm run dev).' : '') +
     ' Models already under the target are kept at their full count.', bad ? 'err' : 'good');
   $('btnBatchDl').disabled = !good.length; $('btnRerun').disabled = false;
 }
@@ -469,7 +614,7 @@ $('btnBatchDl').onclick = async () => {
   if (!good.length) return;
   const used = {};
   const files = good.map(r => { let n = r.name; while (used[n]) n = n.replace(/\.glb$/, '_2.glb'); used[n] = 1; return { name:n, data:r.data }; });
-  const bt = Math.round(+$('batchTarget').value || DEFAULT_TARGET);
+  const bt = baseline();
   await saveFile(`meshlab_batch_${files.length}models_${bt}tris.zip`, makeZip(files), $('batchMsg'));
 };
 

@@ -1207,4 +1207,6 @@ function main() {
   const rss = process.resourceUsage().maxRSS / 1024;
   log(`wrote ${file} (${(fs.statSync(file).size / 1e6).toFixed(1)} MB): ${startTris.toLocaleString()} → ${(geo.idx.length / 3).toLocaleString()} triangles, peak memory ${rss.toFixed(0)} MB`);
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) main();
+if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) {
+  try { main(); } catch (e) { console.error(`error: ${e.message}`); if (process.env.MESHLAB_STACK) console.error(e.stack); process.exit(1); }
+}
