@@ -86,7 +86,7 @@ switch ($action) {
         $s['comments'][] = $c;
         save_site($s);
         if ($access !== 'admin') {
-            send_mail(ADMIN_EMAIL, "Comment on {$s['title']} from $author",
+            notify_admin("Comment on {$s['title']} from $author",
                 ($c['page'] ? "About: {$c['page']}\n\n" : '') . "$body\n\nOpen it: " . site_link($s, true) . "\n");
         }
         respond(['ok' => true, 'site' => site_view($s, $access)]);
@@ -109,7 +109,7 @@ switch ($action) {
         $s['doc'] = ['body' => $body, 'version' => $current + 1, 'edited_by' => $author, 'edited_at' => now()];
         save_site($s);
         if ($access !== 'admin') {
-            send_mail(ADMIN_EMAIL, "$author edited the shared doc for {$s['title']}", "Open it: " . site_link($s, true) . "\n");
+            notify_admin("$author edited the shared doc for {$s['title']}", "Open it: " . site_link($s, true) . "\n");
         }
         respond(['ok' => true, 'site' => site_view($s, $access)]);
 
@@ -125,7 +125,7 @@ switch ($action) {
         }
         save_site($s);
         if ($access !== 'admin') {
-            send_mail(ADMIN_EMAIL, "$author shared files on {$s['title']}",
+            notify_admin("$author shared files on {$s['title']}",
                 implode("\n", array_map(fn($f) => $f['name'], $added)) . "\n\nOpen it: " . site_link($s, true) . "\n");
         }
         respond(['ok' => true, 'site' => site_view($s, $access)]);

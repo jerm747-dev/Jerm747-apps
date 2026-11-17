@@ -14,7 +14,7 @@
 // POST action=create   name, email, title  -> start a project yourself (phone/in-person leads)
 // GET  ?action=stats&days=30               -> visitor analytics
 // GET  ?action=settings                    -> report settings + cron command
-// POST action=settings report_hours(0|12|24)
+// POST action=settings report_hours(0|12|24), report_email, admin_box(0|1)
 // POST action=report_test                  -> send a traffic report now
 require __DIR__ . '/lib.php';
 
@@ -116,13 +116,26 @@ switch ($action) {
     case 'settings':
         $s = settings();
         if ($method === 'POST') {
-            $h = (int)($in['report_hours'] ?? 24);
-            if (!in_array($h, [0, 12, 24], true)) fail('Pick 12 hours, 24 hours or off.');
-            $s['report_hours'] = $h;
+            if (isset($in['report_hours'])) {
+                $h = (int)$in['report_hours'];
+                if (!in_array($h, [0, 12, 24], true)) fail('Pick 12 hours, 24 hours or off.');
+                $s['report_hours'] = $h;
+            }
+            if (isset($in['report_email'])) {
+                $e = trim((string)$in['report_email']);
+                if ($e !== '' && !filter_var($e, FILTER_VALIDATE_EMAIL)) fail('That email address doesn\'t look right.');
+                $s['report_email'] = $e;
+            }
+            if (isset($in['admin_box'])) $s['admin_box'] = in_array((string)$in['admin_box'], ['1', 'true'], true);
+            if (empty($s['admin_box']) && trim((string)$s['report_email']) === '') $s['admin_box'] = true; // never leave it with nowhere to send
             save_settings($s);
         }
         respond(['ok' => true, 'settings' => [
             'report_hours' => $s['report_hours'],
+            'report_email' => (string)$s['report_email'],
+            'admin_box' => (bool)$s['admin_box'],
+            'admin_email' => ADMIN_EMAIL,
+            'recipients' => admin_recipients($s),
             'last_report' => $s['last_report'] ? gmdate('c', (int)$s['last_report']) : null,
             'cron_command' => 'php ' . __DIR__ . '/report.php',
             'cron_url' => SITE_URL . '/api/report.php?token=' . $s['report_token'],
@@ -130,7 +143,7 @@ switch ($action) {
 
     case 'report_test':
         $ok = maybe_send_report(true);
-        respond(['ok' => true, 'sent' => $ok, 'preview' => report_text(max(12, (int)settings()['report_hours']))]);
+        respond(['ok' => true, 'sent' => $ok, 'to' => admin_recipients(), 'preview' => report_text(max(12, (int)settings()['report_hours']))]);
 
     case 'create':
         $name = clean($in['name'] ?? '', 120);

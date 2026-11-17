@@ -93,7 +93,7 @@ function require_admin(): void {
 function settings(): array {
     $file = data_dir() . '/settings.json';
     $s = is_file($file) ? (json_decode((string)file_get_contents($file), true) ?: []) : [];
-    $s += ['report_hours' => 24, 'last_report' => 0, 'report_token' => ''];
+    $s += ['report_hours' => 24, 'last_report' => 0, 'report_token' => '', 'report_email' => '', 'admin_box' => true];
     if ($s['report_token'] === '') {
         $s['report_token'] = bin2hex(random_bytes(16));
         if (!$s['last_report']) $s['last_report'] = time(); // first report one interval after launch
@@ -104,6 +104,24 @@ function settings(): array {
 
 function save_settings(array $s): void {
     file_put_contents(data_dir() . '/settings.json', json_encode($s, JSON_PRETTY_PRINT), LOCK_EX);
+}
+
+// Who gets admin emails (reports and alerts): the address typed in on the admin
+// Traffic tab, plus the domain mailbox unless that's been switched off there.
+function admin_recipients(?array $s = null): array {
+    $s = $s ?? settings();
+    $to = [];
+    if (!empty($s['admin_box'])) $to[] = ADMIN_EMAIL;
+    $extra = trim((string)($s['report_email'] ?? ''));
+    if ($extra !== '' && filter_var($extra, FILTER_VALIDATE_EMAIL) && strcasecmp($extra, ADMIN_EMAIL) !== 0) $to[] = $extra;
+    return $to ?: [ADMIN_EMAIL];
+}
+
+// Sends one copy to each admin recipient. True if at least one went out.
+function notify_admin(string $subject, string $text, ?string $replyTo = null): bool {
+    $any = false;
+    foreach (admin_recipients() as $to) $any = send_mail($to, $subject, $text, $replyTo) || $any;
+    return $any;
 }
 
 function day_salt(string $day): string {
@@ -262,7 +280,7 @@ function maybe_send_report(bool $force = false): bool {
     if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) return false;
     $s = settings();
     if (!$force && time() - (int)$s['last_report'] < $hours * 3600 - 300) { flock($lock, LOCK_UN); return false; }
-    $sent = send_mail(ADMIN_EMAIL, 'jerm747.games traffic report, ' . (new DateTime('now', new DateTimeZone('America/New_York')))->format('M j, g:i a'), report_text($hours));
+    $sent = notify_admin('jerm747.games traffic report, ' . (new DateTime('now', new DateTimeZone('America/New_York')))->format('M j, g:i a'), report_text($hours));
     $s['last_report'] = time();
     save_settings($s);
     flock($lock, LOCK_UN);
