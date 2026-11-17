@@ -40,7 +40,7 @@ For exports too big for the browser (Meshy FBX zips of 250–380 MB, millions of
 Plain Node 18+, no `npm install` needed.
 
 ```bash
-node cli/meshlab.mjs <input.zip|.fbx|.glb> --target 4000 [--tex 1024] [--out x.glb] [--yup]
+node cli/meshlab.mjs <input.zip|.fbx|.glb> --target 4000 [--tex 1024] [--out x.glb] [--yup] [--card]
 ```
 
 - `input`: a Meshy zip (binary FBX + `*_texture/_normal/_metallic/_roughness.png`), a bare
@@ -49,6 +49,10 @@ node cli/meshlab.mjs <input.zip|.fbx|.glb> --target 4000 [--tex 1024] [--out x.g
 - `--tex`: largest texture side in pixels (default 1024).
 - `--out`: output file (default: next to the input, named `<name>_<tris>tris.glb`).
 - `--yup`: rotate Meshy's Z-up geometry to Y-up. Without it the raw Z-up geometry is kept.
+- `--card`: also render the full-detail model from 4 side angles (0/45/90/135°) into trimmed,
+  transparent PNGs (`<name>_card000.png`…, `--tex` pixels across) for crossed-card billboards.
+  This is the main path for plants. `<name>_cards.json` gives each card's world size and where it
+  goes: a quad from `origin` (bottom-left), `width` along `right` and `height` along `up`.
 
 What it does: welds seams, vertex-clusters huge meshes to about 40x the target, then quadric
 edge collapse to the target, keeping UVs. Normals are smoothed except across 60° creases. The

@@ -1,28 +1,30 @@
 #!/usr/bin/env node
 // 747 Mesh Lab CLI: makes Meshy AI exports game-ready without a browser. No dependencies (Node 18+).
 //
-//   node cli/meshlab.mjs <input.zip|input.fbx|input.glb> [--target 41460] [--tex 1024] [--out file.glb] [--yup]
+//   node cli/meshlab.mjs <input.zip|input.fbx|input.glb> [--target 41460] [--tex 1024] [--out file.glb] [--yup] [--card]
 //
 // Reads a Meshy zip (binary FBX + *_texture/_normal/_metallic/_roughness PNGs), a bare FBX (PNGs beside it)
 // or a GLB. Welds seams, vertex-clusters huge meshes down to ~40x the target, then quadric edge collapse to
 // --target triangles, keeping per-corner UVs. Writes a GLB with crease-aware normals (60 degrees) and a clean
 // PBR material: emissive off, metal/roughness packed (G = roughness, B = metal), textures resized to --tex.
 // Geometry stays Meshy's raw Z-up; --yup rotates it to Y-up.
+// --card also renders the full-detail model into trimmed, transparent side views for crossed-card billboards.
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 
-const USAGE = 'usage: node cli/meshlab.mjs <input.zip|.fbx|.glb> [--target 41460] [--tex 1024] [--out out.glb] [--yup]';
+const USAGE = 'usage: node cli/meshlab.mjs <input.zip|.fbx|.glb> [--target 41460] [--tex 1024] [--out out.glb] [--yup] [--card]';
 const t0 = Date.now();
 const log = (...m) => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s]`, ...m);
 
 export function parseArgs(argv) {
-  const o = { input: null, target: 41460, tex: 1024, out: null, yup: false, help: false };
+  const o = { input: null, target: 41460, tex: 1024, out: null, yup: false, card: false, help: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '-h' || a === '--help') o.help = true;
     else if (a === '--yup') o.yup = true;
+    else if (a === '--card') o.card = true;
     else if (a === '--target' || a === '--tex' || a === '--out') {
       const v = argv[++i]; if (v === undefined) throw new Error(`${a} needs a value`);
       if (a === '--out') o.out = v;
@@ -696,6 +698,8 @@ export function writeGLB(out, geo, tex, name) {
 // Meshy: *_texture.png (base colour), *_normal.png, *_metallic.png, *_roughness.png (grey). The browser
 // FBXLoader path dropped metal/roughness and left a white emissive; here they are packed into one
 // glTF metallicRoughness texture (G = roughness, B = metal) and emissive is always off.
+const pickFile = (files, re) => { const k = Object.keys(files).find(f => re.test(f.toLowerCase())); return k ? files[k]() : null; };
+const findBase = files => pickFile(files, /_texture\.png$/) || pickFile(files, /(basecolor|base_color|albedo|diffuse)\.png$/) || pickFile(files, /^(?!.*(normal|metal|rough)).*\.png$/);
 function prepareTextures(files, glb, size) {
   const pick = re => { const k = Object.keys(files).find(f => re.test(f.toLowerCase())); return k ? files[k]() : null; };
   const pngOrPass = (im, alphaOk) => {
@@ -711,7 +715,7 @@ function prepareTextures(files, glb, size) {
     tex.normal = nm?.out; tex.mr = mr?.out; tex.metallic = glb.metallic; tex.roughness = glb.roughness;
     return tex;
   }
-  const baseBuf = pick(/_texture\.png$/) || pick(/(basecolor|base_color|albedo|diffuse)\.png$/) || pick(/^(?!.*(normal|metal|rough)).*\.png$/);
+  const baseBuf = findBase(files);
   const b = pngOrPass(baseBuf && { bytes: baseBuf }, true); if (b) { tex.base = b.out; tex.alpha = b.alpha; }
   const nb = pick(/_normal\.png$/), nm = pngOrPass(nb && { bytes: nb }, false); if (nm) tex.normal = nm.out;
   const mb = pick(/_metallic\.png$/), rb = pick(/_roughness\.png$/);
@@ -724,6 +728,96 @@ function prepareTextures(files, glb, size) {
     tex.metallic = 1; tex.roughness = r ? 1 : 0.6;
   }
   return tex;
+}
+
+// ---------------------------------------------------------------- --card: billboard cutouts of the full-detail model
+// Orthographic side views from level, turning about the up axis (Meshy Z), transparent background, 2x supersampled.
+// All angles share one scale; each image is trimmed to its silhouette and its colour is bled into the transparent
+// border so mipmapped cutouts don't get dark fringes. A JSON file records each card's size and placement.
+const CARD_YAWS = [0, 45, 90, 135];
+export function renderView(mesh, tex, yawDeg, frame, size, ss = 2) {
+  const { P, tris, UV } = mesh, W = size * ss, nt = tris.length / 3, nv = P.length / 3;
+  const yaw = yawDeg * Math.PI / 180, cy = Math.cos(yaw), sy = Math.sin(yaw), { cx, cyy, cz, span } = frame, k = W / span;
+  const SX = new Float32Array(nv), SY = new Float32Array(nv), SZ = new Float32Array(nv);
+  for (let i = 0; i < nv; i++) {
+    const x = P[i * 3] - cx, y = P[i * 3 + 1] - cyy;
+    SX[i] = (x * cy + y * sy) * k + W / 2; SY[i] = W / 2 - (P[i * 3 + 2] - cz) * k; SZ[i] = -x * sy + y * cy;   // camera looks along +SZ
+  }
+  const zb = new Float32Array(W * W).fill(Infinity), col = new Uint8Array(W * W * 4), px = [0, 0, 0, 0];
+  const sample = (u, v) => {   // bilinear, wrapping; v up (FBX convention)
+    if (!tex) { px[0] = px[1] = px[2] = 190; px[3] = 255; return; }
+    const x = (u - Math.floor(u)) * tex.w - 0.5, y = (1 - (v - Math.floor(v))) * tex.h - 0.5, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+    const X0 = (x0 + tex.w) % tex.w, X1 = (x0 + 1) % tex.w, Y0 = (y0 + tex.h) % tex.h, Y1 = (y0 + 1) % tex.h, d = tex.data;
+    for (let c = 0; c < 4; c++) px[c] = (d[(Y0 * tex.w + X0) * 4 + c] * (1 - fx) + d[(Y0 * tex.w + X1) * 4 + c] * fx) * (1 - fy) + (d[(Y1 * tex.w + X0) * 4 + c] * (1 - fx) + d[(Y1 * tex.w + X1) * 4 + c] * fx) * fy;
+  };
+  for (let t = 0; t < nt; t++) {
+    const a = tris[t * 3], b = tris[t * 3 + 1], c = tris[t * 3 + 2];
+    const x0 = SX[a], y0 = SY[a], x1 = SX[b], y1 = SY[b], x2 = SX[c], y2 = SY[c];
+    const area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0); if (!(Math.abs(area) > 1e-12)) continue;
+    const minX = Math.max(0, Math.ceil(Math.min(x0, x1, x2) - 0.5)), maxX = Math.min(W - 1, Math.floor(Math.max(x0, x1, x2) - 0.5));
+    const minY = Math.max(0, Math.ceil(Math.min(y0, y1, y2) - 0.5)), maxY = Math.min(W - 1, Math.floor(Math.max(y0, y1, y2) - 0.5));
+    if (minX > maxX || minY > maxY) continue;
+    // headlight shading from the world-space face normal: no fixed light direction baked into the card
+    const ax = P[b * 3] - P[a * 3], ay = P[b * 3 + 1] - P[a * 3 + 1], az = P[b * 3 + 2] - P[a * 3 + 2], bx = P[c * 3] - P[a * 3], by = P[c * 3 + 1] - P[a * 3 + 1], bz = P[c * 3 + 2] - P[a * 3 + 2];
+    const nx = ay * bz - az * by, ny = az * bx - ax * bz, nz = ax * by - ay * bx, nl = Math.hypot(nx, ny, nz) || 1;
+    const shade = 0.6 + 0.4 * Math.abs((-nx * sy + ny * cy) / nl);
+    const z0 = SZ[a], z1 = SZ[b], z2 = SZ[c], o = t * 6;
+    for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
+      const qx = x + 0.5, qy = y + 0.5;
+      const w0 = ((x1 - qx) * (y2 - qy) - (x2 - qx) * (y1 - qy)) / area, w1 = ((x2 - qx) * (y0 - qy) - (x0 - qx) * (y2 - qy)) / area, w2 = 1 - w0 - w1;
+      if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+      const z = w0 * z0 + w1 * z1 + w2 * z2, pi = y * W + x; if (z >= zb[pi]) continue;
+      sample(w0 * UV[o] + w1 * UV[o + 2] + w2 * UV[o + 4], w0 * UV[o + 1] + w1 * UV[o + 3] + w2 * UV[o + 5]);
+      if (px[3] < 128) continue;   // alpha-cut texels are holes
+      zb[pi] = z; col[pi * 4] = px[0] * shade; col[pi * 4 + 1] = px[1] * shade; col[pi * 4 + 2] = px[2] * shade; col[pi * 4 + 3] = 255;
+    }
+  }
+  const out = new Uint8Array(size * size * 4);   // downsample: coverage → alpha, colour averaged over covered samples
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let j = 0; j < ss; j++) for (let i = 0; i < ss; i++) { const q = ((y * ss + j) * W + x * ss + i) * 4; if (col[q + 3]) { r += col[q]; g += col[q + 1]; b += col[q + 2]; n++; } }
+    const d = (y * size + x) * 4; if (n) { out[d] = r / n; out[d + 1] = g / n; out[d + 2] = b / n; out[d + 3] = Math.round(255 * n / (ss * ss)); }
+  }
+  return { w: size, h: size, data: out };
+}
+// colour of transparent pixels ← nearest covered pixel (breadth-first), so filtering never pulls in black
+function bleed(img) {
+  const { w, h, data } = img, q = new Int32Array(w * h), seen = new Uint8Array(w * h); let qh = 0, qt = 0;
+  for (let i = 0; i < w * h; i++) if (data[i * 4 + 3]) { seen[i] = 1; q[qt++] = i; }
+  while (qh < qt) {
+    const i = q[qh++], x = i % w, y = (i / w) | 0;
+    for (const j of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
+      if (j < 0 || seen[j]) continue;
+      seen[j] = 1; data[j * 4] = data[i * 4]; data[j * 4 + 1] = data[i * 4 + 1]; data[j * 4 + 2] = data[i * 4 + 2]; q[qt++] = j;
+    }
+  }
+  return img;
+}
+function trim(img, pad = 2) {
+  let x0 = img.w, y0 = img.h, x1 = -1, y1 = -1;
+  for (let y = 0; y < img.h; y++) for (let x = 0; x < img.w; x++) if (img.data[(y * img.w + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return { img, x0: 0, y0: 0 };
+  x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(img.w - 1, x1 + pad); y1 = Math.min(img.h - 1, y1 + pad);
+  const w = x1 - x0 + 1, h = y1 - y0 + 1, data = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++) data.set(img.data.subarray(((y0 + y) * img.w + x0) * 4, ((y0 + y) * img.w + x0 + w) * 4), y * w * 4);
+  return { img: { w, h, data }, x0, y0 };
+}
+export function renderCards(mesh, tex, base, size, yup = false) {
+  const ex = extentOf(mesh.P), cx = (ex[0] + ex[1]) / 2, cyy = (ex[2] + ex[3]) / 2, cz = (ex[4] + ex[5]) / 2;
+  const span = Math.max(Math.hypot(ex[1] - ex[0], ex[3] - ex[2]), ex[5] - ex[4]) * 1.02, ppu = size / span;
+  const frame = v => (yup ? [v[0], v[2], -v[1]] : v).map(c => +c.toFixed(5));   // same Z-up → Y-up turn as the GLB
+  const meta = { pxPerUnit: +ppu.toFixed(4), cards: [] };
+  for (const yaw of CARD_YAWS) {
+    const { img, x0, y0 } = trim(renderView(mesh, tex, yaw, { cx, cyy, cz, span }, size));
+    const file = `${base}_card${String(yaw).padStart(3, '0')}.png`;
+    fs.writeFileSync(file, encodePNG(bleed(img), true));
+    // card = quad from `origin` (bottom-left), `width` along `right`, `height` along `up`; texture unflipped
+    const a = yaw * Math.PI / 180, rx = Math.cos(a), ry = Math.sin(a), left = (x0 - size / 2) / ppu, bottom = cz + (size / 2 - y0 - img.h) / ppu;
+    meta.cards.push({ file: path.basename(file), yaw, widthPx: img.w, heightPx: img.h, width: +(img.w / ppu).toFixed(4), height: +(img.h / ppu).toFixed(4),
+      origin: frame([cx + rx * left, cyy + ry * left, bottom]), right: frame([rx, ry, 0]), up: frame([0, 0, 1]) });
+    log(`card ${yaw}°: ${path.basename(file)} ${img.w}x${img.h}`);
+  }
+  fs.writeFileSync(`${base}_cards.json`, JSON.stringify(meta, null, 2) + '\n');
 }
 
 // ---------------------------------------------------------------- main
@@ -762,13 +856,20 @@ function main() {
   const { mesh, files } = loadInput(o.input);
   const startTris = mesh.tris.length / 3;
   log(`loaded ${startTris.toLocaleString()} triangles, ${(mesh.P.length / 3).toLocaleString()} positions`);
+  const out = o.out || path.join(path.dirname(o.input), path.basename(o.input).replace(/(_\d+tris)?\.(zip|fbx|glb)$/i, '') + '_TRIStris.glb');
+  if (o.card) {
+    const b = mesh.glb ? mesh.glb.base : (findBase(files) && { bytes: findBase(files) });
+    if (b && b.mime && b.mime !== 'image/png') console.warn('warning: base colour is not PNG; cards rendered untextured');
+    const tex = b && (!b.mime || b.mime === 'image/png') ? decodePNG(b.bytes) : null;
+    renderCards(mesh, tex, path.join(path.dirname(out), path.basename(o.input).replace(/(_\d+tris)?\.(zip|fbx|glb)$/i, '')), o.tex, o.yup);
+  }
   reduce(mesh, o.target);
   const geo = buildOutput(mesh, o.yup);
   log(`output ${(geo.pos.length / 3).toLocaleString()} vertices`);
   const tex = prepareTextures(files, mesh.glb, o.tex);
-  const out = o.out || path.join(path.dirname(o.input), path.basename(o.input).replace(/(_\d+tris)?\.(zip|fbx|glb)$/i, '') + `_${geo.idx.length / 3}tris.glb`);
-  writeGLB(out, geo, tex, path.basename(out, '.glb'));
+  const file = out.replace('_TRIStris.glb', `_${geo.idx.length / 3}tris.glb`);
+  writeGLB(file, geo, tex, path.basename(file, '.glb'));
   const rss = process.resourceUsage().maxRSS / 1024;
-  log(`wrote ${out} (${(fs.statSync(out).size / 1e6).toFixed(1)} MB): ${startTris.toLocaleString()} → ${(geo.idx.length / 3).toLocaleString()} triangles, peak memory ${rss.toFixed(0)} MB`);
+  log(`wrote ${file} (${(fs.statSync(file).size / 1e6).toFixed(1)} MB): ${startTris.toLocaleString()} → ${(geo.idx.length / 3).toLocaleString()} triangles, peak memory ${rss.toFixed(0)} MB`);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(fs.realpathSync(process.argv[1])).href) main();
