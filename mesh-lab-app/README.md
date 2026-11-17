@@ -33,3 +33,32 @@ The batch box default is the `value="41460"` on `#batchTarget` in `index.html`.
 - Fonts fall back to your system fonts so nothing loads from the web.
 - Downloads use a normal browser download outside Claude.
 - Draco-compressed GLBs aren't supported yet. Export from Meshy without compression.
+
+## Command line (747 Mesh Lab CLI)
+
+For exports too big for the browser (Meshy FBX zips of 250–380 MB, millions of triangles).
+Plain Node 18+, no `npm install` needed.
+
+```bash
+node cli/meshlab.mjs <input.zip|.fbx|.glb> --target 4000 [--tex 1024] [--out x.glb] [--yup] [--bake] [--card]
+```
+
+- `input`: a Meshy zip (binary FBX + `*_texture/_normal/_metallic/_roughness.png`), a bare
+  binary FBX with its PNGs beside it, or a GLB (for example an earlier Mesh Lab export).
+- `--target`: triangle count to reduce to (default 41460).
+- `--tex`: largest texture side in pixels (default 1024).
+- `--out`: output file (default: next to the input, named `<name>_<tris>tris.glb`).
+- `--yup`: rotate Meshy's Z-up geometry to Y-up. Without it the raw Z-up geometry is kept.
+- `--bake`: give the reduced mesh its own UV atlas and rebake its textures from the full-detail
+  model: base colour, metal/roughness, and a tangent-space normal map (geometry detail plus Meshy's
+  normal map). Tangents are written into the GLB. Inputs over 1.5M triangles bake from a ~300k-triangle
+  intermediate to keep memory down.
+- `--card`: also render the full-detail model from 4 side angles (0/45/90/135°) into trimmed,
+  transparent PNGs (`<name>_card000.png`…, `--tex` pixels across) for crossed-card billboards.
+  This is the main path for plants. `<name>_cards.json` gives each card's world size and where it
+  goes: a quad from `origin` (bottom-left), `width` along `right` and `height` along `up`.
+
+What it does: welds seams, vertex-clusters huge meshes to about 40x the target, then quadric
+edge collapse to the target, keeping UVs. Normals are smoothed except across 60° creases. The
+material is clean PBR: emissive off, base colour, normal map, and Meshy's metallic/roughness
+packed into one texture (G = roughness, B = metal).
