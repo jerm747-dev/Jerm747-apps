@@ -53,6 +53,7 @@ let viewOrig = false, wire = false, clay = false;
 const clayMat = new THREE.MeshStandardMaterial({ color:0xb8bcc4, roughness:.75, metalness:0, flatShading:true });
 
 const DEFAULT_TARGET = 41460; // Jeremy's baseline (wheel sample)
+const EXPORT_TEX_SIZE = 1024;  // longest side of exported textures (Meshy ships 2048-4096)
 let simplifierReady = false;
 MeshoptSimplifier.ready.then(() => {
   simplifierReady = true;
@@ -163,6 +164,7 @@ async function loadGroup(group, auto){
   try {
     const obj = await parseModel(group.file, manager);
     await settle();
+    await fixMaterials(obj, group.side);
     baseName = nameFor(group.file);
     await setModel(obj, auto);
     activeCleanup = cleanup;
@@ -361,6 +363,47 @@ function updateStats(){
   renderHud();
 }
 
+// ---------- material cleanup ----------
+// The FBX reader turns Meshy's materials into Phong materials with a white emissive colour and never attaches
+// Meshy's _metallic / _roughness images, so exports came out glowing and matte. Convert to a standard PBR
+// material, zero the glow unless there is a real emissive map, and attach metal/roughness from the side files.
+async function loadSideTexture(side, suffix, flipY){
+  const f = side.find(x => x.name.toLowerCase().replace(/\.(png|jpe?g|webp)$/, '').endsWith(suffix));
+  if (!f) return null;
+  const url = URL.createObjectURL(f);
+  try {
+    const tex = await new THREE.TextureLoader().loadAsync(url);
+    tex.flipY = flipY; tex.colorSpace = THREE.NoColorSpace; tex.needsUpdate = true;
+    return tex;
+  } catch(e){ return null; } finally { URL.revokeObjectURL(url); }
+}
+async function fixMaterials(obj, side){
+  const mats = new Map();
+  obj.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m && mats.set(m, null)); });
+  const anyMap = [...mats.keys()].find(m => m.map);
+  const flipY = anyMap ? anyMap.map.flipY : false;
+  const metal = await loadSideTexture(side, '_metallic', flipY);
+  const rough = await loadSideTexture(side, '_roughness', flipY);
+  for (const m of mats.keys()){
+    let n = m;
+    if (!m.isMeshStandardMaterial){
+      n = new THREE.MeshStandardMaterial({ name:m.name, color:m.color ? m.color.clone() : 0xffffff, map:m.map || null,
+        normalMap:m.normalMap || null, transparent:m.transparent, opacity:m.opacity, alphaTest:m.alphaTest || 0, side:m.side,
+        metalness:0, roughness:1 });
+      if (m.normalScale) n.normalScale.copy(m.normalScale);
+    }
+    if (!n.emissiveMap) { n.emissive.setRGB(0,0,0); n.emissiveIntensity = 1; }
+    if (metal && !n.metalnessMap) { n.metalnessMap = metal; n.metalness = 1; }
+    if (rough && !n.roughnessMap) { n.roughnessMap = rough; n.roughness = 1; }
+    n.needsUpdate = true;
+    mats.set(m, n);
+  }
+  obj.traverse(o => {
+    if (!o.isMesh) return;
+    o.material = Array.isArray(o.material) ? o.material.map(m => mats.get(m) || m) : (mats.get(o.material) || o.material);
+  });
+}
+
 // ---------- export ----------
 // builds a GLB of what's in the viewer (reduced geometry, real materials)
 async function exportCurrentGLB(){
@@ -368,7 +411,11 @@ async function exportCurrentGLB(){
   viewOrig = false; clay = false; wire = false; applyView();
   const savedRot = root.rotation.y; root.rotation.y = 0;
   try {
-    const glb = await new GLTFExporter().parseAsync(root, { binary:true, onlyVisible:true });
+    // colour + normal maps go out as JPEG (no alpha needed); everything is capped at EXPORT_TEX_SIZE
+    root.traverse(o => { if (!o.isMesh) return; (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => {
+      ['map','normalMap'].forEach(k => { if (m && m[k] && !m.transparent) m[k].userData.mimeType = 'image/jpeg'; });
+    }); });
+    const glb = await new GLTFExporter().parseAsync(root, { binary:true, onlyVisible:true, maxTextureSize:EXPORT_TEX_SIZE });
     return { data: new Uint8Array(glb), faces: Math.round(currentCounts().f) };
   } finally {
     root.rotation.y = savedRot;
