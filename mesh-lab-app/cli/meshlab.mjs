@@ -1,30 +1,33 @@
 #!/usr/bin/env node
 // 747 Mesh Lab CLI: makes Meshy AI exports game-ready without a browser. No dependencies (Node 18+).
 //
-//   node cli/meshlab.mjs <input.zip|input.fbx|input.glb> [--target 41460] [--tex 1024] [--out file.glb] [--yup] [--card]
+//   node cli/meshlab.mjs <input.zip|input.fbx|input.glb> [--target 41460] [--tex 1024] [--out file.glb] [--yup] [--bake] [--card]
 //
 // Reads a Meshy zip (binary FBX + *_texture/_normal/_metallic/_roughness PNGs), a bare FBX (PNGs beside it)
 // or a GLB. Welds seams, vertex-clusters huge meshes down to ~40x the target, then quadric edge collapse to
 // --target triangles, keeping per-corner UVs. Writes a GLB with crease-aware normals (60 degrees) and a clean
 // PBR material: emissive off, metal/roughness packed (G = roughness, B = metal), textures resized to --tex.
 // Geometry stays Meshy's raw Z-up; --yup rotates it to Y-up.
-// --card also renders the full-detail model into trimmed, transparent side views for crossed-card billboards.
+// --bake gives the reduced mesh its own UV atlas and rebakes base colour, metal/roughness and a tangent-space normal map
+// from the full-detail model. --card also renders the full-detail model into trimmed, transparent side views for
+// crossed-card billboards.
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 import { pathToFileURL } from 'node:url';
 
-const USAGE = 'usage: node cli/meshlab.mjs <input.zip|.fbx|.glb> [--target 41460] [--tex 1024] [--out out.glb] [--yup] [--card]';
+const USAGE = 'usage: node cli/meshlab.mjs <input.zip|.fbx|.glb> [--target 41460] [--tex 1024] [--out out.glb] [--yup] [--bake] [--card]';
 const t0 = Date.now();
 const log = (...m) => console.log(`[${((Date.now() - t0) / 1000).toFixed(1)}s]`, ...m);
 
 export function parseArgs(argv) {
-  const o = { input: null, target: 41460, tex: 1024, out: null, yup: false, card: false, help: false };
+  const o = { input: null, target: 41460, tex: 1024, out: null, yup: false, card: false, bake: false, help: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '-h' || a === '--help') o.help = true;
     else if (a === '--yup') o.yup = true;
     else if (a === '--card') o.card = true;
+    else if (a === '--bake') o.bake = true;
     else if (a === '--target' || a === '--tex' || a === '--out') {
       const v = argv[++i]; if (v === undefined) throw new Error(`${a} needs a value`);
       if (a === '--out') o.out = v;
@@ -248,7 +251,7 @@ export function weld(mesh) {
     }
   }
   for (let c = 0; c < tris.length; c++) tris[c] = map[tris[c]];
-  mesh.P = out.slice(0, u * 3); mesh.extent = ex;
+  mesh.P = out.slice(0, u * 3); mesh.extent = ex; mesh.welded = true;
   return dropDegenerate(mesh);
 }
 
@@ -554,7 +557,7 @@ export function simplify(mesh, target, aggressiveness = 7) {
 }
 
 // ---------------------------------------------------------------- output vertices: split by UV, crease-aware normals
-export function buildOutput(mesh, yup = false, creaseDeg = 60) {
+export function buildOutput(mesh, creaseDeg = 60) {
   const { P, tris, UV } = mesh, nt = tris.length / 3, nv = P.length / 3;
   const fn = new Float64Array(nt * 3), fa = new Float64Array(nt * 3);   // unit and area-weighted face normals
   for (let t = 0; t < nt; t++) {
@@ -588,8 +591,11 @@ export function buildOutput(mesh, yup = false, creaseDeg = 60) {
     }
     idx[c] = j;
   }
-  const geo = { pos: pos.slice(0, n * 3), nor: nor.slice(0, n * 3), uv: uv.slice(0, n * 2), idx };
-  if (yup) for (const a of [geo.pos, geo.nor]) for (let i = 0; i < a.length; i += 3) { const y = a[i + 1]; a[i + 1] = a[i + 2]; a[i + 2] = -y; }   // Z-up → Y-up
+  return { pos: pos.slice(0, n * 3), nor: nor.slice(0, n * 3), uv: uv.slice(0, n * 2), idx };
+}
+// Meshy Z-up → Y-up: (x, y, z) → (x, z, -y) on positions, normals and tangents
+export function toYup(geo) {
+  for (const [a, st] of [[geo.pos, 3], [geo.nor, 3], [geo.tan, 4]]) if (a) for (let i = 0; i < a.length; i += st) { const y = a[i + 1]; a[i + 1] = a[i + 2]; a[i + 2] = -y; }
   return geo;
 }
 
@@ -667,7 +673,7 @@ export function writeGLB(out, geo, tex, name) {
     const b = Buffer.from(buf.buffer, buf.byteOffset, buf.byteLength);
     views.push({ buffer: 0, byteOffset: len, byteLength: b.length, ...(target ? { target } : {}) }); parts.push(b); len += b.length; return views.length - 1;
   };
-  const vp = add(geo.pos, 34962), vn = add(geo.nor, 34962), vt = add(geo.uv, 34962), vi = add(geo.idx, 34963);
+  const vp = add(geo.pos, 34962), vn = add(geo.nor, 34962), vt = add(geo.uv, 34962), vi = add(geo.idx, 34963), vg = geo.tan ? add(geo.tan, 34962) : -1;
   const n = geo.pos.length / 3, mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i < n; i++) for (let a = 0; a < 3; a++) { mn[a] = Math.min(mn[a], geo.pos[i * 3 + a]); mx[a] = Math.max(mx[a], geo.pos[i * 3 + a]); }
   const images = [], textures = [];
@@ -679,9 +685,10 @@ export function writeGLB(out, geo, tex, name) {
   if (tex.alpha) { mat.alphaMode = 'MASK'; mat.alphaCutoff = tex.alphaCutoff ?? 0.5; mat.doubleSided = true; }
   const gltf = {
     asset: { version: '2.0', generator: '747 Mesh Lab CLI' }, scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0, name }],
-    meshes: [{ name, primitives: [{ attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2 }, indices: 3, material: 0 }] }],
+    meshes: [{ name, primitives: [{ attributes: { POSITION: 0, NORMAL: 1, TEXCOORD_0: 2, ...(geo.tan ? { TANGENT: 4 } : {}) }, indices: 3, material: 0 }] }],
     accessors: [{ bufferView: vp, componentType: 5126, count: n, type: 'VEC3', min: mn, max: mx }, { bufferView: vn, componentType: 5126, count: n, type: 'VEC3' },
-      { bufferView: vt, componentType: 5126, count: n, type: 'VEC2' }, { bufferView: vi, componentType: 5125, count: geo.idx.length, type: 'SCALAR' }],
+      { bufferView: vt, componentType: 5126, count: n, type: 'VEC2' }, { bufferView: vi, componentType: 5125, count: geo.idx.length, type: 'SCALAR' },
+      ...(geo.tan ? [{ bufferView: vg, componentType: 5126, count: n, type: 'VEC4' }] : [])],
     bufferViews: views, buffers: [{ byteLength: 0 }], materials: [mat],
     ...(images.length ? { images, textures, samplers: [{ magFilter: 9729, minFilter: 9987, wrapS: 10497, wrapT: 10497 }] } : {})
   };
@@ -820,6 +827,319 @@ export function renderCards(mesh, tex, base, size, yup = false) {
   fs.writeFileSync(`${base}_cards.json`, JSON.stringify(meta, null, 2) + '\n');
 }
 
+// ---------------------------------------------------------------- --bake: new UV atlas on the low-poly, textures rebaked from the high-poly
+// The bake source is the welded full model, or a ~300k-triangle reduction of it when the input is huge (keeps
+// memory near the plain reduce). Base colour, metal/roughness and a tangent-space normal map (geometry detail plus
+// the source normal map) are transferred texel by texel: ray along the low-poly normal, else the closest point.
+const BAKE_DIRECT_MAX = 1500000, BAKE_INTERMEDIATE = 300000, CHART_COS = Math.cos(55 * Math.PI / 180);
+export function unwrap(mesh, size, pad = 2) {
+  const { P, tris } = mesh, nt = tris.length / 3, nv = P.length / 3;
+  const fn = new Float64Array(nt * 3), fa = new Float64Array(nt);
+  for (let t = 0; t < nt; t++) {
+    const a = tris[t * 3] * 3, b = tris[t * 3 + 1] * 3, c = tris[t * 3 + 2] * 3;
+    const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], wx = P[c] - P[a], wy = P[c + 1] - P[a + 1], wz = P[c + 2] - P[a + 2];
+    const nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx, l = Math.hypot(nx, ny, nz) || 1;
+    fn[t * 3] = nx / l; fn[t * 3 + 1] = ny / l; fn[t * 3 + 2] = nz / l; fa[t] = l / 2;
+  }
+  // edge neighbours (first two triangles on each edge)
+  const nb = new Int32Array(nt * 3).fill(-1), edges = new Map();
+  for (let t = 0; t < nt; t++) for (let j = 0; j < 3; j++) {
+    const a = tris[t * 3 + j], b = tris[t * 3 + (j + 1) % 3], key = Math.min(a, b) * nv + Math.max(a, b), o = edges.get(key);
+    if (o === undefined) edges.set(key, t * 3 + j); else if (o >= 0) { nb[t * 3 + j] = (o / 3) | 0; nb[o] = t; edges.set(key, -1); }
+  }
+  const order = Int32Array.from({ length: nt }, (_, i) => i).sort((x, y) => fa[y] - fa[x]);
+  const chartOf = new Int32Array(nt).fill(-1), cuv = new Float64Array(nt * 6), charts = [], queue = new Int32Array(nt);
+  for (const seed of order) {
+    if (chartOf[seed] >= 0) continue;
+    const id = charts.length, nx = fn[seed * 3], ny = fn[seed * 3 + 1], nz = fn[seed * 3 + 2]; let qh = 0, qt = 0;
+    chartOf[seed] = id; queue[qt++] = seed;
+    while (qh < qt) {
+      const t = queue[qh++];
+      for (let j = 0; j < 3; j++) { const f = nb[t * 3 + j]; if (f >= 0 && chartOf[f] < 0 && fn[f * 3] * nx + fn[f * 3 + 1] * ny + fn[f * 3 + 2] * nz > CHART_COS) { chartOf[f] = id; queue[qt++] = f; } }
+    }
+    // project onto the seed plane (u × v = normal, so faces keep their winding), then turn to the tightest box
+    const ax = Math.abs(nx) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+    let ux = ny * ax[2] - nz * ax[1], uy = nz * ax[0] - nx * ax[2], uz = nx * ax[1] - ny * ax[0]; const ul = Math.hypot(ux, uy, uz); ux /= ul; uy /= ul; uz /= ul;
+    const vx = ny * uz - nz * uy, vy = nz * ux - nx * uz, vz = nx * uy - ny * ux, faces = queue.slice(0, qt);
+    for (const t of faces) for (let k = 0; k < 3; k++) { const p = tris[t * 3 + k] * 3; cuv[t * 6 + k * 2] = P[p] * ux + P[p + 1] * uy + P[p + 2] * uz; cuv[t * 6 + k * 2 + 1] = P[p] * vx + P[p + 1] * vy + P[p + 2] * vz; }
+    let best = Infinity, ba = 0;
+    for (let deg = 0; deg < 90; deg += 5) {
+      const c = Math.cos(deg * Math.PI / 180), s = Math.sin(deg * Math.PI / 180); let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const t of faces) for (let k = 0; k < 3; k++) { const x = cuv[t * 6 + k * 2], y = cuv[t * 6 + k * 2 + 1], rx = x * c - y * s, ry = x * s + y * c; if (rx < x0) x0 = rx; if (rx > x1) x1 = rx; if (ry < y0) y0 = ry; if (ry > y1) y1 = ry; }
+      if ((x1 - x0) * (y1 - y0) < best) { best = (x1 - x0) * (y1 - y0); ba = deg; }
+    }
+    const c = Math.cos(ba * Math.PI / 180), sn = Math.sin(ba * Math.PI / 180); let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const t of faces) for (let k = 0; k < 3; k++) { const o = t * 6 + k * 2, x = cuv[o], y = cuv[o + 1]; cuv[o] = x * c - y * sn; cuv[o + 1] = x * sn + y * c; x0 = Math.min(x0, cuv[o]); x1 = Math.max(x1, cuv[o]); y0 = Math.min(y0, cuv[o + 1]); y1 = Math.max(y1, cuv[o + 1]); }
+    for (const t of faces) for (let k = 0; k < 3; k++) { cuv[t * 6 + k * 2] -= x0; cuv[t * 6 + k * 2 + 1] -= y0; }
+    charts.push({ faces, w: x1 - x0, h: y1 - y0, x: 0, y: 0 });
+  }
+  // skyline-pack all charts (tallest first, each where it ends lowest) at one texel density; binary-search the
+  // largest density that still fits the square
+  const padUV = pad / size, byH = charts.slice().sort((a, b) => b.h - a.h || b.w - a.w);
+  const pack = (scale, place) => {
+    let sky = [{ x: 0, y: 0, w: 1 }], top = 0;
+    for (const c of byH) {
+      const w = c.w * scale + padUV * 2, h = c.h * scale + padUV * 2;
+      if (w > 1) return Infinity;
+      let bi = -1, by = Infinity, bx = 0;
+      for (let i = 0; i < sky.length; i++) {
+        const x = sky[i].x; if (x + w > 1 + 1e-12) break;
+        let y = 0, cov = 0;
+        for (let j = i; j < sky.length && cov < w - 1e-12; j++) { y = Math.max(y, sky[j].y); cov = sky[j].x + sky[j].w - x; }
+        if (y < by) { by = y; bi = i; bx = x; }
+      }
+      if (bi < 0) return Infinity;
+      if (place) { c.x = bx + padUV; c.y = by + padUV; }
+      top = Math.max(top, by + h);
+      // raise the skyline over [bx, bx + w)
+      const nsky = [];
+      for (const sgm of sky) {
+        const a = sgm.x, b = sgm.x + sgm.w;
+        if (b <= bx + 1e-12 || a >= bx + w - 1e-12) { nsky.push(sgm); continue; }
+        if (a < bx) nsky.push({ x: a, y: sgm.y, w: bx - a });
+        if (!nsky.length || nsky[nsky.length - 1].x + nsky[nsky.length - 1].w <= bx + 1e-12) nsky.push({ x: bx, y: by + h, w });
+        if (b > bx + w) nsky.push({ x: bx + w, y: sgm.y, w: b - bx - w });
+      }
+      sky = nsky.filter(q => q.w > 1e-12);
+      for (let i = sky.length - 1; i > 0; i--) if (sky[i].y === sky[i - 1].y) { sky[i - 1].w += sky[i].w; sky.splice(i, 1); }
+    }
+    return top;
+  };
+  let lo = 0, hi = 2 * Math.sqrt(1 / charts.reduce((s, c) => s + c.w * c.h, 0));
+  for (let k = 0; k < 40; k++) { const mid = (lo + hi) / 2; if (pack(mid, false) <= 1) lo = mid; else hi = mid; }
+  const scale = lo; pack(scale, true);
+  const UV = new Float32Array(nt * 6);
+  for (const c of charts) for (const t of c.faces) for (let k = 0; k < 3; k++) { UV[t * 6 + k * 2] = c.x + cuv[t * 6 + k * 2] * scale; UV[t * 6 + k * 2 + 1] = c.y + cuv[t * 6 + k * 2 + 1] * scale; }
+  mesh.UV = UV;   // v-up, like the input UVs; buildOutput flips to glTF
+  return charts.length;
+}
+
+// per-vertex tangents (xyz + handedness) from the UVs; bitangent = cross(N, T) * w follows +v up the image (glTF/MikkTSpace)
+export function tangents(geo) {
+  const { pos, nor, uv, idx } = geo, n = pos.length / 3, S = new Float64Array(n * 3), Tt = new Float64Array(n * 3), tan = new Float32Array(n * 4);
+  for (let t = 0; t < idx.length; t += 3) {
+    const a = idx[t], b = idx[t + 1], c = idx[t + 2];
+    const e1x = pos[b * 3] - pos[a * 3], e1y = pos[b * 3 + 1] - pos[a * 3 + 1], e1z = pos[b * 3 + 2] - pos[a * 3 + 2], e2x = pos[c * 3] - pos[a * 3], e2y = pos[c * 3 + 1] - pos[a * 3 + 1], e2z = pos[c * 3 + 2] - pos[a * 3 + 2];
+    const du1 = uv[b * 2] - uv[a * 2], dv1 = -(uv[b * 2 + 1] - uv[a * 2 + 1]), du2 = uv[c * 2] - uv[a * 2], dv2 = -(uv[c * 2 + 1] - uv[a * 2 + 1]);
+    const d = du1 * dv2 - du2 * dv1; if (Math.abs(d) < 1e-20) continue; const r = 1 / d;
+    const sx = (e1x * dv2 - e2x * dv1) * r, sy = (e1y * dv2 - e2y * dv1) * r, sz = (e1z * dv2 - e2z * dv1) * r;
+    const tx = (e2x * du1 - e1x * du2) * r, ty = (e2y * du1 - e1y * du2) * r, tz = (e2z * du1 - e1z * du2) * r;
+    for (const v of [a, b, c]) { S[v * 3] += sx; S[v * 3 + 1] += sy; S[v * 3 + 2] += sz; Tt[v * 3] += tx; Tt[v * 3 + 1] += ty; Tt[v * 3 + 2] += tz; }
+  }
+  for (let v = 0; v < n; v++) {
+    const nx = nor[v * 3], ny = nor[v * 3 + 1], nz = nor[v * 3 + 2], d = S[v * 3] * nx + S[v * 3 + 1] * ny + S[v * 3 + 2] * nz;
+    let x = S[v * 3] - nx * d, y = S[v * 3 + 1] - ny * d, z = S[v * 3 + 2] - nz * d, l = Math.hypot(x, y, z);
+    if (l < 1e-12) { if (Math.abs(nx) < 0.9) { x = 0; y = -nz; z = ny; } else { x = nz; y = 0; z = -nx; } l = Math.hypot(x, y, z); }
+    x /= l; y /= l; z /= l;
+    const bx = ny * z - nz * y, by = nz * x - nx * z, bz = nx * y - ny * x;
+    tan[v * 4] = x; tan[v * 4 + 1] = y; tan[v * 4 + 2] = z; tan[v * 4 + 3] = bx * Tt[v * 3] + by * Tt[v * 3 + 1] + bz * Tt[v * 3 + 2] < 0 ? -1 : 1;
+  }
+  geo.tan = tan;
+  return geo;
+}
+
+// BVH over triangles: midpoint splits on the longest centroid axis, leaves of up to 4
+export function buildBVH(P, tris) {
+  const nt = tris.length / 3, order = new Int32Array(nt), cen = new Float32Array(nt * 3), tb = new Float32Array(nt * 6);
+  for (let t = 0; t < nt; t++) {
+    order[t] = t;
+    for (let a = 0; a < 3; a++) {
+      const v0 = P[tris[t * 3] * 3 + a], v1 = P[tris[t * 3 + 1] * 3 + a], v2 = P[tris[t * 3 + 2] * 3 + a], lo = Math.min(v0, v1, v2), hi = Math.max(v0, v1, v2);
+      tb[t * 6 + a] = lo; tb[t * 6 + 3 + a] = hi; cen[t * 3 + a] = (lo + hi) / 2;
+    }
+  }
+  const maxN = Math.max(1, 2 * Math.ceil(nt / 2)), bb = new Float32Array(maxN * 6), first = new Int32Array(maxN), count = new Int32Array(maxN);
+  let nn = 1; const stack = [[0, 0, nt]];
+  while (stack.length) {
+    const [node, lo, hi] = stack.pop();
+    let b0 = Infinity, b1 = Infinity, b2 = Infinity, b3 = -Infinity, b4 = -Infinity, b5 = -Infinity, c0 = Infinity, c1 = Infinity, c2 = Infinity, c3 = -Infinity, c4 = -Infinity, c5 = -Infinity;
+    for (let i = lo; i < hi; i++) {
+      const t = order[i], o = t * 6;
+      b0 = Math.min(b0, tb[o]); b1 = Math.min(b1, tb[o + 1]); b2 = Math.min(b2, tb[o + 2]); b3 = Math.max(b3, tb[o + 3]); b4 = Math.max(b4, tb[o + 4]); b5 = Math.max(b5, tb[o + 5]);
+      c0 = Math.min(c0, cen[t * 3]); c1 = Math.min(c1, cen[t * 3 + 1]); c2 = Math.min(c2, cen[t * 3 + 2]); c3 = Math.max(c3, cen[t * 3]); c4 = Math.max(c4, cen[t * 3 + 1]); c5 = Math.max(c5, cen[t * 3 + 2]);
+    }
+    bb[node * 6] = b0; bb[node * 6 + 1] = b1; bb[node * 6 + 2] = b2; bb[node * 6 + 3] = b3; bb[node * 6 + 4] = b4; bb[node * 6 + 5] = b5;
+    if (hi - lo <= 4) { first[node] = lo; count[node] = hi - lo; continue; }
+    const ext = [c3 - c0, c4 - c1, c5 - c2], ax = ext[0] >= ext[1] && ext[0] >= ext[2] ? 0 : ext[1] >= ext[2] ? 1 : 2, mid = [c0 + c3, c1 + c4, c2 + c5][ax] / 2;
+    let i = lo, j = hi - 1;
+    while (i <= j) { if (cen[order[i] * 3 + ax] < mid) i++; else { const x = order[i]; order[i] = order[j]; order[j] = x; j--; } }
+    if (i === lo || i === hi) i = (lo + hi) >> 1;
+    const l = nn++, r = nn++; first[node] = l; count[node] = 0;
+    stack.push([l, lo, i], [r, i, hi]);
+  }
+  // triangle vertices in leaf order for fast tests
+  const V = new Float32Array(nt * 9);
+  for (let i = 0; i < nt; i++) { const t = order[i]; for (let k = 0; k < 3; k++) for (let a = 0; a < 3; a++) V[i * 9 + k * 3 + a] = P[tris[t * 3 + k] * 3 + a]; }
+  return { bb, first, count, order, V, stack: new Int32Array(256) };
+}
+const hit = { t: 0, tri: -1, u: 0, v: 0 };
+// nearest two-sided hit along +dir within tmax → hit (tri index in mesh order, barycentric u,v of corners 1,2)
+function rayCast(bvh, ox, oy, oz, dx, dy, dz, tmax) {
+  const { bb, first, count, V, order, stack } = bvh, ix = 1 / dx, iy = 1 / dy, iz = 1 / dz;
+  let sp = 0, best = tmax, found = -1, bu = 0, bv = 0; stack[sp++] = 0;
+  while (sp) {
+    const n = stack[--sp], o = n * 6;
+    let t0 = ((ix >= 0 ? bb[o] : bb[o + 3]) - ox) * ix, t1 = ((ix >= 0 ? bb[o + 3] : bb[o]) - ox) * ix;
+    const ty0 = ((iy >= 0 ? bb[o + 1] : bb[o + 4]) - oy) * iy, ty1 = ((iy >= 0 ? bb[o + 4] : bb[o + 1]) - oy) * iy;
+    if (ty0 > t0) t0 = ty0; if (ty1 < t1) t1 = ty1;
+    const tz0 = ((iz >= 0 ? bb[o + 2] : bb[o + 5]) - oz) * iz, tz1 = ((iz >= 0 ? bb[o + 5] : bb[o + 2]) - oz) * iz;
+    if (tz0 > t0) t0 = tz0; if (tz1 < t1) t1 = tz1;
+    if (!(t0 <= t1) || t1 < 0 || t0 > best) continue;
+    if (count[n]) {
+      for (let i = first[n]; i < first[n] + count[n]; i++) {
+        const q = i * 9, e1x = V[q + 3] - V[q], e1y = V[q + 4] - V[q + 1], e1z = V[q + 5] - V[q + 2], e2x = V[q + 6] - V[q], e2y = V[q + 7] - V[q + 1], e2z = V[q + 8] - V[q + 2];
+        const px = dy * e2z - dz * e2y, py = dz * e2x - dx * e2z, pz = dx * e2y - dy * e2x, det = e1x * px + e1y * py + e1z * pz;
+        if (Math.abs(det) < 1e-14) continue;
+        const inv = 1 / det, sx = ox - V[q], sy = oy - V[q + 1], sz = oz - V[q + 2], u = (sx * px + sy * py + sz * pz) * inv; if (u < 0 || u > 1) continue;
+        const qx = sy * e1z - sz * e1y, qy = sz * e1x - sx * e1z, qz = sx * e1y - sy * e1x, v = (dx * qx + dy * qy + dz * qz) * inv; if (v < 0 || u + v > 1) continue;
+        const t = (e2x * qx + e2y * qy + e2z * qz) * inv;
+        if (t >= 0 && t < best) { best = t; found = i; bu = u; bv = v; }
+      }
+    } else { stack[sp++] = first[n]; stack[sp++] = first[n] + 1; }
+  }
+  if (found < 0) return false;
+  hit.t = best; hit.tri = order[found]; hit.u = bu; hit.v = bv; return true;
+}
+// closest point on the mesh → hit (Ericson, Real-Time Collision Detection 5.1.5)
+function closestPoint(bvh, px, py, pz) {
+  const { bb, first, count, V, order, stack } = bvh; let sp = 0, best = Infinity, found = -1, bu = 0, bv = 0; stack[sp++] = 0;
+  const boxD = o => { const dx = Math.max(bb[o] - px, 0, px - bb[o + 3]), dy = Math.max(bb[o + 1] - py, 0, py - bb[o + 4]), dz = Math.max(bb[o + 2] - pz, 0, pz - bb[o + 5]); return dx * dx + dy * dy + dz * dz; };
+  while (sp) {
+    const n = stack[--sp]; if (boxD(n * 6) >= best) continue;
+    if (count[n]) {
+      for (let i = first[n]; i < first[n] + count[n]; i++) {
+        const q = i * 9, ax = V[q], ay = V[q + 1], az = V[q + 2];
+        const abx = V[q + 3] - ax, aby = V[q + 4] - ay, abz = V[q + 5] - az, acx = V[q + 6] - ax, acy = V[q + 7] - ay, acz = V[q + 8] - az, apx = px - ax, apy = py - ay, apz = pz - az;
+        const d1 = abx * apx + aby * apy + abz * apz, d2 = acx * apx + acy * apy + acz * apz;
+        const bpx = px - V[q + 3], bpy = py - V[q + 4], bpz = pz - V[q + 5], d3 = abx * bpx + aby * bpy + abz * bpz, d4 = acx * bpx + acy * bpy + acz * bpz;
+        const cpx = px - V[q + 6], cpy = py - V[q + 7], cpz = pz - V[q + 8], d5 = abx * cpx + aby * cpy + abz * cpz, d6 = acx * cpx + acy * cpy + acz * cpz;
+        const vc = d1 * d4 - d3 * d2, vb = d5 * d2 - d1 * d6, va = d3 * d6 - d5 * d4;
+        let u, v;   // weights of b and c
+        if (d1 <= 0 && d2 <= 0) { u = 0; v = 0; }
+        else if (d3 >= 0 && d4 <= d3) { u = 1; v = 0; }
+        else if (vc <= 0 && d1 >= 0 && d3 <= 0) { u = d1 / (d1 - d3); v = 0; }
+        else if (d6 >= 0 && d5 <= d6) { u = 0; v = 1; }
+        else if (vb <= 0 && d2 >= 0 && d6 <= 0) { u = 0; v = d2 / (d2 - d6); }
+        else if (va <= 0 && d4 - d3 >= 0 && d5 - d6 >= 0) { v = (d4 - d3) / ((d4 - d3) + (d5 - d6)); u = 1 - v; }
+        else { const den = 1 / (va + vb + vc); u = vb * den; v = vc * den; }
+        const cx = ax + abx * u + acx * v - px, cy = ay + aby * u + acy * v - py, cz = az + abz * u + acz * v - pz, d = cx * cx + cy * cy + cz * cz;
+        if (d < best) { best = d; found = i; bu = u; bv = v; }
+      }
+    } else {
+      const l = first[n], r = l + 1, dl = boxD(l * 6), dr = boxD(r * 6);
+      if (dl < dr) { stack[sp++] = r; stack[sp++] = l; } else { stack[sp++] = l; stack[sp++] = r; }
+    }
+  }
+  hit.tri = order[found]; hit.u = bu; hit.v = bv; return found >= 0;
+}
+
+function vertexNormals(P, tris) {
+  const N = new Float32Array(P.length);
+  for (let t = 0; t < tris.length; t += 3) {
+    const a = tris[t] * 3, b = tris[t + 1] * 3, c = tris[t + 2] * 3;
+    const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2], wx = P[c] - P[a], wy = P[c + 1] - P[a + 1], wz = P[c + 2] - P[a + 2];
+    const nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx;
+    for (const v of [a, b, c]) { N[v] += nx; N[v + 1] += ny; N[v + 2] += nz; }
+  }
+  for (let i = 0; i < N.length; i += 3) { const l = Math.hypot(N[i], N[i + 1], N[i + 2]) || 1; N[i] /= l; N[i + 1] /= l; N[i + 2] /= l; }
+  return N;
+}
+// source maps for the bake: images RGBA + which channel holds metal / roughness
+function sourceMaps(files, glb) {
+  const dec = im => im && (!im.mime || im.mime === 'image/png') ? decodePNG(im.bytes) : null;
+  if (glb) {
+    if ([glb.base, glb.normal, glb.mr].some(im => im && im.mime && im.mime !== 'image/png')) console.warn('warning: non-PNG source textures are not rebaked');
+    const mr = dec(glb.mr);
+    return { base: dec(glb.base), normal: dec(glb.normal), metal: mr && { img: mr, ch: 2 }, rough: mr && { img: mr, ch: 1 }, mf: glb.metallic, rf: glb.roughness };
+  }
+  const f = re => { const b = pickFile(files, re); return b && decodePNG(b); }, m = f(/_metallic\.png$/), r = f(/_roughness\.png$/), b = findBase(files);
+  return { base: b && decodePNG(b), normal: f(/_normal\.png$/), metal: m && { img: m, ch: 0 }, rough: r && { img: r, ch: 0 }, mf: m || r ? (m ? 1 : 0) : 0, rf: m || r ? (r ? 1 : 0.6) : 0.6 };
+}
+export function bake(geo, hi, src, size) {
+  const { pos, nor, tan, uv, idx } = geo, bvh = buildBVH(hi.P, hi.tris), HN = vertexNormals(hi.P, hi.tris);
+  const maxd = maxSpan(extentOf(hi.P)) * 0.05, N2 = size * size;
+  const base = new Uint8Array(N2 * 4), nrm = new Uint8Array(N2 * 4), mr = new Uint8Array(N2 * 4);
+  const s4 = [0, 0, 0, 0];
+  const sample = (img, u, v) => {   // bilinear; u,v with v up
+    const x = (u - Math.floor(u)) * img.w - 0.5, y = (1 - (v - Math.floor(v))) * img.h - 0.5, x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
+    const X0 = (x0 + img.w) % img.w, X1 = (x0 + 1) % img.w, Y0 = (y0 + img.h) % img.h, Y1 = (y0 + 1) % img.h, d = img.data;
+    for (let c = 0; c < 4; c++) s4[c] = (d[(Y0 * img.w + X0) * 4 + c] * (1 - fx) + d[(Y0 * img.w + X1) * 4 + c] * fx) * (1 - fy) + (d[(Y1 * img.w + X0) * 4 + c] * (1 - fx) + d[(Y1 * img.w + X1) * 4 + c] * fx) * fy;
+    return s4;
+  };
+  let rays = 0, fallback = 0, cutout = false;
+  for (let t = 0; t < idx.length; t += 3) {
+    const a = idx[t], b = idx[t + 1], c = idx[t + 2];
+    const x0 = uv[a * 2] * size, y0 = uv[a * 2 + 1] * size, x1 = uv[b * 2] * size, y1 = uv[b * 2 + 1] * size, x2 = uv[c * 2] * size, y2 = uv[c * 2 + 1] * size;
+    const area = (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0); if (!(Math.abs(area) > 1e-12)) continue;
+    const minX = Math.max(0, Math.floor(Math.min(x0, x1, x2))), maxX = Math.min(size - 1, Math.ceil(Math.max(x0, x1, x2)));
+    const minY = Math.max(0, Math.floor(Math.min(y0, y1, y2))), maxY = Math.min(size - 1, Math.ceil(Math.max(y0, y1, y2)));
+    for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
+      const qx = x + 0.5, qy = y + 0.5;
+      const w0 = ((x1 - qx) * (y2 - qy) - (x2 - qx) * (y1 - qy)) / area, w1 = ((x2 - qx) * (y0 - qy) - (x0 - qx) * (y2 - qy)) / area, w2 = 1 - w0 - w1;
+      if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+      const pi = y * size + x; if (nrm[pi * 4 + 3]) continue;
+      const L = (arr, k, st) => w0 * arr[a * st + k] + w1 * arr[b * st + k] + w2 * arr[c * st + k];
+      const px = L(pos, 0, 3), py = L(pos, 1, 3), pz = L(pos, 2, 3);
+      let nx = L(nor, 0, 3), ny = L(nor, 1, 3), nz = L(nor, 2, 3); const nl = Math.hypot(nx, ny, nz) || 1; nx /= nl; ny /= nl; nz /= nl;
+      // matching point on the high-poly: nearest hit along ±normal, else the closest point
+      rays++;
+      let ok = rayCast(bvh, px, py, pz, nx, ny, nz, maxd), tri = hit.tri, hu = hit.u, hv = hit.v, ht = ok ? hit.t : Infinity;
+      if (rayCast(bvh, px, py, pz, -nx, -ny, -nz, Math.min(maxd, ht))) { ok = true; tri = hit.tri; hu = hit.u; hv = hit.v; }
+      if (!ok) { closestPoint(bvh, px, py, pz); tri = hit.tri; hu = hit.u; hv = hit.v; fallback++; }
+      const ha = hi.tris[tri * 3], hb = hi.tris[tri * 3 + 1], hc = hi.tris[tri * 3 + 2], hw0 = 1 - hu - hv, o = tri * 6, HU = hi.UV;
+      const su = hw0 * HU[o] + hu * HU[o + 2] + hv * HU[o + 4], sv = hw0 * HU[o + 1] + hu * HU[o + 3] + hv * HU[o + 5];
+      if (src.base) { const s = sample(src.base, su, sv); base[pi * 4] = s[0]; base[pi * 4 + 1] = s[1]; base[pi * 4 + 2] = s[2]; base[pi * 4 + 3] = s[3] < 128 ? 0 : 255; if (s[3] < 128) cutout = true; } else base[pi * 4 + 3] = 255;
+      mr[pi * 4] = 255; mr[pi * 4 + 1] = src.rough ? sample(src.rough.img, su, sv)[src.rough.ch] * src.rf : 255 * src.rf; mr[pi * 4 + 2] = src.metal ? sample(src.metal.img, su, sv)[src.metal.ch] * src.mf : 255 * src.mf; mr[pi * 4 + 3] = 255;
+      // high-poly normal: smooth normal, bent by the source normal map in that triangle's own tangent frame
+      let hx = hw0 * HN[ha * 3] + hu * HN[hb * 3] + hv * HN[hc * 3], hy = hw0 * HN[ha * 3 + 1] + hu * HN[hb * 3 + 1] + hv * HN[hc * 3 + 1], hz = hw0 * HN[ha * 3 + 2] + hu * HN[hb * 3 + 2] + hv * HN[hc * 3 + 2];
+      let hl = Math.hypot(hx, hy, hz) || 1; hx /= hl; hy /= hl; hz /= hl;
+      if (src.normal) {
+        const P = hi.P, e1x = P[hb * 3] - P[ha * 3], e1y = P[hb * 3 + 1] - P[ha * 3 + 1], e1z = P[hb * 3 + 2] - P[ha * 3 + 2], e2x = P[hc * 3] - P[ha * 3], e2y = P[hc * 3 + 1] - P[ha * 3 + 1], e2z = P[hc * 3 + 2] - P[ha * 3 + 2];
+        const du1 = HU[o + 2] - HU[o], dv1 = HU[o + 3] - HU[o + 1], du2 = HU[o + 4] - HU[o], dv2 = HU[o + 5] - HU[o + 1], d = du1 * dv2 - du2 * dv1;
+        if (Math.abs(d) > 1e-20) {
+          const r = 1 / d; let Tx = (e1x * dv2 - e2x * dv1) * r, Ty = (e1y * dv2 - e2y * dv1) * r, Tz = (e1z * dv2 - e2z * dv1) * r;
+          const Bx0 = (e2x * du1 - e1x * du2) * r, By0 = (e2y * du1 - e1y * du2) * r, Bz0 = (e2z * du1 - e1z * du2) * r;
+          const td = Tx * hx + Ty * hy + Tz * hz; Tx -= hx * td; Ty -= hy * td; Tz -= hz * td; const tl = Math.hypot(Tx, Ty, Tz);
+          if (tl > 1e-20) {
+            Tx /= tl; Ty /= tl; Tz /= tl;
+            const sgn = (hy * Tz - hz * Ty) * Bx0 + (hz * Tx - hx * Tz) * By0 + (hx * Ty - hy * Tx) * Bz0 < 0 ? -1 : 1;
+            const Bx = (hy * Tz - hz * Ty) * sgn, By = (hz * Tx - hx * Tz) * sgn, Bz = (hx * Ty - hy * Tx) * sgn;
+            const s = sample(src.normal, su, sv), mx = s[0] / 127.5 - 1, my = s[1] / 127.5 - 1, mz = s[2] / 127.5 - 1;
+            hx = Tx * mx + Bx * my + hx * mz; hy = Ty * mx + By * my + hy * mz; hz = Tz * mx + Bz * my + hz * mz;
+            hl = Math.hypot(hx, hy, hz) || 1; hx /= hl; hy /= hl; hz /= hl;
+          }
+        }
+      }
+      // into the low-poly tangent space exactly as the shader rebuilds it: [T B N] from interpolated, normalised vectors
+      let Tx = L(tan, 0, 4), Ty = L(tan, 1, 4), Tz = L(tan, 2, 4);
+      let Bx = 0, By = 0, Bz = 0;
+      for (const [v, w] of [[a, w0], [b, w1], [c, w2]]) { const vx = nor[v * 3], vy = nor[v * 3 + 1], vz = nor[v * 3 + 2], tx = tan[v * 4], ty = tan[v * 4 + 1], tz = tan[v * 4 + 2], tw = tan[v * 4 + 3]; Bx += w * (vy * tz - vz * ty) * tw; By += w * (vz * tx - vx * tz) * tw; Bz += w * (vx * ty - vy * tx) * tw; }
+      const tl = Math.hypot(Tx, Ty, Tz) || 1, bl = Math.hypot(Bx, By, Bz) || 1; Tx /= tl; Ty /= tl; Tz /= tl; Bx /= bl; By /= bl; Bz /= bl;
+      const det = Tx * (By * nz - Bz * ny) - Bx * (Ty * nz - Tz * ny) + nx * (Ty * Bz - Tz * By);
+      let ex = 0, ey = 0, ez = 1;
+      if (Math.abs(det) > 1e-9) {
+        ex = (hx * (By * nz - Bz * ny) - Bx * (hy * nz - hz * ny) + nx * (hy * Bz - hz * By)) / det;
+        ey = (Tx * (hy * nz - hz * ny) - hx * (Ty * nz - Tz * ny) + nx * (Ty * hz - Tz * hy)) / det;
+        ez = (Tx * (By * hz - Bz * hy) - Bx * (Ty * hz - Tz * hy) + hx * (Ty * Bz - Tz * By)) / det;
+        if (ez < 0.05) ez = 0.05;
+        const el = Math.hypot(ex, ey, ez); ex /= el; ey /= el; ez /= el;
+      }
+      nrm[pi * 4] = Math.round((ex + 1) * 127.5); nrm[pi * 4 + 1] = Math.round((ey + 1) * 127.5); nrm[pi * 4 + 2] = Math.round((ez + 1) * 127.5); nrm[pi * 4 + 3] = 255;
+    }
+  }
+  log(`baked ${rays.toLocaleString()} texels (${((fallback / Math.max(rays, 1)) * 100).toFixed(1)}% by closest point)`);
+  // fill everything outside the charts from the nearest baked texel so mips and filtering stay clean
+  const covered = nrm.map((v, i) => (i % 4 === 3 ? v : 0));
+  const fill = img => { const t = { w: size, h: size, data: img }; for (let i = 3; i < img.length; i += 4) img[i] = covered[i]; bleed(t); for (let i = 3; i < img.length; i += 4) img[i] = 255; return t; };
+  // (with alpha cut-outs, every transparent texel — outside the charts or cut — takes its neighbour's colour)
+  const baseImg = cutout ? bleed({ w: size, h: size, data: base }) : fill(base);
+  const out = { metallic: src.mf, roughness: src.rf, alpha: cutout };
+  if (src.base) out.base = { bytes: encodePNG(baseImg, cutout), mime: 'image/png' };
+  out.normal = { bytes: encodePNG(fill(nrm), false), mime: 'image/png' };
+  if (src.metal || src.rough) { out.mr = { bytes: encodePNG(fill(mr), false), mime: 'image/png' }; out.metallic = 1; out.roughness = 1; }
+  return out;
+}
+
 // ---------------------------------------------------------------- main
 export function loadInput(input) {
   const lower = input.toLowerCase(), files = lower.endsWith('.glb') ? {} : gatherInputs(input);
@@ -840,7 +1160,7 @@ export function loadInput(input) {
   return { mesh, files };
 }
 export function reduce(mesh, target) {
-  weld(mesh);
+  if (!mesh.welded) weld(mesh);
   log(`welded to ${(mesh.P.length / 3).toLocaleString()} positions, ${(mesh.tris.length / 3).toLocaleString()} triangles`);
   if (mesh.tris.length / 3 > target * 40) {
     cluster(mesh, target * 40);
@@ -863,10 +1183,25 @@ function main() {
     const tex = b && (!b.mime || b.mime === 'image/png') ? decodePNG(b.bytes) : null;
     renderCards(mesh, tex, path.join(path.dirname(out), path.basename(o.input).replace(/(_\d+tris)?\.(zip|fbx|glb)$/i, '')), o.tex, o.yup);
   }
+  let hi = null;
+  if (o.bake) {
+    weld(mesh);
+    hi = { P: mesh.P.slice(), tris: mesh.tris.slice(), UV: mesh.UV.slice() };
+    if (startTris > BAKE_DIRECT_MAX) {
+      hi.extent = mesh.extent;
+      if (startTris > BAKE_INTERMEDIATE * 2) cluster(hi, BAKE_INTERMEDIATE * 2);
+      simplify(hi, BAKE_INTERMEDIATE);
+      log(`bake source: ${(hi.tris.length / 3).toLocaleString()}-triangle intermediate`);
+    }
+  }
   reduce(mesh, o.target);
-  const geo = buildOutput(mesh, o.yup);
+  let tex;
+  if (o.bake) log(`unwrapped into ${unwrap(mesh, o.tex)} charts`);
+  const geo = buildOutput(mesh);
   log(`output ${(geo.pos.length / 3).toLocaleString()} vertices`);
-  const tex = prepareTextures(files, mesh.glb, o.tex);
+  if (o.bake) { tangents(geo); tex = bake(geo, hi, sourceMaps(files, mesh.glb), o.tex); hi = null; }
+  else tex = prepareTextures(files, mesh.glb, o.tex);
+  if (o.yup) toYup(geo);
   const file = out.replace('_TRIStris.glb', `_${geo.idx.length / 3}tris.glb`);
   writeGLB(file, geo, tex, path.basename(file, '.glb'));
   const rss = process.resourceUsage().maxRSS / 1024;

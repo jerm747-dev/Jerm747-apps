@@ -40,7 +40,7 @@ For exports too big for the browser (Meshy FBX zips of 250–380 MB, millions of
 Plain Node 18+, no `npm install` needed.
 
 ```bash
-node cli/meshlab.mjs <input.zip|.fbx|.glb> --target 4000 [--tex 1024] [--out x.glb] [--yup] [--card]
+node cli/meshlab.mjs <input.zip|.fbx|.glb> --target 4000 [--tex 1024] [--out x.glb] [--yup] [--bake] [--card]
 ```
 
 - `input`: a Meshy zip (binary FBX + `*_texture/_normal/_metallic/_roughness.png`), a bare
@@ -49,6 +49,10 @@ node cli/meshlab.mjs <input.zip|.fbx|.glb> --target 4000 [--tex 1024] [--out x.g
 - `--tex`: largest texture side in pixels (default 1024).
 - `--out`: output file (default: next to the input, named `<name>_<tris>tris.glb`).
 - `--yup`: rotate Meshy's Z-up geometry to Y-up. Without it the raw Z-up geometry is kept.
+- `--bake`: give the reduced mesh its own UV atlas and rebake its textures from the full-detail
+  model: base colour, metal/roughness, and a tangent-space normal map (geometry detail plus Meshy's
+  normal map). Tangents are written into the GLB. Inputs over 1.5M triangles bake from a ~300k-triangle
+  intermediate to keep memory down.
 - `--card`: also render the full-detail model from 4 side angles (0/45/90/135°) into trimmed,
   transparent PNGs (`<name>_card000.png`…, `--tex` pixels across) for crossed-card billboards.
   This is the main path for plants. `<name>_cards.json` gives each card's world size and where it
