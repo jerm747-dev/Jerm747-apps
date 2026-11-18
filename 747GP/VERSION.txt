@@ -1,4 +1,3 @@
 747 GP local build
-Version: 1.1
-Build: 6
-Date: 2026-11-17 16:22 EST
+Version: 1.2.15
+Date: 2026-11-18 09:53 EST

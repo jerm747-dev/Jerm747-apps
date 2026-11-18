@@ -1,0 +1,9 @@
+game_class,vehicle,axle,tire_outer_diameter_mm,tire_width_mm,outer_face_png,angled_view_png
+100cc,Sprint kart,front,260,130,100cc-kart-front-face.png,100cc-kart-front-angled.png
+100cc,Sprint kart,rear,280,200,100cc-kart-rear-face.png,100cc-kart-rear-angled.png
+600cc,GT coupe,front,680,280,600cc-gt-front-face.png,600cc-gt-front-angled.png
+600cc,GT coupe,rear,700,330,600cc-gt-rear-face.png,600cc-gt-rear-angled.png
+1200cc,Supercar,front,680,300,1200cc-supercar-front-face.png,1200cc-supercar-front-angled.png
+1200cc,Supercar,rear,720,380,1200cc-supercar-rear-face.png,1200cc-supercar-rear-angled.png
+1800cc,Formula,front,660,300,1800cc-formula-front-face.png,1800cc-formula-front-angled.png
+1800cc,Formula,rear,720,420,1800cc-formula-rear-face.png,1800cc-formula-rear-angled.png

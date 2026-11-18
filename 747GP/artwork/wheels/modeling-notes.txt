@@ -1,0 +1,7 @@
+747 GP wheel references
+
+Each class has one front and one rear tire-and-rim design. Use each design on both sides of its axle. Front and rear cutouts within a class use the same scale. Each PNG has a transparent 640 × 640 canvas. Straight-on views center the outer tire outline on the canvas. In the angled views, the outer face is on the left and the tire extends to the right.
+
+Wheel-dimensions-mm.csv gives the outside tire diameter and tire width from the uploaded game prototype. Use these numbers to size a 3D mesh. The images supply visual references for profile, spoke shape, tread and finish. Calipers and brake discs are separate from the wheel.
+
+The kart and Formula references use the slick tread from the approved vehicle artwork; the coupe and supercar use road tread.

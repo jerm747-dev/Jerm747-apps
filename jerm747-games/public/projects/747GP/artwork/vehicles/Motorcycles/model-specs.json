@@ -1,0 +1,126 @@
+{
+  "units": "millimeters unless marked otherwise",
+  "status": "Fictional game modeling targets; drawn views may vary slightly.",
+  "vehicles": [
+    {
+      "model_id": "IOU-V4",
+      "display_name": "I.O.U. V4",
+      "expansion": "Italian Overtaking Unit",
+      "vehicle": "Flagship superbike",
+      "wheel_style": "Three swept split spokes",
+      "scale_target_mm": {
+        "length": 2090,
+        "body_width": 755,
+        "height": 1130,
+        "wheelbase": 1460
+      },
+      "front": {
+        "tire": "120/70 R17",
+        "width_mm": 120,
+        "rim_diameter_in": 17,
+        "tire_outer_diameter_mm": 599.8
+      },
+      "rear": {
+        "tire": "200/55 R17",
+        "width_mm": 200,
+        "rim_diameter_in": 17,
+        "tire_outer_diameter_mm": 651.8
+      },
+      "wheel_files": "Wheels/IOU-V4",
+      "wheel_instances": {
+        "front": "front",
+        "rear": "rear"
+      }
+    },
+    {
+      "model_id": "OOO-1800",
+      "display_name": "O.O.O. 1800",
+      "expansion": "Out of Office",
+      "vehicle": "Big V-twin cruiser",
+      "wheel_style": "Slotted cast cruiser wheel",
+      "scale_target_mm": {
+        "length": 2470,
+        "body_width": 990,
+        "height": 1160,
+        "wheelbase": 1660
+      },
+      "front": {
+        "tire": "130/70 R18",
+        "width_mm": 130,
+        "rim_diameter_in": 18,
+        "tire_outer_diameter_mm": 639.2
+      },
+      "rear": {
+        "tire": "240/40 R18",
+        "width_mm": 240,
+        "rim_diameter_in": 18,
+        "tire_outer_diameter_mm": 649.2
+      },
+      "wheel_files": "Wheels/OOO-1800",
+      "wheel_instances": {
+        "front": "front",
+        "rear": "rear"
+      }
+    },
+    {
+      "model_id": "PTA-R",
+      "display_name": "P.T.A. R",
+      "expansion": "Permission to Apex",
+      "vehicle": "Track superbike",
+      "wheel_style": "Forked track spokes",
+      "scale_target_mm": {
+        "length": 2050,
+        "body_width": 735,
+        "height": 1150,
+        "wheelbase": 1410
+      },
+      "front": {
+        "tire": "120/70 R17",
+        "width_mm": 120,
+        "rim_diameter_in": 17,
+        "tire_outer_diameter_mm": 599.8
+      },
+      "rear": {
+        "tire": "190/55 R17",
+        "width_mm": 190,
+        "rim_diameter_in": 17,
+        "tire_outer_diameter_mm": 640.8
+      },
+      "wheel_files": "Wheels/PTA-R",
+      "wheel_instances": {
+        "front": "front",
+        "rear": "rear"
+      }
+    },
+    {
+      "model_id": "WIP-SM",
+      "display_name": "W.I.P. SM",
+      "expansion": "Wheelie in Progress",
+      "vehicle": "Street supermoto",
+      "wheel_style": "Cross-laced wire spokes",
+      "scale_target_mm": {
+        "length": 2150,
+        "body_width": 825,
+        "height": 1200,
+        "wheelbase": 1480
+      },
+      "front": {
+        "tire": "120/70 R17",
+        "width_mm": 120,
+        "rim_diameter_in": 17,
+        "tire_outer_diameter_mm": 599.8
+      },
+      "rear": {
+        "tire": "160/60 R17",
+        "width_mm": 160,
+        "rim_diameter_in": 17,
+        "tire_outer_diameter_mm": 623.8
+      },
+      "wheel_files": "Wheels/WIP-SM",
+      "wheel_instances": {
+        "front": "front",
+        "rear": "rear"
+      }
+    }
+  ]
+}

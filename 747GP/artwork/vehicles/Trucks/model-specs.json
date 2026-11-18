@@ -1,0 +1,135 @@
+{
+  "units": "millimeters unless marked otherwise",
+  "status": "Fictional game modeling targets; drawn views may vary slightly.",
+  "vehicles": [
+    {
+      "model_id": "PTO",
+      "display_name": "P.T.O.",
+      "expansion": "Paid to Overtake",
+      "vehicle": "Street pickup",
+      "wheel_style": "Six-spoke street alloy",
+      "scale_target_mm": {
+        "length": 5250,
+        "body_width": 2030,
+        "height": 1740,
+        "wheelbase": 3250
+      },
+      "front": {
+        "tire": "285/45 R20",
+        "width_mm": 285,
+        "rim_diameter_in": 20,
+        "tire_outer_diameter_mm": 764.5
+      },
+      "rear": {
+        "tire": "285/45 R20",
+        "width_mm": 285,
+        "rim_diameter_in": 20,
+        "tire_outer_diameter_mm": 764.5
+      },
+      "wheel_files": "Wheels/PTO",
+      "wheel_instances": {
+        "front_left": "all-corners",
+        "front_right": "all-corners",
+        "rear_left": "all-corners",
+        "rear_right": "all-corners"
+      }
+    },
+    {
+      "model_id": "SS-55",
+      "display_name": "S.S. 55",
+      "expansion": "Supposedly Stock",
+      "vehicle": "Stepside sleeper",
+      "wheel_style": "Polished moon cap on painted steel",
+      "scale_target_mm": {
+        "length": 4800,
+        "body_width": 1870,
+        "height": 1670,
+        "wheelbase": 2860
+      },
+      "front": {
+        "tire": "235/65 R16",
+        "width_mm": 235,
+        "rim_diameter_in": 16,
+        "tire_outer_diameter_mm": 711.9
+      },
+      "rear": {
+        "tire": "235/65 R16",
+        "width_mm": 235,
+        "rim_diameter_in": 16,
+        "tire_outer_diameter_mm": 711.9
+      },
+      "wheel_files": "Wheels/SS-55",
+      "wheel_instances": {
+        "front_left": "all-corners",
+        "front_right": "all-corners",
+        "rear_left": "all-corners",
+        "rear_right": "all-corners"
+      }
+    },
+    {
+      "model_id": "BRB-4x4",
+      "display_name": "B.R.B. 4\u00d74",
+      "expansion": "Be Right Back",
+      "vehicle": "Two-door 4\u00d74",
+      "wheel_style": "Eight-spoke utility alloy",
+      "scale_target_mm": {
+        "length": 4320,
+        "body_width": 1930,
+        "height": 1830,
+        "wheelbase": 2540
+      },
+      "front": {
+        "tire": "265/65 R17",
+        "width_mm": 265,
+        "rim_diameter_in": 17,
+        "tire_outer_diameter_mm": 776.3
+      },
+      "rear": {
+        "tire": "265/65 R17",
+        "width_mm": 265,
+        "rim_diameter_in": 17,
+        "tire_outer_diameter_mm": 776.3
+      },
+      "wheel_files": "Wheels/BRB-4x4",
+      "wheel_instances": {
+        "front_left": "all-corners",
+        "front_right": "all-corners",
+        "rear_left": "all-corners",
+        "rear_right": "all-corners",
+        "tailgate_spare": "all-corners"
+      }
+    },
+    {
+      "model_id": "VIP-GT",
+      "display_name": "V.I.P. GT",
+      "expansion": "Valet Is Panicking",
+      "vehicle": "Fastback GT utility",
+      "wheel_style": "Split-spoke GT alloy",
+      "scale_target_mm": {
+        "length": 5000,
+        "body_width": 1990,
+        "height": 1590,
+        "wheelbase": 2990
+      },
+      "front": {
+        "tire": "285/40 R22",
+        "width_mm": 285,
+        "rim_diameter_in": 22,
+        "tire_outer_diameter_mm": 786.8
+      },
+      "rear": {
+        "tire": "285/40 R22",
+        "width_mm": 285,
+        "rim_diameter_in": 22,
+        "tire_outer_diameter_mm": 786.8
+      },
+      "wheel_files": "Wheels/VIP-GT",
+      "wheel_instances": {
+        "front_left": "all-corners",
+        "front_right": "all-corners",
+        "rear_left": "all-corners",
+        "rear_right": "all-corners"
+      }
+    }
+  ]
+}

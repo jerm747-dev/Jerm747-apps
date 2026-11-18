@@ -1,0 +1,9 @@
+747 GP  /  Trackside assets
+
+GROUND
+Four 1024 x 1024 sRGB color textures. Use repeat wrapping in both directions on the road or terrain. About two metres per repeat is a starting point. Lay painted lines and curbs separately. The dark asphalt is the main circuit surface. The lighter aggregate suits service lanes. Mown turf is for the maintained infield and rough verge grass is for the edges.
+
+VEGETATION
+Eight individual sRGB PNGs with alpha. Keep each image's aspect ratio and place its trunk or stem base at ground level. For a roadside billboard, turn the card toward the camera around its vertical axis only, so the plant stays upright. Start with alpha testing around 0.35 and adjust for viewing distance. These are single-angle cutouts. Use mesh vegetation for close camera orbits.
+
+The cutouts are framed independently. Scale each to the height you want in the scene. A useful first placement is one tall pine behind a lower oak, with wax myrtle between trunks and a few small tufts where the mown turf meets the verge.

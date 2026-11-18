@@ -1,0 +1,22 @@
+747 GP  |  TRUCKS & MOTORCYCLES
+Modeling reference set  •  v1.0
+
+Open Vehicle-roster.jpg to choose a ride. Trucks and Motorcycles each have their own approved cover, four vehicle folders, a Wheels folder, and model-specs.json.
+
+Each vehicle folder contains
+• A labeled six-view tech sheet with the model code, full nickname and proposed scale.
+• Six individual views of the assembled ride on white. Use the profiles for wheelbase and silhouette, the top view for plan shape, and the three-quarter view for surfaces and livery.
+• One isolated body-only image. The truck wheel wells and motorcycle fork and swingarm are exposed so wheels can be built as separate parts. All motorcycle views are rider-free.
+
+Wheels
+Each vehicle has a dedicated wheel design. Every modeled wheel is pictured straight on and at an angle. Start with the face for spoke layout and the angled view for the rim lip, tread profile and barrel. Wheel files are the design reference for spoke count and rim detail when a small assembled view differs.
+
+For each truck, instance its all-corners wheel on all four hubs and orient the visible faces outward. The B.R.B. also uses this wheel for its tailgate spare. For motorcycles, model the front and rear from their own images. Brake discs, calipers and final-drive parts can be fitted separately as appropriate to the bike.
+
+Scale and alignment
+Tech-sheet measurements are proposed dimensions for the fictional game models. In model-specs.json, length, body width and height are assembled dimensions in millimeters. Wheelbase is measured axle-center to axle-center. Tire section width and nominal outer diameter are also in millimeters; rim diameter is in inches. Tires use width/aspect ratio and rim diameter. Scale each source view against its own wheelbase or overall dimension before tracing. Views are individually framed studio concept renders and can vary slightly between angles. Use the approved cover for silhouette and paint, and the metric targets when blocking out a mesh.
+
+Optional rider
+Motorcycles/Optional-rider contains a shared helmeted rider in a neutral A-pose from front and back. Pose the rider after the seat, bars and foot controls have been placed.
+
+Contents are image references for creating 3D assets. Ready-made meshes, textures unwrapped to UVs and rigging are outside this reference pack.
