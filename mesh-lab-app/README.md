@@ -30,6 +30,9 @@ The batch box default is the `value="41460"` on `#batchTarget` in `index.html`.
 
 ## Notes
 
+- Exports fix up Meshy materials: no stray glow, Meshy's `_metallic` / `_roughness` images are attached when they're
+  in the zip, and textures are written as 1024 px JPEG (change `EXPORT_TEX_SIZE` in `src/main.js`).
+
 - Fonts fall back to your system fonts so nothing loads from the web.
 - Downloads use a normal browser download outside Claude.
 - Draco-compressed GLBs aren't supported yet. Export from Meshy without compression.
