@@ -60,3 +60,19 @@
 .gp-loader .gp-ltip{font:600 12px/1.4 Arial,sans-serif;color:#7d8490;max-width:440px;min-height:1.4em;transition:opacity .4s}
 @media (max-height:500px){.gp-loader .gp-lmid{width:min(52vw,420px)}.gp-loader .gp-lbot{margin-top:24px}}
 @media (prefers-reduced-motion:reduce){.gp-spin i{animation-duration:2.4s}}
+/* ---- GP wallet chip (mode select onward; hidden on the title, studio card and full-screen loaders) ---- */
+.gp-wallet{position:fixed;z-index:25;display:flex;align-items:baseline;gap:5px;padding:5px 12px 6px 10px;border:0;cursor:pointer;color:#fff;
+  clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,9px 100%,0 calc(100% - 9px));background:linear-gradient(#2c3037,#14161a);
+  box-shadow:inset 0 -2px 0 #000,inset 0 1px 0 #ffffff1c;font:italic 800 15px/1 Arial,sans-serif;-webkit-tap-highlight-color:transparent;max-width:min(92vw,520px)}
+.gp-wallet.inline{position:relative;z-index:auto;font-size:12px;padding:4px 10px 5px 8px}
+.gp-wallet i{align-self:center;width:14px;height:10px;background:#ffac28;clip-path:polygon(0 100%,37.7% 0,52.2% 0,14.5% 100%,0 100%,23.9% 100%,61.6% 0,76.1% 0,38.4% 100%,23.9% 100%,47.8% 100%,85.5% 0,100% 0,62.3% 100%,47.8% 100%)}
+.gp-wallet span{font-size:.68em;color:#ffcf6e;letter-spacing:.08em}
+.gp-wallet em{display:none;font:600 11px/1.2 Arial,sans-serif;color:#aab0ba;margin-left:6px;white-space:nowrap;font-style:normal}
+.gp-wallet.open em{display:inline}
+.gp-wallet:focus-visible{outline:2px solid #ffd84a;outline-offset:2px}
+.gp-wallet[hidden]{display:none}
+.gp-wallet.at-tr{top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
+.gp-wallet.at-tl{top:calc(10px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left))}
+.gp-wallet.at-tc{top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%)}
+.gp-wallet.at-br{bottom:calc(10px + env(safe-area-inset-bottom));right:calc(10px + env(safe-area-inset-right))}
+.gp-wallet.at-bl{bottom:calc(10px + env(safe-area-inset-bottom));left:calc(10px + env(safe-area-inset-left))}

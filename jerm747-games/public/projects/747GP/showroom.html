@@ -97,6 +97,7 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
 <script>
 document.getElementById('back').href = GPLaunch.link('index.html#setup');
 document.getElementById('session-label').textContent = (GPLaunch.mode === 'arcade' ? 'ARCADE' : 'TIME TRIAL') + ' · SELECT YOUR RIDE';
+{const w=GPUI.gpChip({inline:document.getElementById('nm').parentNode});w.el.style.cssText='pointer-events:auto;margin:6px 0 0';document.getElementById('nm').parentNode.insertBefore(w.el,document.getElementById('nm'));}
 </script>
 <script src="vendor/three-r128.min.js"></script>
 <script>
@@ -107,7 +108,7 @@ const cars=[
  {id:'gt',cc:600,kind:'gt',type:'Cars',n:'Velvet Fang',m:'GT coupe',c:'600cc',col:'#ff5d8f',wb:2.65,len:5.0,gears:'8-speed auto',dt:'road-going GT',s:{Speed:50,Accel:58,Handling:76,Braking:70}},
  {id:'hyper',cc:1200,kind:'hyper',type:'Cars',n:'Cinder Wyvern',m:'Hypercar',c:'1200cc',col:'#ffb04a',wb:2.77,len:5.0,gears:'8-speed auto',dt:'mid-engine hypercar',s:{Speed:75,Accel:80,Handling:72,Braking:82}},
  {id:'f1',cc:1800,kind:'f1',type:'Cars',n:'Midnight Talon',m:'Formula car',c:'1800cc',col:'#6aa8ff',wb:3.3,len:5.4,gears:'8-speed auto',dt:'open-wheel single-seater',s:{Speed:100,Accel:95,Handling:86,Braking:96}},
- {id:'ss55',cc:600,kind:'ss55',type:'Trucks',n:'S.S. 55',m:'Supposedly Stock',c:'600cc',col:'#5b8cff',wb:2.86,len:4.8,gears:'8-speed auto',dt:'stepside sleeper',s:{Speed:50,Accel:60,Handling:55,Braking:55}},
+ {id:'ss55',cc:1800,kind:'ss55',type:'Trucks',n:'S.S. 55',m:'Supposedly Stock',c:'1800cc',col:'#5b8cff',wb:2.86,len:4.8,gears:'8-speed auto',dt:'stepside sleeper',s:{Speed:90,Accel:92,Handling:50,Braking:62}},
  {id:'brb',cc:600,kind:'brb',type:'Trucks',n:'B.R.B. 4×4',m:'Be Right Back',c:'600cc',col:'#3d7bff',wb:2.54,len:4.32,gears:'8-speed auto',dt:'two-door 4×4',s:{Speed:48,Accel:55,Handling:52,Braking:52}},
  {id:'pto',cc:1200,kind:'pto',type:'Trucks',n:'P.T.O.',m:'Paid to Overtake',c:'1200cc',col:'#4aa3ff',wb:3.25,len:5.25,gears:'8-speed auto',dt:'street pickup',s:{Speed:72,Accel:74,Handling:62,Braking:70}},
  {id:'vipgt',cc:1200,kind:'vipgt',type:'Trucks',n:'V.I.P. GT',m:'Valet Is Panicking',c:'1200cc',col:'#2f8fff',wb:2.99,len:5.0,gears:'8-speed auto',dt:'fastback GT utility',s:{Speed:76,Accel:78,Handling:68,Braking:74}},

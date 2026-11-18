@@ -33,6 +33,15 @@ Racing line (1.2.18)
   The rivals drive the same line as a "soft slot": a pass or a bump moves them off it, they
   ease back on, and a hit costs them a beat of pace while they shake it off.
 
+1.3
+  Touch controls: Pro is the default. Settings > TOUCH STYLE switches to Classic (original).
+  GP points: every finished race pays out, win or lose (Arcade 100 GP a lap, Time Trial
+  50 GP a full lap). Your total shows top-right from mode select on, and on the results;
+  tap it for races, wins, podiums, credits and your best finish.
+  Contacts and hazards: cars push each other, kerbs, grass, gravel and walls have their own
+  sounds and controller rumble. hazards/747GP-Hazard-Test.html auditions them.
+  S.S. 55 (the sleeper) now runs in the 1800 class.
+
 Saved on this device
   Your choices (mode, gearbox, ride, track, opponents), every finished race, your
   best laps, GP points and boost credits. "Share times" on the results screen is an opt-in switch for the online
@@ -61,3 +70,4 @@ Files
   finish/        podium stage, rider and rewards
   cars/          car + wheel models (base64 GLB in .js)
   veg/ tex/ scene/  trackside art
+  hazards/       contact physics, hazard sounds, full-field results

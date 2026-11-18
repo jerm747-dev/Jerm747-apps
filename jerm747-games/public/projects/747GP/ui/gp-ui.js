@@ -133,5 +133,46 @@ window.GPUI = (() => {
     return audioP;
   }
   function sfx(name, opts) { if (!soundOn()) return; audio().then(a => { if (a) { a.unlock(); a.play(name, opts); } }); }
-  return {flag, loader, menu, stepper, TIPS, audio, sfx, soundOn};
+  // ---------- career: GP wallet + records, all from this device's storage ----------
+  // GP / credits: one immutable record per finished race (finish/rewards.js, prefix gp747.finish.v1.).
+  // Races / wins / podiums / best laps: the saved results history (gp747results).
+  const GP_PREFIX = 'gp747.finish.v1.';
+  function career() {
+    let gp = 0, cr = 0, races = 0, wins = 0, podiums = 0, laps = 0, best = null;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i); if (!k || !k.startsWith(GP_PREFIX)) continue;
+        try { const r = JSON.parse(localStorage.getItem(k)); if (r && Number.isSafeInteger(r.gp)) { gp += r.gp; cr += r.cr || 0; } } catch {}
+      }
+      const h = JSON.parse(localStorage.getItem('gp747results') || '[]');
+      for (const r of h) {
+        if (r.laps) laps += r.laps.length;
+        if (r.mode !== 'arcade') continue;
+        races++;
+        if (r.pos === 1 && r.field > 1) wins++;
+        if (r.pos && r.pos <= 3 && r.field > 1) podiums++;
+        if (r.pos && (best === null || r.pos < best)) best = r.pos;
+      }
+    } catch {}
+    return {gp, cr, races, wins, podiums, laps, best};
+  }
+  // small wallet chip: where = 'tr' | 'tl' | 'tc' | 'br' | 'bl', or {inline: element} to sit inside a row
+  function gpChip(o = {}) {
+    const el = document.createElement('button');
+    el.className = 'gp-wallet' + (o.inline ? ' inline' : ' at-' + (o.where || 'tr'));
+    el.type = 'button'; el.setAttribute('aria-label', 'GP points');
+    el.innerHTML = '<i aria-hidden="true"></i><b>0</b><span>GP</span><em></em>';
+    const upd = () => {
+      const c = career();
+      el.querySelector('b').textContent = c.gp.toLocaleString();
+      el.querySelector('em').textContent = c.races + ' race' + (c.races === 1 ? '' : 's') + ' · ' + c.wins + ' win' + (c.wins === 1 ? '' : 's') + ' · ' + c.podiums + ' podium' + (c.podiums === 1 ? '' : 's') + ' · ' + c.cr.toLocaleString() + ' credits' + (c.best ? ' · best P' + c.best : '');
+      el.title = el.querySelector('em').textContent;
+    };
+    el.addEventListener('click', e => { e.stopPropagation(); el.classList.toggle('open'); });
+    addEventListener('storage', upd);
+    (o.inline || document.body).appendChild(el);
+    upd();
+    return {el, update: upd, show(v) { el.hidden = !v; }};
+  }
+  return {flag, loader, menu, stepper, TIPS, audio, sfx, soundOn, career, gpChip};
 })();

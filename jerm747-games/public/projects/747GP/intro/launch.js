@@ -50,8 +50,10 @@
   });
   nav.active = false;
 
+  const wallet = GPUI.gpChip({where: 'tr'});
   function show(next) {
     scene = next;
+    wallet.show(next === 'setup');
     document.documentElement.dataset.screen = next;
     for (const name of sections) byId(name).hidden = name !== next;
     nav.active = next === 'setup';
