@@ -1,5 +1,6 @@
 // 747 GP shared UI: flag loader + menu focus helper. No dependencies.
 window.GPUI = (() => {
+  const KIT_BASE = (document.currentScript && document.currentScript.src) || new URL('ui/gp-ui.js', location.href).href;
   // ---------- waving chequered flag (canvas 2D, pinned at the left like a flag on a pole) ----------
   function flag(canvas) {
     const g = canvas.getContext('2d');
@@ -89,11 +90,11 @@ window.GPUI = (() => {
       if (!active) return;
       const L = list(); if (!L.length) return;
       const e = cur();
-      if (a === 'up') mark(i - 1);
-      else if (a === 'down') mark(i + 1);
-      else if (a === 'left' || a === 'right') { if (e && e.gpStep) e.gpStep(a === 'left' ? -1 : 1); else if (o.onSide) o.onSide(a, e); }
-      else if (a === 'confirm') e && e.click();
-      else if (a === 'back') o.onBack && o.onBack();
+      if (a === 'up') { mark(i - 1); sfx('click.up'); }
+      else if (a === 'down') { mark(i + 1); sfx('click.down'); }
+      else if (a === 'left' || a === 'right') { sfx(a === 'left' ? 'click.down' : 'click.up'); if (e && e.gpStep) e.gpStep(a === 'left' ? -1 : 1); else if (o.onSide) o.onSide(a, e); }
+      else if (a === 'confirm') { sfx('click.select'); e && e.click(); }
+      else if (a === 'back') { sfx('chime.back'); o.onBack && o.onBack(); }
       else if (o.onOther) o.onOther(a, e);
     }
     const keys = {ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Enter: 'confirm', NumpadEnter: 'confirm', Escape: 'back', Backspace: 'back'};
@@ -122,5 +123,15 @@ window.GPUI = (() => {
     return {get value() { return values[idx]; }, set(i) { idx = i; upd(); }};
   }
 
-  return {flag, loader, menu, stepper, TIPS};
+  // ---------- sound kit (sound/gp-audio.js), shared by every page; follows the game's sound switch ----------
+  let audioP = null;
+  function soundOn() { try { return localStorage.getItem('gp747sound') === '1'; } catch { return false; } }
+  function audio() {
+    if (!audioP) audioP = import(new URL('../sound/gp-audio.js', KIT_BASE).href)
+      .then(m => m.GPAudio.create()).then(a => { const u = () => a.unlock(); addEventListener('pointerdown', u); addEventListener('keydown', u); u(); return a; })
+      .catch(e => { console.warn('747GP sound kit unavailable', e); return null; });
+    return audioP;
+  }
+  function sfx(name, opts) { if (!soundOn()) return; audio().then(a => { if (a) { a.unlock(); a.play(name, opts); } }); }
+  return {flag, loader, menu, stepper, TIPS, audio, sfx, soundOn};
 })();

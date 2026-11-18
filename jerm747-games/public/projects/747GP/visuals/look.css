@@ -1,0 +1,13 @@
+.gp-graded [data-gp-menu-art] { filter: url(#gp-menu-tone); }
+.gp-look { color: #eceff2; pointer-events: auto; text-align:left; font:600 13px/1.35 Barlow,system-ui,sans-serif; }
+.gp-look summary { padding:9px 12px; border:1px solid #55606b; border-radius:8px; background:#101318f5; cursor:pointer; }
+.gp-tune { padding:10px 12px; border:1px solid #434c56; border-radius:8px; background:#11151bf7; }
+.gp-tune label { display:grid; grid-template-columns:1fr auto; gap:2px 8px; align-items:center; margin:7px 0; }
+.gp-tune label:first-child { margin-top:0; }
+.gp-tune output { color:#b9cddd; font-variant-numeric:tabular-nums; font-size:11px; }
+.gp-tune input { accent-color:#ffad45; }
+.gp-tune input[type=range] { grid-column:1/-1; width:100%; min-height:20px; margin:0; touch-action:pan-y; }
+.gp-tune button { display:block; margin:10px 0 0; padding:5px 0; font:inherit; color:#ffc173; background:none; border:0; cursor:pointer; }
+.gp-look :focus-visible { outline:2px solid #92c5ff; outline-offset:2px; }
+.gp-look.gp-showroom { position:fixed; z-index:3; right:max(16px,env(safe-area-inset-right)); top:calc(78px + env(safe-area-inset-top)); }
+.gp-showroom .gp-tune { width:min(226px,75vw); max-height:calc(100dvh - 134px); overflow:auto; overscroll-behavior:contain; }

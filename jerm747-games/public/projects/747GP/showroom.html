@@ -58,11 +58,15 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
 @media (max-width:520px){.specs{grid-template-columns:repeat(2,1fr)}.stat{margin:5px 0}.panel{padding:12px 14px 14px}}
 </style>
 <link rel="stylesheet" href="ui/gp-ui.css">
+<link rel="stylesheet" href="visuals/look.css">
+<script src="visuals/look.js"></script>
+<script src="visuals/render.js"></script>
 <script src="intro/session.js"></script>
 <script src="ui/gp-ui.js"></script>
 </head>
 <body>
 <canvas id="c"></canvas>
+<details class="gp-look gp-showroom" data-gp-visuals></details>
 <div class="hint" id="hint">LOADING SHOWROOM…</div>
 <div class="ui">
   <div class="top">
@@ -290,9 +294,10 @@ canvas.addEventListener('pointerup',e=>{if(sx!==null){const d=e.clientX-sx;if(Ma
 
 /* loop */
 let last=performance.now(),spin=0;
+const renderLook=window.GPVisuals?GPVisuals.createRenderer(THREE,renderer,scene,camera):()=>renderer.render(scene,camera);
 function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;
  spin+=dt*.38;table.rotation.y=spin;current.rotation.y=spin;
- stepAnim(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}
+ stepAnim(dt);renderLook();requestAnimationFrame(loop)}
 paint();requestAnimationFrame(loop);
 })();
 </script>

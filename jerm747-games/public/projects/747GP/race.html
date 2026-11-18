@@ -260,6 +260,10 @@
   #err{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:#fff;background:#222;font-size:15px;padding:20px;text-align:center;z-index:9}
 </style>
 <link rel="stylesheet" href="ui/gp-ui.css">
+<link rel="stylesheet" href="visuals/look.css">
+<script src="visuals/look.js"></script>
+<script src="visuals/render.js"></script>
+<script src="finish/rewards.js"></script>
 <script src="intro/session.js"></script>
 <script src="ui/gp-ui.js"></script>
 <style>
@@ -315,7 +319,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
 .rRow.me{background:#ffac2826}.rRow.me .p,.rRow.me .t{color:#ffcf6e}.rRow small{color:#7d8597;font-size:10.5px;margin-left:6px}
 .rRank{font-size:12px;color:#aab0ba;min-height:16px}.rRank b{color:#ffcf6e}
 .rShare{display:flex;align-items:center;gap:10px;font-size:11px;color:#7d8597}.rShare .gp-chip{min-height:26px;padding:4px 10px;font-size:10.5px;flex:none}
-.rBtns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-top:4px}.rBtns .gp-button:first-child{grid-column:1/-1}
+.rBtns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;margin-top:4px}.rBtns .gp-button:first-child,.rBtns #rPodium[hidden]+#rNext{grid-column:1/-1}
 @media (orientation:portrait){#results{background:linear-gradient(0deg,#07080af7 0%,#07080aee 62%,#07080a99 82%,transparent)}#results .rwrap{margin:0 auto;justify-content:flex-end}}
 @media (max-height:720px){#results .rwrap{gap:6px}.rHead big{font-size:56px}.rTable{max-height:24vh}.rRow{padding:3px 8px}#shareNote{display:none}.rKick{font-size:10px}.rRide{font-size:12px}.rBtns .gp-button{min-height:34px}}
 @media (max-height:520px){.rHead big{font-size:40px}.rTable{max-height:20vh}.rStat{padding:3px 8px}.rStat b{font-size:14px}.rLaps span{padding:2px 6px;font-size:11px}#results .rwrap{width:min(600px,60vw)}}
@@ -387,6 +391,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
   <div class="rRank" id="rRank"></div>
   <div class="rShare"><button class="gp-chip dark" id="shareBtn">SHARE TIMES: OFF</button><span id="shareNote">Opt-in. Times stay on this device until online boards go live.</span></div>
   <div class="rBtns">
+    <button class="gp-button gp-custom" id="rPodium" hidden><span class="gp-marks"></span><span class="gp-caption" id="rPodCap">Podium &amp; rewards</span></button>
     <button class="gp-button gp-custom" id="rNext"><span class="gp-marks"></span><span class="gp-caption" id="rNextCap">Next race</span></button>
     <button class="gp-button gp-custom" id="rAgain"><span class="gp-marks one"></span><span class="gp-caption">Restart race</span></button>
     <button class="gp-button gp-custom" id="rRide2"><span class="gp-marks"></span><span class="gp-caption">Change ride</span></button>
@@ -409,7 +414,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
 </div></div>
 <div id="trackList" class="carbon"></div>
 <div id="menu" class="carbon">
-  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.17</small></div><button id="menuX" aria-label="Close">✕</button></div>
+  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.18</small></div><button id="menuX" aria-label="Close">✕</button></div>
   <div class="ctlrow">
     <div class="ctlgrp">
       <div class="ctlpair">
@@ -442,6 +447,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
       <button class="tog" id="resetBtn">RESET CAR</button>
     </div>
     <div class="msec"><h4>DISPLAY</h4>
+      <details class="gp-look" data-gp-visuals></details>
       <button class="tog" id="camBtn">CAM: CHASE</button>
       <button class="tog" id="whlBtn">WHEELS: …</button>
       <button class="tog" id="rimBtn">WHEELS: CHROME</button>
@@ -481,7 +487,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
   <div class="label">DRIVE CONTROL</div>
 </div>
 
-<script>window.GP_VERSION="1.2.17";window.GP_BUILD=17;console.log("747 GP v"+GP_VERSION);
+<script>window.GP_VERSION="1.2.18";window.GP_BUILD=18;console.log("747 GP v"+GP_VERSION);
 window.__startGame=async (RENDER_MODE)=>{
 'use strict';
 if(!window.THREE){document.getElementById('err').style.display='flex';return;}
@@ -1010,18 +1016,18 @@ const CAR_NAMES={kart:'Chili Pup',gt:'Velvet Fang',hyper:'Cinder Wyvern',f1:'Mid
 // ---- full roster: the four class cars plus trucks and motorcycles (models carry their own wheels for now) ----
 // cc = which speed class it races in; base = the drawn stand-in shown while its model downloads
 const VEHICLES=[
-  {id:'kart',kind:'kart',name:'Chili Pup',cc:100,type:'car'},
-  {id:'gt',kind:'gt',name:'Velvet Fang',cc:600,type:'car'},
-  {id:'hyper',kind:'hyper',name:'Cinder Wyvern',cc:1200,type:'car'},
-  {id:'f1',kind:'f1',name:'Midnight Talon',cc:1800,type:'car'},
-  {id:'ss55',kind:'ss55',name:'S.S. 55',full:'Supposedly Stock',cc:600,type:'truck',base:'gt',len:4.8,w:1.87,wb:2.86,cam:0.95,tcam:1.75,eye:[0.38,1.45,-0.2]},
-  {id:'brb',kind:'brb',name:'B.R.B. 4×4',full:'Be Right Back',cc:600,type:'truck',base:'gt',len:4.32,w:1.93,wb:2.54,cam:0.95,tcam:1.85,eye:[0.38,1.55,-0.1]},
-  {id:'pto',kind:'pto',name:'P.T.O.',full:'Paid to Overtake',cc:1200,type:'truck',base:'gt',len:5.25,w:2.03,wb:3.25,cam:1.0,tcam:1.75,eye:[0.4,1.5,0]},
-  {id:'vipgt',kind:'vipgt',name:'V.I.P. GT',full:'Valet Is Panicking',cc:1200,type:'truck',base:'gt',len:5.0,w:1.99,wb:2.99,cam:0.95,tcam:1.6,eye:[0.38,1.35,-0.2]},
-  {id:'wipsm',kind:'wipsm',name:'W.I.P. SM',full:'Wheelie in Progress',cc:600,type:'bike',base:'kart',len:2.15,w:0.83,wb:1.48,cam:0.62,tcam:1.3,eye:[0,1.35,-0.35]},
-  {id:'ooo',kind:'ooo',name:'O.O.O. 1800',full:'Out of Office',cc:1200,type:'bike',base:'kart',len:2.47,w:0.99,wb:1.66,cam:0.65,tcam:1.2,eye:[0,1.2,-0.45]},
-  {id:'iou',kind:'iou',name:'I.O.U. V4',full:'Italian Overtaking Unit',cc:1800,type:'bike',base:'kart',len:2.09,w:0.76,wb:1.46,cam:0.62,tcam:1.15,eye:[0,1.15,-0.3]},
-  {id:'ptar',kind:'ptar',name:'P.T.A. R',full:'Permission to Apex',cc:1800,type:'bike',base:'kart',len:2.05,w:0.74,wb:1.41,cam:0.62,tcam:1.15,eye:[0,1.15,-0.3]}];
+  {id:'kart',kind:'kart',name:'Chili Pup',cc:100,type:'car',sound:{type:'car'}},
+  {id:'gt',kind:'gt',name:'Velvet Fang',cc:600,type:'car',sound:{type:'car'}},
+  {id:'hyper',kind:'hyper',name:'Cinder Wyvern',cc:1200,type:'car',sound:{type:'car'}},
+  {id:'f1',kind:'f1',name:'Midnight Talon',cc:1800,type:'car',sound:{type:'f1'}},
+  {id:'ss55',kind:'ss55',name:'S.S. 55',full:'Supposedly Stock',cc:600,type:'truck',sound:{type:'sleeper'},base:'gt',len:4.8,w:1.87,wb:2.86,cam:0.95,tcam:1.75,eye:[0.38,1.45,-0.2]},
+  {id:'brb',kind:'brb',name:'B.R.B. 4×4',full:'Be Right Back',cc:600,type:'truck',sound:{type:'truck'},base:'gt',len:4.32,w:1.93,wb:2.54,cam:0.95,tcam:1.85,eye:[0.38,1.55,-0.1]},
+  {id:'pto',kind:'pto',name:'P.T.O.',full:'Paid to Overtake',cc:1200,type:'truck',sound:{type:'truck',tweak:{lope:0.3,lopeFade:2200,jitterDeg:10}},base:'gt',len:5.25,w:2.03,wb:3.25,cam:1.0,tcam:1.75,eye:[0.4,1.5,0]},
+  {id:'vipgt',kind:'vipgt',name:'V.I.P. GT',full:'Valet Is Panicking',cc:1200,type:'truck',sound:{type:'truck',tweak:{seed:41,pipeMs:[3.4,3.7]}},base:'gt',len:5.0,w:1.99,wb:2.99,cam:0.95,tcam:1.6,eye:[0.38,1.35,-0.2]},
+  {id:'wipsm',kind:'wipsm',name:'W.I.P. SM',full:'Wheelie in Progress',cc:600,type:'bike',sound:{type:'moto'},base:'kart',len:2.15,w:0.83,wb:1.48,cam:0.62,tcam:1.3,eye:[0,1.35,-0.35]},
+  {id:'ooo',kind:'ooo',name:'O.O.O. 1800',full:'Out of Office',cc:1200,type:'bike',sound:{type:'moto'},base:'kart',len:2.47,w:0.99,wb:1.66,cam:0.65,tcam:1.2,eye:[0,1.2,-0.45]},
+  {id:'iou',kind:'iou',name:'I.O.U. V4',full:'Italian Overtaking Unit',cc:1800,type:'bike',sound:{type:'moto'},base:'kart',len:2.09,w:0.76,wb:1.46,cam:0.62,tcam:1.15,eye:[0,1.15,-0.3]},
+  {id:'ptar',kind:'ptar',name:'P.T.A. R',full:'Permission to Apex',cc:1800,type:'bike',sound:{type:'moto',tweak:{seed:93}},base:'kart',len:2.05,w:0.74,wb:1.41,cam:0.62,tcam:1.15,eye:[0,1.15,-0.3]}];
 const VEHMAP=Object.fromEntries(VEHICLES.map(v=>[v.id,v]));
 const BASE_KINDS=new Set(['kart','gt','hyper','f1']);
 let VEH=VEHMAP.f1;const curKind=()=>VEH.kind;
@@ -1576,7 +1582,8 @@ function step(dt){
   if(st.idx>S*0.45&&st.idx<S*0.55)passedHalf=true;
   if(passedHalf&&prevIdx>S*0.9&&st.idx<S*0.1){
     if(running)lapTimes.push(lapTime);
-    if(best===null||lapTime<best){best=lapTime;bests[bestKey(CC,TRK.id)]=best;try{localStorage.setItem('gp747lapRecords',JSON.stringify(bests));}catch(_){}if(!(GAMEMODE==='arcade'&&lap>=ARCADE_LAPS))showMsg('BEST LAP',fmt(best),1800);}
+    if(best===null||lapTime<best){best=lapTime;bests[bestKey(CC,TRK.id)]=best;try{localStorage.setItem('gp747lapRecords',JSON.stringify(bests));}catch(_){}if(!(GAMEMODE==='arcade'&&lap>=ARCADE_LAPS)){showMsg('BEST LAP',fmt(best),1800);gsPlay('chime.best');}}
+    else if(running&&!(GAMEMODE==='arcade'&&lap>=ARCADE_LAPS))gsPlay('chime.good');
     lap++;lapTime=0;passedHalf=false;
     if(GAMEMODE==='arcade'&&lap>ARCADE_LAPS&&!finished)finishRace();
   }
@@ -1905,6 +1912,11 @@ function finishRace(){
   const bestLap=lapTimes.length?Math.min(...lapTimes):null;
   lastResult={d:new Date().toISOString().slice(0,10),track:TRK.id,car:VEH.id,cc:CC,mode:GAMEMODE,trans:GEARBOX,drive:MODES[MODE].n,laps:lapTimes.map(t=>+t.toFixed(3)),best:bestLap,total:arcade?raceTime:null,top:Math.round(topSpeed*2.23694),pos:arcade?pos:null,field:arcade?GRID_N:1};
   if(lapTimes.length||arcade)saveResult(lastResult);
+  RES.podium=null;gsPlay('chime.best');
+  if(arcade&&rewardRun&&lapTimes.length>=ARCADE_LAPS){rewardRun.laps=lapTimes.slice(0,ARCADE_LAPS);
+    const pr=GPFinish.complete(rewardRun,{vehicle:VEH.id,circuit:rsTrackName(),elapsed:raceTime,transmission:GEARBOX==='manual'?'manual':'automatic',variant:'repo'},{navigate:false});
+    if(pr){RES.podium=pr.url;$('rPodCap').innerHTML='Podium &amp; rewards<small>+'+pr.row.gp+' GP · +'+pr.row.cr+' credits</small>';}}
+  $('rPodium').hidden=!RES.podium;
   $('rKick').textContent=arcade?'CHEQUERED FLAG · '+rsTrackName():'SESSION COMPLETE · '+rsTrackName();
   $('rBig').textContent=arcade?(GRID_N>1?'P'+pos:'FINISH'):'TIME TRIAL';
   $('rOf').textContent=arcade?(GRID_N>1?'of '+GRID_N+' · '+ARCADE_LAPS+' laps':ARCADE_LAPS+' laps solo'):lapTimes.length+' lap'+(lapTimes.length===1?'':'s');
@@ -1997,7 +2009,8 @@ function rsStep(dt){
   if(RSS.phase==='race'){const a=AI.on?1:Math.max(0,1-(RSS.t-RSS.goT)/1.2);ghostAlpha(a);if(RSS.t-RSS.goT>1.6){RSS.active=false;rsSet('rs-on',false);rsSet('rs-go',false);}return false;}
   return true;
 }
-function rsGreen(){RSS.phase='race';RSS.goT=RSS.t;running=true;lapTime=0;lap=1;raceTime=0;finished=false;lapTimes=[];topSpeed=0;aiStart();document.body.classList.remove('finished');passedHalf=false;prevIdx=st.idx;
+let rewardRun=null;
+function rsGreen(){rewardRun=GAMEMODE==='arcade'&&window.GPFinish?GPFinish.newRun(null,[TRK.id,VEH.id,GEARBOX,MODE].join('|')):null;gsPlay('chime.confirm',{rate:1.5});RSS.phase='race';RSS.goT=RSS.t;running=true;lapTime=0;lap=1;raceTime=0;finished=false;lapTimes=[];topSpeed=0;aiStart();document.body.classList.remove('finished');passedHalf=false;prevIdx=st.idx;
   document.querySelectorAll('#rsLights i').forEach(e=>e.classList.remove('on'));rsSet('rs-lights',false);rsSet('rs-ready',false);rsSet('rs-go',true);
   RSS.kick=0.3;hideMsg();}
 // camera override: cinematic shots, then a ~0.9 s blend into the live chase cam
@@ -2026,7 +2039,14 @@ function rsCamera(dt){
 
 // ================= SOUND =================
 let audio=null,soundOn=false,paused=false,VOL=0.7,ENG=0.8,FXV=0.8;try{const e=parseFloat(localStorage.getItem('gp747eng')),f=parseFloat(localStorage.getItem('gp747fx'));if(e>=0&&e<=1)ENG=e;if(f>=0&&f<=1)FXV=f;soundOn=localStorage.getItem('gp747sound')==='1';const v=parseFloat(localStorage.getItem('gp747vol'));if(v>=0&&v<=1)VOL=v;}catch(_){}
+// 747GP Sound Kit v1 (sound/): synthesized engine per ride + UI chimes. The old oscillators stay as a fallback.
+let GS=null,GSeng=null,GSveh='',GSvol='';
+function gsBoot(){if(GS||!soundOn)return;GS='loading';GPUI.audio().then(a=>{if(!a){GS=null;return;}GS=a;gsVehicle();if(paused||!soundOn)a.ctx.suspend();}).catch(()=>{GS=null;});}
+function gsVehicle(){if(!GS||GS==='loading'||GSveh===VEH.id)return;if(GSeng)GSeng.destroy();GSveh=VEH.id;const sd=VEH.sound||{type:'car'};
+  try{GSeng=GS.engine(sd.preset||sd.type,sd.preset?undefined:VEH.cc,sd.tweak);GSeng.start();}catch(e){console.warn(e);GSeng=null;}}
+function gsPlay(n,o){if(GS&&GS!=='loading'&&soundOn&&!document.hidden)try{GS.play(n,o);}catch(_){}}
 function initAudio(){
+  gsBoot();
   if(audio||!soundOn||paused)return;
   try{
     const ac=new (window.AudioContext||window.webkitAudioContext)();
@@ -2046,11 +2066,15 @@ function fxHit(v){if(!audio||!soundOn||paused||v<2)return;const now=performance.
   const g=ac.createGain();const amp=Math.min(1,v/25)*0.5*VOL*FXV*1.4;g.gain.setValueAtTime(amp,t);g.gain.exponentialRampToValueAtTime(0.0005,t+0.28);
   src.connect(lp);lp.connect(g);g.connect(ac.destination);src.start(t,Math.random());src.stop(t+0.3);}
 function updateAudio(rpm,gas){
+  if(GSeng){if(GSveh!==VEH.id)gsVehicle();const P=GSeng.preset,r=Math.max(0,Math.min(1,(rpm-0.08)/0.92));
+    GSeng.set(P.idle+r*(P.redline-P.idle),Math.max(0,Math.min(1,gas)),st.shiftCut>0?1:0);
+    const vk=VOL.toFixed(2)+ENG.toFixed(2)+FXV.toFixed(2);if(vk!==GSvol){GSvol=vk;GS.setVolume({master:VOL,engines:ENG*0.9,ui:0.75});}}
+  else if(GS&&GS!=='loading')gsVehicle();
   if(!audio)return;
   const t=audio.ac.currentTime,fr=55+rpm*260;
   audio.o1.frequency.setTargetAtTime(fr,t,0.03);audio.o2.frequency.setTargetAtTime(fr*0.501,t,0.03);
   audio.f.frequency.setTargetAtTime(500+rpm*2600+gas*600,t,0.05);
-  audio.g.gain.setTargetAtTime(soundOn?(0.035+rpm*0.035)*(0.6+0.4*gas)*VOL*ENG*2:0,t,0.05);
+  audio.g.gain.setTargetAtTime(soundOn&&!GSeng?(0.035+rpm*0.035)*(0.6+0.4*gas)*VOL*ENG*2:0,t,0.05);
   const sl=Math.abs(st.slip||0),sp=Math.min(1,Math.abs(st.vF)/30),sqv=soundOn&&!st.off?Math.min(1,Math.max(0,(sl-0.07)*4))*sp:0;
   audio.sq.gain.setTargetAtTime(sqv*0.09*VOL*FXV*1.4,t,0.06);audio.bp.frequency.setTargetAtTime(1400+sl*1800,t,0.1);
 }
@@ -2301,7 +2325,7 @@ setWheel(wheelOn);
 function setSound(on,init){soundOn=on;$('sndBtn').textContent='SOUND: '+(on?'ON':'OFF');$('muteBtn').textContent=on?'🔊':'🔇';$('muteBtn').classList.toggle('off',!on);
   try{localStorage.setItem('gp747sound',on?'1':'0');}catch(_){}
   if(init)return;
-  if(on){initAudio();if(audio&&!paused)audio.ac.resume();}else if(audio){audio.g.gain.cancelScheduledValues(0);audio.g.gain.value=0;audio.ac.suspend();}}
+  if(on){initAudio();if(audio&&!paused)audio.ac.resume();if(GS&&GS!=='loading'&&!paused)GS.ctx.resume();}else{if(audio){audio.g.gain.cancelScheduledValues(0);audio.g.gain.value=0;audio.ac.suspend();}if(GS&&GS!=='loading')GS.ctx.suspend();}}
 $('sndBtn').addEventListener('click',()=>setSound(!soundOn));setSound(soundOn,true);
 {const bind=(id,get,set,key)=>{const el=$(id);el.value=Math.round(get()*100);el.addEventListener('input',()=>{set(el.value/100);try{localStorage.setItem(key,String(el.value/100));}catch(_){}if(!soundOn&&el.value>0)setSound(true);});return el;};
  window.__slMaster=bind('slMaster',()=>VOL,v=>{VOL=v;const s2=$('volSl');if(s2){s2.value=Math.round(v*100);$('volV').textContent=Math.round(v*100);}},'gp747vol');
@@ -2321,6 +2345,7 @@ function setPause(on){paused=on;document.body.classList.toggle('paused',on);$('p
   if(typeof pauseNav!=='undefined'){pauseNav.active=on&&!finished;if(on&&!finished)setTimeout(()=>pauseNav.focus(0),0);}
   for(const k of ['kL','kR','kU','kD'])input[k]=false;
   if(audio){if(on)audio.ac.suspend();else if(soundOn)audio.ac.resume();}
+  if(GS&&GS!=='loading'&&soundOn){if(on){GS.pause();setTimeout(()=>{if(paused)GS.ctx.suspend();},450);}else{GS.ctx.resume();GS.resume();}}
 }
 $('pauseBtn').addEventListener('click',()=>setPause(!paused));$('resumeBtn').addEventListener('click',()=>{menuPaused=false;menu.classList.remove('open');setPause(false);if(keySet==='mouse'&&mouseMode==='spring'){try{viewEl.requestPointerLock();}catch(_){}}});
 $('pResetBtn').addEventListener('click',()=>{menuPaused=false;menu.classList.remove('open');setPause(false);startRace(true);});
@@ -2469,6 +2494,7 @@ function pollPad(dt){
 // results sheet wiring (needs $)
 $('shareBtn').addEventListener('click',()=>{let on=false;try{on=localStorage.getItem('gp747share')==='1';localStorage.setItem('gp747share',on?'0':'1');}catch(_){}updShare();});
 $('tabOrder').addEventListener('click',()=>setTab('order'));$('tabBoard').addEventListener('click',()=>setTab('board'));
+$('rPodium').addEventListener('click',()=>{if(RES.podium)location.assign(RES.podium);});
 $('rNext').addEventListener('click',()=>location.assign(GPLaunch.link('tracks.html',{track:RES.next})));
 $('rAgain').addEventListener('click',()=>{resultsClose();if(paused)setPause(false);startRace(true);});
 $('rRide2').addEventListener('click',()=>location.assign(GPLaunch.link('showroom.html')));
@@ -2483,6 +2509,7 @@ loadVeg().then(ok=>{if(ok){roadTexCache[RW]=null;buildTrackMeshes();}if(!running
 window.__gp={finish:()=>finishRace(),AI,get results(){return lastResult;},set noWalls(v){NOWALL=v;},get veg(){return VEG.ready;},get vegCount(){let n=0;trackGroup.children.forEach(c=>{if(c.isInstancedMesh!==undefined&&c.count)n+=0;});return trackGroup.children.length;},get M(){return M;},get st(){return st;},input,get T(){return T;},get S(){return S;},get lap(){return lap;},get best(){return best;},get RW(){return RW;},loadTrack,setClass};
 let last=performance.now(),renderFails=0,offT=0;
 function respawnAt(i){const p=T[i];Object.assign(st,{x:p.x,z:p.z,y:p.y,h:Math.atan2(p.tx,p.tz),vx:0,vz:0,vF:0,vR:0,lat:0,yawRate:0,roll:0,pitch:0,slip:0,swerve:0,unlock:0});camInit=false;}
+const renderLook=window.GPVisuals?GPVisuals.createRenderer(THREE,renderer,scene,camera):()=>renderer.render(scene,camera);
 function frame(now){
   const dt=Math.min(0.033,(now-last)/1000);last=now;
   if(!paused){mouseSpring(dt);if(!rsStep(dt)){if(AUTO.on)autoStep(dt);else for(let i=0;i<5;i++)step(dt/5);}
@@ -2501,7 +2528,8 @@ function frame(now){
   M.brakeLight.material.color.setHex(st.braking?0xff2a1a:0x330000);
   pollPad(dt);
   updateCamera(dt);rsCamera(dt);autoCamera(dt);
-  try{renderer.render(scene,camera);}catch(err){
+  const driving=running&&!paused&&!finished&&!RSS.active;
+  try{renderLook(driving?Math.max(0,st.vF)/VMAX:0);}catch(err){
     console.error(err);
     if(RENDER_MODE==='webgpu'&&++renderFails>3){try{localStorage.setItem('gp747renderer','webgl');}catch(_){}location.reload();return;}
   }

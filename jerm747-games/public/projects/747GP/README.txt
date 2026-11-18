@@ -26,8 +26,8 @@ The path to a race
   Keyboard: arrows/WASD, Space brake, R reset, C camera.
 
 Saved on this device
-  Your choices (mode, gearbox, ride, track, opponents), every finished race and your
-  best laps. "Share times" on the results screen is an opt-in switch for the online
+  Your choices (mode, gearbox, ride, track, opponents), every finished race, your
+  best laps, GP points and boost credits. "Share times" on the results screen is an opt-in switch for the online
   boards when they open; nothing is sent yet. The other names on the leaderboard
   are made-up arcade rivals.
 
@@ -44,8 +44,12 @@ Files
   showroom.html  ride selection
   tracks.html    race setup
   race.html      the race, pause menu and results
+  finish.html    podium ceremony and rewards (Podium & rewards on the results)
   intro/         title art, logo, fonts, session (shared by every page)
   ui/            menu buttons, spinner and flag loader (shared by every page)
   vendor/        three.js (WebGL)
+  sound/         synthesized engines and menu chimes (Sound Kit v1)
+  visuals/       picture grading and speed blur (Menu > Display > Visual effects)
+  finish/        podium stage, rider and rewards
   cars/          car + wheel models (base64 GLB in .js)
   veg/ tex/ scene/  trackside art
