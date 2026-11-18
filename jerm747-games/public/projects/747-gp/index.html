@@ -288,7 +288,7 @@
 <div id="pauseOv"><div class="carbon"><big>PAUSED</big><button class="tog" id="resumeBtn">RESUME</button><button class="tog" id="pResetBtn">RESTART LAP</button><button class="tog" id="pMenuBtn">MENU</button><small>P / Esc / Start to resume</small></div></div>
 <div id="trackList" class="carbon"></div>
 <div id="menu" class="carbon">
-  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.12</small></div><button id="menuX" aria-label="Close">✕</button></div>
+  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.13</small></div><button id="menuX" aria-label="Close">✕</button></div>
   <div class="ctlrow">
     <div class="ctlgrp">
       <div class="ctlpair">
@@ -355,7 +355,7 @@
   <div class="label">DRIVE CONTROL</div>
 </div>
 
-<script>window.GP_VERSION="1.2.12";window.GP_BUILD=12;console.log("747 GP v"+GP_VERSION);
+<script>window.GP_VERSION="1.2.13";window.GP_BUILD=13;console.log("747 GP v"+GP_VERSION);
 window.__startGame=async (RENDER_MODE)=>{
 'use strict';
 if(!window.THREE){document.getElementById('err').style.display='flex';return;}
@@ -923,6 +923,17 @@ function wheelsReadyFor(kind){if(!BASE_KINDS.has(kind))return false;const s=whee
 function requestWheelsFor(kind){if(!BASE_KINDS.has(kind))return Promise.resolve([]);const s=wheelSetFor(kind);return Promise.all([requestWheel(s.front),requestWheel(s.rear)]);}
 // body geometry with the baked-in wheels removed (cached per car)
 const CUT_GEO={};
+const SPLIT_GEO={};
+function splitGeometry(kind,geo){
+  if(BASE_KINDS.has(kind)||!window.__CARSPLIT||!window.__CARSPLIT[kind])return null;
+  if(SPLIT_GEO[kind])return SPLIT_GEO[kind];
+  const sp=window.__CARSPLIT[kind],idx=geo.index.array,n=idx.length/3,own=new Int8Array(n).fill(-1);
+  sp.tris.forEach((b,wi)=>{for(const t of new Uint32Array(b64buf(b)))own[t]=wi;});
+  const make=sel=>{let c=0;for(let t=0;t<n;t++)if(own[t]===sel)c++;const out=new Uint32Array(c*3);let j=0;
+    for(let t=0;t<n;t++)if(own[t]===sel){out[j++]=idx[t*3];out[j++]=idx[t*3+1];out[j++]=idx[t*3+2];}
+    const g=new THREE.BufferGeometry();for(const a in geo.attributes)g.setAttribute(a,geo.attributes[a]);g.setIndex(new THREE.BufferAttribute(out,1));g.computeBoundingSphere();return g;};
+  return SPLIT_GEO[kind]={body:make(-1),geos:sp.wheels.map((_,i)=>make(i)),wheels:sp.wheels};
+}
 function cutGeometry(kind,geo){
   if(CUT_GEO[kind])return CUT_GEO[kind];
   const drop=new Uint32Array(b64buf(window.__CARCUT[kind].drop)),idx=geo.index.array,n=idx.length/3,keep=new Uint8Array(n).fill(1);
@@ -999,8 +1010,15 @@ function buildCar(kind){
   if(mdl){
     car.add(body);body.rotation.order='YXZ';
     const withWheels=wheelsReadyFor(kind);
-    body.add(new THREE.Mesh(withWheels?cutGeometry(kind,mdl.geo):mdl.geo,mdl.mat));
     const mwheels=[],mfronts=[];
+    const sp=splitGeometry(kind,mdl.geo);
+    if(sp){
+      // trucks & bikes: their own wheels, split out of the model so they can spin (and the fronts steer)
+      body.add(new THREE.Mesh(sp.body,mdl.mat));
+      sp.wheels.forEach((w,i)=>{const pivot=new THREE.Group();pivot.position.set(w.x,w.y,w.z);body.add(pivot);
+        const spin=new THREE.Group();pivot.add(spin);const m=new THREE.Mesh(sp.geos[i],mdl.mat);m.position.set(-w.x,-w.y,-w.z);spin.add(m);
+        mwheels.push({spin,r:w.r});if(w.front)mfronts.push(pivot);});
+    }else body.add(new THREE.Mesh(withWheels?cutGeometry(kind,mdl.geo):mdl.geo,mdl.mat));
     if(withWheels){
       const set=wheelSetFor(kind);
       for(const w of window.__CARCUT[kind].wheels){
