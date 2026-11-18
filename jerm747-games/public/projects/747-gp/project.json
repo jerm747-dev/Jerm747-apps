@@ -1,0 +1,12 @@
+{
+  "title": "747 GP",
+  "tagline": "Four classes, real-world tracks, one car on the grid.",
+  "description": "A 3D racer in the browser: pick a car in the showroom, take a rolling start or line up on the grid, and set lap times on tracks with real elevation and banking. Single-car time trial for now; opponents arrive in 1.3.",
+  "version": "1.2.11",
+  "kind": "game",
+  "status": "in_progress",
+  "controls": ["gamepad", "keyboard", "mouse", "touch"],
+  "credit": "Game by Jerm747.",
+  "accent": "#FF9F1C",
+  "order": 5
+}
