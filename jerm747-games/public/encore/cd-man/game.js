@@ -32,7 +32,7 @@ function nextRoute(){
 function spawn(retry=true){
  const s=state,x=s.route.saves[s.save];
  if(s.player?.cargo){s.player.cargo.mode='gone'}
- s.pulses=[];s.player={windup:0,throwPose:0,throwCooldown:0,x,y:groundY,vx:0,vy:0,face:1,ground:true,coyote:.1,buffer:0,phase:0,power:0,grace:retry?1.65:.35,cargo:null,duck:false};
+ s.pulses=[];s.player={windup:0,throwPose:0,throwCooldown:0,x,y:groundY,vx:0,vy:0,face:1,ground:true,coyote:.1,buffer:0,phase:0,power:0,grace:retry?1.65:.35,cargo:null,duck:false,pound:false,poundHang:0};
  s.camera=Math.max(0,x-155);
  if(retry){s.mode='retry';s.retryTime=.7;message(s.route.theme==='subway'?'Back on the platform':'Back on the road',1.65);sound('retry')}
 }
@@ -43,6 +43,7 @@ function press(which){
  down.add(which);
  if(which==='jump')state.player.buffer=.13;
  if(which==='lift')lift();
+ if(which==='down')groundPound();
  if(which==='pulse' && !state.player.throwCooldown){state.player.windup=.09;state.player.throwPose=.26;state.player.throwCooldown=.32;}
 }
 function release(which){
@@ -55,6 +56,21 @@ function lift(){
  if(p.cargo){const e=p.cargo;e.mode='thrown';e.x=p.x+p.face*23;e.y=p.y-49;e.vx=p.face*445+p.vx*.2;e.vy=-144;p.cargo=null;sound('throw');return}
  const e=state.enemies.find(e=>e.mode==='flip'&&Math.abs(e.x-p.x)<48&&Math.abs(e.y-p.y)<52);
  if(e){e.mode='carried';p.cargo=e;sound('pickup');message('Lifted!  X / Lift to throw',1.7)}
+}
+// Ground pound: press Down in the air. Short hang, fast drop, breaks wood crates and flips nearby walkers.
+function groundPound(){
+ const p=state.player;
+ if(p.ground||p.pound||p.cargo||p.coyote>0)return;
+ p.pound=true;p.poundHang=.09;p.vx=0;p.vy=0;sound('tap');
+}
+function poundLand(block){
+ const s=state,p=s.player;p.pound=false;p.poundHang=0;
+ burst(p.x,p.y-3,['#fff1ca','#7ffaff','#ffd67c'],11);sound('crack');
+ if(block)hitBlock(block);
+ for(const e of s.enemies){
+  if(e.mode!=='walk'||e.type==='spike'||Math.abs(e.x-p.x)>72||Math.abs(e.y-p.y)>26)continue;
+  e.mode='flip';e.y=groundY;s.stomps++;s.score+=2;burst(e.x,e.y-20,['#fff1ca','#e15e88']);
+ }
 }
 function burst(x,y,colors,count=9){
  for(let i=0;i<count;i++){
@@ -80,7 +96,7 @@ function updatePlayer(dt){
  );
  p.duck = (p.ground && down.has('down')) || ceilingBlocked;
  const maxSpeed = p.duck ? 88 : down.has('speed') ? 358 : 229;
- p.vx=toward(p.vx,dir*maxSpeed,(dir?1320:1650)*dt);
+ p.vx=p.pound?0:toward(p.vx,dir*maxSpeed,(dir?1320:1650)*dt);
  if(Math.abs(p.vx)>1)p.face=Math.sign(p.vx);else if(dir)p.face=dir;
  p.power=Math.max(0,p.power-dt);p.grace=Math.max(0,p.grace-dt);
  p.coyote=p.ground?.105:Math.max(0,p.coyote-dt);
@@ -93,7 +109,10 @@ function updatePlayer(dt){
   if(p.vx>0&&p.x+halfWidth<=b.x+.1&&x+halfWidth>b.x){x=b.x-halfWidth;p.vx=0}
   if(p.vx<0&&p.x-halfWidth>=b.x+b.w-.1&&x-halfWidth<b.x+b.w){x=b.x+b.w+halfWidth;p.vx=0}
  }
- p.x=x;p.vy=Math.min(p.vy+1790*dt,880);let y=p.y+p.vy*dt;p.ground=false;
+ p.x=x;
+ if(p.pound){if(p.poundHang>0){p.poundHang-=dt;p.vy=0}else p.vy=1050}
+ else p.vy=Math.min(p.vy+1790*dt,880);
+ let y=p.y+p.vy*dt;p.ground=false;let landedOn=null;
  if(p.vy<0){
   for(const b of s.blocks){
    if(!b.alive||p.x+halfWidth<=b.x||p.x-halfWidth>=b.x+b.w)continue;
@@ -102,12 +121,13 @@ function updatePlayer(dt){
    }
   }
  }else{
-  const land=(a,b,top)=>{if(p.x+halfWidth>a&&p.x-halfWidth<b&&previousY<=top+.5&&y>=top){y=top;p.vy=0;p.ground=true}};
+  const land=(a,b,top)=>{if(p.x+halfWidth>a&&p.x-halfWidth<b&&previousY<=top+.5&&y>=top){y=top;p.vy=0;p.ground=true;return true}return false};
   for(const [a,b] of floorRuns)land(a,b,groundY);
   for(const [a,top,w] of bridges)land(a,a+w,top);
-  for(const b of s.blocks)if(b.alive)land(b.x,b.x+b.w,b.y);
+  for(const b of s.blocks)if(b.alive&&land(b.x,b.x+b.w,b.y))landedOn=b;
  }
  p.y=y;
+ if(p.pound&&p.ground)poundLand(landedOn);
  if(p.y>485){spawn();return}
  for(const [i,sx] of saves.entries())if(i>s.save&&p.x>=sx&&p.ground){s.save=i;message(theme==='subway'?'Checkpoint  •  Platform '+(i+1):'Checkpoint  •  Side '+(i===1?'B':'C'),2);sound('save')}
  // The turnstile stops a walker at the waist-high arm. A jump clears it.
@@ -143,7 +163,7 @@ function updateEnemies(dt,previousY){
   if(Math.abs(p.x-e.x)>24||p.y<e.y-e.height||p.y-(p.duck?duckHeight:playerHeight)>e.y-5)continue;
   if(p.power>0){e.mode='gone';s.score+=2;burst(e.x,e.y-12,['#ffc94d','#69cbb9']);sound('flip');continue}
   if(e.type!=='spike'&&p.vy>=0&&previousY<=old-e.height+11){
-   e.mode='flip';e.y=groundY;p.y=e.y-e.height-1;p.vy=down.has('jump')?-505:-347;p.ground=false;p.coyote=0;
+   e.mode='flip';e.y=groundY;p.pound=false;p.y=e.y-e.height-1;p.vy=down.has('jump')?-505:-347;p.ground=false;p.coyote=0;
    s.stomps++;s.score+=2;burst(e.x,e.y-28,['#fff1ca','#e15e88']);sound('flip');
    if(s.stomps===1)message('Flipped!  Lift it with X or Lift.',2.4);
   }else if(p.grace<=0){spawn();return}
@@ -227,7 +247,7 @@ function draw(c,w,h){
  for(const d of s.discs)if(!d.got&&visible(d.x))disc(c,d.x,d.y,t);
  for(const e of s.enemies)if(!['gone','carried'].includes(e.mode)&&visible(e.x))crew.drawCritter(c,e.type,e.x,e.y,{facing:e.dir,phase:e.mode==='walk'?e.phase:0,flipped:e.mode!=='walk',time:t});
  const action=s.mode==='win'?'celebrate':p.cargo?'carry':!p.ground?(p.vy<0?'jump':'fall'):Math.abs(p.vx)>12?'run':'idle';
- Cast.drawNige(c,p.x,p.y,{facing:p.face,phase:p.phase,throwPose:p.throwPose,action,walking:Math.abs(p.vx)>12&&p.ground,ducking:p.duck,powered:p.power>0,invulnerable:p.grace>0,time:t});
+ Cast.drawNige(c,p.x,p.y,{facing:p.face,phase:p.phase,throwPose:p.throwPose,action,walking:Math.abs(p.vx)>12&&p.ground,ducking:p.duck||p.pound,powered:p.power>0,invulnerable:p.grace>0,time:t});
  for(const q of s.pulses){const gradient=c.createLinearGradient(q.x-26*q.dir,q.y,q.x,q.y);gradient.addColorStop(0,'rgba(70,225,252,0)');gradient.addColorStop(1,'#7ffaff');c.fillStyle=gradient;c.beginPath();c.ellipse(q.x-10*q.dir,q.y,15,4,0,0,tau);c.fill();c.fillStyle='#fff9cb';c.beginPath();c.arc(q.x,q.y,4,0,tau);c.fill()}
  if(p.cargo)crew.drawCritter(c,p.cargo.type,p.x,p.y-59+(p.duck?15:0),{flipped:true});
  for(const f of s.particles){c.fillStyle=f.color;c.fillRect(f.x,f.y,3.5,3.5)}

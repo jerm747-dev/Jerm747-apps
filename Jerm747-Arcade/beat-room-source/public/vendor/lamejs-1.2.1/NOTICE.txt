@@ -1,0 +1,4 @@
+Beat Room uses the unmodified lamejs 1.2.1 MP3 encoder.
+LAME project: https://lame.sourceforge.net/
+lamejs source: https://github.com/zhuker/lamejs
+Version 1.2.1 source package: https://registry.npmjs.org/lamejs/-/lamejs-1.2.1.tgz

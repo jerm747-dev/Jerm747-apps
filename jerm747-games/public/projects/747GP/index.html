@@ -79,6 +79,16 @@
   #rsui .lb{position:absolute;left:0;right:0;height:11vh;background:#000;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
   #rsui .lb.t{top:0;transform:translateY(-100%)} #rsui .lb.b{bottom:0;transform:translateY(100%)}
   body.rs-intro #rsui .lb{transform:none}
+  #rsLoad{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(circle at 50% 45%,#16181d,#050506 75%);opacity:0;transition:opacity .45s;pointer-events:none}
+  body.rs-loading #rsLoad{opacity:1;pointer-events:auto}
+  #rsLoad .spin{width:46px;height:46px;border-radius:50%;border:4px solid #2b2e33;border-top-color:#ff9f1c;animation:rsspin .9s linear infinite;margin-bottom:6px}
+  @keyframes rsspin{to{transform:rotate(360deg)}}
+  #rsLoad small{font:700 11px 'Titillium Web',sans-serif;letter-spacing:5px;color:#8b929c}
+  #rsLoad big{font:900 clamp(20px,4vw,36px) 'Orbitron',sans-serif;letter-spacing:2px;color:#fff}
+  #rsLoad .bar{width:min(260px,60vw);height:4px;border-radius:2px;background:#22252b;overflow:hidden;margin-top:6px}
+  #rsLoad .bar i{display:block;height:100%;width:40%;background:#ff9f1c;border-radius:2px;animation:rsbar 1.2s ease-in-out infinite}
+  @keyframes rsbar{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+  body.rs-loading .panel,body.rs-loading #strip,body.rs-loading #mini,body.rs-loading .topBtn,body.rs-loading #msg,body.rs-loading #mWheel{opacity:0;pointer-events:none}
   #rsCard{position:absolute;left:6vw;bottom:15vh;opacity:0;transform:translateX(-20px);transition:all .5s;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.7)}
   #rsCard small{display:block;font:700 12px 'Titillium Web',sans-serif;letter-spacing:4px;color:#ff9f1c}
   #rsCard big{display:block;font:900 clamp(22px,4.4vw,44px) 'Orbitron',sans-serif;letter-spacing:2px;line-height:1.05}
@@ -95,6 +105,7 @@
   body.rs-go #rsGo{opacity:1;transform:translateX(-50%) scale(1)}
   #rsSkip{position:absolute;left:50%;bottom:3vh;transform:translateX(-50%);font:700 10px 'Titillium Web',sans-serif;letter-spacing:3px;color:#aab;opacity:0;transition:opacity .4s}
   body.rs-intro #rsSkip{opacity:.8}
+  body.rs-loading #rsSkip{opacity:0}
   body.rs-intro #msg,body.rs-intro .panel,body.rs-intro #strip,body.rs-intro #mini,body.rs-intro .topBtn,body.rs-intro #muteBtn.off,body.rs-intro #menuBtn,body.rs-intro #mWheel{opacity:0;pointer-events:none}
   .panel,#strip,#mini,.topBtn,#menuBtn{transition:opacity .6s}
   .topBtn{position:fixed;top:calc(10px + env(safe-area-inset-top));z-index:6;width:44px;height:40px;border-radius:10px;border:1px solid #000;color:#f2f4f7;font:700 14px sans-serif;cursor:pointer;padding:0}
@@ -288,7 +299,7 @@
 <div id="pauseOv"><div class="carbon"><big>PAUSED</big><button class="tog" id="resumeBtn">RESUME</button><button class="tog" id="pResetBtn">RESTART LAP</button><button class="tog" id="pMenuBtn">MENU</button><small>P / Esc / Start to resume</small></div></div>
 <div id="trackList" class="carbon"></div>
 <div id="menu" class="carbon">
-  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.12</small></div><button id="menuX" aria-label="Close">✕</button></div>
+  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.15</small></div><button id="menuX" aria-label="Close">✕</button></div>
   <div class="ctlrow">
     <div class="ctlgrp">
       <div class="ctlpair">
@@ -355,7 +366,7 @@
   <div class="label">DRIVE CONTROL</div>
 </div>
 
-<script>window.GP_VERSION="1.2.12";window.GP_BUILD=12;console.log("747 GP v"+GP_VERSION);
+<script>window.GP_VERSION="1.2.15";window.GP_BUILD=15;console.log("747 GP v"+GP_VERSION);
 window.__startGame=async (RENDER_MODE)=>{
 'use strict';
 if(!window.THREE){document.getElementById('err').style.display='flex';return;}
@@ -923,6 +934,23 @@ function wheelsReadyFor(kind){if(!BASE_KINDS.has(kind))return false;const s=whee
 function requestWheelsFor(kind){if(!BASE_KINDS.has(kind))return Promise.resolve([]);const s=wheelSetFor(kind);return Promise.all([requestWheel(s.front),requestWheel(s.rear)]);}
 // body geometry with the baked-in wheels removed (cached per car)
 const CUT_GEO={};
+const SPLIT_GEO={};
+function splitGeometry(kind,geo){
+  if(BASE_KINDS.has(kind)||!window.__CARSPLIT||!window.__CARSPLIT[kind])return null;
+  if(SPLIT_GEO[kind])return SPLIT_GEO[kind];
+  const sp=window.__CARSPLIT[kind],idx=geo.index.array,n=idx.length/3,own=new Int8Array(n).fill(-1);
+  sp.tris.forEach((b,wi)=>{for(const t of new Uint32Array(b64buf(b)))own[t]=wi;});
+  // Steering-mounted brake hardware shares the wheel pivot, but has no rolling rotation.
+  const mountOffset=sp.wheels.length;
+  (sp.mounts||[]).forEach((encoded,i)=>{
+    if(encoded)for(const triangle of new Uint32Array(b64buf(encoded)))own[triangle]=mountOffset+i;
+  });
+  const make=sel=>{let c=0;for(let t=0;t<n;t++)if(own[t]===sel)c++;const out=new Uint32Array(c*3);let j=0;
+    for(let t=0;t<n;t++)if(own[t]===sel){out[j++]=idx[t*3];out[j++]=idx[t*3+1];out[j++]=idx[t*3+2];}
+    const g=new THREE.BufferGeometry();for(const a in geo.attributes)g.setAttribute(a,geo.attributes[a]);g.setIndex(new THREE.BufferAttribute(out,1));g.computeBoundingSphere();return g;};
+  const mounts=(sp.mounts||[]).map((encoded,i)=>encoded?make(mountOffset+i):null);
+  return SPLIT_GEO[kind]={body:make(-1),geos:sp.wheels.map((_,i)=>make(i)),wheels:sp.wheels,mounts};
+}
 function cutGeometry(kind,geo){
   if(CUT_GEO[kind])return CUT_GEO[kind];
   const drop=new Uint32Array(b64buf(window.__CARCUT[kind].drop)),idx=geo.index.array,n=idx.length/3,keep=new Uint8Array(n).fill(1);
@@ -999,14 +1027,26 @@ function buildCar(kind){
   if(mdl){
     car.add(body);body.rotation.order='YXZ';
     const withWheels=wheelsReadyFor(kind);
-    body.add(new THREE.Mesh(withWheels?cutGeometry(kind,mdl.geo):mdl.geo,mdl.mat));
     const mwheels=[],mfronts=[];
+    const sp=splitGeometry(kind,mdl.geo);
+    if(sp){
+      // trucks & bikes: their own wheels, split out of the model so they can spin (and the fronts steer)
+      body.add(new THREE.Mesh(sp.body,mdl.mat));
+      sp.wheels.forEach((w,i)=>{const pivot=new THREE.Group();pivot.position.set(w.x,w.y,w.z);body.add(pivot);
+        if(sp.mounts[i]){
+          const caliper=new THREE.Mesh(sp.mounts[i],mdl.mat);
+          caliper.position.set(-w.x,-w.y,-w.z);
+          pivot.add(caliper);
+        }
+        const spin=new THREE.Group();spin.userData.spinR=w.r;pivot.add(spin);const m=new THREE.Mesh(sp.geos[i],mdl.mat);m.position.set(-w.x,-w.y,-w.z);spin.add(m);
+        mwheels.push({spin,r:w.r});if(w.front)mfronts.push(pivot);});
+    }else body.add(new THREE.Mesh(withWheels?cutGeometry(kind,mdl.geo):mdl.geo,mdl.mat));
     if(withWheels){
       const set=wheelSetFor(kind);
       for(const w of window.__CARCUT[kind].wheels){
         const wm=WHEEL_READY[w.front?set.front:set.rear];
         const pivot=new THREE.Group();pivot.position.set(w.x,w.y,w.z);body.add(pivot);
-        const spin=new THREE.Group();pivot.add(spin);
+        const spin=new THREE.Group();spin.userData.spinR=w.r;pivot.add(spin);
         const mesh=new THREE.Mesh(wm.geo,wm.mat);
         // model is 1 unit across with its outer face on +X. Left wheels (+x side) face out as-is; right wheels are
         // turned 180° (not mirrored: a mirrored mesh shows its back faces on the WebGPU renderer, so the tyre vanished)
@@ -1476,7 +1516,7 @@ function updateCamera(dt){
 const START_TYPES=[{id:'rolling',n:'ROLLING START'},{id:'standing',n:'STANDING START'},{id:'flyover',n:'GRID FLYOVER'}];
 let startType='rolling';try{const v=localStorage.getItem('gp747start');if(START_TYPES.some(s=>s.id===v))startType=v;}catch(_){}
 const PACE=33.5;            // m/s (~75 mph) rolling pace
-const GRID_N=8,ROW_GAP=8,LANE=2;
+const GRID_N=4,ROW_GAP=8,LANE=2;   // you + 3 opponents
 const EASE={linear:t=>t,easeInOutCubic:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,easeOutCubic:t=>1-Math.pow(1-t,3),easeInOutSine:t=>-(Math.cos(Math.PI*t)-1)/2};
 function orbitKeys(r,a0,a1,y0,y1,n){const k=[];for(let i=0;i<=n;i++){const u=i/n,a=a0+(a1-a0)*u;k.push({t:u,pos:[Math.sin(a)*r,y0+(y1-y0)*u,Math.cos(a)*r],look:[0,0.6,0.4],fov:38+4*u});}return k;}
 function gridShots(){const L=(GRID_N/2)*ROW_GAP+6;return [
@@ -1507,26 +1547,77 @@ function trackFrame(fi,lat){
   const y=hOff(a,lat*sg)*(1-w)+hOff(b,lat*sg)*w;
   return {x,y,z,fx,fz,rx,rz,h:Math.atan2(fx,fz),i:i0};
 }
-// ---- placeholder grid cars (simple shapes until the field races in 1.3) ----
-const ghostGroup=new THREE.Group();scene.add(ghostGroup);const ghosts=[];
-{const cols=[0x2b6cd8,0xd8452a,0x23a86b,0xe0b030,0x8a4fd8,0xe86aa8,0x2fb8c8,0xdddddd];
- const blk=new THREE.MeshStandardMaterial({color:0x111214,roughness:.7,transparent:true});
- for(let k=1;k<GRID_N;k++){const g=new THREE.Group(),m=new THREE.MeshStandardMaterial({color:cols[k%cols.length],roughness:.35,metalness:.2,transparent:true});
+// ---- grid opponents: copies of your ride in other liveries (they line up and fade at the green until racing lands in 1.3) ----
+// Falls back to simple box cars while your ride's model is still downloading.
+const ghostGroup=new THREE.Group();scene.add(ghostGroup);let ghosts=[];
+const SKINS=[{n:'blue',c:[0.18,0.42,0.92]},{n:'pale yellow',c:[0.95,0.86,0.45]},{n:'magenta',c:[0.88,0.22,0.6]},{n:'white',c:[0.92,0.93,0.95]},{n:'black',c:[0.07,0.075,0.085]}];
+const boxGhosts=[];
+{const cols=[0x2f6fe0,0xf2df7a,0xe0409a,0xeeeeee,0x15161a];
+ const blk=new THREE.MeshStandardMaterial({color:0x111214,roughness:.7});
+ for(let k=1;k<GRID_N;k++){const g=new THREE.Group(),m=new THREE.MeshStandardMaterial({color:cols[(k-1)%cols.length],roughness:.35,metalness:.2});
   const add=(geo,mat,x,y,z)=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);g.add(o);return o;};
   add(new THREE.BoxGeometry(0.85,0.42,3.6),m,0,0.42,0);add(new THREE.BoxGeometry(0.45,0.25,1.4),m,0,0.36,2.4);
   add(new THREE.BoxGeometry(1.9,0.05,0.45),blk,0,0.16,3.1);add(new THREE.BoxGeometry(1.2,0.05,0.4),blk,0,0.95,-2.1);
-  add(new THREE.BoxGeometry(1.5,0.45,0.9),m,0,0.45,-0.6);add(new THREE.SphereGeometry(0.17,10,8),blk,0,0.82,0.4);
+  add(new THREE.BoxGeometry(1.5,0.45,0.9),m,0,0.45,-0.6);
   for(const [x,z,r] of [[0.95,1.75,0.33],[-0.95,1.75,0.33],[0.98,-1.45,0.36],[-0.98,-1.45,0.36]]){const w=add(new THREE.CylinderGeometry(r,r,0.38,14),blk,x,r,z);w.rotation.z=Math.PI/2;}
-  g.userData.mats=[m,blk];ghostGroup.add(g);ghosts.push(g);}
- ghostGroup.visible=false;}
+  g.userData.mats=[m,blk];boxGhosts.push(g);}}
+// Recolour a livery: only the clear-coated paint (MR red channel) changes; saturated stripes and bright decals stay.
+const SKIN_TEX={};
+function skinTexture(kind,mat,skin){
+  const key=kind+'|'+skin.n;if(SKIN_TEX[key])return SKIN_TEX[key];
+  const src=mat.map&&mat.map.image,mk=mat.metalnessMap&&mat.metalnessMap.image;
+  const drawable=i=>i&&(i instanceof HTMLImageElement||i instanceof HTMLCanvasElement||(typeof ImageBitmap!=='undefined'&&i instanceof ImageBitmap));
+  if(!drawable(src)||!drawable(mk))return null;
+  const N=1024,cv=document.createElement('canvas');cv.width=cv.height=N;const x=cv.getContext('2d',{willReadFrequently:true});
+  x.drawImage(src,0,0,N,N);const im=x.getImageData(0,0,N,N),d=im.data;
+  const cm=document.createElement('canvas');cm.width=cm.height=N;const xm=cm.getContext('2d',{willReadFrequently:true});xm.drawImage(mk,0,0,N,N);const md=xm.getImageData(0,0,N,N).data;
+  // find the main paint colour: the most common colour among clear-coated texels
+  // a strong coloured body (blue truck) wins over black trim when it covers enough of the paint
+  const hist=new Map(),hsat=new Map();let tot=0,satTot=0;
+  for(let i=0;i<d.length;i+=16){if(md[i]<128)continue;tot++;const q=((d[i]>>4)<<8)|((d[i+1]>>4)<<4)|(d[i+2]>>4);hist.set(q,(hist.get(q)||0)+1);
+    const mx=Math.max(d[i],d[i+1],d[i+2]),mn=Math.min(d[i],d[i+1],d[i+2]);if(mx>40&&(mx-mn)/mx>0.35){satTot++;const q2=((d[i]>>5)<<6)|((d[i+1]>>5)<<3)|(d[i+2]>>5);hsat.set(q2,(hsat.get(q2)||0)+1);}}
+  let bq=0,bn=-1;for(const [q,n] of hist)if(n>bn){bn=n;bq=q;}
+  if(satTot>tot*0.15){let sq=0,sn=-1;for(const [q,n] of hsat)if(n>sn){sn=n;sq=q;}bq=(((sq>>6)*2+1)<<8)|((((sq>>3)&7)*2+1)<<4)|((sq&7)*2+1);}
+  const Dr=((bq>>8)*16+8)/255,Dg=(((bq>>4)&15)*16+8)/255,Db=((bq&15)*16+8)/255,Dl=0.299*Dr+0.587*Dg+0.114*Db,Dsum=Dr+Dg+Db+1e-3;
+  const darkBase=Dl<0.14,[tr,tg,tb]=skin.c,tl=0.299*tr+0.587*tg+0.114*tb,darkT=tl<0.12;
+  for(let i=0;i<d.length;i+=4){
+    const m=md[i]/255;if(m<0.05)continue;
+    const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255,l=0.299*r+0.587*g+0.114*b,mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx>0?(mx-mn)/mx:0;
+    let sim;
+    if(darkBase)sim=Math.max(0,1-Math.max(0,l-0.22)/0.12)*Math.max(0,1-Math.max(0,sat-0.3)/0.2);
+    else{const sum=r+g+b+1e-3,dc=Math.hypot(r/sum-Dr/Dsum,g/sum-Dg/Dsum,b/sum-Db/Dsum);sim=Math.min(1,Math.max(0,1-(dc-0.07)/0.1))*(l>Dl*0.2&&l<Math.min(1,Dl*2.8+0.15)?1:0);}
+    const w=m*sim;if(w<0.01)continue;
+    // keep the paint's light and shade, moved onto the new colour
+    const sh=darkBase?(darkT?Math.min(2,0.6+l*5):Math.min(1.35,Math.max(0.35,0.62+(l-Dl)*3))):Math.min(1.6,Math.max(0.25,l/Math.max(0.04,Dl)))*(darkT?0.35:1);
+    d[i]=255*(r+(Math.min(1,tr*sh)-r)*w);d[i+1]=255*(g+(Math.min(1,tg*sh)-g)*w);d[i+2]=255*(b+(Math.min(1,tb*sh)-b)*w);
+  }
+  x.putImageData(im,0,0);const t=new THREE.CanvasTexture(cv);t.flipY=false;setSRGB(t);t.anisotropy=MAXANISO;
+  return SKIN_TEX[key]=t;
+}
+let ghostKey='';
+function setupGhosts(){
+  const key=(M.model?'m:':'b:')+M.kind+':'+(M.wheeled?1:0);if(key===ghostKey&&ghosts.length)return;ghostKey=key;
+  for(const g of ghosts)ghostGroup.remove(g);ghosts=[];
+  const mdl=M.model&&MODEL_READY[M.kind];
+  for(let k=1;k<GRID_N;k++){
+    let g=null;
+    if(mdl){const skin=SKINS[(k-1)%SKINS.length],tex=skinTexture(M.kind,mdl.mat,skin);
+      if(tex){g=M.car.clone(true);g.userData.mats=[];g.userData.spins=[];
+        g.traverse(o=>{if(o.userData&&o.userData.spinR)g.userData.spins.push(o);if(!o.isMesh)return;const base=o.material===mdl.mat;o.material=o.material.clone();if(base)o.material.map=tex;g.userData.mats.push(o.material);});
+        g.rotation.set(0,0,0);}}
+    if(!g)g=boxGhosts[k-1];
+    ghostGroup.add(g);ghosts.push(g);
+  }
+}
+
 function slotPose(k,baseFi){const row=Math.floor(k/2),lat=(k%2?LANE:-LANE);return trackFrame(baseFi-(row*ROW_GAP+(k%2?ROW_GAP/2:0))/DS,lat);}
 function placeGhosts(baseFi){for(let k=1;k<GRID_N;k++){const g=ghosts[k-1],p=slotPose(k,baseFi);g.position.set(p.x,p.y,p.z);g.rotation.y=p.h;}}
-function ghostAlpha(a){ghostGroup.visible=a>0.01;for(const g of ghosts)for(const m of g.userData.mats)m.opacity=a;}
+function ghostAlpha(a){ghostGroup.visible=a>0.01;for(const g of ghosts)for(const m of g.userData.mats){if(m.userData.tr0===undefined)m.userData.tr0=m.transparent;const tr=m.userData.tr0||a<0.999;if(m.transparent!==tr){m.transparent=tr;m.needsUpdate=true;}m.opacity=a;}}
 
 // ---- overlays: letterbox, title card, lights ----
 const RSUI=(()=>{const d=document.createElement('div');d.id='rsui';d.innerHTML=
  '<div class="lb t"></div><div class="lb b"></div><div id="rsCard"><small id="rsKind"></small><big id="rsTrack"></big></div>'+
- '<div id="rsPos">P1</div><div id="rsReady">GET READY</div><div id="rsLights"><i></i><i></i><i></i><i></i><i></i></div><div id="rsGo">GO</div><div id="rsSkip">TAP / ANY KEY TO SKIP</div>';
+ '<div id="rsLoad"><div class="spin"></div><small>LOADING</small><big id="rsLoadName"></big><div class="bar"><i></i></div></div><div id="rsPos">P1</div><div id="rsReady">GET READY</div><div id="rsLights"><i></i><i></i><i></i><i></i><i></i></div><div id="rsGo">GO</div><div id="rsSkip">TAP / ANY KEY TO SKIP</div>';
  document.body.appendChild(d);return d;})();
 // ---- the player ----
 const RSS={active:false,phase:'',t:0,shots:[],si:0,st:0,baseFi:0,fi:0,cine:null,hand:null,lightsAt:0,lightsOut:0,goT:0,allowSkipAt:0};
@@ -1535,10 +1626,13 @@ function rsSet(cls,on){document.body.classList.toggle(cls,on);}
 function rsUI(card){$('rsKind').textContent=START_TYPES.find(s=>s.id===startType).n;$('rsTrack').textContent=rsTrackName();
   rsSet('rs-card',card==='title');rsSet('rs-pos',card==='pos');}
 function rsPlaceCar(p,v){Object.assign(st,{x:p.x,z:p.z,y:p.y,h:p.h,vx:p.fx*v,vz:p.fz*v,vF:v,vR:0,lat:0,idx:p.i,steer:0,yawRate:0,roll:0,slip:0,swerve:0,unlock:0});}
+// Hold on a loading screen until your ride's 3D model (and its wheels) are in, so the intro never shows stand-ins.
+function rideReady(){return !useModels||(M.model&&M.kind===VEH.kind&&(!BASE_KINDS.has(M.kind)||M.wheeled));}
 function startRace(full){
   reset();
+  RSS.loading=!rideReady();RSS.loadT=0;rsSet('rs-loading',RSS.loading);if(RSS.loading)$('rsLoadName').textContent=VEH.name.toUpperCase();
   const mode=startType,base=S-20;RSS.baseFi=base;RSS.active=true;RSS.t=0;RSS.allowSkipAt=1.0;rsSet('rs-on',true);rsSet('rs-lights',false);rsSet('rs-go',false);
-  RSS.cine=null;RSS.hand=null;ghostAlpha(1);
+  RSS.cine=null;RSS.hand=null;setupGhosts();ghostAlpha(1);
   if(mode==='rolling'){
     const back=(full?300:150)/DS;RSS.fi=base-back;placeGhostsRolling();
     rsPlaceCar(trackFrame(RSS.fi,-LANE),PACE);
@@ -1565,10 +1659,17 @@ function rsWorld(space,v){
 // called every frame instead of physics while the start runs; returns true if physics should be skipped
 function rsStep(dt){
   if(!RSS.active)return false;
+  if(RSS.loading){RSS.loadT+=dt;ghostGroup.visible=false;
+    if(rideReady()||RSS.loadT>30){RSS.loading=false;rsSet('rs-loading',false);ghostKey='';setupGhosts();
+      if(startType==='rolling')placeGhostsRolling();else{placeGhosts(RSS.baseFi);rsPlaceCar(slotPose(0,RSS.baseFi),0);}
+      ghostAlpha(1);RSS.t=0;RSS.si=0;RSS.st=0;camInit=false;}
+    return true;}
+  if(RSS.phase!=='race'){const key=(M.model?'m:':'b:')+M.kind+':'+(M.wheeled?1:0);if(key!==ghostKey){setupGhosts();if(startType!=='rolling')placeGhosts(RSS.baseFi);ghostAlpha(1);}}
   RSS.t+=dt;if(RSS.phase==='intro'&&rsPadSkip())rsSkip();
   const rolling=startType==='rolling';
   if(rolling&&RSS.phase!=='race'){   // auto-drive the pack at pace speed
     RSS.fi+=PACE*dt/DS;rsPlaceCar(trackFrame(RSS.fi,-LANE),PACE);st.spin+=PACE*dt;placeGhostsRolling();
+    for(const g of ghosts)for(const w of (g.userData.spins||[]))w.rotation.x=st.spin/w.userData.spinR;
     if(audio)updateAudio(0.42,0.35);
     // green when the leader (you) reaches the line
     if(RSS.fi>=S){RSS.fi-=S;rsGreen();}

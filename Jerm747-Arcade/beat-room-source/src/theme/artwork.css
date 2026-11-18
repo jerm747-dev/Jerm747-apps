@@ -1,0 +1,45 @@
+/* Keep the artwork and controls in separate rows, even on short phone screens. */
+.beat-title, .studio-splash, .studio-splash:hover, .studio-splash:active {
+  box-sizing: border-box;
+  width: 100%; height: 100dvh;
+  display: grid; grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center; align-items: stretch; align-content: stretch;
+  margin: 0; padding: 0; overflow: hidden; isolation: isolate;
+  background-color: #0b1716; color: #f5ead4;
+}
+.beat-title { position: relative; }
+.room-artwork { position: relative; display: block; width: 100%; min-height: 0; overflow: hidden; }
+.room-artwork::before {
+  content: ''; position: absolute; inset: -20px;
+  background: url('../assets/splash-boombox.jpg') center / cover;
+  filter: blur(16px) brightness(.55); pointer-events: none;
+}
+@media (orientation: landscape) {
+  .room-artwork::before { background-image: url('../assets/splash-boombox-wide.jpg'); }
+}
+.room-artwork img { position: relative; display: block; width: 100%; height: 100%; object-fit: contain; user-select: none; }
+.beat-title section, .studio-splash .studio-opening {
+  position: static; transform: none; align-self: center;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;
+  padding: 6px 8px max(6px, env(safe-area-inset-bottom)); margin: 0;
+  background: transparent; border: 0;
+}
+.beat-title button { font: 700 15px system-ui; min-height: 44px; padding: 6px 24px; border-radius: 7px; border: 1px solid #ecbb81; background: #f5ad6f; color: #161c1b; }
+.beat-title button + button { background: #192323; color: #f3e9dc; border-color: #7f9290; }
+.studio-splash .studio-opening { min-height: 44px; box-sizing: border-box; }
+@media (max-width: 420px) { .beat-title button { padding-inline: 14px; } }
+
+/* The panorama has room below the lettering for touch controls at phone and TV ratios. */
+@media (min-aspect-ratio: 17/10) and (max-aspect-ratio: 27/10) {
+  .beat-title .room-artwork, .studio-splash .room-artwork { position: absolute; inset: 0; height: 100%; }
+  .beat-title .room-artwork img, .studio-splash .room-artwork img { object-fit: cover; }
+  .beat-title section, .studio-splash .studio-opening {
+    position: absolute; left: max(7vw, env(safe-area-inset-left));
+    bottom: max(9px, 2.2dvh, env(safe-area-inset-bottom));
+    padding: 0; justify-content: flex-start;
+  }
+  .studio-splash .studio-opening {
+    min-height: 32px; padding: 5px 12px; border: 1px solid #edcc9344;
+    border-radius: 2rem; background: #101917df;
+  }
+}

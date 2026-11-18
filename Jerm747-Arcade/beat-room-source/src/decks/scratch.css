@@ -16,9 +16,6 @@
 .vinyl-section.is-full .cut-pad.on{background:#56d7c7}
 @media(orientation:portrait){.vinyl-section.is-full .vinyl-grid{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}.vinyl-section.is-full .cut-row{grid-template-columns:1fr 1fr 1fr 1.5fr}.vinyl-section.is-full .cut-row .cut-pad{grid-column:auto;min-height:66px}}
 
-.beat-title{min-height:100dvh;display:grid;align-content:end;padding:clamp(18px,6vw,90px);box-sizing:border-box;background:linear-gradient(0deg,#101213 4%,#101213b0 36%,#10121312 94%),url('../assets/splash-boombox.jpg') center/cover;color:#ffeed8}
-.beat-title section{max-width:620px}.beat-title small{font:700 13px monospace;letter-spacing:.23em;color:#85dbd2}.beat-title h1{font:800 clamp(44px,10vw,96px)/.95 system-ui;margin:.15em 0 .28em}.beat-title button{font:700 16px system-ui;padding:12px 28px;border-radius:6px;border:1px solid #ecbb81;background:#f5ad6f;color:#161c1b;margin-right:9px}.beat-title button+button{background:#192323;color:#f3e9dc;border-color:#7f9290}
-
 .sample-editor{width:min(94vw,720px);display:grid;gap:10px;max-height:94dvh;overflow:auto}
 .sample-editor .edit-actions,.edit-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.edit-head{justify-content:space-between}
 .sample-editor canvas{width:100%;height:clamp(64px,22dvh,156px);touch-action:none;border-radius:6px}

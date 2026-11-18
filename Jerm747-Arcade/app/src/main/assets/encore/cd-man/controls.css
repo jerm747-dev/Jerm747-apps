@@ -99,6 +99,8 @@
 .deck .arc-speed { --button-color: #ffa7cc; --reflection-angle: 10deg; --reflection-shift: 5%; width: 29%; height: auto; aspect-ratio: 1; left: 0; bottom: 7%; }
 .deck .arc-lift { --button-color: #9ef0dc; --reflection-angle: -9deg; --reflection-shift: -6%; width: 32%; height: auto; aspect-ratio: 1; left: 31%; top: 26%; }
 .deck .arc-jump { --button-color: #ffdc91; --reflection-angle: -3deg; --reflection-shift: 1%; width: 36%; height: auto; aspect-ratio: 1; right: 0; top: 1%; }
+/* Pulse sits low on the right, under Jump — like a right-foot kick. */
+.deck .arc-pulse { --button-color: #7ffaff; --reflection-angle: 6deg; --reflection-shift: 3%; width: 27%; height: auto; aspect-ratio: 1; right: 4%; bottom: -2%; touch-action: none; }
 .speed-led { display: block; position: absolute; width: 4px; height: 4px; border-radius: 50%; bottom: 11%; background: #402b38; box-shadow: 0 0 0 1px #0c1218; }
 .arc-speed[data-latched=true] .speed-led { background: #ffd091; box-shadow: 0 0 5px #ffb66b; }
 .deck .actionpad button.held { transform: translateY(2px); box-shadow: 0 1px 1px #000e, 0 2px 4px #0009, 0 0 0 1px var(--button-color); }

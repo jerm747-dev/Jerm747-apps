@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import artwork from '../assets/splash-boombox.jpg';
+import RoomArtwork from './RoomArtwork.jsx';
 
 export default function Splash({ readyToEnter = true }) {
-  const [phase, setPhase] = useState('show');
+  // opening a project reloads the room; skip the splash that one time
+  const [phase, setPhase] = useState(() => { try { if (sessionStorage.getItem('beatroom.skipSplash')) { sessionStorage.removeItem('beatroom.skipSplash'); return 'gone'; } } catch { /* off */ } return 'show'; });
   const [ready, setReady] = useState(false);
   const [lingerDone, setLingerDone] = useState(false);
   useEffect(() => {
@@ -21,7 +22,7 @@ export default function Splash({ readyToEnter = true }) {
   if (phase === 'gone') return null;
   const leave = () => setPhase('leaving');
   return <button type="button" className={`studio-splash ${phase === 'leaving' ? 'is-leaving' : ''}`} onPointerDown={leave} onClick={leave} aria-label="Enter Jerm747 Beat Room" onTransitionEnd={e => { if (phase === 'leaving' && e.target === e.currentTarget && e.propertyName === 'opacity') setPhase('gone'); }}>
-    <img src={artwork} alt="Jerm747 Beat Room — Find your frequency. A vintage boombox with a vinyl record in amber and teal studio light." draggable="false" fetchPriority="high" decoding="async" onLoad={() => setReady(true)} onError={leave} />
+    <RoomArtwork onLoad={() => setReady(true)} onError={leave} />
     <span className="studio-opening"><span className="studio-record" aria-hidden="true"><i /></span><span>Opening Beat Room</span><small>Tap to skip</small></span>
   </button>;
 }

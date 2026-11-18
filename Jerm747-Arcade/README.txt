@@ -1,3 +1,11 @@
+Queued for the next Arcade APK — Beat Room 1.1.1 widescreen
+
+The embedded Beat Room title and loading screen select the new wide artwork in landscape. In portrait they use the original poster. Start and Back remain accessible when the device rotates. The studio includes Arrange, note and drum editing, Punch, project files and offline MP3 export.
+
+The matching runtime is already in app/src/main/assets/projects/beat-room/. Its index loads the Arcade game clock from /hud/game-clock.js. The editable sources, artwork and bundled MP3 encoder are in beat-room-source/. Preserve the existing Arcade host when rebuilding the embedded page.
+
+Arcade 2.0.8 (build 24) is the last packaged Arcade APK. Carry these assets into the next normally numbered Arcade release and test by opening Beat Room from the cabinet, rotating at the title and entering the studio.
+
 Jerm747 Arcade 2.0.7 · HUD update
 HUD menu rows (Game Music, Controls, Open games) now match the glass buttons with icons and chevrons.
 New HUD > 747 Pocket Player submenu: Pocket Player On/Off (in a game), Theme (Game default, Classic Gray, Ice Blue), Direction control (D-pad or Joystick) and Haptic workshop. Theme and direction apply to every game; the last On/Off choice carries to games without their own.
