@@ -44,20 +44,34 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
 .thumb small{position:absolute;left:0;right:0;bottom:-15px;text-align:center;font-family:'Barlow Condensed';font-size:10px;letter-spacing:.12em;color:#7d8597}
 .thumb.on small{color:#e9ecf2}
 .dots{margin-bottom:22px}
+@media (orientation:landscape) and (max-height:520px){
+ .ui{padding:8px}.panel{position:absolute;right:8px;bottom:8px;width:43%;padding:7px 10px;max-height:77vh;overflow-y:auto}
+ .mid{width:51%;align-items:center}.dots{margin-bottom:5px}.thumb{height:32px;width:58px}
+ .stat{margin:3px 0}.specs{margin-top:5px;gap:3px}.spec{padding:3px}.spec b{font-size:13px}
+ .go{margin-top:5px}.spec small{font-size:8px}
+}
 @media (max-width:520px){.thumb{width:64px;height:40px}}
-.go{margin-top:12px;width:100%;height:46px;border-radius:10px;border:0;font-family:'Barlow Condensed';font-weight:600;letter-spacing:.24em;font-size:16px;cursor:pointer;color:#07080b;background:#f2f4f8}
-.go:active{transform:scale(.99)}
+.go{margin-top:12px}
+.steps{display:flex;gap:6px;align-items:center;justify-content:center;font:600 10px 'Barlow Condensed';letter-spacing:.18em;color:#4d5360;margin-top:10px}
+.steps span.on{color:#e9ecf2}.steps em{width:14px;height:1px;background:#2c313b}
 .hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Barlow Condensed';letter-spacing:.2em;font-size:12px;color:#7d8597;pointer-events:none}
 @media (max-width:520px){.specs{grid-template-columns:repeat(2,1fr)}.stat{margin:5px 0}.panel{padding:12px 14px 14px}}
 </style>
+<link rel="stylesheet" href="ui/gp-ui.css">
+<link rel="stylesheet" href="visuals/look.css">
+<script src="visuals/look.js"></script>
+<script src="visuals/render.js"></script>
+<script src="intro/session.js"></script>
+<script src="ui/gp-ui.js"></script>
 </head>
 <body>
 <canvas id="c"></canvas>
+<details class="gp-look gp-showroom" data-gp-visuals></details>
 <div class="hint" id="hint">LOADING SHOWROOM…</div>
 <div class="ui">
   <div class="top">
     <div>
-      <div class="brand"><a href="index.html" id="back" style="pointer-events:auto;color:#9aa3b5;text-decoration:none;margin-right:10px">‹ RACE</a><b>747 GP</b> · SELECT YOUR CAR</div>
+      <div class="brand"><a href="index.html#setup" id="back" class="gp-chip dark" style="pointer-events:auto;text-decoration:none;margin-right:12px;min-height:30px;padding:5px 13px;font-size:11px">‹ Mode select</a><b>747 GP</b> · <span id="session-label">SELECT YOUR RIDE</span></div>
       <div class="title" id="nm">–</div>
       <div class="maker" id="mk"></div>
     </div>
@@ -76,10 +90,16 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
       <div class="spec"><small>Wheelbase</small><b id="pw">–</b></div>
       <div class="spec"><small>Gearbox</small><b id="ptw">–</b></div>
     </div>
-    <button class="go" id="go">SELECT &amp; RACE</button>
+    <button class="go gp-button gp-custom" id="go"><span class="gp-marks"></span><span class="gp-caption" id="goCap">Select ride</span></button>
+    <div class="steps"><span>MODE</span><em></em><span class="on">RIDE</span><em></em><span>RACE SETUP</span><em></em><span>RACE</span></div>
   </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+document.getElementById('back').href = GPLaunch.link('index.html#setup');
+document.getElementById('session-label').textContent = (GPLaunch.mode === 'arcade' ? 'ARCADE' : 'TIME TRIAL') + ' · SELECT YOUR RIDE';
+{const w=GPUI.gpChip({inline:document.getElementById('nm').parentNode});w.el.style.cssText='pointer-events:auto;margin:6px 0 0';document.getElementById('nm').parentNode.insertBefore(w.el,document.getElementById('nm'));}
+</script>
+<script src="vendor/three-r128.min.js"></script>
 <script>
 (function(){
 if(!window.THREE){document.getElementById('hint').textContent='3D LIBRARY BLOCKED';return}
@@ -88,7 +108,7 @@ const cars=[
  {id:'gt',cc:600,kind:'gt',type:'Cars',n:'Velvet Fang',m:'GT coupe',c:'600cc',col:'#ff5d8f',wb:2.65,len:5.0,gears:'8-speed auto',dt:'road-going GT',s:{Speed:50,Accel:58,Handling:76,Braking:70}},
  {id:'hyper',cc:1200,kind:'hyper',type:'Cars',n:'Cinder Wyvern',m:'Hypercar',c:'1200cc',col:'#ffb04a',wb:2.77,len:5.0,gears:'8-speed auto',dt:'mid-engine hypercar',s:{Speed:75,Accel:80,Handling:72,Braking:82}},
  {id:'f1',cc:1800,kind:'f1',type:'Cars',n:'Midnight Talon',m:'Formula car',c:'1800cc',col:'#6aa8ff',wb:3.3,len:5.4,gears:'8-speed auto',dt:'open-wheel single-seater',s:{Speed:100,Accel:95,Handling:86,Braking:96}},
- {id:'ss55',cc:600,kind:'ss55',type:'Trucks',n:'S.S. 55',m:'Supposedly Stock',c:'600cc',col:'#5b8cff',wb:2.86,len:4.8,gears:'8-speed auto',dt:'stepside sleeper',s:{Speed:50,Accel:60,Handling:55,Braking:55}},
+ {id:'ss55',cc:1800,kind:'ss55',type:'Trucks',n:'S.S. 55',m:'Supposedly Stock',c:'1800cc',col:'#5b8cff',wb:2.86,len:4.8,gears:'8-speed auto',dt:'stepside sleeper',s:{Speed:90,Accel:92,Handling:50,Braking:62}},
  {id:'brb',cc:600,kind:'brb',type:'Trucks',n:'B.R.B. 4×4',m:'Be Right Back',c:'600cc',col:'#3d7bff',wb:2.54,len:4.32,gears:'8-speed auto',dt:'two-door 4×4',s:{Speed:48,Accel:55,Handling:52,Braking:52}},
  {id:'pto',cc:1200,kind:'pto',type:'Trucks',n:'P.T.O.',m:'Paid to Overtake',c:'1200cc',col:'#4aa3ff',wb:3.25,len:5.25,gears:'8-speed auto',dt:'street pickup',s:{Speed:72,Accel:74,Handling:62,Braking:70}},
  {id:'vipgt',cc:1200,kind:'vipgt',type:'Trucks',n:'V.I.P. GT',m:'Valet Is Panicking',c:'1200cc',col:'#2f8fff',wb:2.99,len:5.0,gears:'8-speed auto',dt:'fastback GT utility',s:{Speed:76,Accel:78,Handling:68,Braking:74}},
@@ -208,13 +228,13 @@ function makeCar(s){
  car.position.y=.24;return car;
 }
 const holder=new THREE.Group();scene.add(holder);
-let idx=0;try{const sc=localStorage.getItem('gp747car'),sv=+localStorage.getItem('gp747cc');let j=cars.findIndex(c=>c.id===sc&&c.cc===sv);if(j<0)j=cars.findIndex(c=>c.cc===sv&&c.kind===['kart','gt','hyper','f1'][[100,600,1200,1800].indexOf(sv)]);if(j>=0)idx=j}catch(e){}
+let idx=0;try{const sc=GPLaunch.car||localStorage.getItem('gp747car'),sv=+localStorage.getItem('gp747cc');let j=cars.findIndex(c=>c.id===sc);if(j<0)j=cars.findIndex(c=>c.cc===sv&&c.kind===['kart','gt','hyper','f1'][[100,600,1200,1800].indexOf(sv)]);if(j>=0)idx=j}catch(e){}
 let current=makeCar(cars[idx]);holder.add(current);
 
 /* layout */
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;
  const portrait=w/h<1;camera.fov=portrait?44:32;const d=portrait?11.5+(1-w/h)*3:11.5;
- camera.position.set(0,portrait?4.6:3.6,d);camera.lookAt(0,portrait?-.9:.7,0);camera.updateProjectionMatrix()}
+ camera.position.set(0,portrait?4.6:3.6,d);camera.lookAt(0,portrait?-.9:.7,0);camera.setViewOffset(w,h,!portrait&&h<=520?w*.21:0,0,w,h);camera.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 
 /* sound */
@@ -232,7 +252,7 @@ function paint(){
  const c=cars[idx],n=cars.length;
  $('nm').textContent=c.n;$('mk').textContent=c.m+' · '+c.dt;$('clsL').textContent=c.c;$('cls').style.color=c.col;
  $('gp').textContent=cars[(idx-1+n)%n].n;$('gn').textContent=cars[(idx+1)%n].n;
- $('wb').textContent=c.c;$('wt').textContent=TOPMPH(c)+' mph';$('pw').textContent=c.wb.toFixed(2)+' m';$('ptw').textContent=c.gears;
+ $('wb').textContent=c.c;$('wt').textContent=TOPMPH(c)+' mph';$('pw').textContent=c.wb.toFixed(2)+' m';$('ptw').textContent=GPLaunch.transmission==='manual'?c.gears.replace(/auto(matic)?/i,'manual'):c.gears;
  cars.forEach((_,j)=>$('d'+j).classList.toggle('on',j===idx));{const t=$('d'+idx);t.parentNode.scrollLeft=t.offsetLeft-t.parentNode.clientWidth/2+t.clientWidth/2;}
  timers.forEach(clearTimeout);timers.length=0;
  keys.forEach((k,i)=>{const f=$('f'+k),v=c.s[k];f.style.width='0';f.style.background=c.col;$('v'+k).textContent='0';
@@ -243,7 +263,7 @@ function textSwap(on){['nm','mk'].forEach(id=>$(id).classList.toggle('swap',on))
 /* swap animation */
 let anim=null;
 const easeIn=t=>t*t*t,easeOutBack=t=>{const c=1.4;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)};
-function go(dir,target){if(anim)return;ctx();textSwap(true);anim={dir,t:0,phase:0,target}}
+function go(dir,target){if(anim||leaving)return;ctx();textSwap(true);anim={dir,t:0,phase:0,target}}
 function stepAnim(dt){if(!anim)return;anim.t+=dt;
  if(anim.phase===0){const p=Math.min(1,anim.t/.32);holder.position.x=-anim.dir*easeIn(p)*12;
   if(p>=1){holder.remove(current);idx=anim.target!=null?anim.target:(idx+anim.dir+cars.length)%cars.length;current=makeCar(cars[idx]);holder.add(current);anim.phase=1;anim.t=0;paint();textSwap(false)}}
@@ -252,19 +272,33 @@ function stepAnim(dt){if(!anim)return;anim.t+=dt;
  else{const p=Math.min(1,anim.t/.45);holder.position.y=-Math.sin(p*Math.PI)*.06*(1-p);if(p>=1){holder.position.y=0;anim=null}}}
 
 $('nx').onclick=()=>go(1);$('pv').onclick=()=>go(-1);
-$('go').onclick=()=>{ctx();tone(880,.12,.15,'square');setTimeout(()=>tone(1320,.1,.3,'square'),110);$('go').textContent=cars[idx].n.toUpperCase()+' SELECTED';
- try{localStorage.setItem('gp747cc',String(cars[idx].cc));localStorage.setItem('gp747car',cars[idx].id)}catch(e){}setTimeout(()=>location.href='index.html',650)};
-addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click();if(e.key==='Escape')location.href='index.html'});
-addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1)});
+let leaving=false;
+$('go').onclick=()=>{
+ if(leaving||(anim&&anim.phase===0))return;leaving=true;const car=cars[idx];
+ ctx();tone(880,.12,.15,'square');setTimeout(()=>tone(1320,.1,.3,'square'),110);
+ $('goCap').textContent=car.n+' selected';$('go').classList.add('is-focused');
+ GPLaunch.set('car',car.id);try{localStorage.setItem('gp747cc',String(car.cc));}catch(e){}
+ setTimeout(()=>location.assign(GPLaunch.link('tracks.html',{car:car.id})),450);
+};
+addEventListener('pageshow',()=>{leaving=false;$('goCap').textContent='Select ride';});
+addEventListener('keydown',e=>{
+ if(leaving||e.repeat)return;
+ if(e.key==='Escape')location.assign($('back').href);
+ if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();go(e.key==='ArrowRight'?1:-1);}
+ if(e.key==='Enter'&&!e.target.closest('a')){e.preventDefault();$('go').click();}
+});
+watchMenuPad(a=>{if(leaving)return;if(a==='left'||a==='lb')go(-1);if(a==='right'||a==='rb')go(1);if(a==='confirm')$('go').click();if(a==='back')location.assign($('back').href);});
+$('go').classList.add('is-focused');
 let sx=null,drag=0;
 canvas.addEventListener('pointerdown',e=>{sx=e.clientX;ctx()});
 canvas.addEventListener('pointerup',e=>{if(sx!==null){const d=e.clientX-sx;if(Math.abs(d)>40)go(d<0?1:-1)}sx=null});
 
 /* loop */
 let last=performance.now(),spin=0;
+const renderLook=window.GPVisuals?GPVisuals.createRenderer(THREE,renderer,scene,camera):()=>renderer.render(scene,camera);
 function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;
  spin+=dt*.38;table.rotation.y=spin;current.rotation.y=spin;
- stepAnim(dt);renderer.render(scene,camera);requestAnimationFrame(loop)}
+ stepAnim(dt);renderLook();requestAnimationFrame(loop)}
 paint();requestAnimationFrame(loop);
 })();
 </script>

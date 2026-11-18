@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121619"><title>Race cleared · 747 GP</title>
+<link rel="stylesheet" href="finish/finish.css">
+</head>
+<body>
+<header class="mast"><div class="brand" aria-label="747 GP">747<span>GP</span><i aria-hidden="true"></i></div><span class="mast-label">ARCADE <b>/</b> RACE RESULTS</span><span id="previewTag" hidden>PREVIEW</span></header>
+<main>
+<section class="stage" aria-label="Midnight Racer 747 and the selected vehicle on a stationary podium">
+<div class="ceiling"></div><div class="wall" aria-hidden="true"><div class="screen-art"></div><div class="screen-art alternate"></div><div class="screen-grid"></div></div>
+<div class="floor"></div><div class="platform"></div>
+<div class="standins" aria-hidden="true"><img id="fallbackCar" alt=""><img class="pilot" src="finish/driver-front.webp" alt=""></div>
+<canvas id="podium" aria-hidden="true"></canvas>
+<div class="stage-heading"><div class="flag" aria-hidden="true"></div><h1>Race <em>cleared.</em></h1></div>
+<div class="vehicle-name"><strong>Midnight Racer 747</strong><span id="vehicle">Midnight Talon</span></div>
+<div id="confetti" aria-hidden="true"></div>
+</section>
+<section class="results" aria-labelledby="rewardsTitle">
+<div class="heading"><span class="eyeline" id="raceMeta">3 LAPS · ARCADE</span><h2 id="rewardsTitle">Race rewards</h2></div>
+<div class="reward" id="beat0"><div><h3>GP points</h3><small id="gpRule"></small></div><output id="gpValue">0</output></div>
+<div class="reward" id="beat1"><div><h3>Boost credits</h3><small>Earned this race</small></div><output id="creditValue">0</output></div>
+<div class="reward balance" id="beat2"><div><h3 id="balanceTitle">Credit balance</h3><small id="careerGP"></small></div><output id="balanceValue">0</output></div>
+<p id="storageNote" hidden>Storage unavailable. Showing this race only.</p>
+<nav id="actions" aria-label="After the race"><button id="again" class="plate primary">Race again</button><button id="next" class="plate">Mode select</button></nav>
+<div id="extra" hidden><button id="ride">Change ride</button><button id="track">Change track</button></div>
+</section>
+</main>
+<footer class="timing"><div class="venue"><small>CIRCUIT</small><strong id="trackName">Coatl Canyon Raceway</strong></div><div><small>RACE TIME</small><strong id="raceTime">—</strong></div><div><small>BEST LAP THIS RACE</small><strong id="bestTime">—</strong></div></footer>
+<div class="sr" aria-live="polite" id="summary"></div>
+<script src="finish/rewards.js"></script><script src="finish/results.js"></script><script defer src="vendor/three-r128.min.js"></script><script defer src="finish/driver.js"></script><script defer src="finish/cockpit-masks.js"></script><script defer src="finish/parked.js"></script><script defer src="finish/stage.js"></script>
+</body></html>
