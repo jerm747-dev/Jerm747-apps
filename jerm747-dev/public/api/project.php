@@ -26,7 +26,7 @@ if ($method === 'POST') {
         'body' => $body, 'at' => now(), 'files' => $fileIds,
     ];
     save_project($p);
-    send_mail(ADMIN_EMAIL, "Message on {$p['key']} from {$p['client']['name']}",
+    notify_admin("Message on {$p['key']} from {$p['client']['name']}",
         $body . ($fileIds ? "\n\n(" . count($fileIds) . " file(s) attached)" : '') .
         "\n\nOpen admin: " . SITE_URL . "/#/admin\n", $p['client']['email']);
     respond(['ok' => true, 'project' => public_view($p)]);

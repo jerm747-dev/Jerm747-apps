@@ -210,3 +210,10 @@ body.is-admin { overflow: auto; }
 .cron code { display: block; background: var(--bg-2); padding: 8px 10px; border-radius: 6px; word-break: break-all; font-size: .82rem; margin-bottom: 10px; }
 .report-preview { background: var(--bg-2); padding: 12px; border-radius: 8px; font-size: .82rem; white-space: pre-wrap; margin-top: 12px; color: var(--text); }
 .traffic-note { font-size: .85rem; color: var(--dim); margin-top: 18px; }
+
+/* Admin Traffic: extra report email */
+.report-email { margin-top: 14px; }
+.report-email label { display: block; font-size: .95rem; margin-bottom: 6px; }
+.report-email-row { display: flex; gap: 10px; }
+.report-email-row input { flex: 1; min-width: 0; }
+@media (max-width: 480px) { .report-email-row { flex-direction: column; } }

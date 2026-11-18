@@ -65,6 +65,7 @@ export default function Traffic({ pw }) {
   const [settings, setSettings] = useState(null);
   const [msg, setMsg] = useState('');
   const [preview, setPreview] = useState('');
+  const [email, setEmail] = useState('');
   const [titles, setTitles] = useState({});
   const [noCount, setNoCount] = useState(() => { try { return localStorage.getItem('j747-nocount') === '1'; } catch { return false; } });
 
@@ -76,15 +77,27 @@ export default function Traffic({ pw }) {
       .then((d) => setTitles(Object.fromEntries((d.projects || []).map((p) => [p.slug, p.title])))).catch(() => {});
   }, []);
   useEffect(() => {
-    adminGet(pw, { action: 'settings' }).then((d) => setSettings(d.settings)).catch((e) => setMsg(e.message));
+    adminGet(pw, { action: 'settings' }).then((d) => { setSettings(d.settings); setEmail(d.settings.report_email || ''); }).catch((e) => setMsg(e.message));
   }, [pw]);
 
   const setHours = async (h) => {
     try { const d = await adminPost(pw, 'settings', { report_hours: String(h) }); setSettings(d.settings); setMsg(h ? `Reports every ${h} hours.` : 'Reports turned off.'); }
     catch (e) { setMsg(e.message); }
   };
+  const saveEmail = async (e) => {
+    e.preventDefault();
+    try {
+      const d = await adminPost(pw, 'settings', { report_email: email.trim() });
+      setSettings(d.settings); setEmail(d.settings.report_email || '');
+      setMsg(d.settings.report_email ? `Emails will also go to ${d.settings.report_email}.` : 'Extra email removed.');
+    } catch (err) { setMsg(err.message); }
+  };
+  const toggleAdminBox = async () => {
+    try { const d = await adminPost(pw, 'settings', { admin_box: settings.admin_box ? '0' : '1' }); setSettings(d.settings); setMsg(`Now sending to ${d.settings.recipients.join(' and ')}.`); }
+    catch (e) { setMsg(e.message); }
+  };
   const sendNow = async () => {
-    try { const d = await adminPost(pw, 'report_test'); setPreview(d.preview); setMsg(d.sent ? 'Report sent to admin@jerm747.dev.' : "The server couldn't send email. Here's what it would say."); }
+    try { const d = await adminPost(pw, 'report_test'); setPreview(d.preview); setMsg(d.sent ? `Report sent to ${(d.to || []).join(' and ')}. Check spam if it doesn't show up in a few minutes.` : "The server couldn't send email. Here's what it would say."); }
     catch (e) { setMsg(e.message); }
   };
   const toggleNoCount = () => {
@@ -125,12 +138,25 @@ export default function Traffic({ pw }) {
 
       <section className="admin-block report-settings">
         <h3>Email report</h3>
-        <p>A summary of visitors and plays, sent to admin@jerm747.dev. {settings?.last_report && `Last sent ${new Date(settings.last_report).toLocaleString()}.`}</p>
+        <p>A summary of visitors and plays, sent to {settings ? settings.recipients.join(' and ') : 'admin@jerm747.dev'}. {settings?.last_report && `Last sent ${new Date(settings.last_report).toLocaleString()}.`}</p>
         <div className="seg" role="group" aria-label="Report frequency">
           {[[12, 'Every 12 hours'], [24, 'Every 24 hours'], [0, 'Off']].map(([h, l]) => (
             <button key={h} className={settings?.report_hours === h ? 'is-on' : ''} onClick={() => setHours(h)}>{l}</button>
           ))}
         </div>
+        <form className="report-email" onSubmit={saveEmail}>
+          <label htmlFor="report-email">Also send to</label>
+          <div className="report-email-row">
+            <input id="report-email" type="email" placeholder="you@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+            <button className="btn btn-ghost" type="submit">Save</button>
+          </div>
+        </form>
+        {settings?.report_email && (
+          <label className="check" style={{ marginTop: 10 }}>
+            <input type="checkbox" checked={!!settings.admin_box} onChange={toggleAdminBox} />
+            <span>Keep sending to {settings.admin_email} too</span>
+          </label>
+        )}
         <div className="btn-row" style={{ marginTop: 12 }}>
           <button className="btn btn-ghost" onClick={sendNow}>Send a report now</button>
         </div>

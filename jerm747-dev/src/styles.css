@@ -563,3 +563,10 @@ code { font-size: .9em; background: var(--paper-2); padding: 1px 5px; border-rad
 .build-folders ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; font-size: .92rem; }
 .build-folders li { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .site-admin-status .link-btn { font: 500 .9rem var(--ui); }
+
+/* Admin Traffic: extra report email */
+.report-email { margin-top: 14px; }
+.report-email label { display: block; font: 500 .95rem var(--ui); margin-bottom: 6px; }
+.report-email-row { display: flex; gap: 10px; }
+.report-email-row input { flex: 1; min-width: 0; }
+@media (max-width: 480px) { .report-email-row { flex-direction: column; } }

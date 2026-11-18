@@ -50,7 +50,7 @@ $summary = "Project key: $key\nName: $name\nEmail: $email\nCompany: " . ($compan
     "\nType: {$project['request']['type']}\nBudget: {$project['request']['budget']}\nTimeline: {$project['request']['timeline']}" .
     "\nEstimate shown: " . ($project['request']['estimate'] ?: '-') . "\n\n$message\n";
 
-send_mail(ADMIN_EMAIL, "New request $key from $name", $summary . "\nOpen admin: " . SITE_URL . "/#/admin\n", $email);
+notify_admin("New request $key from $name", $summary . "\nOpen admin: " . SITE_URL . "/#/admin\n", $email);
 send_mail($email, "Your jerm747.dev project key: $key",
     "Hi $name,\n\nThanks for your request. Your project key is:\n\n    $key\n\n" .
     "Keep this key. It opens your project page, where you'll see messages, updates and files as the work moves along:\n" .
