@@ -288,7 +288,7 @@
 <div id="pauseOv"><div class="carbon"><big>PAUSED</big><button class="tog" id="resumeBtn">RESUME</button><button class="tog" id="pResetBtn">RESTART LAP</button><button class="tog" id="pMenuBtn">MENU</button><small>P / Esc / Start to resume</small></div></div>
 <div id="trackList" class="carbon"></div>
 <div id="menu" class="carbon">
-  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.11</small></div><button id="menuX" aria-label="Close">✕</button></div>
+  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.12</small></div><button id="menuX" aria-label="Close">✕</button></div>
   <div class="ctlrow">
     <div class="ctlgrp">
       <div class="ctlpair">
@@ -355,7 +355,7 @@
   <div class="label">DRIVE CONTROL</div>
 </div>
 
-<script>window.GP_VERSION="1.2.11";window.GP_BUILD=11;console.log("747 GP v"+GP_VERSION);
+<script>window.GP_VERSION="1.2.12";window.GP_BUILD=12;console.log("747 GP v"+GP_VERSION);
 window.__startGame=async (RENDER_MODE)=>{
 'use strict';
 if(!window.THREE){document.getElementById('err').style.display='flex';return;}
@@ -881,6 +881,27 @@ const RS={gt:{W:1.9,zf:1.35,zr:-1.3,rf:0.34,rr:0.35,wf:0.28,wr:0.33,ar:0.5},
 // ---- 3D car models (GLB, converted from the Meshy FBX exports) ----
 const CAR_FILES={kart:'cars/kart.js',gt:'cars/gt.js',hyper:'cars/hyper.js',f1:'cars/f1.js'};
 const CAR_NAMES={kart:'Chili Pup',gt:'Velvet Fang',hyper:'Cinder Wyvern',f1:'Midnight Talon'};
+// ---- full roster: the four class cars plus trucks and motorcycles (models carry their own wheels for now) ----
+// cc = which speed class it races in; base = the drawn stand-in shown while its model downloads
+const VEHICLES=[
+  {id:'kart',kind:'kart',name:'Chili Pup',cc:100,type:'car'},
+  {id:'gt',kind:'gt',name:'Velvet Fang',cc:600,type:'car'},
+  {id:'hyper',kind:'hyper',name:'Cinder Wyvern',cc:1200,type:'car'},
+  {id:'f1',kind:'f1',name:'Midnight Talon',cc:1800,type:'car'},
+  {id:'ss55',kind:'ss55',name:'S.S. 55',full:'Supposedly Stock',cc:600,type:'truck',base:'gt',len:4.8,w:1.87,wb:2.86,cam:0.95,tcam:1.75,eye:[0.38,1.45,-0.2]},
+  {id:'brb',kind:'brb',name:'B.R.B. 4×4',full:'Be Right Back',cc:600,type:'truck',base:'gt',len:4.32,w:1.93,wb:2.54,cam:0.95,tcam:1.85,eye:[0.38,1.55,-0.1]},
+  {id:'pto',kind:'pto',name:'P.T.O.',full:'Paid to Overtake',cc:1200,type:'truck',base:'gt',len:5.25,w:2.03,wb:3.25,cam:1.0,tcam:1.75,eye:[0.4,1.5,0]},
+  {id:'vipgt',kind:'vipgt',name:'V.I.P. GT',full:'Valet Is Panicking',cc:1200,type:'truck',base:'gt',len:5.0,w:1.99,wb:2.99,cam:0.95,tcam:1.6,eye:[0.38,1.35,-0.2]},
+  {id:'wipsm',kind:'wipsm',name:'W.I.P. SM',full:'Wheelie in Progress',cc:600,type:'bike',base:'kart',len:2.15,w:0.83,wb:1.48,cam:0.62,tcam:1.3,eye:[0,1.35,-0.35]},
+  {id:'ooo',kind:'ooo',name:'O.O.O. 1800',full:'Out of Office',cc:1200,type:'bike',base:'kart',len:2.47,w:0.99,wb:1.66,cam:0.65,tcam:1.2,eye:[0,1.2,-0.45]},
+  {id:'iou',kind:'iou',name:'I.O.U. V4',full:'Italian Overtaking Unit',cc:1800,type:'bike',base:'kart',len:2.09,w:0.76,wb:1.46,cam:0.62,tcam:1.15,eye:[0,1.15,-0.3]},
+  {id:'ptar',kind:'ptar',name:'P.T.A. R',full:'Permission to Apex',cc:1800,type:'bike',base:'kart',len:2.05,w:0.74,wb:1.41,cam:0.62,tcam:1.15,eye:[0,1.15,-0.3]}];
+const VEHMAP=Object.fromEntries(VEHICLES.map(v=>[v.id,v]));
+const BASE_KINDS=new Set(['kart','gt','hyper','f1']);
+let VEH=VEHMAP.f1;const curKind=()=>VEH.kind;
+for(const v of VEHICLES)if(!BASE_KINDS.has(v.kind))CAR_NAMES[v.kind]=v.name;
+for(const v of VEHICLES)CAR_FILES[v.kind]='cars/'+v.kind+'.js';
+
 // wheel sets (front/rear pairs from the 747 Mesh Lab assets), and each car's default
 const WHEEL_SETS=[{id:'kart',name:'Kart Dish',front:'kart_front',rear:'kart_rear'},{id:'gunmetal',name:'Gunmetal 10-Spoke',front:'gunmetal_front',rear:'gunmetal_rear'},
   {id:'silver',name:'Silver Split-Spoke',front:'silver_front',rear:'silver_rear'},{id:'yellow',name:'Yellow Stripe',front:'yellow',rear:'yellow'}];
@@ -898,8 +919,8 @@ function requestWheel(id){
   return WHEEL_LOADING[id];
 }
 function wheelSetFor(kind){const id=wheelPick[kind]||WHEEL_DEFAULT[kind];return WHEEL_SETS.find(s=>s.id===id)||WHEEL_SETS[0];}
-function wheelsReadyFor(kind){const s=wheelSetFor(kind);return !!(WHEEL_READY[s.front]&&WHEEL_READY[s.rear]&&window.__CARCUT&&window.__CARCUT[kind]);}
-function requestWheelsFor(kind){const s=wheelSetFor(kind);return Promise.all([requestWheel(s.front),requestWheel(s.rear)]);}
+function wheelsReadyFor(kind){if(!BASE_KINDS.has(kind))return false;const s=wheelSetFor(kind);return !!(WHEEL_READY[s.front]&&WHEEL_READY[s.rear]&&window.__CARCUT&&window.__CARCUT[kind]);}
+function requestWheelsFor(kind){if(!BASE_KINDS.has(kind))return Promise.resolve([]);const s=wheelSetFor(kind);return Promise.all([requestWheel(s.front),requestWheel(s.rear)]);}
 // body geometry with the baked-in wheels removed (cached per car)
 const CUT_GEO={};
 function cutGeometry(kind,geo){
@@ -969,6 +990,7 @@ function requestModel(kind){
   return MODEL_LOADING[kind];
 }
 function buildCar(kind){
+  if(!BASE_KINDS.has(kind)&&!(useModels&&MODEL_READY[kind])){const r=buildCar(VEHMAP[kind].base);r.kind=kind;r.model=false;return r;}
   const kart=kind==='kart',road=(kind==='gt'||kind==='hyper');
   const wheels=[],fronts=[];
   const car=new THREE.Group();          // world position + yaw
@@ -994,7 +1016,7 @@ function buildCar(kind){
     }
     const brakeLight=new THREE.Mesh(new THREE.BoxGeometry(0.01,0.01,0.01),new THREE.MeshBasicMaterial({color:0x330000}));brakeLight.visible=false;body.add(brakeLight);
     const shTex=canvasTex(64,128,(c,w,h)=>{const g=c.createRadialGradient(w/2,h/2,4,w/2,h/2,w/2);g.addColorStop(0,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');c.save();c.scale(1,2);c.fillStyle=g;c.fillRect(0,0,w,h/2);c.restore();});
-    const dims={kart:[1.7,2.6],gt:[2.7,5.6],hyper:[2.6,5.4],f1:[2.8,6.6]}[kind];
+    const dims={kart:[1.7,2.6],gt:[2.7,5.6],hyper:[2.6,5.4],f1:[2.8,6.6]}[kind]||[VEHMAP[kind].w+0.7,VEHMAP[kind].len+0.9];
     const sh=new THREE.Mesh(new THREE.PlaneGeometry(dims[0],dims[1]),new THREE.MeshBasicMaterial({map:shTex,transparent:true,depthWrite:false}));
     sh.rotation.x=-Math.PI/2;sh.position.set(0.2,0.025,0);body.add(sh);
     return {car,body,wheels:mwheels,fronts:mfronts,brakeLight,rimMat:null,barrelMat:null,brushed:null,kind,model:true,wheeled:withWheels};
@@ -1235,6 +1257,7 @@ function applyClass(cc){
   const m=MODES[MODE].m;
   VMAX=380*SF*m;ACC=60*SF*(0.4+0.6*m);BRAKE=240*SF;DRAG=0.0001125/SF;GTOP=GTOP_BASE.map(v=>v*SF*m);
   WB=c.wb;CAMSCALE=c.cam;TCAMH=c.tcam;
+  if(VEH&&VEH.wb&&VEH.cc===cc){WB=VEH.wb;CAMSCALE=VEH.cam;TCAMH=VEH.tcam;}
 }
 const UPSHIFT_THROTTLE=0.75;                    // need at least 75% throttle to click up a gear   // 4x the original: F-Zero territory
 const st={x:0,z:0,h:0,vx:0,vz:0,y:0,pitch:0,steer:0,idx:0,vF:0,vR:0,off:false,braking:false,spin:0,lat:0,roll:0,dive:0,gear:1,shiftCut:0,bankRoll:0,yawRate:0,prevSteer:0,swerve:0,unlock:0,slip:0,lastSide:0,sideT:9};
@@ -1421,7 +1444,7 @@ function updateCamera(dt){
   let want,look;
   const oAmt=Math.min(1,Math.abs(orbit.yaw)/0.6+Math.abs(orbit.pitch)/0.5);
   if(camIdx===3){ // cockpit: sit in the car, looking out over the nose
-    const e=EYE[M.kind]||EYE.f1,rx=Math.cos(st.h),rz=-Math.sin(st.h);
+    const e=EYE[M.kind]||(VEHMAP[M.kind]&&VEHMAP[M.kind].eye)||EYE.f1,rx=Math.cos(st.h),rz=-Math.sin(st.h);
     want=new THREE.Vector3(st.x+fx*e[2]*cp+rx*e[0],st.y+e[1]+e[2]*sp,st.z+fz*e[2]*cp+rz*e[0]);
     const ly=st.h+orbit.yaw,lp=Math.sin(st.pitch)+orbit.pitch*0.6;
     look=new THREE.Vector3(want.x+Math.sin(ly)*c.look,want.y-0.9+lp*c.look,want.z+Math.cos(ly)*c.look);
@@ -1800,32 +1823,33 @@ function setRims(chrome){
 $('rimBtn').addEventListener('click',()=>setRims(!rimChrome));
 function setModels(on){useModels=on;$('mdlBtn').textContent='CARS: '+(on?'3D MODELS':'BUILT-IN');try{localStorage.setItem('gp747models',on?'on':'off');}catch(_){}}
 $('mdlBtn').addEventListener('click',()=>{setModels(!useModels);setClass(CC,false);});
-function updateWheelBtn(){const k=CLASSES[CC].kind;$('whlBtn').style.display=useModels?'':'none';$('whlBtn').textContent='WHEELS: '+wheelSetFor(k).name.toUpperCase();$('rimBtn').style.display=useModels?'none':'';}
+function updateWheelBtn(){const k=curKind();$('whlBtn').style.display=useModels&&BASE_KINDS.has(k)?'':'none';$('whlBtn').textContent='WHEELS: '+wheelSetFor(k).name.toUpperCase();$('rimBtn').style.display=useModels?'none':'';}
 $('whlBtn').addEventListener('click',()=>{
-  const k=CLASSES[CC].kind,cur=wheelSetFor(k),next=WHEEL_SETS[(WHEEL_SETS.indexOf(cur)+1)%WHEEL_SETS.length];
+  const k=curKind(),cur=wheelSetFor(k),next=WHEEL_SETS[(WHEEL_SETS.indexOf(cur)+1)%WHEEL_SETS.length];
   wheelPick[k]=next.id;try{localStorage.setItem('gp747wheels',JSON.stringify(wheelPick));}catch(_){}
   updateWheelBtn();showMsg(next.name,CAR_NAMES[k],1200);
-  requestWheelsFor(k).then(()=>{if(CLASSES[CC].kind===k&&M.model){scene.remove(M.car);M=buildCar(k);scene.add(M.car);}});
+  requestWheelsFor(k).then(()=>{if(curKind()===k&&M.model){scene.remove(M.car);M=buildCar(k);scene.add(M.car);}});
 });
 setModels(useModels);
-function setClass(cc,announce){
-  const want=CLASSES[cc].kind;
+function setClass(cc,announce){setVehicle(VEHICLES.find(v=>v.cc===cc&&BASE_KINDS.has(v.kind)).id,announce);}
+function setVehicle(id,announce){
+  VEH=VEHMAP[id]||VEHMAP.f1;const cc=VEH.cc,want=VEH.kind;
   applyClass(cc);
   const wantModel=useModels&&!!MODEL_READY[want];
   if(M.kind!==want||!!M.model!==wantModel||(wantModel&&!!M.wheeled!==wheelsReadyFor(want))){scene.remove(M.car);M=buildCar(want);scene.add(M.car);setRims(rimChrome);}
   if(useModels){
     // wheels + the cut data (which ships inside the car file) arrive separately; rebuild once both are in
     Promise.all([MODEL_READY[want]?null:requestModel(want),requestWheelsFor(want)]).then(()=>{
-      if(CLASSES[CC].kind===want&&useModels&&MODEL_READY[want]&&wheelsReadyFor(want)&&!(M.model&&M.wheeled)){scene.remove(M.car);M=buildCar(want);scene.add(M.car);}});
+      if(curKind()===want&&useModels&&MODEL_READY[want]&&wheelsReadyFor(want)&&!(M.model&&M.wheeled)){scene.remove(M.car);M=buildCar(want);scene.add(M.car);}});
   }
   updateWheelBtn();
   if(useModels&&!MODEL_READY[want]){
-    requestModel(want)&&requestModel(want).then(m=>{if(m&&CLASSES[CC].kind===want&&useModels&&!M.model){scene.remove(M.car);M=buildCar(want);scene.add(M.car);}});
+    requestModel(want)&&requestModel(want).then(m=>{if(m&&curKind()===want&&useModels&&!M.model){scene.remove(M.car);M=buildCar(want);scene.add(M.car);}});
   }
   best=bests[bestKey(cc,TRK.id)]??null;if(typeof startRace==='function')startRace(true);else reset();
-  $('ccBtn').textContent='CAR: '+cc+'cc · '+CAR_NAMES[want].toUpperCase();$('sCC').textContent=cc;
-  try{localStorage.setItem('gp747cc',String(cc));}catch(_){}
-  if(announce)showMsg(CAR_NAMES[want],cc+'cc · '+CLASSES[cc].tag,1800);
+  $('ccBtn').textContent='CAR: '+VEH.name.toUpperCase()+' · '+cc+'cc';$('sCC').textContent=cc;
+  try{localStorage.setItem('gp747cc',String(cc));localStorage.setItem('gp747car',VEH.id);}catch(_){}
+  if(announce)showMsg(VEH.name,cc+'cc · '+(VEH.type==='car'?CLASSES[cc].tag:VEH.full.toUpperCase()),1800);
 }
 function loadTrack(id,announce){
   setupLine(TRACKS[id]);applyEnv();buildTrackMeshes();
@@ -1846,10 +1870,11 @@ $('trackBtn').addEventListener('click',e=>{e.stopPropagation();
     b.addEventListener('click',ev=>{ev.stopPropagation();trackList.classList.remove('open');menu.classList.remove('open');showMsg('LOADING',TRACKS[id].name,0);setTimeout(()=>loadTrack(id,true),30);});trackList.appendChild(b);}
   trackList.classList.add('open');});
 document.addEventListener('pointerdown',e=>{if(trackList.classList.contains('open')&&!trackList.contains(e.target))trackList.classList.remove('open');});
-$('ccBtn').addEventListener('click',()=>{const order=[100,600,1200,1800];setClass(order[(order.indexOf(CC)+1)%order.length],true);});
+$('ccBtn').addEventListener('click',()=>{const i=VEHICLES.indexOf(VEH);setVehicle(VEHICLES[(i+1)%VEHICLES.length].id,true);});
 setRims(rimChrome);
 {let tid='test';try{tid=localStorage.getItem('gp747track')||'test';}catch(_){}if(!TRACKS[tid])tid='test';setupLine(TRACKS[tid]);applyEnv();buildTrackMeshes();$('trackBtn').textContent='TRACK: '+TRACKS[tid].short;}
-{let saved=1800;try{saved=+localStorage.getItem('gp747cc')||1800;}catch(_){}if(!CLASSES[saved])saved=1800;setClass(saved,false);}
+{let car=null,saved=1800;try{car=localStorage.getItem('gp747car');saved=+localStorage.getItem('gp747cc')||1800;}catch(_){}if(!CLASSES[saved])saved=1800;
+ if(car&&VEHMAP[car]&&VEHMAP[car].cc===saved)setVehicle(car,false);else setClass(saved,false);}
 setWheel(wheelOn);
 function setSound(on,init){soundOn=on;$('sndBtn').textContent='SOUND: '+(on?'ON':'OFF');$('muteBtn').textContent=on?'🔊':'🔇';$('muteBtn').classList.toggle('off',!on);
   try{localStorage.setItem('gp747sound',on?'1':'0');}catch(_){}
@@ -2026,6 +2051,7 @@ function frame(now){
   M.car.position.set(st.x,st.y,st.z);
   M.car.rotation.y=st.h;
   M.body.rotation.x=-st.pitch+st.dive;M.body.rotation.z=st.roll+st.bankRoll;
+  if(VEH.type==='bike'){const lean=-st.steer*Math.min(1,Math.abs(st.vF)/25)*0.62;st.lean=(st.lean||0)+(lean-(st.lean||0))*Math.min(1,dt*8);M.body.rotation.z+=st.lean;}
   for(const w of M.wheels)w.spin.rotation.x=st.spin/w.r;
   const steerVis=st.steer*0.42*(1-0.74*Math.min(1,Math.abs(st.vF)/(320*SF)));
   for(const f of M.fronts)f.rotation.y=-steerVis;

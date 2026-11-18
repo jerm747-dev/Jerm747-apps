@@ -35,7 +35,9 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
 .spec{background:rgba(255,255,255,.04);border-radius:8px;padding:7px 9px}
 .spec small{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7d8597;font-family:'Barlow Condensed'}
 .spec b{font-family:'Barlow Condensed';font-weight:500;font-size:17px}
-.dots{display:flex;gap:8px;justify-content:center;margin:0 0 10px}
+.dots{display:flex;gap:8px;justify-content:flex-start;margin:0 -6px 10px;padding:4px 6px 0;overflow-x:auto;scrollbar-width:thin;scroll-behavior:smooth}
+.grp{flex:none;writing-mode:vertical-rl;transform:rotate(180deg);font-family:'Barlow Condensed';font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#7d8597;align-self:center;padding:0 2px}
+.thumb{flex:none}
 .thumb{pointer-events:auto;cursor:pointer;width:84px;height:50px;border-radius:9px;background:rgba(255,255,255,.04) center/contain no-repeat;border:1.5px solid rgba(255,255,255,.1);position:relative;transition:border-color .3s,transform .2s,opacity .3s;opacity:.55}
 .thumb.on{border-color:var(--c,#fff);opacity:1;transform:translateY(-2px)}
 .thumb:hover{opacity:.9}
@@ -82,10 +84,18 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
 (function(){
 if(!window.THREE){document.getElementById('hint').textContent='3D LIBRARY BLOCKED';return}
 const cars=[
- {cc:100,kind:'kart',n:'Chili Pup',m:'Go-kart',c:'100cc',col:'#ff7a55',wb:1.1,len:3.3,gears:'8-speed auto',dt:'rear-drive kart',s:{Speed:25,Accel:40,Handling:95,Braking:60}},
- {cc:600,kind:'gt',n:'Velvet Fang',m:'GT coupe',c:'600cc',col:'#ff5d8f',wb:2.65,len:5.0,gears:'8-speed auto',dt:'road-going GT',s:{Speed:50,Accel:58,Handling:76,Braking:70}},
- {cc:1200,kind:'hyper',n:'Cinder Wyvern',m:'Hypercar',c:'1200cc',col:'#ffb04a',wb:2.77,len:5.0,gears:'8-speed auto',dt:'mid-engine hypercar',s:{Speed:75,Accel:80,Handling:72,Braking:82}},
- {cc:1800,kind:'f1',n:'Midnight Talon',m:'Formula car',c:'1800cc',col:'#6aa8ff',wb:3.3,len:5.4,gears:'8-speed auto',dt:'open-wheel single-seater',s:{Speed:100,Accel:95,Handling:86,Braking:96}}
+ {id:'kart',cc:100,kind:'kart',type:'Cars',n:'Chili Pup',m:'Go-kart',c:'100cc',col:'#ff7a55',wb:1.1,len:3.3,gears:'8-speed auto',dt:'rear-drive kart',s:{Speed:25,Accel:40,Handling:95,Braking:60}},
+ {id:'gt',cc:600,kind:'gt',type:'Cars',n:'Velvet Fang',m:'GT coupe',c:'600cc',col:'#ff5d8f',wb:2.65,len:5.0,gears:'8-speed auto',dt:'road-going GT',s:{Speed:50,Accel:58,Handling:76,Braking:70}},
+ {id:'hyper',cc:1200,kind:'hyper',type:'Cars',n:'Cinder Wyvern',m:'Hypercar',c:'1200cc',col:'#ffb04a',wb:2.77,len:5.0,gears:'8-speed auto',dt:'mid-engine hypercar',s:{Speed:75,Accel:80,Handling:72,Braking:82}},
+ {id:'f1',cc:1800,kind:'f1',type:'Cars',n:'Midnight Talon',m:'Formula car',c:'1800cc',col:'#6aa8ff',wb:3.3,len:5.4,gears:'8-speed auto',dt:'open-wheel single-seater',s:{Speed:100,Accel:95,Handling:86,Braking:96}},
+ {id:'ss55',cc:600,kind:'ss55',type:'Trucks',n:'S.S. 55',m:'Supposedly Stock',c:'600cc',col:'#5b8cff',wb:2.86,len:4.8,gears:'8-speed auto',dt:'stepside sleeper',s:{Speed:50,Accel:60,Handling:55,Braking:55}},
+ {id:'brb',cc:600,kind:'brb',type:'Trucks',n:'B.R.B. 4×4',m:'Be Right Back',c:'600cc',col:'#3d7bff',wb:2.54,len:4.32,gears:'8-speed auto',dt:'two-door 4×4',s:{Speed:48,Accel:55,Handling:52,Braking:52}},
+ {id:'pto',cc:1200,kind:'pto',type:'Trucks',n:'P.T.O.',m:'Paid to Overtake',c:'1200cc',col:'#4aa3ff',wb:3.25,len:5.25,gears:'8-speed auto',dt:'street pickup',s:{Speed:72,Accel:74,Handling:62,Braking:70}},
+ {id:'vipgt',cc:1200,kind:'vipgt',type:'Trucks',n:'V.I.P. GT',m:'Valet Is Panicking',c:'1200cc',col:'#2f8fff',wb:2.99,len:5.0,gears:'8-speed auto',dt:'fastback GT utility',s:{Speed:76,Accel:78,Handling:68,Braking:74}},
+ {id:'wipsm',cc:600,kind:'wipsm',type:'Bikes',n:'W.I.P. SM',m:'Wheelie in Progress',c:'600cc',col:'#ff8a1f',wb:1.48,len:3.2,gears:'8-speed auto',dt:'street supermoto',s:{Speed:52,Accel:70,Handling:90,Braking:66}},
+ {id:'ooo',cc:1200,kind:'ooo',type:'Bikes',n:'O.O.O. 1800',m:'Out of Office',c:'1200cc',col:'#ff9f1c',wb:1.66,len:3.5,gears:'8-speed auto',dt:'big V-twin cruiser',s:{Speed:70,Accel:72,Handling:55,Braking:60}},
+ {id:'iou',cc:1800,kind:'iou',type:'Bikes',n:'I.O.U. V4',m:'Italian Overtaking Unit',c:'1800cc',col:'#ff7a00',wb:1.46,len:3.2,gears:'8-speed auto',dt:'flagship superbike',s:{Speed:98,Accel:99,Handling:82,Braking:88}},
+ {id:'ptar',cc:1800,kind:'ptar',type:'Bikes',n:'P.T.A. R',m:'Permission to Apex',c:'1800cc',col:'#ffb347',wb:1.41,len:3.2,gears:'8-speed auto',dt:'track superbike',s:{Speed:100,Accel:97,Handling:88,Braking:92}}
 ];
 const TOPMPH=c=>Math.round(380*({100:.25,600:.5,1200:.75,1800:1}[c.cc])*2.237);
 
@@ -198,7 +208,7 @@ function makeCar(s){
  car.position.y=.24;return car;
 }
 const holder=new THREE.Group();scene.add(holder);
-let idx=0;try{const sv=+localStorage.getItem('gp747cc');const j=cars.findIndex(c=>c.cc===sv);if(j>=0)idx=j}catch(e){}
+let idx=0;try{const sc=localStorage.getItem('gp747car'),sv=+localStorage.getItem('gp747cc');let j=cars.findIndex(c=>c.id===sc&&c.cc===sv);if(j<0)j=cars.findIndex(c=>c.cc===sv&&c.kind===['kart','gt','hyper','f1'][[100,600,1200,1800].indexOf(sv)]);if(j>=0)idx=j}catch(e){}
 let current=makeCar(cars[idx]);holder.add(current);
 
 /* layout */
@@ -216,14 +226,14 @@ const thunk=()=>tone(110,.25,.18,'sine');
 /* ui */
 const keys=Object.keys(cars[0].s);
 keys.forEach(k=>$('bars').insertAdjacentHTML('beforeend',`<div class="stat"><span>${k}</span><div class="track"><div class="fill" id="f${k}"></div></div><span class="val" id="v${k}">0</span></div>`));
-cars.forEach((c,j)=>{$('dots').insertAdjacentHTML('beforeend',`<button class="thumb" id="d${j}" style="background-image:url(cars/thumbs/${c.kind}.webp);--c:${c.col}" aria-label="${c.n}"><small>${c.c}</small></button>`);$('d'+j).onclick=()=>{if(j!==idx)go(j>idx?1:-1,j)};});
+let lastType='';cars.forEach((c,j)=>{if(c.type!==lastType){lastType=c.type;$('dots').insertAdjacentHTML('beforeend',`<span class="grp">${c.type}</span>`);}$('dots').insertAdjacentHTML('beforeend',`<button class="thumb" id="d${j}" style="background-image:url(cars/thumbs/${c.kind}.webp);--c:${c.col}" aria-label="${c.n}"><small>${c.c}</small></button>`);$('d'+j).onclick=()=>{if(j!==idx)go(j>idx?1:-1,j)};});
 const timers=[];
 function paint(){
  const c=cars[idx],n=cars.length;
  $('nm').textContent=c.n;$('mk').textContent=c.m+' · '+c.dt;$('clsL').textContent=c.c;$('cls').style.color=c.col;
  $('gp').textContent=cars[(idx-1+n)%n].n;$('gn').textContent=cars[(idx+1)%n].n;
  $('wb').textContent=c.c;$('wt').textContent=TOPMPH(c)+' mph';$('pw').textContent=c.wb.toFixed(2)+' m';$('ptw').textContent=c.gears;
- cars.forEach((_,j)=>$('d'+j).classList.toggle('on',j===idx));
+ cars.forEach((_,j)=>$('d'+j).classList.toggle('on',j===idx));{const t=$('d'+idx);t.parentNode.scrollLeft=t.offsetLeft-t.parentNode.clientWidth/2+t.clientWidth/2;}
  timers.forEach(clearTimeout);timers.length=0;
  keys.forEach((k,i)=>{const f=$('f'+k),v=c.s[k];f.style.width='0';f.style.background=c.col;$('v'+k).textContent='0';
   timers.push(setTimeout(()=>{f.style.width=v+'%';tone(1300+i*200,.035,.06);const t0=performance.now();const st=setInterval(()=>{const x=Math.min(v,Math.round(v*(performance.now()-t0)/520));$('v'+k).textContent=x;if(x>=v)clearInterval(st)},16)},140+i*120))});
@@ -243,7 +253,7 @@ function stepAnim(dt){if(!anim)return;anim.t+=dt;
 
 $('nx').onclick=()=>go(1);$('pv').onclick=()=>go(-1);
 $('go').onclick=()=>{ctx();tone(880,.12,.15,'square');setTimeout(()=>tone(1320,.1,.3,'square'),110);$('go').textContent=cars[idx].n.toUpperCase()+' SELECTED';
- try{localStorage.setItem('gp747cc',String(cars[idx].cc))}catch(e){}setTimeout(()=>location.href='index.html',650)};
+ try{localStorage.setItem('gp747cc',String(cars[idx].cc));localStorage.setItem('gp747car',cars[idx].id)}catch(e){}setTimeout(()=>location.href='index.html',650)};
 addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click();if(e.key==='Escape')location.href='index.html'});
 addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1)});
 let sx=null,drag=0;
