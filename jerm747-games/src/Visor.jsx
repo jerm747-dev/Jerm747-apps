@@ -102,7 +102,7 @@ export function useGameFrame(project, stage, live, pocket) {
     if (kept) {attachPocket();sessions.release(frame);frame.focus();}
     else {
       frame.title=project.title;
-      frame.allow='gamepad; fullscreen; autoplay; screen-wake-lock'+(project.slug==='beat-room'?'; microphone':'');
+      frame.allow='gamepad; fullscreen; autoplay; screen-wake-lock'+(project.slug==='beat-room'?'; microphone':'')+(project.slug==='747-gp'?'; accelerometer; gyroscope':'');
       frame.allowFullscreen=true;
       prepareLegacyGames().then(()=>{if(live.current===frame && stage.current){frame.src=project.url;stage.current.append(frame);}});
     }
