@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>747 GP · Hazard Test</title>
+<style>
+:root{color-scheme:dark;--bg:#0e1011;--panel:#181b1c;--muted:#a2aaa7;--line:#363c3b;--ink:#f1f3e9;--lime:#def06a;--accent:#ffac54}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.35 Barlow,Arial,sans-serif}
+main{max-width:900px;margin:auto;padding:22px clamp(16px,4vw,40px) 32px}
+header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:14px}
+.mark{font:bold italic 27px/1 Arial,sans-serif;letter-spacing:-2px}.mark i{color:var(--lime)}.switch{font-size:13px;display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+h1{font-size:clamp(36px,7vw,64px);letter-spacing:-.065em;margin:17px 0 3px;line-height:1.06}p{color:var(--muted);margin:5px 0 18px}
+.layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(245px,.85fr);gap:24px}
+.stage{align-self:start;border:1px solid var(--line);background:var(--panel);overflow:hidden;border-radius:12px}
+canvas{display:block;width:100%;height:230px;background:#222627}.readout{display:flex;align-items:center;justify-content:space-between;padding:12px 15px;border-top:1px solid var(--line);font-size:14px}.readout span{color:var(--lime);font:12px ui-monospace,monospace}
+h2{font:600 12px/1.2 Barlow,Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase;margin:0 0 9px;color:var(--muted)}
+.controls{display:grid;gap:18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+button{font:600 15px Barlow,Arial,sans-serif;background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:12px;text-align:left;cursor:pointer;min-height:44px;touch-action:manipulation}
+button[aria-pressed=true]{background:var(--lime);color:#171a10;border-color:var(--lime)}button:hover:not([aria-pressed=true]){border-color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}input{accent-color:var(--lime)}#strength{width:100%;margin:10px 0 0}
+.tuning{display:flex;justify-content:space-between;font-size:14px}.tuning output{color:var(--lime);font-variant-numeric:tabular-nums}
+#status{min-height:1em;margin:8px 0 0;font-size:13px;color:var(--accent)}@media(max-width:620px){.layout{grid-template-columns:1fr;gap:14px}main{padding-top:14px}canvas{height:144px}.controls{gap:13px}.contacts button:last-child{grid-column:auto}button{padding:9px;font-size:14px}.readout{padding:8px 11px}}
+</style></head><body><main><header><div class="mark">747 <i>GP</i></div><label class="switch"><input type="checkbox" id="vibe" checked> Haptics</label></header>
+<h1>Hazard test</h1><p>Tap a contact or surface to try it. Change the strength and tap again.</p>
+<div class="layout"><section class="stage" aria-label="Contact animation"><canvas id="lane" aria-label="Overhead view of the test lane"></canvas><div class="readout"><b id="label">Test lane</b><span id="reading">READY</span></div></section>
+<div class="controls"><section><h2>Contact</h2><div class="grid contacts"><button data-id="side">Side rub</button><button data-id="rear">Rear bump</button><button data-id="wall">Barrier hit</button><button data-id="scrape">Barrier scrape</button></div></section>
+<section><h2>Tires &amp; surfaces</h2><div class="grid"><button data-id="skid">Tire squeal</button><button data-id="grass">Grass</button><button data-id="gravel">Gravel</button><button data-id="curb">Raised curb</button></div></section>
+<section><label class="tuning" for="strength">Test strength <output id="amount">55%</output></label><input type="range" id="strength" min="10" max="100" value="55"><p id="status" role="status"></p></section></div></div></main>
+<script>
+// 747 GP uses metres, seconds, and an X/Z ground plane.
+(() => {
+  'use strict';
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  // Equal effective mass for the same-vehicle arcade field. Normal points B -> A.
+  // The caller maps world-space corrections back into each driver's motion model.
+  function pair(a, b, length, width) {
+    const dx = a.x - b.x, dz = a.z - b.z;
+    if (dx * dx + dz * dz > length * length + width * width) return null;
+    const af = [Math.sin(a.h), Math.cos(a.h)], ar = [af[1], -af[0]];
+    const bf = [Math.sin(b.h), Math.cos(b.h)], br = [bf[1], -bf[0]];
+    let depth = Infinity, nx = 0, nz = 0;
+    for (const [x, z] of [af, ar, bf, br]) {
+      const extent = (length * (Math.abs(af[0]*x + af[1]*z) + Math.abs(bf[0]*x + bf[1]*z))
+        + width * (Math.abs(ar[0]*x + ar[1]*z) + Math.abs(br[0]*x + br[1]*z))) / 2;
+      const distance = dx*x + dz*z, overlap = extent - Math.abs(distance);
+      if (overlap <= 0) return null;
+      if (overlap < depth) {
+        depth = overlap;
+        const sign = Math.sign(distance) || 1;
+        nx = x*sign; nz = z*sign;
+      }
+    }
+    const closing = Math.max(0, -((a.vx-b.vx)*nx + (a.vz-b.vz)*nz));
+    const impulse = (closing + Math.min(2.8, closing*0.12)) / 2;
+    const shift = Math.max(0, depth - 0.012) * 0.48;
+    return {nx, nz, closing, dx:nx*shift, dz:nz*shift, dvx:nx*impulse, dvz:nz*impulse};
+  }
+
+  function wall(body, nx, nz, depth) {
+    const closing = Math.max(0, -(body.vx*nx + body.vz*nz));
+    const impulse = closing + Math.min(4, closing*0.22);
+    return {nx, nz, closing, dx:nx*depth, dz:nz*depth, dvx:nx*impulse, dvz:nz*impulse};
+  }
+
+  class Suspension {
+    constructor() { this.reset(); }
+    reset() { this.roll = this.pitch = this.rollRate = this.pitchRate = 0; }
+    kick(side, fore, speed) {
+      const force = Math.min(1, speed / 17);
+      this.rollRate = clamp(this.rollRate - side*force*1.75, -1.9, 1.9);
+      this.pitchRate = clamp(this.pitchRate + fore*force*1.15, -1.4, 1.4);
+    }
+    step(dt) {
+      this.rollRate += (-150*this.roll - 16*this.rollRate)*dt;
+      this.pitchRate += (-165*this.pitch - 18*this.pitchRate)*dt;
+      this.roll = clamp(this.roll + this.rollRate*dt, -0.07, 0.07);
+      this.pitch = clamp(this.pitch + this.pitchRate*dt, -0.045, 0.045);
+    }
+  }
+
+  // A contact stays latched while two bodies touch. Separating motion may still
+  // need a positional correction, but cannot trigger another impact cue.
+  class ContactGate {
+    constructor() { this.contacts = new Map(); this.time = 0; }
+    reset() { this.contacts.clear(); this.time = 0; }
+    step(dt) { this.time += dt; }
+    strike(key, closing) {
+      const previous = this.contacts.get(key);
+      const continuing = previous && this.time - previous.seen < 0.11;
+      const fired = continuing && previous.fired;
+      const trigger = !fired && closing >= 0.85;
+      this.contacts.set(key, {seen:this.time, fired:fired || trigger});
+      return trigger;
+    }
+  }
+
+  // Track-side lateral coordinates match the generated road mesh. Optional
+  // gravel zones use lap fractions [from,to) and signed metres from the centre.
+  function inZone(fraction,z) {
+    return z.from <= z.to ? fraction >= z.from && fraction < z.to : fraction >= z.from || fraction < z.to;
+  }
+  function surface(lat, fraction, track, corner, roadWidth, apron) {
+    const edge = Math.abs(lat) - roadWidth/2;
+    if (track.gravelZones?.some(z => inZone(fraction,z) && lat >= z.min && lat <= z.max)) return 'gravel';
+    if (edge <= 0) return 'asphalt';
+    if (track.oval) return lat*(track.outSide || 1) > 0 || edge <= apron ? 'asphalt' : 'grass';
+    if (corner && edge <= 1.4) return 'curb';
+    return 'grass';
+  }
+  window.GPContact = {pair, wall, Suspension, ContactGate, inZone, surface};
+})();
+
+</script><script>
+// Short original PCM one-shots and seamless textures. No external sample fetch.
+(() => {
+  'use strict';
+  const unit = x => Math.min(1, Math.max(0, x));
+  const TAU = 2*Math.PI, rate = 24000;
+  function random(seed) {
+    return () => { seed = (Math.imul(1664525,seed)+1013904223) >>> 0; return seed / 4294967296; };
+  }
+
+  // Each voice has its own attack, low resonance and ringing panel frequencies.
+  const panels = [[115,390,715,.13],[78,280,530,.22],[155,490,860,.12],[96,355,1020,.18]];
+  const rails = [[67,640,1315,.30],[88,860,1750,.23],[55,465,1120,.34]];
+  function impact(ac, shape, metal, seed) {
+    const [low,mid,high,tail] = shape, n = Math.ceil(rate*(tail+.035));
+    const b = ac.createBuffer(1,n,rate), a = b.getChannelData(0), noise = random(seed);
+    let smooth = 0;
+    for (let i=0; i<n; i++) {
+      const t=i/rate, raw=noise()*2-1;
+      smooth += (raw-smooth)*.28;
+      const attack=1-Math.exp(-t*1700), fade=unit((n-1-i)/220);
+      const ring=.24*Math.sin(TAU*mid*t)*Math.exp(-t*5/tail)
+        + .16*Math.sin(TAU*high*t)*Math.exp(-t*(metal?3.7:7)/tail);
+      const thud=.6*Math.sin(TAU*(low*t+0.8*(1-Math.exp(-t*45))))*Math.exp(-t*6/tail);
+      const clatter=(raw-smooth)*(.34*Math.exp(-t*105)+.15*Math.exp(-Math.abs(t-.029)*145));
+      a[i]=Math.tanh(thud+ring+clatter)*attack*fade;
+    }
+    return b;
+  }
+
+  function texture(ac, kind) {
+    const n=rate*2, overlap=2000, wave=new Float32Array(n+overlap);
+    const noise=random({grass:12,gravel:31,curb:54,skid:87,scrape:105}[kind]);
+    let slow=0, grain=0, last=0;
+    for(let i=0; i<wave.length; i++) {
+      const t=i/rate, r=noise()*2-1;
+      slow+=(r-slow)*.11;
+      if(noise()<.013) grain=.25+.75*noise();
+      grain*=.976;
+      switch(kind) {
+        case 'grass': wave[i]=slow*(.65+.25*Math.sin(TAU*4.5*t))+.11*(r-last)*grain;break;
+        case 'gravel': wave[i]=grain*(.29*r+.45*Math.sin(TAU*1350*t))+.22*slow;break;
+        case 'curb': wave[i]=Math.exp(-((t*19)%1)*7)*(.5*Math.sin(TAU*102*t)+.35*slow);break;
+        case 'scrape': wave[i]=(.30*(r-last)+.21*Math.sin(TAU*686*t))* (.65+.3*grain);break;
+        case 'skid': wave[i]=.39*Math.sin(TAU*1040*t+2.8*Math.sin(TAU*19.5*t))+
+          .19*Math.sin(TAU*1540*t+.8*Math.sin(TAU*33*t))+.18*(r-last);break;
+      }
+      last=r;
+    }
+    const buf=ac.createBuffer(1,n,rate), data=buf.getChannelData(0);
+    data.set(wave.subarray(0,n));
+    for(let i=0;i<overlap;i++){const w=i/overlap;data[i]=wave[n+i]*(1-w)+wave[i]*w;}
+    return buf;
+  }
+
+  class Sound {
+    constructor(ac) {
+      this.ac=ac; this.out=ac.createGain(); this.out.gain.value=0; this.out.connect(ac.destination);
+      this.hits={body:panels.map((x,i)=>impact(ac,x,false,2026+i)),wall:rails.map((x,i)=>impact(ac,x,true,747+i))};
+      this.next={body:0,wall:0}; this.loops={};
+      for(const k of ['grass','gravel','curb','skid','scrape']) {
+        const gain=ac.createGain(), src=ac.createBufferSource();
+        gain.gain.value=0; src.buffer=texture(ac,k);src.loop=true;src.connect(gain);gain.connect(this.out);
+        src.start();this.loops[k]={gain,src,level:0,rate:1};
+      }
+    }
+    volume(value) { if(value!==this.level){this.level=value;this.out.gain.setTargetAtTime(value,this.ac.currentTime,.012);} }
+    hit(type, speed, near=1) {
+      if(!this.level || near<=0) return;
+      const bank=this.hits[type], index=this.next[type]++%bank.length;
+      const src=this.ac.createBufferSource(), gain=this.ac.createGain();
+      src.buffer=bank[index]; src.playbackRate.value=.96+Math.random()*.08;
+      gain.gain.value=(.17+.67*unit(speed/20))*near;
+      src.connect(gain);gain.connect(this.out);src.onended=()=>{src.disconnect();gain.disconnect();};src.start();
+    }
+    road(kind,speed,slip,scrape) {
+      const motion=unit((speed-.8)/21);
+      for (const [key,voice] of Object.entries(this.loops)) {
+        let level=key===kind ? motion*(key==='grass'?.30:key==='gravel'?.48:.34) : 0;
+        if(key==='skid')level=kind==='asphalt'?motion*unit((slip-.045)*6)*.29:0;
+        if(key==='scrape')level=unit(scrape)*motion*.41;
+        const pitch=key==='skid'?.86+.22*unit(slip*3):.70+.60*unit(speed/55);
+        if(Math.abs(voice.level-level)>.003 || (!level && voice.level)) {
+          voice.gain.gain.setTargetAtTime(level,this.ac.currentTime,.045);voice.level=level;
+        }
+        if(level && Math.abs(pitch-voice.rate)>.015){
+          voice.src.playbackRate.setTargetAtTime(pitch,this.ac.currentTime,.05);voice.rate=pitch;
+        }
+      }
+    }
+  }
+
+  class Haptics {
+    constructor(device=navigator) { this.device=device; this.enabled=true; this.next=0; this.epoch=0; this.pad=null; }
+    pulse(power, duration, impact=false) {
+      if(!this.enabled || !power || (!impact && performance.now()<this.next))return;
+      power=unit(power);
+      this.next=performance.now()+(impact?Math.max(145,duration+55):duration+95);
+      const epoch=++this.epoch;
+      const phone=()=>{if(this.enabled && epoch===this.epoch && this.device.vibrate) {
+        try{this.device.vibrate(Math.round(duration*(.4+.6*power)));}catch(_){}
+      }};
+      try {
+        const pad=Array.from(this.device.getGamepads?.() || []).find(p=>p?.connected);
+        const act=pad?.vibrationActuator || pad?.hapticActuators?.[0];
+        if(!act){phone();return;}
+        this.pad=act;
+        let result;
+        if(act.playEffect)result=act.playEffect('dual-rumble',{duration,startDelay:0,strongMagnitude:power,weakMagnitude:Math.sqrt(power)*.8});
+        else if(act.pulse)result=act.pulse(power,duration);
+        else {phone();return;}
+        Promise.resolve(result).then(v=>{if(v===false||v==='not-supported')phone();},phone);
+      }catch(_){phone();}
+    }
+    hit(speed) { const p=unit(speed/19);this.pulse(.18+.78*p,Math.round(25+83*p),true); }
+    road(kind,speed,slip,scrape) {
+      const motion=unit((speed-1.5)/23);
+      let level={grass:.14,gravel:.32,curb:.27}[kind]||0;
+      if(kind==='asphalt')level=.17*unit((slip-.05)*6);
+      level=Math.max(level,.38*unit(scrape))*motion;
+      if(level>.025)this.pulse(level,Math.round(18+level*105));
+    }
+    stop() {
+      ++this.epoch;this.next=0;
+      try{this.pad?.reset?.()?.catch?.(()=>{});}catch(_){}
+      if(this.device.vibrate)try{this.device.vibrate(0);}catch(_){}
+    }
+  }
+  window.GPFeedback={Sound,Haptics};
+})();
+
+</script><script>
+(()=>{
+'use strict';
+const el=id=>document.getElementById(id),canvas=el('lane'),ctx=canvas.getContext('2d');
+const rumble=new GPFeedback.Haptics(),springs=[new GPContact.Suspension(),new GPContact.Suspension()];
+let ac,sound,run,frame,epoch=0;
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const car=(x,z,vx,vz)=>({x,z,vx,vz,h:0});
+function display(){
+ const width=canvas.clientWidth,height=canvas.clientHeight,dpr=Math.min(2,devicePixelRatio||1);
+ if(canvas.width!==Math.round(width*dpr)||canvas.height!==Math.round(height*dpr)){canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);}
+ ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#272c2e';ctx.fillRect(0,0,width,height);
+ const scale=Math.min(width/19,height/11),cx=width*.5,cy=height*.62;
+ const r=run||{a:car(-1,0,0,0),b:car(2,2,0,0),id:'side',dist:0,t:0};
+ const X=x=>cx+x*scale,Y=z=>cy-(z-r.a.z)*scale;
+ const left=X(-7),right=X(6),surface=r.id;
+ ctx.fillStyle=surface==='grass'?'#495739':surface==='gravel'?'#635d4d':'#353a3a';
+ ctx.fillRect(0,0,Math.max(0,left),height);ctx.fillRect(right,0,width-right,height);
+ if(['grass','gravel','curb'].includes(surface)){ctx.fillRect(X(-2.4),0,X(2.4)-X(-2.4),height);}
+ const offset=(r.a.z*scale)%(3.5*scale);
+ ctx.fillStyle='#4a4e4b';for(let y=offset-4*scale;y<height;y+=3.5*scale)ctx.fillRect(X(-.08),y,2.2,.9*scale);
+ ctx.fillStyle='#b4b6a4';ctx.fillRect(left,0,2,height);ctx.fillRect(right,0,2,height);
+ if(surface==='wall'||surface==='scrape'){ctx.fillStyle='#9ba298';ctx.fillRect(X(4.1),0,scale*.34,height);ctx.fillStyle='#484f4c';for(let y=offset-4*scale;y<height;y+=3.5*scale)ctx.fillRect(X(4.2),y,scale*.35,.4*scale);}
+ if(surface==='curb'){for(let y=offset-3.5*scale;y<height;y+=3.5*scale){ctx.fillStyle='#af644f';ctx.fillRect(X(-1),y,.6*scale,1.75*scale);ctx.fillStyle='#d0cdb2';ctx.fillRect(X(-1),y+1.75*scale,.6*scale,1.75*scale);}}
+ function draw(c,color,spring){ctx.save();ctx.translate(X(c.x),Y(c.z));ctx.rotate(Math.atan2(c.vx,Math.max(1,c.vz))*.18+spring.roll*.75);ctx.scale(scale,scale);
+ ctx.fillStyle='#151718';ctx.fillRect(-1.03,-1.31,2.06,.64);ctx.fillRect(-1.04,.8,2.08,.66);
+ ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(-.9,-2.05,1.8,4.1,[.52,.52,.3,.3]);ctx.fill();
+ ctx.fillStyle='#1c2b31';ctx.beginPath();ctx.moveTo(-.61,-.95);ctx.lineTo(.61,-.95);ctx.lineTo(.72,-.43);ctx.lineTo(-.72,-.43);ctx.fill();
+ ctx.fillStyle='#354044';ctx.fillRect(-.6,.57,1.2,.42);ctx.fillStyle='#edf2d6';ctx.fillRect(-.68,-1.79,.43,.12);ctx.fillRect(.25,-1.79,.43,.12);
+ ctx.fillStyle='#812c2a';ctx.fillRect(-.68,1.66,.45,.13);ctx.fillRect(.23,1.66,.45,.13);ctx.restore();}
+ if(r.b)draw(r.b,'#74a7b8',springs[1]);draw(r.a,'#ddeb6e',springs[0]);
+}
+function stop(){cancelAnimationFrame(frame);sound?.road('asphalt',0,0,0);rumble.stop();}
+function pulse(hit,type){
+ if(run.fired||hit.closing<.85)return;
+ run.fired=true;sound?.hit(type,hit.closing);rumble.hit(hit.closing);
+ springs[0].kick(hit.nx,hit.nz,hit.closing);if(run.b)springs[1].kick(-hit.nx,-hit.nz,hit.closing);
+ el('reading').textContent=hit.closing.toFixed(1)+' m/s contact';
+}
+function step(dt){
+ const r=run,a=r.a,b=r.b;
+ for(const c of b?[a,b]:[a]){c.x+=c.vx*dt;c.z+=c.vz*dt;}
+ springs.forEach(s=>s.step(dt));
+ if(b){const hit=GPContact.pair(a,b,4.1,1.8);if(hit){for(const [body,sgn] of [[a,1],[b,-1]]){body.x+=sgn*hit.dx;body.z+=sgn*hit.dz;body.vx+=sgn*hit.dvx;body.vz+=sgn*hit.dvz;}pulse(hit,'body');}}
+ if(r.id==='wall' && a.x+.9>=4.1){const hit=GPContact.wall(a,-1,0,a.x+.9-4.1);a.x+=hit.dx;a.vx+=hit.dvx;pulse(hit,'wall');}
+}
+async function start(btn){
+ const id=btn.dataset.id, strength=+el('strength').value/100,token=++epoch;
+ stop();for(const s of springs)s.reset();
+ el('status').textContent='';
+ try{if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();sound=new GPFeedback.Sound(ac);sound.volume(.78);}
+ await ac.resume();}catch(_){el('status').textContent='Audio is unavailable in this browser.';}
+ if(token!==epoch)return;
+ const v=1.6+strength*12;
+ const a=car(-1,0,0,12),r={id,a,b:null,t:0,fired:false};
+ if(id==='side'){a.x=-1.5;a.vx=v*.51;r.b=car(1.05,.65,0,12);}
+ if(id==='rear'){a.vz+=v;r.b=car(-1,5.2,0,12);}
+ if(id==='wall'){a.x=2.1;a.vx=v;}
+ if(id==='scrape')a.x=3.2;
+ const drag=id==='scrape'?strength:0;
+ const ground=id==='skid'||id==='scrape'?'asphalt':id,road=['skid','grass','gravel','curb','scrape'].includes(id);
+ if(road)a.vz=5+strength*45;
+ run=r;let last=performance.now();
+ for(const b of document.querySelectorAll('[data-id]'))b.setAttribute('aria-pressed',String(b===btn));
+ el('label').textContent=btn.textContent;el('reading').textContent=road?Math.round(a.vz*2.23694)+' mph':'APPROACH';
+ function tick(now){const dt=clamp((now-last)/1000,0,.04);last=now;r.t+=dt;
+ for(let i=0;i<5;i++)step(dt/5);
+ if(road){const slip=id==='skid'?.08+strength*.24:0;sound?.road(ground,a.vz,slip,drag);rumble.road(ground,a.vz,slip,drag);}
+ display();if(r.t<1.65)frame=requestAnimationFrame(tick);else{sound?.road('asphalt',0,0,0);}}
+ frame=requestAnimationFrame(tick);
+}
+document.querySelectorAll('[data-id]').forEach(b=>{b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>start(b));});
+el('strength').oninput=e=>el('amount').textContent=e.target.value+'%';
+el('vibe').onchange=e=>{rumble.enabled=e.target.checked;if(!rumble.enabled)rumble.stop();};
+document.addEventListener('visibilitychange',()=>{if(document.hidden){epoch++;stop();if(ac)ac.suspend();}});
+addEventListener('resize',display);display();
+})();
+</script></body></html>

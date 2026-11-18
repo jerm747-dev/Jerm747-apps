@@ -1,0 +1,104 @@
+/* Pro touch skin. The race page owns panel geometry, stick travel and all input. */
+body.pro-touch .panel {
+  --ice: 215, 237, 249;
+  --ink: rgb(var(--ice));
+  --line: rgba(var(--ice), .76);
+  --well: rgba(16, 26, 32, .18);
+  --keyline: rgba(16, 26, 32, .35);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.pro-touch .panel::before, .pro-touch .panel::after,
+.pro-touch #stem, .pro-touch #knob::before, .pro-touch #knob::after,
+.pro-touch .pbtn .meter { display: none; }
+
+body.pro-touch #joy {
+  background: var(--well);
+  box-shadow: inset 0 0 0 1.5px var(--line), 0 0 0 1px var(--keyline);
+}
+.pro-touch #joy::before {
+  inset: 3px;
+  border: 0;
+  background:
+    linear-gradient(var(--line), var(--line)) top / 1px 5px,
+    linear-gradient(var(--line), var(--line)) bottom / 1px 5px,
+    linear-gradient(var(--line), var(--line)) left / 5px 1px,
+    linear-gradient(var(--line), var(--line)) right / 5px 1px;
+  background-repeat: no-repeat;
+}
+body.pro-touch #knob {
+  width: 26%;
+  height: 26%;
+  margin: -13% 0 0 -13%;
+  opacity: 1;
+  background: rgba(var(--ice), .14);
+  border: 1.5px solid var(--line);
+  box-shadow: 0 0 0 1px var(--keyline);
+}
+.pro-touch #joy:active #knob {
+  background: rgba(var(--ice), .32);
+  border-color: var(--ink);
+}
+
+.pro-touch .panel .label, .pro-touch .mlab, .pro-touch .gearRow b {
+  color: var(--ink);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+}
+.pro-touch .fb {
+  border-color: rgba(var(--ice), .58);
+  border-radius: 2px;
+  background: var(--well);
+  box-shadow: 0 0 0 1px var(--keyline);
+}
+.pro-touch #steerBar .ctr { background: var(--line); }
+.pro-touch #steerFill, .pro-touch #pressFill {
+  background: rgba(var(--ice), .82);
+  box-shadow: none;
+  border-radius: 0;
+}
+.pro-touch #steerRaw { background: var(--ink); opacity: 1; }
+.pro-touch #rpmLeds i {
+  background: var(--well);
+  border: 1px solid rgba(var(--ice), .57);
+  box-shadow: none;
+}
+.pro-touch #rpmLeds i:is(.g, .r, .b) { background: var(--ink); }
+.pro-touch .gearRow button {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--well);
+  color: var(--ink);
+}
+.pro-touch .gearRow button:active { background: rgba(var(--ice), .36); }
+
+body.pro-touch .pbtn {
+  isolation: isolate;
+  overflow: hidden;
+  opacity: 1;
+  background: var(--well);
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1.5px var(--line), 0 0 0 1px var(--keyline);
+  color: var(--ink);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+  transition: none;
+}
+.pro-touch.pstack #brake { border-radius: 6px; }
+.pro-touch .pbtn::before {
+  inset: auto 1.5px 1.5px;
+  height: calc((100% - 3px) * var(--pedal-level, 0));
+  z-index: -1;
+  opacity: 1;
+  border-radius: 0;
+  background: rgba(var(--ice), .28);
+  box-shadow: inset 0 1.5px var(--ink);
+}
+.pro-touch :is(#gas, #brake)::after {
+  content: attr(data-pressure) '%';
+  inset: 6px 8px auto auto;
+  height: auto;
+  background: none;
+  font: 600 clamp(10px, 2.8vmin, 14px)/1.1 system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
