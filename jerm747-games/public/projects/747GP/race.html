@@ -320,6 +320,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
 @media (max-height:720px){#results .rwrap{gap:6px}.rHead big{font-size:56px}.rTable{max-height:24vh}.rRow{padding:3px 8px}#shareNote{display:none}.rKick{font-size:10px}.rRide{font-size:12px}.rBtns .gp-button{min-height:34px}}
 @media (max-height:520px){.rHead big{font-size:40px}.rTable{max-height:20vh}.rStat{padding:3px 8px}.rStat b{font-size:14px}.rLaps span{padding:2px 6px;font-size:11px}#results .rwrap{width:min(600px,60vw)}}
 </style>
+<link rel="stylesheet" href="ui/pro-touch.css">
 </head>
 <body>
 <div id="gpLoad" class="gp-loader on"></div>
@@ -425,6 +426,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
       <button class="ctl" id="steerCtl"><em>STEERING</em><strong id="steerVal">—</strong><i id="steerSub">also ← → · A / D · left stick · touch stick</i><u>TAP TO CHANGE</u></button>
       <div class="ctlopts">
       <button class="tog" id="hudBtn">ON-SCREEN CONTROLS: SHOW</button>
+      <button class="tog" id="touchStyleBtn">TOUCH STYLE: CLASSIC</button>
       <button class="tog" id="wheelBtn">STEERING WHEEL: OFF</button>
       </div>
     </div>
@@ -456,7 +458,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
     <div class="msec"><h4>DEV</h4>
       <button class="tog" id="rendBtn">RENDERER: …</button>
       <button class="tog" id="mdlBtn">CARS: 3D MODELS</button>
-      <button class="tog" id="glassBtn">PANELS: SOLID</button>
+      <button class="tog" id="glassBtn">CLASSIC PANELS: SOLID</button>
       <button class="tog" id="startBtn">RACE START: ROLLING START</button>
     </div>
   </div>
@@ -2190,7 +2192,17 @@ function applyPedals(){
   let g=0,b=0;for(const v of ptrs.values()){if(!v)continue;g=Math.max(g,v.g);b=Math.max(b,v.b);}
   input.gas=g;input.brake=b;   // targets; the applied amounts ease toward these in step()
 }
+let proTouch = false;
 function renderPedal(k,a){
+  if (proTouch) {
+    const pedal = pedals[k];
+    const percent = String(Math.round(a * 100));
+    if (pedal.dataset.pressure !== percent) {
+      pedal.dataset.pressure = percent;
+      pedal.style.setProperty('--pedal-level', Number(percent) / 100);
+    }
+    return;
+  }
   a=Math.round(a*50)/50;const el0=pedals[k];if(el0._a===a)return;el0._a=a;
   const el=pedals[k],col=k==='gas'?'255,159,28':'224,54,44';
   el.classList.toggle('on',a>0);
@@ -2231,6 +2243,27 @@ document.addEventListener('pointerdown',e=>{if(menu.classList.contains('open')&&
 let wheelOn=false;try{wheelOn=localStorage.getItem('gp747wheel')==='1';}catch(_){}
 function setWheel(on){wheelOn=on;document.body.classList.toggle('wheel-on',on);$('wheelBtn').textContent='STEERING WHEEL: '+(on?'ON':'OFF');try{localStorage.setItem('gp747wheel',on?'1':'0');}catch(_){}requestAnimationFrame(sizeMini);}
 $('wheelBtn').addEventListener('click',()=>setWheel(!wheelOn));
+const touchStyleBtn = $('touchStyleBtn');
+function setTouchStyle(usePro) {
+  proTouch = usePro;
+  document.body.classList.toggle('pro-touch', usePro);
+  touchStyleBtn.textContent = 'TOUCH STYLE: ' + (usePro ? 'PRO' : 'CLASSIC');
+  for (const pedal of Object.values(pedals)) {
+    // A switch can happen while a pedal is held or easing back to zero.
+    pedal.classList.remove('on');
+    pedal.style.removeProperty('transform');
+    pedal.style.removeProperty('box-shadow');
+    pedal._a = null;
+    renderPedal(pedal.id, pedal.id === 'gas' ? input.gasS : input.brakeS);
+  }
+}
+let savedTouchStyle;
+try { savedTouchStyle = localStorage.getItem('gp747touchStyle'); } catch (_) {}
+setTouchStyle(savedTouchStyle === 'pro');
+touchStyleBtn.addEventListener('click', () => {
+  setTouchStyle(!proTouch);
+  try { localStorage.setItem('gp747touchStyle', proTouch ? 'pro' : 'classic'); } catch (_) {}
+});
 let pStack=false;try{pStack=localStorage.getItem('gp747pstack')==='1';}catch(_){}
 function setPStack(on){pStack=on;document.body.classList.toggle('pstack',on);$('pstackBtn').textContent='PEDALS: '+(on?'GAS OVER BRAKE':'SIDE BY SIDE');try{localStorage.setItem('gp747pstack',on?'1':'0');}catch(_){}}
 $('pstackBtn').addEventListener('click',()=>setPStack(!pStack));setPStack(pStack);
@@ -2407,7 +2440,7 @@ $('modeBtn').addEventListener('click',()=>setMode((MODE+1)%4,true));setMode(MODE
  document.addEventListener('fullscreenchange',upd);document.addEventListener('webkitfullscreenchange',upd);upd();
  addEventListener('keydown',e=>{if(e.code==='KeyF'&&!e.repeat&&!e.ctrlKey)tog();});}
 let glass=false;try{glass=localStorage.getItem('gp747glass')==='1';}catch(_){}
-function setGlass(on){glass=on;document.body.classList.toggle('glass',on);$('glassBtn').textContent='PANELS: '+(on?'SEE-THROUGH':'SOLID');try{localStorage.setItem('gp747glass',on?'1':'0');}catch(_){}}
+function setGlass(on){glass=on;document.body.classList.toggle('glass',on);$('glassBtn').textContent='CLASSIC PANELS: '+(on?'SEE-THROUGH':'SOLID');try{localStorage.setItem('gp747glass',on?'1':'0');}catch(_){}}
 $('glassBtn').addEventListener('click',()=>setGlass(!glass));setGlass(glass);
 function updStartBtn(){$('startBtn').textContent='RACE START: '+START_TYPES.find(s=>s.id===startType).n;}
 $('startBtn').addEventListener('click',()=>{const i=START_TYPES.findIndex(s=>s.id===startType);startType=START_TYPES[(i+1)%START_TYPES.length].id;
