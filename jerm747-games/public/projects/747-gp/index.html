@@ -79,6 +79,16 @@
   #rsui .lb{position:absolute;left:0;right:0;height:11vh;background:#000;transition:transform .7s cubic-bezier(.2,.8,.2,1)}
   #rsui .lb.t{top:0;transform:translateY(-100%)} #rsui .lb.b{bottom:0;transform:translateY(100%)}
   body.rs-intro #rsui .lb{transform:none}
+  #rsLoad{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(circle at 50% 45%,#16181d,#050506 75%);opacity:0;transition:opacity .45s;pointer-events:none}
+  body.rs-loading #rsLoad{opacity:1;pointer-events:auto}
+  #rsLoad .spin{width:46px;height:46px;border-radius:50%;border:4px solid #2b2e33;border-top-color:#ff9f1c;animation:rsspin .9s linear infinite;margin-bottom:6px}
+  @keyframes rsspin{to{transform:rotate(360deg)}}
+  #rsLoad small{font:700 11px 'Titillium Web',sans-serif;letter-spacing:5px;color:#8b929c}
+  #rsLoad big{font:900 clamp(20px,4vw,36px) 'Orbitron',sans-serif;letter-spacing:2px;color:#fff}
+  #rsLoad .bar{width:min(260px,60vw);height:4px;border-radius:2px;background:#22252b;overflow:hidden;margin-top:6px}
+  #rsLoad .bar i{display:block;height:100%;width:40%;background:#ff9f1c;border-radius:2px;animation:rsbar 1.2s ease-in-out infinite}
+  @keyframes rsbar{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+  body.rs-loading .panel,body.rs-loading #strip,body.rs-loading #mini,body.rs-loading .topBtn,body.rs-loading #msg,body.rs-loading #mWheel{opacity:0;pointer-events:none}
   #rsCard{position:absolute;left:6vw;bottom:15vh;opacity:0;transform:translateX(-20px);transition:all .5s;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.7)}
   #rsCard small{display:block;font:700 12px 'Titillium Web',sans-serif;letter-spacing:4px;color:#ff9f1c}
   #rsCard big{display:block;font:900 clamp(22px,4.4vw,44px) 'Orbitron',sans-serif;letter-spacing:2px;line-height:1.05}
@@ -95,6 +105,7 @@
   body.rs-go #rsGo{opacity:1;transform:translateX(-50%) scale(1)}
   #rsSkip{position:absolute;left:50%;bottom:3vh;transform:translateX(-50%);font:700 10px 'Titillium Web',sans-serif;letter-spacing:3px;color:#aab;opacity:0;transition:opacity .4s}
   body.rs-intro #rsSkip{opacity:.8}
+  body.rs-loading #rsSkip{opacity:0}
   body.rs-intro #msg,body.rs-intro .panel,body.rs-intro #strip,body.rs-intro #mini,body.rs-intro .topBtn,body.rs-intro #muteBtn.off,body.rs-intro #menuBtn,body.rs-intro #mWheel{opacity:0;pointer-events:none}
   .panel,#strip,#mini,.topBtn,#menuBtn{transition:opacity .6s}
   .topBtn{position:fixed;top:calc(10px + env(safe-area-inset-top));z-index:6;width:44px;height:40px;border-radius:10px;border:1px solid #000;color:#f2f4f7;font:700 14px sans-serif;cursor:pointer;padding:0}
@@ -288,7 +299,7 @@
 <div id="pauseOv"><div class="carbon"><big>PAUSED</big><button class="tog" id="resumeBtn">RESUME</button><button class="tog" id="pResetBtn">RESTART LAP</button><button class="tog" id="pMenuBtn">MENU</button><small>P / Esc / Start to resume</small></div></div>
 <div id="trackList" class="carbon"></div>
 <div id="menu" class="carbon">
-  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.14</small></div><button id="menuX" aria-label="Close">✕</button></div>
+  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.2.15</small></div><button id="menuX" aria-label="Close">✕</button></div>
   <div class="ctlrow">
     <div class="ctlgrp">
       <div class="ctlpair">
@@ -355,7 +366,7 @@
   <div class="label">DRIVE CONTROL</div>
 </div>
 
-<script>window.GP_VERSION="1.2.14";window.GP_BUILD=14;console.log("747 GP v"+GP_VERSION);
+<script>window.GP_VERSION="1.2.15";window.GP_BUILD=15;console.log("747 GP v"+GP_VERSION);
 window.__startGame=async (RENDER_MODE)=>{
 'use strict';
 if(!window.THREE){document.getElementById('err').style.display='flex';return;}
@@ -929,10 +940,16 @@ function splitGeometry(kind,geo){
   if(SPLIT_GEO[kind])return SPLIT_GEO[kind];
   const sp=window.__CARSPLIT[kind],idx=geo.index.array,n=idx.length/3,own=new Int8Array(n).fill(-1);
   sp.tris.forEach((b,wi)=>{for(const t of new Uint32Array(b64buf(b)))own[t]=wi;});
+  // Steering-mounted brake hardware shares the wheel pivot, but has no rolling rotation.
+  const mountOffset=sp.wheels.length;
+  (sp.mounts||[]).forEach((encoded,i)=>{
+    if(encoded)for(const triangle of new Uint32Array(b64buf(encoded)))own[triangle]=mountOffset+i;
+  });
   const make=sel=>{let c=0;for(let t=0;t<n;t++)if(own[t]===sel)c++;const out=new Uint32Array(c*3);let j=0;
     for(let t=0;t<n;t++)if(own[t]===sel){out[j++]=idx[t*3];out[j++]=idx[t*3+1];out[j++]=idx[t*3+2];}
     const g=new THREE.BufferGeometry();for(const a in geo.attributes)g.setAttribute(a,geo.attributes[a]);g.setIndex(new THREE.BufferAttribute(out,1));g.computeBoundingSphere();return g;};
-  return SPLIT_GEO[kind]={body:make(-1),geos:sp.wheels.map((_,i)=>make(i)),wheels:sp.wheels};
+  const mounts=(sp.mounts||[]).map((encoded,i)=>encoded?make(mountOffset+i):null);
+  return SPLIT_GEO[kind]={body:make(-1),geos:sp.wheels.map((_,i)=>make(i)),wheels:sp.wheels,mounts};
 }
 function cutGeometry(kind,geo){
   if(CUT_GEO[kind])return CUT_GEO[kind];
@@ -1016,6 +1033,11 @@ function buildCar(kind){
       // trucks & bikes: their own wheels, split out of the model so they can spin (and the fronts steer)
       body.add(new THREE.Mesh(sp.body,mdl.mat));
       sp.wheels.forEach((w,i)=>{const pivot=new THREE.Group();pivot.position.set(w.x,w.y,w.z);body.add(pivot);
+        if(sp.mounts[i]){
+          const caliper=new THREE.Mesh(sp.mounts[i],mdl.mat);
+          caliper.position.set(-w.x,-w.y,-w.z);
+          pivot.add(caliper);
+        }
         const spin=new THREE.Group();spin.userData.spinR=w.r;pivot.add(spin);const m=new THREE.Mesh(sp.geos[i],mdl.mat);m.position.set(-w.x,-w.y,-w.z);spin.add(m);
         mwheels.push({spin,r:w.r});if(w.front)mfronts.push(pivot);});
     }else body.add(new THREE.Mesh(withWheels?cutGeometry(kind,mdl.geo):mdl.geo,mdl.mat));
@@ -1595,7 +1617,7 @@ function ghostAlpha(a){ghostGroup.visible=a>0.01;for(const g of ghosts)for(const
 // ---- overlays: letterbox, title card, lights ----
 const RSUI=(()=>{const d=document.createElement('div');d.id='rsui';d.innerHTML=
  '<div class="lb t"></div><div class="lb b"></div><div id="rsCard"><small id="rsKind"></small><big id="rsTrack"></big></div>'+
- '<div id="rsPos">P1</div><div id="rsReady">GET READY</div><div id="rsLights"><i></i><i></i><i></i><i></i><i></i></div><div id="rsGo">GO</div><div id="rsSkip">TAP / ANY KEY TO SKIP</div>';
+ '<div id="rsLoad"><div class="spin"></div><small>LOADING</small><big id="rsLoadName"></big><div class="bar"><i></i></div></div><div id="rsPos">P1</div><div id="rsReady">GET READY</div><div id="rsLights"><i></i><i></i><i></i><i></i><i></i></div><div id="rsGo">GO</div><div id="rsSkip">TAP / ANY KEY TO SKIP</div>';
  document.body.appendChild(d);return d;})();
 // ---- the player ----
 const RSS={active:false,phase:'',t:0,shots:[],si:0,st:0,baseFi:0,fi:0,cine:null,hand:null,lightsAt:0,lightsOut:0,goT:0,allowSkipAt:0};
@@ -1604,8 +1626,11 @@ function rsSet(cls,on){document.body.classList.toggle(cls,on);}
 function rsUI(card){$('rsKind').textContent=START_TYPES.find(s=>s.id===startType).n;$('rsTrack').textContent=rsTrackName();
   rsSet('rs-card',card==='title');rsSet('rs-pos',card==='pos');}
 function rsPlaceCar(p,v){Object.assign(st,{x:p.x,z:p.z,y:p.y,h:p.h,vx:p.fx*v,vz:p.fz*v,vF:v,vR:0,lat:0,idx:p.i,steer:0,yawRate:0,roll:0,slip:0,swerve:0,unlock:0});}
+// Hold on a loading screen until your ride's 3D model (and its wheels) are in, so the intro never shows stand-ins.
+function rideReady(){return !useModels||(M.model&&M.kind===VEH.kind&&(!BASE_KINDS.has(M.kind)||M.wheeled));}
 function startRace(full){
   reset();
+  RSS.loading=!rideReady();RSS.loadT=0;rsSet('rs-loading',RSS.loading);if(RSS.loading)$('rsLoadName').textContent=VEH.name.toUpperCase();
   const mode=startType,base=S-20;RSS.baseFi=base;RSS.active=true;RSS.t=0;RSS.allowSkipAt=1.0;rsSet('rs-on',true);rsSet('rs-lights',false);rsSet('rs-go',false);
   RSS.cine=null;RSS.hand=null;setupGhosts();ghostAlpha(1);
   if(mode==='rolling'){
@@ -1634,6 +1659,11 @@ function rsWorld(space,v){
 // called every frame instead of physics while the start runs; returns true if physics should be skipped
 function rsStep(dt){
   if(!RSS.active)return false;
+  if(RSS.loading){RSS.loadT+=dt;ghostGroup.visible=false;
+    if(rideReady()||RSS.loadT>30){RSS.loading=false;rsSet('rs-loading',false);ghostKey='';setupGhosts();
+      if(startType==='rolling')placeGhostsRolling();else{placeGhosts(RSS.baseFi);rsPlaceCar(slotPose(0,RSS.baseFi),0);}
+      ghostAlpha(1);RSS.t=0;RSS.si=0;RSS.st=0;camInit=false;}
+    return true;}
   if(RSS.phase!=='race'){const key=(M.model?'m:':'b:')+M.kind+':'+(M.wheeled?1:0);if(key!==ghostKey){setupGhosts();if(startType!=='rolling')placeGhosts(RSS.baseFi);ghostAlpha(1);}}
   RSS.t+=dt;if(RSS.phase==='intro'&&rsPadSkip())rsSkip();
   const rolling=startType==='rolling';
