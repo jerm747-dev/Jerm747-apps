@@ -23,7 +23,15 @@ The path to a race
   Esc / B go back.
   Manual shifting: Q / E, PageUp / PageDown, LB / RB, or the - / + paddles.
   Controller: R2/A gas, L2/B brake, left stick steer, right stick camera.
-  Keyboard: arrows/WASD, Space brake, R reset, C camera.
+  Keyboard: arrows/WASD, Space brake, R reset, C camera, L racing line.
+
+Racing line (1.2.18)
+  Every track solves its own racing line when it loads (wide in, clip the apex, wide out)
+  and a speed plan for your ride and drive mode. Green = power, yellow = ease off / at the
+  grip limit, red = brake. Ahead of you, any part you can no longer slow down for at your
+  current speed flashes bright red. Settings > RACING LINE (or L): Full, Braking only, Off.
+  The rivals drive the same line as a "soft slot": a pass or a bump moves them off it, they
+  ease back on, and a hit costs them a beat of pace while they shake it off.
 
 Saved on this device
   Your choices (mode, gearbox, ride, track, opponents), every finished race, your

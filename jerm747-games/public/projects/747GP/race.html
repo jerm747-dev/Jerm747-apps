@@ -454,6 +454,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
     <div class="msec"><h4>DISPLAY</h4>
       <details class="gp-look" data-gp-visuals></details>
       <button class="tog" id="camBtn">CAM: CHASE</button>
+      <button class="tog" id="lineBtn">RACING LINE: FULL</button>
       <button class="tog" id="whlBtn">WHEELS: …</button>
       <button class="tog" id="rimBtn">WHEELS: CHROME</button>
       <button class="tog" id="fsMenuBtn">FULL SCREEN: OFF</button>
@@ -594,10 +595,153 @@ function setupLine(def){
   CORNERS=(def.corners||[]).map(c=>{const p=ctrl[c.ctrl];let bi=0,bd=1e18;for(let i=0;i<S;i++){const d=(T[i].x-p[0])**2+(T[i].z-p[1])**2;if(d<bd){bd=d;bi=i;}}return {name:c.name,idx:bi};});
   const info=TRACK_DB[def.id];
   TPHYS=info?{drag:info.physics.drag_mult,down:info.physics.downforce_mult,power:info.physics.na_engine_power_mult}:{drag:1,down:1,power:1};
+  rlSolve();   // 1.2.18: racing line + speed plan for this track
 }
 // height of the surface at lateral offset `off` (along n) at sample p, including banking
 function bankRise(p,off){const tb=Math.tan(p.bank||0);if(!tb)return 0;const u=off*BSIDE;return (Math.min(RW/2,Math.max(-RW/2,u))+RW/2)*tb;}
 function hOff(p,off){return p.y+bankRise(p,off);}
+// ================= RACING LINE (1.2.18) =================
+// Solved for every track when it loads, so new tracks get a line with no hand work.
+//  1. Shape: start on the centerline and bend it, inside the track edges, until the curvature is as low as it can be
+//     (wide in, clip the apex, wide out). Solved coarse-to-fine so long sweepers and tight hairpins both settle.
+//  2. Speed plan: the fastest each point of that line can be taken with your car's grip (the same 30 m/s² + downforce
+//     + banking rule the steering uses), then a forward pass for how quickly the engine gets you there and a backward
+//     pass for where you have to brake. That backward pass is where the brake points come from.
+// The player's guide line draws from RL; the AI field follows the same RL.off and RL.v.
+// Offsets are along n (T[i].nx,nz = right of travel), the same side convention as st.lat.
+const RL={off:null,v:null,vc:null,acc:null,brk:null,curv:null,len:null,lapT:0,track:'',key:''};
+const RL_GRIP=0.95;        // share of the grip limit the plan uses (a little in hand for the steering to settle)
+const RL_BRAKE=0.45;       // share of full brake force the plan brakes at (firm, not a stamp on the pedal)
+function rlSolve(){
+  const STEP=Math.max(1,Math.round(4/DS)),N=Math.max(64,Math.round(S/STEP));   // coarse points ~4 m apart
+  const ci=new Int32Array(N),cx=new Float64Array(N),cz=new Float64Array(N),nx=new Float64Array(N),nz=new Float64Array(N),o=new Float64Array(N);
+  for(let k=0;k<N;k++){const i=Math.round(k*S/N)%S,p=T[i];ci[k]=i;cx[k]=p.x;cz[k]=p.z;nx[k]=p.nx;nz[k]=p.nz;}
+  // room each side: half the road less half a car and a little margin (ovals keep off the apron a touch more)
+  const lim=Math.max(0.5,RW/2-(TRK.oval?1.9:1.6));
+  const px=k=>cx[k]+nx[k]*o[k],pz=k=>cz[k]+nz[k]*o[k];
+  // Gauss-Seidel on the bending energy: each point moves (along its normal only) toward
+  // (4·(P[k-s]+P[k+s]) - (P[k-2s]+P[k+2s])) / 6, which is where the 4th difference — the bend — is zero.
+  const scales=[];for(let s=1;s*4*4<=N;s*=2)scales.unshift(s);   // e.g. 64,32,…,1 coarse steps
+  for(const s of scales){
+    const iters=s>=8?60:s>=2?90:140;
+    for(let it=0;it<iters;it++){
+      for(let k=0;k<N;k++){
+        const a=(k-2*s+N*4)%N,b=(k-s+N*4)%N,c=(k+s)%N,d=(k+2*s)%N;
+        const tx=(4*(px(b)+px(c))-(px(a)+px(d)))/6,tz=(4*(pz(b)+pz(c))-(pz(a)+pz(d)))/6;
+        const dlt=(tx-px(k))*nx[k]+(tz-pz(k))*nz[k];
+        o[k]=Math.max(-lim,Math.min(lim,o[k]+0.9*dlt));
+      }
+    }
+  }
+  const off=new Float32Array(S);
+  // back to full resolution: Catmull-Rom between coarse points (straight-line joins would put a kink every 4 m)
+  for(let k=0;k<N;k++){const i0=ci[k],i1=ci[(k+1)%N],a=o[(k-1+N)%N],b=o[k],c=o[(k+1)%N],d=o[(k+2)%N],span=((i1-i0)+S)%S||S;
+    for(let j=0;j<span;j++){const t=j/span,t2=t*t,t3=t2*t;off[(i0+j)%S]=Math.max(-lim,Math.min(lim,0.5*(2*b+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3)));}}
+  // signed curvature of the line (+ = turning right), measured over ~±6 m and lightly smoothed
+  const h=Math.max(3,Math.round(8/DS)),qx=new Float64Array(S),qz=new Float64Array(S),len=new Float32Array(S),kr=new Float32Array(S),curv=new Float32Array(S);
+  for(let i=0;i<S;i++){qx[i]=T[i].x+T[i].nx*off[i];qz[i]=T[i].z+T[i].nz*off[i];}
+  for(let i=0;i<S;i++){const j=(i+1)%S;len[i]=Math.max(1e-3,Math.hypot(qx[j]-qx[i],qz[j]-qz[i]));}
+  for(let i=0;i<S;i++){
+    const a=(i-h+S)%S,b=(i+h)%S;
+    const ax=qx[i]-qx[a],az=qz[i]-qz[a],bx=qx[b]-qx[i],bz=qz[b]-qz[i];
+    const ang=Math.atan2(ax*bz-az*bx,ax*bx+az*bz);   // + = left in x/z with this handedness; flipped below
+    kr[i]=ang/Math.max(1e-3,(Math.hypot(ax,az)+Math.hypot(bx,bz))/2);
+  }
+  // which turn direction is "right"? compare with n: turning toward +n means the line bends to the right
+  const sgnFix=(()=>{let s=0;for(let i=0;i<S;i+=7){const a=T[i],b=T[(i+h)%S];const turnR=(b.tx-a.tx)*a.nx+(b.tz-a.tz)*a.nz;s+=Math.sign(turnR)*Math.sign(kr[i]);}return s>=0?1:-1;})();
+  const W=Math.max(3,Math.round(8/DS));
+  for(let i=0;i<S;i++){let m=0;for(let j=-W;j<=W;j++)m+=kr[(i+j+S)%S];curv[i]=sgnFix*m/(2*W+1);}
+  Object.assign(RL,{off,len,curv,track:TRK.id,key:''});
+  rlProfile();
+}
+// speed plan for the current car / drive mode (cheap: re-run whenever the class or mode changes)
+function rlProfile(){
+  if(!RL.off||RL.track!==TRK.id)return;
+  const key=TRK.id+'|'+VMAX.toFixed(2)+'|'+ACC.toFixed(2)+'|'+BRAKE+'|'+DRAG;if(RL.key===key)return;RL.key=key;
+  const vc=new Float32Array(S),v=new Float32Array(S),acc=new Float32Array(S),brk=new Float32Array(S),down=TPHYS.down;
+  for(let i=0;i<S;i++){
+    const k=Math.abs(RL.curv[i]),c=(30+12*Math.tan(T[i].bank||0))*RL_GRIP,b=0.2*down*RL_GRIP;
+    vc[i]=k<1e-6?VMAX*1.5:(b+Math.sqrt(b*b+4*k*c))/(2*k);   // κ·v² = c + b·v  →  the corner's top speed
+  }
+  // start from the slowest corner so one pass each way settles it; two laps to wrap
+  let i0=0;for(let i=1;i<S;i++)if(vc[i]<vc[i0])i0=i;
+  const g=9.8*0.9;
+  for(let i=0;i<S;i++)v[i]=vc[i];
+  // forward: the engine (same push curve as step(): ACC·power·min(1,1.4·(1-(v/VMAX)^1.7)) less drag and the hill)
+  {let sp=vc[i0];for(let n=1;n<=2*S;n++){const i=(i0+n-1)%S,j=(i0+n)%S;
+    const a=ACC*TPHYS.power*Math.min(1,Math.max(0,1.4*(1-Math.pow(sp/VMAX,1.7))))-DRAG*TPHYS.drag*sp*sp-g*T[i].grade;
+    sp=Math.min(vc[j],Math.sqrt(Math.max(1,sp*sp+2*a*RL.len[i])));if(n>S)v[j]=Math.min(v[j],sp);else v[j]=sp;}}
+  // backward: braking (brake + drag; uphill helps, downhill fights it)
+  {let sp=v[i0];for(let n=1;n<=2*S;n++){const j=(i0-n+1+2*S)%S,i=(i0-n+2*S)%S;
+    const d=BRAKE*RL_BRAKE+DRAG*TPHYS.drag*sp*sp+g*T[i].grade;
+    const lim=Math.sqrt(sp*sp+2*Math.max(4,d)*RL.len[i]);if(v[i]>lim){v[i]=lim;brk[i]=1;}sp=v[i];}}
+  let t=0;for(let i=0;i<S;i++){const j=(i+1)%S;acc[i]=(v[j]*v[j]-v[i]*v[i])/(2*RL.len[i]);t+=RL.len[i]/Math.max(1,(v[i]+v[j])/2);}
+  // zones for the guide colours: 0 = power (green), 1 = at the grip limit / easing (yellow), 2 = brake (red)
+  const zone=new Uint8Array(S);
+  for(let i=0;i<S;i++)zone[i]=brk[i]?2:(v[i]>=vc[i]*0.97||acc[i]<0.5)?1:0;
+  // tidy: ignore brake taps that shed under 4% of the speed, and short green gaps inside a corner
+  const runs=(fn)=>{let i=0;while(i<S&&zone[i]===zone[(i-1+S)%S])i++;const st0=i%S;let n=0;
+    while(n<S){const z=zone[(st0+n)%S];let m=n;while(m<S&&zone[(st0+m)%S]===z)m++;fn(z,st0+n,st0+m);n=m;}};
+  runs((z,a,b)=>{if(z!==2)return;const va=v[a%S],vb=v[(b-1)%S];if(va-vb<Math.max(3,va*0.04))for(let k=a;k<b;k++)zone[k%S]=1;});
+  runs((z,a,b)=>{if(z!==0)return;let L=0;for(let k=a;k<b;k++)L+=RL.len[k%S];if(L<25&&zone[(a-1+S)%S]!==0&&zone[b%S]!==0)for(let k=a;k<b;k++)zone[k%S]=1;});
+  Object.assign(RL,{v,vc,acc,brk,zone,lapT:t});
+  if(typeof rlRecolor==='function')rlRecolor();
+}
+// what the line wants at a (fractional) sample: offset along n and speed
+function rlAt(fi){fi=((fi%S)+S)%S;const i=Math.floor(fi),j=(i+1)%S,w=fi-i;return {off:RL.off[i]+(RL.off[j]-RL.off[i])*w,v:RL.v[i]+(RL.v[j]-RL.v[i])*w};}
+// ---- the player's guide line (Forza-style): green = power, yellow = ease / at the limit, red = brake ----
+// FULL shows the whole line; BRAKING shows only the yellow and red parts. Ahead of you, any part of the line you
+// can no longer slow down for at your current speed turns bright red, so a late brake point shouts at you.
+const RLV={mode:'full',group:null,mesh:null,geo:null,col:null,base:null,lo:-1,hi:-1,flash:0};
+try{const v=localStorage.getItem('gp747line');if(v==='off'||v==='full'||v==='braking')RLV.mode=v;}catch(_){}
+const RL_COL=[[0.12,0.92,0.3],[1.0,0.8,0.08],[1.0,0.13,0.08]],RL_HOT=[1.0,0.02,0.02],RL_W=0.45;
+function rlBuildMesh(){
+  if(!RLV.group){RLV.group=new THREE.Group();RLV.group.renderOrder=2;scene.add(RLV.group);}
+  if(RLV.mesh){RLV.group.remove(RLV.mesh);RLV.geo.dispose();RLV.mesh=null;}
+  if(RL.track!==TRK.id)rlSolve();
+  const pos=new Float32Array((S+1)*6);
+  for(let r=0;r<=S;r++){const i=r%S,p=T[i],o=RL.off[i],a=o-RL_W,b=o+RL_W;
+    pos.set([p.x+p.nx*a,hOff(p,a)+0.06,p.z+p.nz*a, p.x+p.nx*b,hOff(p,b)+0.06,p.z+p.nz*b],r*6);}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  RLV.col=new Float32Array((S+1)*6);RLV.base=new Float32Array((S+1)*6);
+  const ca=new THREE.BufferAttribute(RLV.col,3);/* shares RLV.col; Float32BufferAttribute would copy it */if(ca.setUsage&&THREE.DynamicDrawUsage)ca.setUsage(THREE.DynamicDrawUsage);geo.setAttribute('color',ca);
+  RLV.geo=geo;
+  const mat=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:0.82,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4,toneMapped:false});
+  RLV.mesh=new THREE.Mesh(geo,mat);RLV.mesh.frustumCulled=false;RLV.mesh.renderOrder=2;RLV.group.add(RLV.mesh);
+  RLV.lo=RLV.hi=-1;rlRecolor();
+}
+// dashes 4.5 m on / 2.5 m off; BRAKING mode drops the green dashes
+function rlIndex(){
+  if(!RLV.geo)return;const idx=[];let s=0;
+  for(let i=0;i<S;i++){const z=RL.zone?RL.zone[i]:0;if(s%7<4.5&&!(RLV.mode==='braking'&&z===0)){const a=i*2;idx.push(a,a+2,a+1,a+1,a+2,a+3);}s+=RL.len[i];}
+  RLV.geo.setIndex(idx);
+}
+function rlRecolor(){
+  if(!RLV.geo||!RL.zone||RL.zone.length!==S)return;
+  for(let r=0;r<=S;r++){const c=RL_COL[RL.zone[r%S]];RLV.base.set(c,r*6);RLV.base.set(c,r*6+3);}
+  RLV.col.set(RLV.base);RLV.geo.attributes.color.needsUpdate=true;RLV.lo=RLV.hi=-1;rlIndex();
+}
+function rlPaint(i,c){i=((i%S)+S)%S;RLV.col.set(c,i*6);RLV.col.set(c,i*6+3);if(i===0){RLV.col.set(c,S*6);RLV.col.set(c,S*6+3);}}
+function rlRestore(i){i=((i%S)+S)%S;for(const r of i===0?[0,S]:[i])RLV.col.set(RLV.base.subarray(r*6,r*6+6),r*6);}
+function rlUpdate(dt){
+  if(!RLV.mesh)return;
+  const show=RLV.mode!=='off'&&!finished&&!(typeof AUTO!=='undefined'&&AUTO.on);
+  RLV.group.visible=show;if(!show||!RL.v)return;
+  // undo last frame's warning paint, then paint the stretch ahead you are now too fast for
+  if(RLV.lo>=0)for(let i=RLV.lo;i<=RLV.hi;i++)rlRestore(i);
+  RLV.flash+=dt;const vp=Math.max(0,st.vF),dec=BRAKE*RL_BRAKE,hot=0.75+0.25*Math.sin(RLV.flash*14);
+  const W=Math.round(700/DS);let d=0,lo=-1,hi=-1;
+  for(let n=1;n<W;n++){const i=(st.idx+n)%S;d+=RL.len[(i-1+S)%S];
+    const reach2=vp*vp-2*dec*d;if(reach2<=0)break;      // past here you could stop in time for anything
+    if(reach2>RL.v[i]*RL.v[i]*1.06){rlPaint(i,[RL_HOT[0]*hot,RL_HOT[1],RL_HOT[2]]);if(lo<0)lo=st.idx+n;hi=st.idx+n;}}
+  RLV.lo=lo;RLV.hi=hi;RLV.geo.attributes.color.needsUpdate=true;
+}
+function setLineMode(m,announce){
+  RLV.mode=m;try{localStorage.setItem('gp747line',m);}catch(_){}
+  const b=document.getElementById('lineBtn');if(b)b.textContent='RACING LINE: '+({off:'OFF',full:'FULL',braking:'BRAKING ONLY'})[m];
+  rlIndex();if(announce&&typeof showMsg==='function')showMsg('RACING LINE',({off:'Off',full:'Full line',braking:'Braking only'})[m],1100);
+}
+function cycleLine(){setLineMode(({off:'full',full:'braking',braking:'off'})[RLV.mode],true);}
 // nearest track sample via a spatial hash (falls back to a full scan far from the track); also reports the lowest
 // nearby road height so terrain never rises over a lower road (figure-8 overpass)
 function coarseNearest(x,z){
@@ -819,6 +963,7 @@ function buildTrackMeshes(){
   // road
   dressMaterials();
   ribbon(RW/2,-RW/2,0.02,0.02,roadMat,24);
+  rlBuildMesh();   // racing line overlay (its own group, so it survives the clear above)
   // curbs on corners (road courses)
   if(!TRK.oval){raisedCurb(RW/2,RW/2+1.4,isCorner);raisedCurb(-RW/2,-RW/2-1.4,isCorner);}
   const P=RW/2+VPOS,N=RW/2+VNEG;
@@ -1439,6 +1584,7 @@ function applyClass(cc){
   VMAX=380*SF*m;ACC=60*SF*(0.4+0.6*m);BRAKE=240*SF;DRAG=0.0001125/SF;GTOP=GTOP_BASE.map(v=>v*SF*m);
   WB=c.wb;CAMSCALE=c.cam;TCAMH=c.tcam;
   if(VEH&&VEH.wb&&VEH.cc===cc){WB=VEH.wb;CAMSCALE=VEH.cam;TCAMH=VEH.tcam;}
+  rlProfile();   // new car / drive mode = new brake points
 }
 // game mode + gearbox come from the front-end (index.html → showroom → tracks); both can be changed in the menu
 // (1.2.17) from the session: URL first, then saved. Game mode lives in gp747game; gp747mode is the drive mode.
@@ -1808,6 +1954,8 @@ function ghostAlpha(a){if(GAMEMODE==='trial'){ghostGroup.visible=false;return;}g
 // The grid races now. Each rival follows the track at a speed set by the corner ahead (the same grip
 // model as your car: lateral grip 30 m/s² plus downforce), brakes early enough for the next one, and
 // picks a lane: toward the inside through corners, out and around a slower car. No AI rubber-banding.
+// 1.2.18: rivals ride the solved racing line (RL) as a "soft slot" — any step off it (grid lane, a pass, their own
+// habit, a bump) is a deviation that springs back, and a hit costs them a beat of pace while they shake it off.
 const AI={on:false,cars:[],t:0,myFin:null,posT:0};
 let SGN=null,CURVS=null,profCache={},sgnTrack='';
 function trackSigns(){
@@ -1820,7 +1968,7 @@ function trackSigns(){
 function aiProfile(skill){
   trackSigns();const key=TRK.id+'|'+VMAX.toFixed(1)+'|'+skill.toFixed(3);if(profCache[key])return profCache[key];
   const v=new Float32Array(S),down=TPHYS.down,top=VMAX*(0.9+0.1*skill),b=0.2*down*skill;
-  for(let i=0;i<S;i++){const k=Math.max(1e-6,CURVS[i]),lat=(30+12*Math.tan(T[i].bank||0))*skill;v[i]=Math.min(top,(b+Math.sqrt(b*b+4*k*lat))/(2*k));}
+  for(let i=0;i<S;i++){const k=Math.max(1e-6,RL.track===TRK.id?Math.abs(RL.curv[i]):CURVS[i]),lat=(30+12*Math.tan(T[i].bank||0))*skill;v[i]=Math.min(top,(b+Math.sqrt(b*b+4*k*lat))/(2*k));}
   const B=BRAKE*0.45*skill;   // brake for the next corner (two passes so the lap wraps)
   for(let n=2*S-1;n>=0;n--){const i=n%S,j=(i+1)%S,lim=Math.sqrt(v[j]*v[j]+2*B*DS);if(v[i]>lim)v[i]=lim;}
   return profCache[key]=v;
@@ -1848,7 +1996,7 @@ function aiStart(){
     const skill=0.93-0.14*(n>1?order[k]/(n-1):0.5)+(Math.random()-0.5)*0.02;
     const lat0=g.userData.lat!=null?g.userData.lat:(k%2?LANE:-LANE);
     AI.cars.push({k,g,u:wrapU(g.userData.fi!=null?g.userData.fi:-(k+1)*ROW_GAP/DS),v:startType==='rolling'?PACE:0,lat:lat0,bias:lat0*0.6,skill,prof:aiProfile(skill),
-      accF:0.9+0.12*skill,spin:0,finT:null,laps:[],lastCross:0,slide:0,spring:new GPContact.Suspension(),passT:0,passLat:0,react:0.15+Math.random()*0.35,name:RIVALS[k%RIVALS.length]});}
+      accF:0.9+0.12*skill,spin:0,finT:null,laps:[],lastCross:0,slide:0,spring:new GPContact.Suspension(),passT:0,passLat:0,dev:0,vary:(Math.random()-0.5)*0.9,shake:0,react:0.15+Math.random()*0.35,name:RIVALS[k%RIVALS.length]});}
 }
 function aiStop(){AI.on=false;AI.cars=[];document.body.classList.remove('racing-field');}
 function standings(){
@@ -1867,7 +2015,8 @@ function aiStep(dt){
     c.g=ghosts[c.k]||c.g;
     const fi=((c.u%S)+S)%S,i=Math.floor(fi);
     if(c.react>0){c.react-=dt;}   // a beat of reaction at the green
-    const tgt=c.prof[(i+3)%S];
+    if(c.shake>0)c.shake-=dt;
+    const tgt=c.prof[(i+3)%S]*(c.shake>0?0.9:1);
     // the car ahead in this lane
     let blk=null,bd=1e9;
     for(const o of ents){if(o.c===c)continue;const d=(o.u-c.u)*DS;if(d>0.5&&d<16&&Math.abs(o.lat-c.lat)<W*1.25&&d<bd){bd=d;blk=o;}}
@@ -1875,8 +2024,9 @@ function aiStep(dt){
       const left=c.lat-W*1.5,right=c.lat+W*1.5,canL=left>-half,canR=right<half;
       c.passLat=(canL&&canR)?(blk.lat>c.lat?left:right):(canL?left:(canR?right:c.lat));c.passT=2.2;}
     if(c.passT>0)c.passT-=dt;
-    const line=SGN[i]*Math.min(1,CURVS[i]*70)*(RW/2-2.2);
-    const want=c.passT>0?c.passLat:Math.max(-half,Math.min(half,line*0.75+c.bias*(1-Math.min(1,CURVS[i]*70))));
+    // 1.2.18 racing line: rivals ride RL as a soft slot (RL.off is along n; AI lat runs the other way)
+    const line=RL.off&&RL.track===TRK.id?-rlAt(c.u).off:SGN[i]*Math.min(1,CURVS[i]*70)*(RW/2-2.2);
+    const want=c.passT>0?c.passLat:Math.max(-half,Math.min(half,line+c.vary));
     c.oldU=c.u;
     c.spring.step(dt);c.slide*=Math.exp(-5*dt);
     const lastLat=c.lat;
@@ -1898,6 +2048,7 @@ function aiStep(dt){
       c.u+=(dx*p.fx+dz*p.fz)/DS;c.lat=Math.max(-half,Math.min(half,c.lat+dx*p.rx+dz*p.rz));
       c.v=Math.max(0,c.v+vx*p.fx+vz*p.fz);
       c.slide=Math.max(-10,Math.min(10,c.slide+vx*p.rx+vz*p.rz));
+      c.shake=Math.max(c.shake||0,Math.min(1.2,0.4+Math.hypot(vx,vz)*0.08));   // shake it off: a beat of lost pace
     }else{
       st.vF=st.vx*Math.sin(st.h)+st.vz*Math.cos(st.h);
       st.vR=st.vx*Math.cos(st.h)-st.vz*Math.sin(st.h);
@@ -2585,6 +2736,8 @@ $('modeBtn').addEventListener('click',()=>setMode((MODE+1)%4,true));setMode(MODE
 let glass=false;try{glass=localStorage.getItem('gp747glass')==='1';}catch(_){}
 function setGlass(on){glass=on;document.body.classList.toggle('glass',on);$('glassBtn').textContent='CLASSIC PANELS: '+(on?'SEE-THROUGH':'SOLID');try{localStorage.setItem('gp747glass',on?'1':'0');}catch(_){}}
 $('glassBtn').addEventListener('click',()=>setGlass(!glass));setGlass(glass);
+$('lineBtn').addEventListener('click',()=>cycleLine());setLineMode(RLV.mode);
+addEventListener('keydown',e=>{if(e.code==='KeyL'&&!e.repeat&&!paused&&!e.ctrlKey)cycleLine();});
 function updStartBtn(){$('startBtn').textContent='RACE START: '+START_TYPES.find(s=>s.id===startType).n;}
 $('startBtn').addEventListener('click',()=>{const i=START_TYPES.findIndex(s=>s.id===startType);startType=START_TYPES[(i+1)%START_TYPES.length].id;
   try{localStorage.setItem('gp747start',startType);}catch(_){}updStartBtn();menuPaused=false;menu.classList.remove('open');if(paused)setPause(false);startRace(true);});updStartBtn();
@@ -2657,7 +2810,7 @@ resultsNav.active=false;
 startRace(true);
 loadVeg().then(ok=>{if(ok){roadTexCache[RW]=null;buildTrackMeshes();}if(!running&&!RSS.active)startRace(false);});
 // debug/test hook (harmless)
-window.__gp={finish:()=>finishRace(),AI,get results(){return lastResult;},set noWalls(v){NOWALL=v;},get veg(){return VEG.ready;},get vegCount(){let n=0;trackGroup.children.forEach(c=>{if(c.isInstancedMesh!==undefined&&c.count)n+=0;});return trackGroup.children.length;},get M(){return M;},get st(){return st;},input,get T(){return T;},get S(){return S;},get lap(){return lap;},get best(){return best;},get RW(){return RW;},loadTrack,setClass};
+window.__gp={finish:()=>finishRace(),AI,RL,RLV,st,get T(){return T;},get S(){return S;},get DS(){return DS;},get results(){return lastResult;},set noWalls(v){NOWALL=v;},get veg(){return VEG.ready;},get vegCount(){let n=0;trackGroup.children.forEach(c=>{if(c.isInstancedMesh!==undefined&&c.count)n+=0;});return trackGroup.children.length;},get M(){return M;},get st(){return st;},input,get T(){return T;},get S(){return S;},get lap(){return lap;},get best(){return best;},get RW(){return RW;},loadTrack,setClass};
 let last=performance.now(),renderFails=0,offT=0;
 function respawnAt(i){const p=T[i];Object.assign(st,{x:p.x,z:p.z,y:p.y,h:Math.atan2(p.tx,p.tz),vx:0,vz:0,vF:0,vR:0,lat:0,yawRate:0,roll:0,pitch:0,slip:0,swerve:0,unlock:0});camInit=false;}
 const renderLook=window.GPVisuals?GPVisuals.createRenderer(THREE,renderer,scene,camera):()=>renderer.render(scene,camera);
@@ -2673,6 +2826,7 @@ function frame(now){
         if(playerFlag){playerFlag=false;finishRace();}
       }
     }
+    rlUpdate(dt);
     const driving=running && !finished;
     const speed=driving?Math.hypot(st.vx,st.vz):0;
     rumble.road(surfaceKind,speed,st.slip,scrape);
