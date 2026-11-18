@@ -47,6 +47,8 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
 @media (max-width:520px){.thumb{width:64px;height:40px}}
 .go{margin-top:12px;width:100%;height:46px;border-radius:10px;border:0;font-family:'Barlow Condensed';font-weight:600;letter-spacing:.24em;font-size:16px;cursor:pointer;color:#07080b;background:#f2f4f8}
 .go:active{transform:scale(.99)}
+.steps{display:flex;gap:6px;align-items:center;justify-content:center;font:600 10px 'Barlow Condensed';letter-spacing:.18em;color:#4d5360;margin-top:10px}
+.steps span.on{color:#e9ecf2}.steps em{width:14px;height:1px;background:#2c313b}
 .hint{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Barlow Condensed';letter-spacing:.2em;font-size:12px;color:#7d8597;pointer-events:none}
 @media (max-width:520px){.specs{grid-template-columns:repeat(2,1fr)}.stat{margin:5px 0}.panel{padding:12px 14px 14px}}
 </style>
@@ -57,7 +59,7 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
 <div class="ui">
   <div class="top">
     <div>
-      <div class="brand"><a href="index.html" id="back" style="pointer-events:auto;color:#9aa3b5;text-decoration:none;margin-right:10px">‹ RACE</a><b>747 GP</b> · SELECT YOUR CAR</div>
+      <div class="brand"><a href="index.html#mode" id="back" style="pointer-events:auto;color:#9aa3b5;text-decoration:none;margin-right:10px">‹ MODE</a><b>747 GP</b> · SELECT YOUR RIDE</div>
       <div class="title" id="nm">–</div>
       <div class="maker" id="mk"></div>
     </div>
@@ -76,7 +78,8 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
       <div class="spec"><small>Wheelbase</small><b id="pw">–</b></div>
       <div class="spec"><small>Gearbox</small><b id="ptw">–</b></div>
     </div>
-    <button class="go" id="go">SELECT &amp; RACE</button>
+    <button class="go" id="go">SELECT</button>
+    <div class="steps"><span>MODE</span><em></em><span>GEARBOX</span><em></em><span class="on">RIDE</span><em></em><span>TRACK</span><em></em><span>RACE</span></div>
   </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -253,8 +256,15 @@ function stepAnim(dt){if(!anim)return;anim.t+=dt;
 
 $('nx').onclick=()=>go(1);$('pv').onclick=()=>go(-1);
 $('go').onclick=()=>{ctx();tone(880,.12,.15,'square');setTimeout(()=>tone(1320,.1,.3,'square'),110);$('go').textContent=cars[idx].n.toUpperCase()+' SELECTED';
- try{localStorage.setItem('gp747cc',String(cars[idx].cc));localStorage.setItem('gp747car',cars[idx].id)}catch(e){}setTimeout(()=>location.href='index.html',650)};
-addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click();if(e.key==='Escape')location.href='index.html'});
+ try{localStorage.setItem('gp747cc',String(cars[idx].cc));localStorage.setItem('gp747car',cars[idx].id)}catch(e){}setTimeout(()=>location.href='tracks.html',650)};
+// controller: A = select, B = back, D-pad / left stick = previous / next ride
+{let prev=[],held=0;(function poll(){const pads=navigator.getGamepads?navigator.getGamepads():[];
+  for(const g of pads){if(!g)continue;const p=i=>g.buttons[i]&&g.buttons[i].pressed&&!prev[i];
+    if(p(0)||p(9))$('go').click();if(p(1))location.href='index.html#mode';if(p(15)||p(5))go(1);if(p(14)||p(4))go(-1);
+    const ax=g.axes[0]||0;if(Math.abs(ax)>0.6){if(!held){go(ax>0?1:-1);held=1;}}else held=0;
+    prev=g.buttons.map(b=>b.pressed);break;}
+  requestAnimationFrame(poll);})();}
+addEventListener('keydown',e=>{if(e.key==='Enter')$('go').click();if(e.key==='Escape')location.href='index.html#mode'});
 addEventListener('keydown',e=>{if(e.key==='ArrowRight')go(1);if(e.key==='ArrowLeft')go(-1)});
 let sx=null,drag=0;
 canvas.addEventListener('pointerdown',e=>{sx=e.clientX;ctx()});
