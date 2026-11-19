@@ -42,6 +42,12 @@ Racing line (1.2.18)
   sounds and controller rumble. hazards/747GP-Hazard-Test.html auditions them.
   S.S. 55 (the sleeper) now runs in the 1800 class.
 
+1.3.22 (controller calibration)
+  Controls > Controller > Calibrate: take each stick left, down, right and up, then press each
+  D-pad arrow. Opens by itself the first time you pick Controller with a pad connected, and from
+  the race's settings menu (CALIBRATE CONTROLLER). Steering, the camera and the menus follow it,
+  so odd or off-brand controllers steer the right way.
+
 1.3.21 (controls)
   Controls screen between the showroom and race setup (also from mode select and the pause menu):
   Touch, Keyboard, Controller or Pocket Player. Place controls opens a full-screen editor: drag and

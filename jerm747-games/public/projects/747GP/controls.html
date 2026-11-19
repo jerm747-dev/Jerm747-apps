@@ -101,6 +101,20 @@ h1{font:700 clamp(48px,9vw,92px)/.92 BarlowCondensed,'Arial Narrow',sans-serif;t
 /* full-screen placement editor: the whole screen is the stage */
 #editor{position:fixed;inset:0;z-index:50;background:#050607;display:none;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 #editor.on{display:block}
+/* controller calibration */
+#calOv{position:fixed;inset:0;z-index:55;display:none;background:radial-gradient(ellipse at 50% 40%,#1a1d22,#050607 75%);color:#eef0f3;
+  padding:max(18px,env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) max(18px,env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));overflow-y:auto}
+#calOv.on{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+#calOv .k{font:700 12px Barlow,Arial,sans-serif;letter-spacing:.3em;color:#ffcf6e;text-transform:uppercase}
+#calOv h2{font:700 clamp(26px,5vw,44px)/1 BarlowCondensed,Arial,sans-serif;text-transform:uppercase;letter-spacing:.02em;max-width:720px}
+#calOv h2 b{color:#ffac28}
+#calOv .sub{font-size:13px;color:#aab0ba;max-width:520px;min-height:18px}
+#calOv svg{width:min(420px,86vw);height:auto}
+#calOv .dots{display:flex;gap:6px}#calOv .dots i{width:16px;height:6px;background:#2a2e35;transform:skewX(-20deg)}#calOv .dots i.ok{background:#ffac28}#calOv .dots i.now{background:#fff}#calOv .dots i.skip{background:#5a5f68}
+#calOv .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+#calOv .gp-button{width:min(300px,80vw)}
+#calOv .sum{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13px;text-align:left;color:#c9ced6}#calOv .sum b{color:#fff;font-weight:700}
+.calrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0 2px}.calrow .gp-button{flex:1 1 220px;max-width:340px}.calrow .st{font-size:12px;color:#8b929c}
 #editor .scene{position:absolute;inset:0;opacity:.55;filter:saturate(.8)}
 #editor .scene img{width:100%;height:100%;object-fit:cover}
 #stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);overflow:visible;z-index:2}
@@ -227,6 +241,8 @@ h1{font:700 clamp(48px,9vw,92px)/.92 BarlowCondensed,'Arial Narrow',sans-serif;t
     <div class="drawer" data-for="controller"><div class="in"><div class="sheet">
       <div class="pad-status" id="padStatus"><i></i><span id="padText">Connect a controller and press any button.</span></div>
       <svg id="ctrl" class="shapes" viewBox="0 0 400 270" aria-label="Controller test"></svg>
+      <div class="calrow"><button class="gp-button gp-custom" id="pCal"><span class="gp-marks"></span><span class="gp-caption">Calibrate<small id="pCalState">not set</small></span></button>
+        <button class="gp-chip dark" id="pCalClear" hidden>Clear</button></div>
       <div class="meters">
         <div class="meter">Brake · <span id="mBrakeName"></span><div class="bar"><i id="mBrake"></i></div></div>
         <div class="meter">Gas · <span id="mGasName"></span><div class="bar"><i id="mGas"></i></div></div>
@@ -277,6 +293,16 @@ h1{font:700 clamp(48px,9vw,92px)/.92 BarlowCondensed,'Arial Narrow',sans-serif;t
   <div class="say" id="eSay"></div>
   <div id="stage"></div>
 </div>
+<div id="calOv" role="dialog" aria-labelledby="calTitle">
+  <div class="k" id="calKick">Calibrate controller</div>
+  <h2 id="calTitle">Let go of everything</h2>
+  <div class="sub" id="calSub">Hands off the sticks for a second so we can find where they rest.</div>
+  <svg viewBox="0 0 420 200" aria-hidden="true"><g id="calArt"></g></svg>
+  <div class="dots" id="calDots"></div>
+  <div class="sum" id="calSum" hidden></div>
+  <div class="row"><button class="gp-button gp-custom" id="calSkip"><span class="gp-marks one"></span><span class="gp-caption" id="calSkipCap">Skip this step</span></button></div>
+  <div class="row"><button class="gp-chip dark" id="calRestart">Start over</button><button class="gp-chip dark" id="calCancel">Cancel</button></div>
+</div>
 <div class="toast gp-chip dark" id="toast"></div>
 
 <script>
@@ -317,7 +343,7 @@ function save(msg){
 window.GP747Controls={get:()=>clone(S),set:s=>{S=merge(clone(DEFAULTS),s);renderAll();save();}};
 
 /* ---------- context ---------- */
-const CTX=()=>location.hash==='#pause'?'pause':location.hash==='#start'?'start':'flow';
+const CTX=()=>location.hash==='#pause'||location.hash==='#pause-cal'?'pause':location.hash==='#start'?'start':'flow';
 function ctx(){const c=CTX();$('#ctx').textContent=c==='pause'?'Paused':c==='start'?'Settings':'Pre-race';$('#ctx').classList.toggle('paused',c==='pause');
   $('#goText').textContent=c==='pause'?'Resume race':c==='start'?'Done':'Continue to race setup';
   $('#back').textContent=c==='pause'?'‹ Pause menu':c==='start'?'‹ Mode select':'‹ Showroom';$('.steps').hidden=c!=='flow';}
@@ -580,11 +606,13 @@ function poll(){
   if(padIndex==null)for(const p of pads)if(p){padIndex=p.index;status(p);break;}
   const gp=padIndex!=null?pads[padIndex]:null;
   if(gp){
+    calAuto();if(CALS){calPoll(gp);requestAnimationFrame(poll);return;}
     const P=gp.buttons.map(b=>b.pressed||b.value>.5),val=i=>gp.buttons[i]?gp.buttons[i].value:0;
     svg.querySelectorAll('.k').forEach(k=>{const i=+k.dataset.btn;k.classList.toggle('hot',!!P[i]&&i!==6&&i!==7);});
     [['tL2',6],['tR2',7]].forEach(([id,i])=>{const v=val(i),el=svg.querySelector('#'+id);if(el){el.setAttribute('y',30-22*v);el.setAttribute('height',22*v);}});
     $('#mGas').style.width=val(S.pad.binds.gas)*100+'%';$('#mBrake').style.width=val(S.pad.binds.brake)*100+'%';
-    const dz=S.pad.deadzone/100,ax=v=>Math.abs(v)<dz?0:v,[lx,ly,rx,ry]=[0,1,2,3].map(i=>ax(gp.axes[i]||0));
+    const dz=S.pad.deadzone/100,ax=v=>Math.abs(v)<dz?0:v,cl=window.GPPad&&GPPad.stick(gp,'ls'),cr=window.GPPad&&GPPad.stick(gp,'rs'),
+      [lx,ly,rx,ry]=[cl?cl[0]:gp.axes[0]||0,cl?cl[1]:gp.axes[1]||0,cr?cr[0]:gp.axes[2]||0,cr?cr[1]:gp.axes[3]||0].map(ax);
     const sL=$('#stickL'),sR=$('#stickR');
     if(sL)sL.setAttribute('transform',`translate(${lx*6} ${ly*6})`);if(sR)sR.setAttribute('transform',`translate(${rx*6} ${ry*6})`);
     $('#dL').setAttribute('cx',146+lx*11);$('#dL').setAttribute('cy',170+ly*11);$('#dR').setAttribute('cx',254+rx*11);$('#dR').setAttribute('cy',170+ry*11);
@@ -595,6 +623,96 @@ function poll(){
   }
   requestAnimationFrame(poll);
 }
+
+
+/* ---------- controller calibration ---------- */
+// Rest, then each stick through left, down, right, up, then each D-pad arrow. Every step moves on by itself.
+const CAL_STEPS=[{k:'rest'},
+  {g:'ls',d:'l',t:'Push the <b>left stick</b> all the way <b>left</b>'},{g:'ls',d:'d',t:'Left stick all the way <b>down</b>'},{g:'ls',d:'r',t:'Left stick all the way <b>right</b>'},{g:'ls',d:'u',t:'Left stick all the way <b>up</b>'},
+  {g:'rs',d:'l',t:'<b>Right stick</b> all the way <b>left</b>'},{g:'rs',d:'d',t:'Right stick all the way <b>down</b>'},{g:'rs',d:'r',t:'Right stick all the way <b>right</b>'},{g:'rs',d:'u',t:'Right stick all the way <b>up</b>'},
+  {g:'dp',d:'l',t:'Press the <b>D-pad left</b>'},{g:'dp',d:'d',t:'Press the <b>D-pad down</b>'},{g:'dp',d:'r',t:'Press the <b>D-pad right</b>'},{g:'dp',d:'u',t:'Press the <b>D-pad up</b>'}];
+const OPP={l:'r',r:'l',u:'d',d:'u'};
+let CALS=null;
+function calArt(st){
+  const hot='#ffac28',dim='#3a3e46',ln='#8b929c',g=st&&st.g,d=st&&st.d;
+  const arrow=(cx,cy)=>{if(!d)return '';const v={l:[-1,0],r:[1,0],u:[0,-1],d:[0,1]}[d],x=cx+v[0]*44,y=cy+v[1]*44;
+    return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${hot}" stroke-width="5" stroke-linecap="round"/><circle cx="${x}" cy="${y}" r="7" fill="${hot}"/>`;};
+  const stick=(cx,on)=>`<circle cx="${cx}" cy="110" r="46" fill="none" stroke="${on?hot:ln}" stroke-width="3"/><circle cx="${cx}" cy="110" r="22" fill="${on?'#ffac2833':dim}" stroke="${on?hot:ln}" stroke-width="2"/>`+(on?arrow(cx,110):'');
+  const pad=(cx,cy)=>['u','r','d','l'].map(k=>{const v={u:[0,-1],r:[1,0],d:[0,1],l:[-1,0]}[k];
+    return `<rect x="${cx+v[0]*26-13}" y="${cy+v[1]*26-13}" width="26" height="26" rx="4" fill="${g==='dp'&&d===k?hot:dim}" stroke="${ln}" stroke-width="1.5"/>`;}).join('')+`<rect x="${cx-13}" y="${cy-13}" width="26" height="26" fill="${dim}"/>`;
+  $('#calArt').innerHTML=`<text x="95" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">LEFT STICK</text>`+stick(95,g==='ls')+
+    `<text x="210" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">D-PAD</text>`+pad(210,110)+
+    `<text x="325" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">RIGHT STICK</text>`+stick(325,g==='rs')+
+    (st&&st.k==='rest'?`<text x="210" y="190" fill="${hot}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">HANDS OFF</text>`:'');
+}
+function calDots(){$('#calDots').innerHTML=CAL_STEPS.map((_,i)=>`<i class="${i<CALS.k?(CALS.skipped.has(i)?'skip':'ok'):i===CALS.k?'now':''}"></i>`).join('');}
+function calShow(){
+  const st=CAL_STEPS[CALS.k];calDots();
+  if(!st){calDone();return;}
+  $('#calSum').hidden=true;$('#calSkip').hidden=false;$('#calSkipCap').textContent=st.k==='rest'?'Skip this step':'Skip this step';
+  $('#calTitle').innerHTML=st.k==='rest'?'Let go of everything':st.t;
+  $('#calSub').textContent=st.k==='rest'?'Hands off the sticks for a second so we can find where they rest.':st.g==='dp'?'Press it and let go.':'Hold it at the edge for a moment, then let go.';
+  calArt(st);
+}
+function calOpen(){
+  CALS={k:0,rest:null,acc:[],t0:performance.now(),res:{ls:{},rs:{},dp:{}},cand:null,skipped:new Set(),base:null};
+  $('#calOv').classList.add('on');$('#calCancel').textContent='Cancel';if(menu)menu.active=false;calShow();sfx('click.select');
+  setTimeout(()=>{try{$('#calSkip').focus({preventScroll:true});}catch(_){}},50);
+}
+function calClose(){$('#calOv').classList.remove('on');CALS=null;if(menu)menu.active=true;}
+function calNext(skip){if(!CALS)return;if(skip)CALS.skipped.add(CALS.k);CALS.k++;CALS.cand=null;CALS.base=null;sfx(skip?'click.down':'chime.good');calShow();}
+function calDone(){
+  const r=CALS.res,have=g=>Object.keys(r[g]).length>0;
+  const cal={id:CALS.id||'',rest:CALS.rest||[]};for(const g of ['ls','rs','dp'])if(have(g))cal[g]=r[g];
+  S.pad.cal=cal;save('Controller calibrated');if(window.GPPad)GPPad.reload();renderCal();
+  const fmt=d=>!d?'<i>skipped</i>':d.btn!=null?'button '+d.btn:'axis '+d.axis+' ('+(d.v>(cal.rest[d.axis]||0)?'+':'−')+')';
+  const rows=[['Left stick',r.ls],['Right stick',r.rs],['D-pad',r.dp]].map(([n,o])=>`<b>${n}</b><span>${['l','d','r','u'].map(k=>({l:'←',d:'↓',r:'→',u:'↑'})[k]+' '+fmt(o[k])).join(' · ')}</span>`).join('');
+  $('#calTitle').innerHTML='Calibrated';$('#calSub').textContent='Steering, the camera and the menus now follow these.';
+  $('#calSum').innerHTML=rows;$('#calSum').hidden=false;calArt(null);
+  $('#calSkipCap').textContent='Done';$('#calCancel').textContent='Close';$('#calSkip').onclick=()=>{$('#calSkip').onclick=null;calClose();};
+}
+function calPoll(gp){
+  if(!CALS)return;const st=CAL_STEPS[CALS.k];if(!st)return;CALS.id=gp.id;
+  const ax=[...gp.axes],P=gp.buttons.map(b=>b.pressed||b.value>.5),now=performance.now();
+  if(st.k==='rest'){   // average the axes for ~0.9 s once nothing is pressed
+    if(P.some(Boolean)){CALS.acc=[];CALS.t0=now;return;}
+    CALS.acc.push(ax);if(now-CALS.t0>900&&CALS.acc.length>8){CALS.rest=ax.map((_,i)=>CALS.acc.reduce((a,v)=>a+v[i],0)/CALS.acc.length);calNext(false);}
+    return;}
+  const rest=CALS.rest||ax.map(()=>0);
+  if(!CALS.base)CALS.base={P:P.slice(),t:now};
+  if(now-CALS.base.t<250)return;   // a beat between steps
+  if(st.g==='dp'){
+    const bi=P.findIndex((p,i)=>p&&!CALS.base.P[i]);
+    if(CALS.cand==null){
+      if(bi>=0)CALS.cand={btn:bi};
+      else{let best=-1,dev=0;ax.forEach((v,i)=>{const d=Math.abs(v-(rest[i]||0));if(d>0.5&&d>dev&&!stickAxis(i)){dev=d;best=i;}});if(best>=0)CALS.cand={axis:best,v:ax[best],eq:true};}
+    }else{const c=CALS.cand,held=c.btn!=null?P[c.btn]:Math.abs(ax[c.axis]-c.v)<0.12;
+      if(!held){CALS.res.dp[st.d]=c;calNext(false);}}
+    return;}
+  // sticks: the axis that moves most, its value at full push, recorded when you let go
+  let best=-1,dev=0;ax.forEach((v,i)=>{const d=Math.abs(v-(rest[i]||0));if(d>dev){dev=d;best=i;}});
+  if(!CALS.cand){if(dev>0.55)CALS.cand={axis:best,v:ax[best],t:now};return;}
+  const c=CALS.cand,d=ax[c.axis]-(rest[c.axis]||0);
+  if(Math.abs(d)>Math.abs(c.v-(rest[c.axis]||0)))c.v=ax[c.axis];
+  if(Math.abs(d)<0.3){
+    if(now-c.t<120){CALS.cand=null;return;}
+    const o=CALS.res[st.g][OPP[st.d]];
+    if(o&&o.axis===c.axis&&Math.sign(o.v-(rest[c.axis]||0))===Math.sign(c.v-(rest[c.axis]||0))){
+      $('#calSub').textContent='That went the same way as '+({l:'left',r:'right',u:'up',d:'down'})[OPP[st.d]]+'. Try that one again.';CALS.cand=null;CALS.base={P,t:now};sfx('chime.back');return;}
+    CALS.res[st.g][st.d]={axis:c.axis,v:c.v};calNext(false);
+  }
+}
+function stickAxis(i){const r=CALS.res;return ['ls','rs'].some(g=>Object.values(r[g]).some(d=>d.axis===i));}
+function renderCal(){const c=S.pad.cal;$('#pCalState').textContent=c?'set':'not set';$('#pCalClear').hidden=!c;}
+$('#pCal').addEventListener('click',()=>{if(padIndex==null){save('Connect a controller and press any button first');return;}calOpen();});
+$('#pCalClear').addEventListener('click',()=>{delete S.pad.cal;save('Calibration cleared');if(window.GPPad)GPPad.reload();renderCal();});
+$('#calSkip').addEventListener('click',()=>{if($('#calSkip').onclick)return;calNext(true);});
+$('#calRestart').addEventListener('click',()=>{calOpen();});
+$('#calCancel').addEventListener('click',()=>{calClose();save();});
+addEventListener('keydown',e=>{if(CALS&&e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();calClose();}},true);
+// first time Controller is picked with a pad connected and no calibration: offer it straight away
+let calOffered=false;
+function calAuto(){if(calOffered||S.scheme!=='controller'||S.pad.cal||padIndex==null||CALS)return;calOffered=true;setTimeout(()=>{if(S.scheme==='controller'&&!S.pad.cal&&!CALS)calOpen();},450);}
 
 /* ---------- menu nav (arrows / Enter / Esc) via the shared kit ---------- */
 let menu=null;
@@ -619,8 +737,10 @@ $('#go').addEventListener('click',()=>{save('Driving with '+NAMES[S.scheme]);dis
 $('#back').addEventListener('click',()=>{dispatchEvent(new CustomEvent('gp747:controls-back'));
   const c=CTX();if(c==='flow')location.assign(L('showroom.html'));else if(c==='start')location.assign(L('index.html')+'#setup');});
 
-function renderAll(){renderSchemes();renderOpts();updSize();updOp();updSens();updDz();updRum();renderTouch();renderKb();renderPadBinds();}
+function renderAll(){renderCal();renderSchemes();renderOpts();updSize();updOp();updSens();updDz();updRum();renderTouch();renderKb();renderPadBinds();}
 ctx();buildCtrl();renderAll();requestAnimationFrame(poll);
+if(location.hash==='#pause-cal'){open='controller';renderSchemes();
+  const tryCal=(n)=>{if(padIndex!=null)calOpen();else if(n>0)setTimeout(()=>tryCal(n-1),300);else save('Connect a controller and press any button, then tap Calibrate');};setTimeout(()=>tryCal(10),300);}
 });
 </script>
 </body>

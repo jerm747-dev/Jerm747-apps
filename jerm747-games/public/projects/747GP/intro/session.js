@@ -45,6 +45,39 @@ window.GPLaunch = (() => {
   };
 })();
 
+// Controller calibration (controls.html > Controller > Calibrate), shared by every page.
+// Saved in gp747.controls.v1 as pad.cal: the resting value of each axis, and for each direction of the
+// left stick (ls), right stick (rs) and D-pad (dp) either {axis, v} (value at full push) or {btn}.
+// Without a calibration everything falls back to the standard layout (axes 0-3, D-pad buttons 12-15).
+window.GPPad = (() => {
+  let cal = null, at = 0;
+  function load() {
+    const now = Date.now(); if (now - at < 1000) return cal; at = now;
+    try { const c = JSON.parse(localStorage.getItem('gp747.controls.v1') || 'null'); cal = c && c.pad && c.pad.cal || null; } catch { cal = null; }
+    return cal;
+  }
+  const clamp = v => Math.max(-1, Math.min(1, v));
+  function dirVal(gp, d, rest) {   // 0..1 for one direction
+    if (!d) return 0;
+    if (d.btn != null) { const b = gp.buttons[d.btn]; return b ? (b.value || (b.pressed ? 1 : 0)) : 0; }
+    if (d.eq) return Math.abs((gp.axes[d.axis] || 0) - d.v) < 0.12 ? 1 : 0;   // hat-style D-pad: one axis, a value per direction
+    const r = gp.axes[d.axis] || 0, c = rest && rest[d.axis] || 0, span = d.v - c;
+    if (Math.abs(span) < 1e-3) return 0;
+    return Math.max(0, Math.min(1, (r - c) / span));
+  }
+  // [x, y] in -1..1 (right / down positive), or null when there's no calibration for it
+  function stick(gp, which) {
+    const c = load(); const k = c && c[which]; if (!k) return null;
+    return [clamp(dirVal(gp, k.r, c.rest) - dirVal(gp, k.l, c.rest)), clamp(dirVal(gp, k.d, c.rest) - dirVal(gp, k.u, c.rest))];
+  }
+  function dpad(gp, dir) {   // dir: l d r u
+    const c = load(); const k = c && c.dp && c.dp[dir];
+    if (!k) { const b = gp.buttons[{l: 14, d: 13, r: 15, u: 12}[dir]]; return !!(b && b.pressed); }
+    return dirVal(gp, k, c.rest) > 0.5;
+  }
+  return {stick, dpad, get cal() { return load(); }, reload() { at = 0; return load(); }};
+})();
+
 // Menu navigation responds to new presses. Holding Start through a page transition
 // should never select a car, enter a race, or dismiss another screen.
 window.watchMenuPad = function (onAction) {
@@ -56,10 +89,11 @@ window.watchMenuPad = function (onAction) {
     try { pad = Array.from(navigator.getGamepads?.() || []).find(p => p?.connected); } catch {}
     if (pad && !document.hidden) {
       const pressed = i => !!pad.buttons[i]?.pressed;
+      const st = GPPad.stick(pad, 'ls') || [pad.axes[0] || 0, pad.axes[1] || 0];
       const buttons = {
         back: pressed(1), confirm: pressed(0) || pressed(9),
-        up: pressed(12) || pad.axes[1] < -.6, down: pressed(13) || pad.axes[1] > .6,
-        left: pressed(14) || pad.axes[0] < -.6, right: pressed(15) || pad.axes[0] > .6,
+        up: GPPad.dpad(pad, 'u') || st[1] < -.6, down: GPPad.dpad(pad, 'd') || st[1] > .6,
+        left: GPPad.dpad(pad, 'l') || st[0] < -.6, right: GPPad.dpad(pad, 'r') || st[0] > .6,
         lb: pressed(4), rb: pressed(5)
       };
       // ignore anything already held when the page opened

@@ -440,7 +440,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
 </div></div>
 <div id="trackList" class="carbon"></div>
 <div id="menu" class="carbon">
-  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.3.21</small></div><button id="menuX" aria-label="Close">✕</button></div>
+  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.3.22</small></div><button id="menuX" aria-label="Close">✕</button></div>
   <div class="ctlrow">
     <div class="ctlgrp">
       <div class="ctlpair">
@@ -482,6 +482,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
       <button class="tog" id="fsMenuBtn">FULL SCREEN: OFF</button>
     </div>
     <div class="msec"><h4>SOUND</h4>
+      <button class="tog" id="calPadBtn">CALIBRATE CONTROLLER ›</button>
       <button class="tog" id="hapticBtn">HAZARD HAPTICS: ON</button>
       <button class="tog" id="sndBtn">SOUND: ON</button>
       <label class="sl"><small>GAME VOLUME</small><input type="range" min="0" max="100" id="slMaster"><b></b></label>
@@ -516,7 +517,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
   <div class="label">DRIVE CONTROL</div>
 </div>
 
-<script>window.GP_VERSION="1.3.21";window.GP_BUILD=21;console.log("747 GP v"+GP_VERSION);
+<script>window.GP_VERSION="1.3.22";window.GP_BUILD=22;console.log("747 GP v"+GP_VERSION);
 window.__startGame=async (RENDER_MODE)=>{
 'use strict';
 if(!window.THREE){document.getElementById('err').style.display='flex';return;}
@@ -2708,7 +2709,7 @@ $('pEndBtn').addEventListener('click',()=>{setPause(false);finishRace();});
  $('pFsBtn').addEventListener('click',()=>{$('fsBtn').click();setTimeout(upd,300);});addEventListener('fullscreenchange',upd);addEventListener('webkitfullscreenchange',upd);upd();}
 $('pSetupBtn').addEventListener('click',()=>location.assign(GPLaunch.link('tracks.html')));
 $('pMainBtn').addEventListener('click',()=>location.assign(GPLaunch.link('index.html#setup')));
-let padAxisHeld=false;
+let padAxisHeld=false,padPrevDU=false,padPrevDD=false;
 const pauseNav=GPUI.menu(()=>[...document.querySelectorAll('#pStack .gp-button')],{pad:false,noBack:true});pauseNav.active=false;
 addEventListener('visibilitychange',()=>{if(document.hidden&&!paused)setPause(true);});
 // ================= INPUT BINDINGS: pick what drives GAS, BRAKE and STEERING =================
@@ -2829,14 +2830,15 @@ function pollPad(dt){
   if(ctlOpen){padPrev=g.buttons.map(b=>b.pressed);input.padGas=input.padBrake=0;input.padActive=false;return;}
   const dz=v=>Math.abs(v)<PAD_DZ?0:Math.sign(v)*(Math.abs(v)-PAD_DZ)/(1-PAD_DZ);
   const btn=i=>g.buttons[i]?(g.buttons[i].value||(g.buttons[i].pressed?1:0)):0;
-  const lx=PAD_DPAD?(btn(15)>0.5?1:0)-(btn(14)>0.5?1:0):dz(g.axes[0]||0);
+  const LS=GPPad.stick(g,'ls'),RS=GPPad.stick(g,'rs');   // calibrated sticks (null = standard layout)
+  const lx=PAD_DPAD?(GPPad.dpad(g,'r')?1:0)-(GPPad.dpad(g,'l')?1:0):dz(LS?LS[0]:(g.axes[0]||0));
   input.padActive=lx!==0;input.padRaw=lx;
   {const a=Math.abs(lx),EXPO=0.7;input.padSteer=Math.sign(lx)*((1-EXPO)*a+EXPO*a*a*a);}
   const dflt=PAD_BIND.gas===7&&PAD_BIND.brake===6;   // A / B stay as gas / brake unless remapped
   input.padGas=Math.max(btn(PAD_BIND.gas),dflt&&btn(0)>0.5?1:0);
   input.padBrake=Math.max(btn(PAD_BIND.brake),dflt&&btn(1)>0.5?1:0);
   if(input.padGas>0||input.padBrake>0){initAudio();}
-  const rx=dz(g.axes[2]||0),ry=dz(g.axes[3]||0);
+  const rx=dz(RS?RS[0]:(g.axes[2]||0)),ry=dz(RS?RS[1]:(g.axes[3]||0));
   padLook=rx!==0||ry!==0;
   if(padLook)orbitInput(-rx*2.6*dt,-ry*1.6*dt);
   const pressed=i=>g.buttons[i]&&g.buttons[i].pressed&&!padPrev[i];
@@ -2844,8 +2846,8 @@ function pollPad(dt){
   if(GEARBOX==='manual'&&!paused){if(pressed(PAD_BIND.up)||(PAD_BIND.up===5&&pressed(3)))input.shiftUp=true;if(pressed(PAD_BIND.down)||(PAD_BIND.down===4&&pressed(2)))input.shiftDown=true;}
   if(finished){padPrev=g.buttons.map(b=>b.pressed);return;}
   if(pressed(PAD_BIND.pause))setPause(!paused);
-  else if(paused&&!menu.classList.contains('open')){const ax=g.axes[1]||0;
-    if(pressed(12)||(ax<-0.6&&!padAxisHeld))pauseNav.act('up');if(pressed(13)||(ax>0.6&&!padAxisHeld))pauseNav.act('down');padAxisHeld=Math.abs(ax)>0.6;
+  else if(paused&&!menu.classList.contains('open')){const ax=LS?LS[1]:(g.axes[1]||0),du=GPPad.dpad(g,'u'),dd=GPPad.dpad(g,'d');
+    if((du&&!padPrevDU)||(ax<-0.6&&!padAxisHeld))pauseNav.act('up');if((dd&&!padPrevDD)||(ax>0.6&&!padAxisHeld))pauseNav.act('down');padPrevDU=du;padPrevDD=dd;padAxisHeld=Math.abs(ax)>0.6;
     if(pressed(0))pauseNav.act('confirm');if(pressed(1))setPause(false);}
   padPrev=g.buttons.map(b=>b.pressed);
 }
@@ -2893,6 +2895,7 @@ function placedSample(x,y){
   return {g:0,b:0};
 }
 function ctlApply(){
+  if(window.GPPad)GPPad.reload();
   if(!ctlLoad()){ctlPlace();return;}
   const t=CTL.touch||{},sch=CTL.scheme||'touch';
   // scheme: touch pads only for touch; the Pocket Player, keyboard and controller drive without them
@@ -2930,10 +2933,10 @@ addEventListener('keydown',e=>{
 },true);
 addEventListener('keyup',e=>{const a=CTL_KEYS.get(e.code);if(a&&KMAP[a]){input[KMAP[a]]=false;e.stopImmediatePropagation();}},true);
 // the controls page over the paused race
-function ctlShow(on){
+function ctlShow(on,hash){
   ctlOpen=on;document.body.classList.toggle('ctl-open',on);pauseNav.active=!on&&paused;
   const f=$('ctlFrame');
-  if(on){f.src=GPLaunch.link('controls.html')+'#pause';f.onload=()=>{const w=f.contentWindow;
+  if(on){f.src=GPLaunch.link('controls.html')+(hash||'#pause');f.onload=()=>{const w=f.contentWindow;
       w.addEventListener('gp747:controls',()=>ctlApply());
       w.addEventListener('gp747:controls-done',()=>{ctlApply();ctlShow(false);setPause(false);});
       w.addEventListener('gp747:controls-back',()=>{ctlApply();ctlShow(false);setTimeout(()=>pauseNav.focus(0),0);});
@@ -2941,6 +2944,7 @@ function ctlShow(on){
   else{f.onload=null;setTimeout(()=>{if(!ctlOpen)f.src='about:blank';},50);}
 }
 $('pCtlBtn').addEventListener('click',()=>ctlShow(true));
+$('calPadBtn').addEventListener('click',()=>{menu.classList.remove('open');menuPaused=false;if(!paused)setPause(true);ctlShow(true,'#pause-cal');});
 ctlApply();
 
 // results sheet wiring (needs $)
