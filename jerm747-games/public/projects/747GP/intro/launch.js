@@ -94,6 +94,7 @@
   }
   start.addEventListener('click', openSetup);
   byId('back').addEventListener('click', () => show('title'));
+  byId('ctlBtn').addEventListener('click', () => location.assign(GPLaunch.link('controls.html') + '#start'));
   byId('continue').addEventListener('click', () => {
     GPLaunch.set('mode', value('mode'));
     GPLaunch.set('transmission', value('transmission'));

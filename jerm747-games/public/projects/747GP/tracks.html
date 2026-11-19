@@ -93,7 +93,7 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:Barlow,system
 <canvas id="pv" aria-hidden="true"></canvas>
 <div class="ui" id="ui">
   <div class="head" id="head">
-    <div class="brand"><a href="showroom.html" id="back" class="gp-chip dark">‹ Ride</a><span><b>747 GP</b> · <span id="modeLbl">ARCADE</span></span></div>
+    <div class="brand"><a href="controls.html" id="back" class="gp-chip dark">‹ Controls</a><span><b>747 GP</b> · <span id="modeLbl">ARCADE</span></span></div>
     <div class="wal" id="wal"></div>
     <div class="title" id="nm">–</div>
     <div class="loc" id="loc"></div>
@@ -121,7 +121,7 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:Barlow,system
     </div>
     <div class="fill"></div>
     <div class="trace"><button class="gp-button gp-start" id="go" aria-label="Start race"></button></div>
-    <div class="steps" aria-hidden="true"><span>MODE</span><em></em><span>RIDE</span><em></em><span class="on">RACE SETUP</span><em></em><span>RACE</span></div>
+    <div class="steps" aria-hidden="true"><span>MODE</span><em></em><span>RIDE</span><em></em><span>CONTROLS</span><em></em><span class="on">RACE SETUP</span><em></em><span>RACE</span></div>
   </div>
 </div>
 <div id="gpLoad"></div>
@@ -224,7 +224,7 @@ GPUI.stepper($('rMode'),['arcade','time-trial'],mode==='arcade'?0:1,v=>v==='arca
 GPUI.stepper($('rOpp'),[0,1,2,3,4,5,6,7,8,9],opp,v=>String(v),v=>{opp=v;GPLaunch.set('opp',v);paintGrid();tone(1000+v*60,.03,.06);});
 GPUI.stepper($('rGear'),['automatic','manual'],trans==='manual'?1:0,v=>v==='manual'?'Manual':'Auto',v=>{trans=v;GPLaunch.set('transmission',v);paintGrid();tone(1200,.03,.06);});
 $('prev').onclick=()=>pick(idx-1);$('next').onclick=()=>pick(idx+1);
-$('back').href=GPLaunch.link('showroom.html');
+$('back').href=GPLaunch.link('controls.html');
 $('rRide').onclick=()=>location.assign(GPLaunch.link('showroom.html',{track:TRACKS[idx].id}));
 GPUI.gpChip({inline:$('wal')});
 const loader=GPUI.loader({el:$('gpLoad')});

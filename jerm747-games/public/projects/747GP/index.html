@@ -26,6 +26,7 @@
 #gearbox.nudge .gp-button{animation:gpNudge .65s ease-out}
 @keyframes gpNudge{30%{transform:translateY(-3px);filter:drop-shadow(0 0 12px #ffd84a88) drop-shadow(0 3px 6px #0007)}}
 #back.gp-chip{min-height:34px;padding:6px 16px;font-size:12px}
+#ctlBtn.gp-chip{min-height:34px;padding:6px 16px;font-size:12px;margin-right:auto;margin-left:-10px}
 .steps{display:flex;gap:6px;align-items:center;justify-content:center;font:600 10px BarlowCondensed,Arial,sans-serif;letter-spacing:.18em;color:#6d7264;margin-top:14px}
 .steps span.on{color:#ffcf6e}.steps em{width:14px;height:1px;background:#3a3d34}
 @media (orientation:landscape) and (max-height:520px){.grp-label{margin:6px 0 4px}.gp-stack{gap:5px}.steps{margin-top:6px}#setup h1{font-size:34px;margin-bottom:4px}}
@@ -58,6 +59,7 @@
     <div class="setup-inner">
       <header class="setup-nav">
         <button id="back" class="gp-chip dark" aria-label="Back to title">‹ Title</button>
+        <button id="ctlBtn" class="gp-chip dark" type="button">Controls</button>
         <img src="intro/747-gp-mark.png" alt="747 GP">
       </header>
       <h1 id="setup-heading">Mode select</h1>
@@ -73,7 +75,7 @@
       </div>
       <p id="shift-hint" aria-live="polite">The car handles each shift.</p>
       <button id="continue" class="gp-button gp-custom continue-plate"><span class="gp-marks"></span><span class="gp-caption">Enter showroom</span></button>
-      <div class="steps" aria-hidden="true"><span class="on">MODE</span><em></em><span>RIDE</span><em></em><span>RACE SETUP</span><em></em><span>RACE</span></div>
+      <div class="steps" aria-hidden="true"><span class="on">MODE</span><em></em><span>RIDE</span><em></em><span>CONTROLS</span><em></em><span>RACE SETUP</span><em></em><span>RACE</span></div>
     </div>
   </section>
 </main>

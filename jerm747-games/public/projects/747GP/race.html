@@ -295,6 +295,20 @@ body.paused #pauseOv{background:linear-gradient(90deg,#07080af5 0%,#07080ae6 42%
 /* GP wallet: not during the race, only on the results sheet */
 .gp-wallet.at-race{display:none;top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));left:auto}
 body.finished .gp-wallet.at-race{display:flex}
+/* controls page over the paused race */
+#ctlOv{position:fixed;inset:0;z-index:45;display:none;background:#07080b}
+#ctlOv iframe{width:100%;height:100%;border:0;display:block}
+body.ctl-open #ctlOv{display:block}
+/* placed touch pads (controls editor layout) */
+body.gp-placed #btnPanel{position:fixed!important;inset:0!important;width:auto!important;height:auto!important;max-width:none!important;background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;padding:0!important;transform:none!important;pointer-events:none!important;zoom:1!important}
+body.gp-placed #btnPanel>#meters,body.gp-placed #btnPanel>.label{display:none!important}
+body.gp-placed .pedalRow{position:static!important;display:block!important}
+body.gp-placed #gas,body.gp-placed #brake{pointer-events:auto!important;margin:0!important}
+body.gp-placed #btnPanel .gearRow{pointer-events:auto}
+#ctlCam{position:fixed;z-index:6;border-radius:50%;font:700 11px 'Barlow Condensed',Arial,sans-serif;letter-spacing:.14em}
+#ctlCam[hidden],body.no-touch #ctlCam,body.paused #ctlCam,body.finished #ctlCam{display:none!important}
+#joyPanel,#btnPanel,#ctlCam{opacity:var(--ctl-op,1)}
+body:not(.gp-placed) #joyPanel,body:not(.gp-placed) #btnPanel{zoom:var(--ctl-zoom,1)}
 /* position chip */
 #posHud{position:fixed;top:calc(52px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:5;display:none;align-items:baseline;gap:6px;padding:5px 16px 6px;
   clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));background:linear-gradient(#2c3037,#16181c);box-shadow:inset 0 -2px 0 #000;color:#fff;pointer-events:none}
@@ -408,6 +422,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
     <button class="gp-button gp-custom" id="rMain"><span class="gp-marks"></span><span class="gp-caption">Main menu</span></button>
   </div>
 </div></div>
+<div id="ctlOv"><iframe id="ctlFrame" title="Controls" src="about:blank"></iframe></div>
 <div id="posHud"><i></i><b id="posN">P1</b><small id="posOf">/ 4</small></div>
 <div id="pauseOv"><div class="pwrap">
   <img src="intro/747-gp-mark.png" alt="747 GP"><big>PAUSED</big>
@@ -415,6 +430,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
     <button class="gp-button gp-custom" id="resumeBtn"><span class="gp-marks one"></span><span class="gp-caption">Resume</span></button>
     <button class="gp-button gp-custom" id="pResetBtn"><span class="gp-marks one"></span><span class="gp-caption">Restart race</span></button>
     <button class="gp-button gp-custom" id="pEndBtn"><span class="gp-marks one"></span><span class="gp-caption">End session<small>see your times</small></span></button>
+    <button class="gp-button gp-custom" id="pCtlBtn"><span class="gp-marks"></span><span class="gp-caption">Controls<small>move · remap</small></span></button>
     <button class="gp-button gp-custom" id="pFsBtn"><span class="gp-marks one"></span><span class="gp-caption" id="pFsCap">Full screen</span></button>
     <button class="gp-button gp-custom" id="pMenuBtn"><span class="gp-marks"></span><span class="gp-caption">Settings</span></button>
     <button class="gp-button gp-custom" id="pSetupBtn"><span class="gp-marks"></span><span class="gp-caption">Race setup</span></button>
@@ -424,7 +440,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
 </div></div>
 <div id="trackList" class="carbon"></div>
 <div id="menu" class="carbon">
-  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.3.20</small></div><button id="menuX" aria-label="Close">✕</button></div>
+  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.3.21</small></div><button id="menuX" aria-label="Close">✕</button></div>
   <div class="ctlrow">
     <div class="ctlgrp">
       <div class="ctlpair">
@@ -500,7 +516,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
   <div class="label">DRIVE CONTROL</div>
 </div>
 
-<script>window.GP_VERSION="1.3.20";window.GP_BUILD=20;console.log("747 GP v"+GP_VERSION);
+<script>window.GP_VERSION="1.3.21";window.GP_BUILD=21;console.log("747 GP v"+GP_VERSION);
 window.__startGame=async (RENDER_MODE)=>{
 'use strict';
 if(!window.THREE){document.getElementById('err').style.display='flex';return;}
@@ -1661,7 +1677,7 @@ function step(dt){
   suspension.step(dt);scrape=Math.max(0,scrape-dt*6);
   const tgt=input.joyActive?input.steerJoy:input.tiltActive?input.steerTilt:input.mouseActive?input.steerMouse:input.padActive?input.padSteer:(input.kL?-1:0)+(input.kR?1:0);
   if(!input.joyActive)input.rawX=input.tiltActive?input.tiltRaw:input.mouseActive?input.mouseRaw:input.padActive?input.padRaw:tgt;
-  const rate=(input.joyActive||input.tiltActive||input.mouseActive||input.padActive)?14:5;
+  const rate=(input.joyActive||input.tiltActive||input.mouseActive||input.padActive)?14:5*KSENS;
   st.steer+=Math.max(-rate*dt,Math.min(rate*dt,tgt-st.steer));
 
   // pedals ease toward their targets (press in ~0.3s, release ~0.15s) so sliding gas→brake feels progressive
@@ -2483,6 +2499,7 @@ if(TILT.on){updTiltBtn();const once=()=>{removeEventListener('pointerdown',once,
 const pedals={gas:$('gas'),brake:$('brake')},pedalPanel=$('btnPanel'),ptrs=new Map();
 for(const k in pedals){const m=document.createElement('div');m.className='meter';for(let i=0;i<10;i++)m.appendChild(document.createElement('i'));pedals[k].appendChild(m);pedals[k].meter=[...m.children];}
 function samplePedal(x,y){
+  if(document.body.classList.contains('gp-placed'))return placedSample(x,y);
   // layout rects without the press-tilt transform, so the level doesn't shift while the pedal tilts
   const pr=pedalPanel.getBoundingClientRect(),bl=pedalPanel.clientLeft,bt=pedalPanel.clientTop;
   const rect=el=>{let x=el.offsetLeft,yy=el.offsetTop,p=el.offsetParent;while(p&&p!==pedalPanel){x+=p.offsetLeft;yy+=p.offsetTop;p=p.offsetParent;}
@@ -2809,27 +2826,122 @@ addEventListener('gamepaddisconnected',()=>{input.padActive=false;input.padGas=i
 function pollPad(dt){
   const pads=navigator.getGamepads?navigator.getGamepads():[];let g=null;for(const p of pads)if(p&&p.connected){g=p;break;}
   if(!g){input.padGas=input.padBrake=0;input.padActive=false;padLook=false;return;}
-  const dz=v=>Math.abs(v)<0.12?0:Math.sign(v)*(Math.abs(v)-0.12)/0.88;
+  if(ctlOpen){padPrev=g.buttons.map(b=>b.pressed);input.padGas=input.padBrake=0;input.padActive=false;return;}
+  const dz=v=>Math.abs(v)<PAD_DZ?0:Math.sign(v)*(Math.abs(v)-PAD_DZ)/(1-PAD_DZ);
   const btn=i=>g.buttons[i]?(g.buttons[i].value||(g.buttons[i].pressed?1:0)):0;
-  const lx=dz(g.axes[0]||0);
+  const lx=PAD_DPAD?(btn(15)>0.5?1:0)-(btn(14)>0.5?1:0):dz(g.axes[0]||0);
   input.padActive=lx!==0;input.padRaw=lx;
   {const a=Math.abs(lx),EXPO=0.7;input.padSteer=Math.sign(lx)*((1-EXPO)*a+EXPO*a*a*a);}
-  input.padGas=Math.max(btn(7),btn(0)>0.5?1:0);
-  input.padBrake=Math.max(btn(6),btn(1)>0.5?1:0);
+  const dflt=PAD_BIND.gas===7&&PAD_BIND.brake===6;   // A / B stay as gas / brake unless remapped
+  input.padGas=Math.max(btn(PAD_BIND.gas),dflt&&btn(0)>0.5?1:0);
+  input.padBrake=Math.max(btn(PAD_BIND.brake),dflt&&btn(1)>0.5?1:0);
   if(input.padGas>0||input.padBrake>0){initAudio();}
   const rx=dz(g.axes[2]||0),ry=dz(g.axes[3]||0);
   padLook=rx!==0||ry!==0;
   if(padLook)orbitInput(-rx*2.6*dt,-ry*1.6*dt);
   const pressed=i=>g.buttons[i]&&g.buttons[i].pressed&&!padPrev[i];
-  if(pressed(8))cycleCam();
-  if(GEARBOX==='manual'&&!paused){if(pressed(5)||pressed(3))input.shiftUp=true;if(pressed(4)||pressed(2))input.shiftDown=true;}
+  if(pressed(PAD_BIND.cam))cycleCam();
+  if(GEARBOX==='manual'&&!paused){if(pressed(PAD_BIND.up)||(PAD_BIND.up===5&&pressed(3)))input.shiftUp=true;if(pressed(PAD_BIND.down)||(PAD_BIND.down===4&&pressed(2)))input.shiftDown=true;}
   if(finished){padPrev=g.buttons.map(b=>b.pressed);return;}
-  if(pressed(9))setPause(!paused);
+  if(pressed(PAD_BIND.pause))setPause(!paused);
   else if(paused&&!menu.classList.contains('open')){const ax=g.axes[1]||0;
     if(pressed(12)||(ax<-0.6&&!padAxisHeld))pauseNav.act('up');if(pressed(13)||(ax>0.6&&!padAxisHeld))pauseNav.act('down');padAxisHeld=Math.abs(ax)>0.6;
     if(pressed(0))pauseNav.act('confirm');if(pressed(1))setPause(false);}
   padPrev=g.buttons.map(b=>b.pressed);
 }
+
+// ================= CONTROLS SCREEN (1.3.21) =================
+// controls.html saves gp747.controls.v1; the race reads it here: scheme, touch pads (placed + rotated),
+// keyboard and controller remaps. With no saved controls the race behaves exactly as before.
+const CTL_KEY='gp747.controls.v1';
+let CTL=null,KSENS=1,ctlOpen=false;
+const PAD_BIND={gas:7,brake:6,cam:8,up:5,down:4,pause:9};let PAD_DZ=0.12,PAD_DPAD=false;
+const CTL_KEYS=new Map();   // key code -> action, for the remapped keyboard
+function ctlLoad(){try{CTL=JSON.parse(localStorage.getItem(CTL_KEY)||'null');}catch(_){CTL=null;}return CTL;}
+function ctlSizes(W,H,t){const base=Math.min(W,H)*(t.size||100)/100,st=t.pedals==='stack',mp=v=>Math.max(52,v),m=v=>Math.max(46,v);
+  const P=st?{gas:[.21,.11],brake:[.21,.10]}:{gas:[.132,.176],brake:[.132,.154]};
+  return {gas:[mp(P.gas[0]*base),mp(P.gas[1]*base)],brake:[mp(P.brake[0]*base),mp(P.brake[1]*base)],steer:[m(.2*base),m(.2*base)],cam:[m(.11*base),m(.11*base)]};}
+const CTL_DEF={landscape:{side:{steer:{x:14,y:72},brake:{x:74,y:78},gas:{x:88,y:71},cam:{x:93,y:15}},stack:{steer:{x:14,y:72},gas:{x:86,y:62},brake:{x:86,y:85},cam:{x:93,y:15}}},
+  portrait:{side:{steer:{x:25,y:86},brake:{x:60,y:88},gas:{x:84,y:85},cam:{x:88,y:8}},stack:{steer:{x:25,y:86},gas:{x:78,y:81},brake:{x:78,y:92},cam:{x:88,y:8}}}};
+let camPad=null;
+function ctlPlace(){
+  const t=CTL&&CTL.touch,o=innerWidth>=innerHeight?'landscape':'portrait',L=t&&t.layout&&t.layout[o];
+  const placed=!!(L&&Object.keys(L).some(k=>L[k]&&L[k].x!=null))&&CTL.scheme==='touch';
+  document.body.classList.toggle('gp-placed',placed);
+  const jp=$('joyPanel');
+  for(const el of [jp,pedals.gas,pedals.brake,$('btnPanel').querySelector('.gearRow')])if(el)el.removeAttribute('style');
+  if(camPad)camPad.hidden=true;
+  if(!placed)return;
+  const W=innerWidth,H=innerHeight,sz=ctlSizes(W,H,t),pos=id=>{const p=(L[id]&&L[id].x!=null)?L[id]:CTL_DEF[o][t.pedals==='stack'?'stack':'side'][id];return {x:p.x,y:p.y,r:p.r||0};};
+  const put=(el,p,w,h)=>{const s=el.style;s.setProperty('position','fixed','important');s.setProperty('left',p.x+'%','important');s.setProperty('top',p.y+'%','important');
+    s.setProperty('right','auto','important');s.setProperty('bottom','auto','important');s.setProperty('transform','translate(-50%,-50%) rotate('+p.r+'deg)','important');
+    if(w){s.setProperty('width',w+'px','important');s.setProperty('height',h+'px','important');}
+    el.dataset.cx=p.x/100*W;el.dataset.cy=p.y/100*H;el.dataset.r=p.r;};
+  if(t.steering!=='tilt')put(jp,pos('steer'));
+  put(pedals.gas,pos('gas'),sz.gas[0],sz.gas[1]);put(pedals.brake,pos('brake'),sz.brake[0],sz.brake[1]);
+  const gr=$('btnPanel').querySelector('.gearRow'),g=pos('gas');
+  if(gr){gr.style.setProperty('position','fixed','important');gr.style.setProperty('left',g.x+'%','important');gr.style.setProperty('top','calc('+g.y+'% - '+(sz.gas[1]/2+30)+'px)','important');gr.style.setProperty('transform','translate(-50%,-50%)','important');}
+  if(!camPad){camPad=document.createElement('button');camPad.id='ctlCam';camPad.className='pbtn';camPad.textContent='CAM';camPad.setAttribute('aria-label','Camera');
+    camPad.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();cycleCam();});document.body.appendChild(camPad);}
+  camPad.hidden=false;put(camPad,pos('cam'),sz.cam[0],sz.cam[1]);
+}
+// pressure along a placed pedal's own axis (top = full), so it still reads right when the pedal is turned
+function placedSample(x,y){
+  for(const k of ['gas','brake']){const el=pedals[k],w=el.offsetWidth,h=el.offsetHeight,r=(+el.dataset.r||0)*Math.PI/180,dx=x-(+el.dataset.cx),dy=y-(+el.dataset.cy);
+    const lx=dx*Math.cos(r)+dy*Math.sin(r),ly=-dx*Math.sin(r)+dy*Math.cos(r);
+    if(Math.abs(lx)<=w/2+10&&Math.abs(ly)<=h/2+10){const lv=Math.ceil((0.25+0.75*Math.min(1,Math.max(0,0.5-ly/h)))*10-1e-6)/10;return k==='gas'?{g:lv,b:0}:{g:0,b:lv};}}
+  return {g:0,b:0};
+}
+function ctlApply(){
+  if(!ctlLoad()){ctlPlace();return;}
+  const t=CTL.touch||{},sch=CTL.scheme||'touch';
+  // scheme: touch pads only for touch; the Pocket Player, keyboard and controller drive without them
+  setTouch(sch!=='touch',false);
+  document.body.classList.toggle('pocket-drive',sch==='pocket');
+  setPStack(t.pedals==='stack');
+  if(sch==='touch'){if(t.steering==='tilt'&&!TILT.on)setTilt(true,false);else if(t.steering!=='tilt'&&TILT.on)setTilt(false);}
+  document.documentElement.style.setProperty('--ctl-op',String((t.opacity||90)/100));
+  document.documentElement.style.setProperty('--ctl-zoom',String((t.size||100)/100));
+  // keyboard remap
+  CTL_KEYS.clear();const kb=CTL.keyboard&&CTL.keyboard.binds;
+  if(kb)for(const a in kb)for(const c of kb[a]||[])if(c)CTL_KEYS.set(c,a);
+  KSENS=CTL.keyboard&&CTL.keyboard.sens?CTL.keyboard.sens/60:1;
+  // controller remap
+  const pb=CTL.pad&&CTL.pad.binds;if(pb)for(const a in PAD_BIND)if(pb[a]!=null)PAD_BIND[a]=pb[a];
+  PAD_DZ=CTL.pad&&CTL.pad.deadzone!=null?CTL.pad.deadzone/100:0.12;PAD_DPAD=!!(CTL.pad&&CTL.pad.steer==='dpad');
+  if(sch==='controller'&&CTL.pad)rumble.enabled=CTL.pad.rumble!==false;
+  else if(sch==='touch')rumble.enabled=t.haptics!==false;
+  ctlPlace();
+}
+addEventListener('resize',()=>{if(CTL)ctlPlace();});
+addEventListener('storage',e=>{if(e.key===CTL_KEY)ctlApply();});
+// remapped keys: handled here first; keys you didn't move keep their old jobs
+const KMAP={gas:'kU',brake:'kD',left:'kL',right:'kR'};
+addEventListener('keydown',e=>{
+  const a=CTL_KEYS.get(e.code);if(!a||ctlOpen)return;
+  if(a==='pause'){if(!finished&&!e.repeat)setPause(!paused);}
+  else if(paused||finished){return;}
+  else if(KMAP[a])input[KMAP[a]]=true;
+  else if(a==='cam'&&!e.repeat)cycleCam();
+  else if(a==='up'&&GEARBOX==='manual'&&!e.repeat)input.shiftUp=true;
+  else if(a==='down'&&GEARBOX==='manual'&&!e.repeat)input.shiftDown=true;
+  if(KMAP[a])initAudio();
+  e.preventDefault();e.stopImmediatePropagation();
+},true);
+addEventListener('keyup',e=>{const a=CTL_KEYS.get(e.code);if(a&&KMAP[a]){input[KMAP[a]]=false;e.stopImmediatePropagation();}},true);
+// the controls page over the paused race
+function ctlShow(on){
+  ctlOpen=on;document.body.classList.toggle('ctl-open',on);pauseNav.active=!on&&paused;
+  const f=$('ctlFrame');
+  if(on){f.src=GPLaunch.link('controls.html')+'#pause';f.onload=()=>{const w=f.contentWindow;
+      w.addEventListener('gp747:controls',()=>ctlApply());
+      w.addEventListener('gp747:controls-done',()=>{ctlApply();ctlShow(false);setPause(false);});
+      w.addEventListener('gp747:controls-back',()=>{ctlApply();ctlShow(false);setTimeout(()=>pauseNav.focus(0),0);});
+      try{f.focus();w.focus();}catch(_){}};}
+  else{f.onload=null;setTimeout(()=>{if(!ctlOpen)f.src='about:blank';},50);}
+}
+$('pCtlBtn').addEventListener('click',()=>ctlShow(true));
+ctlApply();
 
 // results sheet wiring (needs $)
 const wallet=GPUI.gpChip({where:'race'});wallet.el.classList.add('at-race');

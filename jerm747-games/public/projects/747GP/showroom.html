@@ -91,7 +91,7 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
       <div class="spec"><small>Gearbox</small><b id="ptw">–</b></div>
     </div>
     <button class="go gp-button gp-custom" id="go"><span class="gp-marks"></span><span class="gp-caption" id="goCap">Select ride</span></button>
-    <div class="steps"><span>MODE</span><em></em><span class="on">RIDE</span><em></em><span>RACE SETUP</span><em></em><span>RACE</span></div>
+    <div class="steps"><span>MODE</span><em></em><span class="on">RIDE</span><em></em><span>CONTROLS</span><em></em><span>RACE SETUP</span><em></em><span>RACE</span></div>
   </div>
 </div>
 <script>
@@ -302,7 +302,7 @@ $('go').onclick=()=>{
  ctx();tone(880,.12,.15,'square');setTimeout(()=>tone(1320,.1,.3,'square'),110);
  $('goCap').textContent=car.n+' selected';$('go').classList.add('is-focused');
  GPLaunch.set('car',car.id);try{localStorage.setItem('gp747cc',String(car.cc));}catch(e){}
- setTimeout(()=>location.assign(GPLaunch.link('tracks.html',{car:car.id})),450);
+ setTimeout(()=>location.assign(GPLaunch.link('controls.html',{car:car.id})),450);
 };
 addEventListener('pageshow',()=>{leaving=false;$('goCap').textContent='Select ride';});
 addEventListener('keydown',e=>{
