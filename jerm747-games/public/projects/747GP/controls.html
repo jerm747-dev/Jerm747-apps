@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080a09">
+<title>747 GP · Controls</title>
+<link rel="stylesheet" href="ui/gp-ui.css">
+<script src="intro/session.js"></script>
+<script src="ui/gp-ui.js"></script>
+<style>
+@font-face{font-family:Barlow;src:url(intro/Barlow-SemiBold.woff) format('woff');font-weight:600;font-display:swap}
+@font-face{font-family:BarlowCondensed;src:url(intro/BarlowCondensed-Bold.woff) format('woff');font-weight:700;font-display:swap}
+:root{color-scheme:dark;--ice:215,237,249;--line:rgba(var(--ice),.76);--ink:rgb(var(--ice));--well:rgba(16,26,32,.18);--keyline:rgba(16,26,32,.35);
+  --amber:#ffac28;--mark:#d98a00;--paper:#fff7e8;--label:#d3ccbf;font:600 16px Barlow,Arial,sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:#07080b;color:#e9ecf2}
+body{overflow-x:hidden}
+/* scenery, same art + grade as the setup screens */
+.scenery{position:fixed;inset:0;overflow:hidden;background:#302a20;z-index:0}
+.scenery img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:60% 52%}
+.scenery::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,8,7,.9) 0%,rgba(6,8,7,.72) 48%,rgba(6,8,7,.25) 100%),linear-gradient(0deg,rgba(6,8,7,.79),transparent 40%)}
+main{position:relative;z-index:1;width:min(100%,640px);margin-left:max(clamp(16px,5.5vw,98px),env(safe-area-inset-left));
+  padding:max(18px,env(safe-area-inset-top)) 16px calc(170px + env(safe-area-inset-bottom)) 0}
+@media (max-width:700px){main{margin:0;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px solid #ffffff1a;margin-bottom:14px}
+.nav img{height:30px;width:auto}
+.ctx{font:700 11px BarlowCondensed,Arial,sans-serif;letter-spacing:.24em;color:#8b9091;text-transform:uppercase}
+.ctx.paused{color:var(--ink)}
+h1{font:700 clamp(48px,9vw,92px)/.92 BarlowCondensed,'Arial Narrow',sans-serif;text-transform:uppercase;letter-spacing:-.025em;margin:6px 0 6px}
+.lede{margin:0 0 12px;color:#b9b3a8;font-size:14px;line-height:1.4}
+.grp-label{font-size:11px;color:var(--label);text-transform:uppercase;letter-spacing:.2em;margin:16px 0 8px}
+
+/* scheme plates + drawers */
+.scheme .gp-caption{justify-content:flex-start;display:flex;align-items:center;padding-left:2%}
+.scheme .gp-caption .tag{margin-left:auto;margin-right:4%;font:italic 800 .62em/1 Arial,sans-serif;letter-spacing:.08em;opacity:.7}
+.scheme[aria-checked=true] .gp-caption .tag{opacity:1;color:#7a4b00}
+.drawer{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s ease;margin:0 0 0 2.5%}
+.drawer.open{grid-template-rows:1fr}
+.drawer>.in{overflow:hidden;min-height:0}
+.sheet{margin:6px 0 4px;padding:14px 16px 16px;background:rgba(8,10,12,.74);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));box-shadow:inset 3px 0 0 var(--amber)}
+.sheet .grp-label:first-child{margin-top:2px}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opts .gp-chip{flex:1 1 0;min-width:92px}
+/* chip selection = paper face + amber slash (mark shows selection, yellow still shows focus) */
+.gp-chip.opt[aria-pressed=true]{background:linear-gradient(#f3f4f6,#c9ccd2 70%,#b5b9c0);color:#101115;box-shadow:inset 0 -2px 0 #6c7079,inset 0 1px 0 #fff}
+.gp-chip.opt[aria-pressed=true]::before{content:"";width:12px;height:9px;background:var(--mark);clip-path:polygon(0 100%,37.7% 0,52.2% 0,14.5% 100%,0 100%,23.9% 100%,61.6% 0,76.1% 0,38.4% 100%,23.9% 100%,47.8% 100%,85.5% 0,100% 0,62.3% 100%,47.8% 100%)}
+.gp-chip.opt:hover,.gp-chip.opt:focus-visible,.gp-chip.opt.is-focused{background:linear-gradient(#fff36a,#ffd21c 70%,#ffb800);color:#101115}
+.steps2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+@media (max-width:460px){.steps2{grid-template-columns:1fr}}
+.gp-step .gp-caption{font-size:7.4cqw;inset:0 3% 6% 3%}
+.steps2 .gp-step .gp-caption{font-size:7.6cqw}
+.hint{font-size:12px;line-height:1.4;color:#8f948f;margin:8px 0 0}
+
+/* bind rows */
+.binds{margin-top:6px}
+.bind{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #ffffff12}
+.bind:last-child{border-bottom:0}
+.bind .nm{flex:1;min-width:0;font:700 15px BarlowCondensed,Arial,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#eef0f3}
+.bind .nm small{display:block;font:600 11px Barlow,Arial,sans-serif;letter-spacing:0;text-transform:none;color:#7d8490}
+.bind .gp-chip{min-width:84px}
+.bind .gp-chip.alt{min-width:64px;opacity:.85}
+.bind .gp-chip.live{box-shadow:inset 0 0 0 1.5px var(--ink),inset 0 -2px 0 #000;color:#fff}
+.bind .gp-chip.listen{background:linear-gradient(#fff36a,#ffd21c 70%,#ffb800);color:#101115;animation:listen 1s ease-in-out infinite}
+.bind .gp-chip.fixed{pointer-events:none;opacity:.6}
+@keyframes listen{50%{filter:drop-shadow(0 0 8px #ffd84a99)}}
+
+/* ---------- ice line-work: touch pads + controller ---------- */
+/* .tw = placed + rotated wrapper, .tc = the pad itself */
+.tw{position:absolute;transform:translate(-50%,-50%) rotate(var(--r,0deg));touch-action:none}
+.tc{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink);
+  font:700 clamp(9px,1.6vmin,14px)/1 BarlowCondensed,Arial,sans-serif;letter-spacing:.14em;text-shadow:0 1px 2px #000c;user-select:none;-webkit-user-select:none;
+  background:var(--well);box-shadow:inset 0 0 0 1.5px var(--line),0 0 0 1px var(--keyline);border-radius:6px;opacity:var(--o,.9);isolation:isolate;overflow:hidden;touch-action:none}
+.tc::before{content:"";position:absolute;inset:auto 4px 4px;height:calc((100% - 8px) * var(--lv,0));z-index:-1;background:rgba(var(--ice),.32);box-shadow:inset 0 1.5px var(--ink);border-radius:2px}
+.tc.round{border-radius:50%}
+.tc.round::before{inset:4px;height:auto;border-radius:50%;opacity:var(--lv,0);box-shadow:none}
+.tc.stick::after{content:"";position:absolute;width:30%;height:30%;border-radius:50%;background:rgba(var(--ice),.14);box-shadow:inset 0 0 0 1.5px var(--line)}
+.tc.slide{border-radius:999px}
+.tc.slide::after{content:"";position:absolute;width:18%;height:70%;border-radius:999px;box-shadow:inset 0 0 0 1.5px var(--line)}
+.tc .pct{position:absolute;top:5px;right:7px;font:600 10px/1 system-ui,sans-serif;letter-spacing:0;opacity:.8}
+.rh{display:none}
+.ghost{position:absolute;transform:translate(-50%,-50%) rotate(var(--r,0deg));border:1.5px dashed rgba(var(--ice),.5);border-radius:6px;pointer-events:none;display:grid;place-items:end center}
+.ghost.round{border-radius:50%}
+.ghost.slide{border-radius:999px}
+.ghost span{font:700 8px BarlowCondensed,Arial,sans-serif;letter-spacing:.2em;color:rgba(var(--ice),.6);transform:translateY(14px);white-space:nowrap}
+.tiltcue{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);display:grid;justify-items:center;gap:4px;color:rgba(var(--ice),.7);
+  font:700 11px BarlowCondensed,Arial,sans-serif;letter-spacing:.2em;pointer-events:none}
+.tiltcue svg{width:64px;height:36px;fill:none;stroke:currentColor;stroke-width:1.6}
+
+/* mini preview */
+.preview-row{display:flex;gap:14px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.mini{position:relative;flex:none;border-radius:14px;overflow:hidden;background:#151a1d center/cover;box-shadow:0 0 0 1.5px #ffffff2a,0 6px 18px #0009}
+.mini.landscape{width:min(100%,300px);aspect-ratio:19.5/9}
+.mini.portrait{width:120px;aspect-ratio:9/19.5}
+.mini .ghost span{display:none}
+.mini .tc{font-size:7px;letter-spacing:.08em}
+.mini .tc .pct{display:none}
+.preview-row .side{flex:1;min-width:180px}
+
+/* full-screen placement editor: the whole screen is the stage */
+#editor{position:fixed;inset:0;z-index:50;background:#050607;display:none;touch-action:none;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
+#editor.on{display:block}
+#editor .scene{position:absolute;inset:0;opacity:.55;filter:saturate(.8)}
+#editor .scene img{width:100%;height:100%;object-fit:cover}
+#stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);overflow:visible;z-index:2}
+#stage.boxed{box-shadow:0 0 0 1.5px rgba(var(--ice),.35);border-radius:18px;background:#0a0c0e66}
+#editor .bar{position:absolute;z-index:4;left:50%;transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:max-content;max-width:96vw;transition:opacity .2s}
+#editor .bar{top:max(10px,env(safe-area-inset-top))}
+#editor.bar-bottom .bar{top:auto;bottom:max(10px,env(safe-area-inset-bottom))}
+@media (max-width:600px){#editor .bar .gp-chip{min-height:30px;padding:5px 9px;font-size:10.5px}#editor .bar{gap:4px}}
+#editor .bar .sep{width:1px;background:#ffffff26;margin:4px 2px}
+#editor .say{position:absolute;z-index:4;left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));font:700 12px BarlowCondensed,Arial,sans-serif;letter-spacing:.18em;color:rgba(var(--ice),.85);text-transform:uppercase;text-align:center;text-shadow:0 1px 3px #000;width:92vw;pointer-events:none;transition:opacity .2s}
+#editor.bar-bottom .say{bottom:auto;top:max(12px,env(safe-area-inset-top))}
+#editor.move .tw.sel.rh-below .rh{top:auto;bottom:-38px}
+#editor.move .tw.sel.rh-below .rh::before{top:auto;bottom:26px}
+#editor.busy .bar,#editor.busy .say{opacity:.12;pointer-events:none}
+#editor.move .tw{cursor:grab}
+#editor.move .tw.sel .tc{box-shadow:inset 0 0 0 2px var(--ink),0 0 0 1px var(--keyline),0 0 18px rgba(var(--ice),.35)}
+#editor.move .tw.sel .rh{display:block;position:absolute;left:50%;top:-38px;width:26px;height:26px;margin-left:-13px;border-radius:50%;cursor:grab;
+  background:rgba(10,14,18,.7);box-shadow:inset 0 0 0 1.5px var(--ink);touch-action:none}
+#editor.move .tw.sel .rh::before{content:"";position:absolute;left:50%;top:26px;width:1.5px;height:12px;background:var(--ink)}
+#editor.move .tw.sel .rh::after{content:"⟳";position:absolute;inset:0;display:grid;place-items:center;color:var(--ink);font:700 14px/1 system-ui,sans-serif}
+#editor .gp-chip.done{background:linear-gradient(#fff36a,#ffd21c 70%,#ffb800);color:#101115;box-shadow:inset 0 -2px 0 #a26a00,inset 0 1px 0 #fff9c4}
+
+
+/* controller (ice line work, inset fill on press) */
+.pad-status{display:flex;align-items:center;gap:10px;margin-top:2px;font-size:13px;color:#9aa0a6}
+.pad-status i{flex:none;width:9px;height:9px;transform:skewX(-22deg);background:#3a3d44}
+.pad-status.on{color:#eef0f3}.pad-status.on i{background:var(--ink);box-shadow:0 0 10px rgba(var(--ice),.7)}
+#ctrl{display:block;width:100%;max-width:520px;margin:10px auto 0;overflow:visible}
+#ctrl .shell{fill:rgba(16,26,32,.35);stroke:var(--line);stroke-width:1.6;stroke-linejoin:round}
+#ctrl .rim{fill:none;stroke:rgba(var(--ice),.25);stroke-width:1}
+#ctrl .ol{fill:none;stroke:var(--line);stroke-width:1.6;stroke-linejoin:round}
+#ctrl .fl{fill:rgba(var(--ice),0);transform-box:fill-box;transform-origin:center;transform:scale(.68);transition:fill .07s}
+#ctrl .k.bound .fl{fill:rgba(var(--ice),.12)}
+#ctrl .k.hot .ol{stroke:var(--ink);filter:drop-shadow(0 0 3px rgba(var(--ice),.8))}
+#ctrl .k.hot .fl{fill:rgba(var(--ice),.9)}
+#ctrl .k.pick .ol{stroke:#ffd21c}
+#ctrl .gl{fill:none;stroke:var(--line);stroke-width:1.4;stroke-linecap:round;pointer-events:none}
+#ctrl .gt{fill:var(--ink);font:700 10px BarlowCondensed,Arial,sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+#ctrl .k.hot+.glyph .gl{stroke:#0b1620}#ctrl .k.hot+.glyph .gt{fill:#0b1620}
+#ctrl .trig{fill:rgba(var(--ice),.9)}
+#ctrl .cap{fill:rgba(var(--ice),.55);font:700 8px BarlowCondensed,Arial,sans-serif;letter-spacing:.18em;text-anchor:middle}
+#ctrl.letters .shape,#ctrl.shapes .letter{display:none}
+#ctrl .dot{fill:var(--ink)}
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+.meter{font:700 11px BarlowCondensed,Arial,sans-serif;letter-spacing:.2em;color:#9aa0a6;text-transform:uppercase}
+.meter .bar{height:10px;margin-top:5px;box-shadow:inset 0 0 0 1.5px var(--line);border-radius:2px;padding:3px}
+.meter .bar i{display:block;height:100%;width:0;background:rgba(var(--ice),.85)}
+.row2{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+
+/* footer */
+.foot{position:fixed;z-index:5;left:0;right:0;bottom:0;padding:24px max(14px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+  background:linear-gradient(180deg,transparent,rgba(6,8,7,.92) 40%)}
+.foot .in{width:min(100%,520px);margin-left:max(0px,calc(clamp(16px,5.5vw,98px) - 14px))}
+@media (max-width:700px){.foot .in{margin:0 auto}}
+.steps{display:flex;gap:6px;align-items:center;justify-content:center;font:700 10px BarlowCondensed,Arial,sans-serif;letter-spacing:.18em;color:#6d7264;margin-top:8px}
+.steps[hidden]{display:none}
+.steps span.on{color:#ffcf6e}.steps em{width:14px;height:1px;background:#3a3d34}
+.toast{position:fixed;z-index:60;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translate(-50%,10px);opacity:0;transition:.25s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+/* Pocket Player: light grey sheet, chequered flag, dark grey buttons (same plates and chips) */
+.scheme .flag{display:inline-block;width:18px;height:12px;margin-right:.45em;vertical-align:-1px;transform:skewX(-12deg);
+  background:conic-gradient(#101115 25%,#fff 0 50%,#101115 0 75%,#fff 0) 0 0/6px 6px;box-shadow:0 0 0 1px #10111566}
+.sheet.pocket{background:linear-gradient(#e6e8eb,#cfd3d8);color:#1b1d22;box-shadow:inset 3px 0 0 #101115}
+.sheet.pocket::before{content:"";display:block;height:10px;margin:-14px -16px 12px;background:conic-gradient(#1b1d22 25%,#f4f5f7 0 50%,#1b1d22 0 75%,#f4f5f7 0) 0 0/10px 10px;opacity:.9}
+.sheet.pocket .grp-label{color:#4a4f58}
+.sheet.pocket .hint{color:#4a4f58}
+.sheet.pocket .pk-head{display:flex;align-items:center;gap:10px;font:700 18px BarlowCondensed,Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.sheet.pocket .pk-head small{font:600 11px Barlow,Arial,sans-serif;letter-spacing:.04em;text-transform:none;color:#4a4f58}
+.sheet.pocket .pk-map{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin-top:10px;font-size:13px}
+.sheet.pocket .pk-map b{font:700 13px BarlowCondensed,Arial,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.sheet.pocket .gp-chip.dark{background:linear-gradient(#3a3e46,#24272d);color:#f1f2f4}
+.sheet.pocket .gp-chip.opt[aria-pressed=true]{background:linear-gradient(#3a3e46,#24272d);color:#fff}
+.sheet.pocket #pkStart{margin-top:12px}
+</style>
+</head>
+<body>
+<div class="scenery" aria-hidden="true"><picture><source media="(orientation:portrait)" srcset="intro/corner-portrait.webp"><img src="intro/corner.webp" alt=""></picture></div>
+
+<main id="ctl">
+  <header class="nav">
+    <button id="back" class="gp-chip dark" type="button">‹ Showroom</button>
+    <span class="ctx" id="ctx">Pre-race</span>
+    <img src="intro/747-gp-mark.png" alt="747 GP">
+  </header>
+  <h1>Controls</h1>
+  <p class="lede">Pick how you're driving this round. Change it or remap anytime from the pause menu.</p>
+
+  <div class="grp-label" id="drive-label">Drive with</div>
+  <div class="gp-stack" role="radiogroup" aria-labelledby="drive-label" id="schemes">
+
+    <button class="gp-button gp-custom scheme" role="radio" data-scheme="touch" aria-checked="false"><span class="gp-marks"></span><span class="gp-caption">Touch<small>Phone · tablet</small></span></button>
+    <div class="drawer" data-for="touch"><div class="in"><div class="sheet">
+      <div class="grp-label">Hold the phone</div>
+      <div class="opts" data-opt="orientation"><button class="gp-chip dark opt" data-v="landscape">Landscape</button><button class="gp-chip dark opt" data-v="portrait">Portrait</button></div>
+      <div class="grp-label">Steering</div>
+      <div class="opts" data-opt="steering"><button class="gp-chip dark opt" data-v="stick">Stick</button><button class="gp-chip dark opt" data-v="slide">Slider</button><button class="gp-chip dark opt" data-v="tilt">Tilt</button></div>
+      <div class="grp-label">Pedals</div>
+      <div class="opts" data-opt="pedals"><button class="gp-chip dark opt" data-v="side">Side by side</button><button class="gp-chip dark opt" data-v="stack">Gas over brake</button></div>
+      <div class="steps2">
+        <button class="gp-button gp-custom gp-step" id="tSize"><span class="gp-caption">Size<span class="gp-val"></span></span></button>
+        <button class="gp-button gp-custom gp-step" id="tOp"><span class="gp-caption">Opacity<span class="gp-val"></span></span></button>
+      </div>
+      <div class="grp-label">Vibrate on press</div>
+      <div class="opts" data-opt="haptics"><button class="gp-chip dark opt" data-v="on">On</button><button class="gp-chip dark opt" data-v="off">Off</button></div>
+      <div class="preview-row">
+        <div class="mini landscape" id="mini"></div>
+        <div class="side">
+          <button class="gp-button gp-custom" id="place"><span class="gp-marks one"></span><span class="gp-caption">Place controls</span></button>
+          <p class="hint" id="placeHint">Opens full screen. Drag gas, brake and steering anywhere and turn them to fit your thumbs. Reset puts them back.</p>
+        </div>
+      </div>
+    </div></div></div>
+
+    <button class="gp-button gp-custom scheme" role="radio" data-scheme="keyboard" aria-checked="false"><span class="gp-marks"></span><span class="gp-caption">Keyboard<small>Laptop · desktop</small></span></button>
+    <div class="drawer" data-for="keyboard"><div class="in"><div class="sheet">
+      <div class="grp-label">Preset</div>
+      <div class="opts" data-opt="kbPreset"><button class="gp-chip dark opt" data-v="wasd">WASD + arrows</button><button class="gp-chip dark opt" data-v="arrows">Arrows + ZX</button><button class="gp-chip dark opt" data-v="custom" disabled>Custom</button></div>
+      <div class="steps2"><button class="gp-button gp-custom gp-step" id="kSens"><span class="gp-caption">Steering<span class="gp-val"></span></span></button></div>
+      <div class="binds" id="kbBinds"></div>
+      <p class="hint">Tap a key, then press the new one. Esc cancels. Keys light up when you press them.</p>
+    </div></div></div>
+
+    <button class="gp-button gp-custom scheme" role="radio" data-scheme="controller" aria-checked="false"><span class="gp-marks"></span><span class="gp-caption">Controller<small>Bluetooth · USB</small></span></button>
+    <div class="drawer" data-for="controller"><div class="in"><div class="sheet">
+      <div class="pad-status" id="padStatus"><i></i><span id="padText">Connect a controller and press any button.</span></div>
+      <svg id="ctrl" class="shapes" viewBox="0 0 400 270" aria-label="Controller test"></svg>
+      <div class="meters">
+        <div class="meter">Brake · <span id="mBrakeName"></span><div class="bar"><i id="mBrake"></i></div></div>
+        <div class="meter">Gas · <span id="mGasName"></span><div class="bar"><i id="mGas"></i></div></div>
+      </div>
+      <div class="grp-label">Button icons</div>
+      <div class="opts" data-opt="glyphs"><button class="gp-chip dark opt" data-v="shapes">Shapes</button><button class="gp-chip dark opt" data-v="letters">Letters</button></div>
+      <div class="grp-label">Steer with</div>
+      <div class="opts" data-opt="padSteer"><button class="gp-chip dark opt" data-v="ls">Left stick</button><button class="gp-chip dark opt" data-v="dpad">D-pad</button></div>
+      <div class="steps2"><button class="gp-button gp-custom gp-step" id="pDz"><span class="gp-caption">Deadzone<span class="gp-val"></span></span></button>
+        <button class="gp-button gp-custom gp-step" id="pRumble"><span class="gp-caption">Rumble<span class="gp-val"></span></span></button></div>
+      <div class="binds" id="padBinds"></div>
+      <div class="row2"><button class="gp-chip dark" id="pReset">Reset buttons</button><button class="gp-chip dark" id="pRumbleTest">Test rumble</button></div>
+      <p class="hint">Tap an action, then press the button you want for it.</p>
+    </div></div></div>
+
+    <button class="gp-button gp-custom scheme" role="radio" data-scheme="pocket" aria-checked="false"><span class="gp-marks"></span><span class="gp-caption"><span class="flag" aria-hidden="true"></span>Pocket Player<small>All-in-one</small></span></button>
+    <div class="drawer" data-for="pocket"><div class="in"><div class="sheet pocket">
+      <div class="pk-head"><span>747 Pocket Player</span><small>the handheld shell drives the whole race</small></div>
+      <div class="pk-map">
+        <b>Steer</b><span>D-pad or stick</span><b>Gas · Brake</b><span>A · B (or R2 · L2)</span><b>Shift</b><span>Shoulder buttons</span><b>Pause</b><span>Start</span>
+      </div>
+      <div class="grp-label">Hold the Pocket</div>
+      <div class="opts" data-opt="pocketO"><button class="gp-chip dark opt" data-v="landscape">Landscape</button><button class="gp-chip dark opt" data-v="portrait">Portrait</button></div>
+      <p class="hint">Turn it any time: the Pocket keeps landscape and portrait together. On-screen touch pads stay hidden while it drives.</p>
+      <button class="gp-button gp-custom" id="pkStart"><span class="gp-marks one"></span><span class="gp-caption">Start Pocket Player</span></button>
+      <p class="hint" id="pkNote"></p>
+    </div></div></div>
+  </div>
+</main>
+
+<div class="foot"><div class="in">
+  <button class="gp-button gp-custom" id="go"><span class="gp-marks"></span><span class="gp-caption" id="goText">Continue to race setup</span></button>
+  <div class="steps" aria-hidden="true"><span>MODE</span><em></em><span>RIDE</span><em></em><span class="on">CONTROLS</span><em></em><span>RACE SETUP</span><em></em><span>RACE</span></div>
+</div></div>
+
+<div id="editor" class="move" aria-label="Place touch controls">
+  <div class="scene"><img src="intro/corner.webp" alt=""></div>
+  <div class="bar">
+    <button class="gp-chip dark opt" id="eLand" data-o="landscape">Landscape</button>
+    <button class="gp-chip dark opt" id="ePort" data-o="portrait">Portrait</button>
+    <span class="sep"></span>
+    <button class="gp-chip dark" id="eMode">Test</button>
+    <button class="gp-chip dark" id="eMirror">Mirror</button>
+    <button class="gp-chip dark" id="eReset">Reset</button>
+    <button class="gp-chip dark" id="eBar" aria-label="Move toolbar">⇅</button>
+    <button class="gp-chip done" id="eDone">Done</button>
+  </div>
+  <div class="say" id="eSay"></div>
+  <div id="stage"></div>
+</div>
+<div class="toast gp-chip dark" id="toast"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+'use strict';
+const KEY='gp747.controls.v1';
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clone=o=>JSON.parse(JSON.stringify(o));
+const UI=window.GPUI||null, sfx=n=>{try{UI&&UI.sfx(n)}catch(_){}};
+
+/* ---------- defaults match race.html today ---------- */
+const KB_PRESETS={
+  wasd:{gas:['KeyW','ArrowUp'],brake:['KeyS','ArrowDown'],left:['KeyA','ArrowLeft'],right:['KeyD','ArrowRight'],cam:['KeyC','KeyV'],up:['KeyE','PageUp'],down:['KeyQ','PageDown'],pause:['KeyP','Escape']},
+  arrows:{gas:['ArrowUp','KeyX'],brake:['ArrowDown','KeyZ'],left:['ArrowLeft',null],right:['ArrowRight',null],cam:['KeyC','KeyV'],up:['KeyS','PageUp'],down:['KeyA','PageDown'],pause:['KeyP','Escape']}
+};
+const PAD_DEFAULT={gas:7,brake:6,cam:8,up:5,down:4,pause:9};
+const KB_ACTIONS=[['gas','Gas'],['brake','Brake'],['left','Steer left'],['right','Steer right'],['cam','Camera','Cycle views'],['up','Shift up','Manual gearbox'],['down','Shift down','Manual gearbox'],['pause','Pause']];
+const PAD_ACTIONS=[['gas','Gas','Analog on triggers'],['brake','Brake','Analog on triggers'],['cam','Camera','Cycle views'],['up','Shift up','Manual gearbox'],['down','Shift down','Manual gearbox'],['pause','Pause']];
+const DEF_POS={
+  landscape:{side:{steer:{x:14,y:72},brake:{x:74,y:78},gas:{x:88,y:71},cam:{x:93,y:15}},
+             stack:{steer:{x:14,y:72},gas:{x:86,y:62},brake:{x:86,y:85},cam:{x:93,y:15}}},
+  portrait:{side:{steer:{x:25,y:86},brake:{x:60,y:88},gas:{x:84,y:85},cam:{x:88,y:8}},
+            stack:{steer:{x:25,y:86},gas:{x:78,y:81},brake:{x:78,y:92},cam:{x:88,y:8}}}
+};
+const DEFAULTS={scheme:'touch',pocket:{orientation:'landscape'},
+  touch:{orientation:'landscape',steering:'stick',pedals:'side',size:100,opacity:90,haptics:true,layout:{landscape:{},portrait:{}}},
+  keyboard:{binds:clone(KB_PRESETS.wasd),sens:60},
+  pad:{binds:clone(PAD_DEFAULT),steer:'ls',deadzone:12,rumble:true,glyphs:'shapes'}};
+function merge(a,b){for(const k in b){const v=b[k];if(v&&typeof v==='object'&&!Array.isArray(v)&&a[k]&&typeof a[k]==='object')merge(a[k],v);else a[k]=v;}return a;}
+let S=clone(DEFAULTS);
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s)S=merge(clone(DEFAULTS),s);else{if(localStorage.getItem('gp747pstack')==='1')S.touch.pedals='stack';}}catch(_){}
+let open=S.scheme, toastT=0;
+function save(msg){
+  try{localStorage.setItem(KEY,JSON.stringify(S));localStorage.setItem('gp747pstack',S.touch.pedals==='stack'?'1':'0');}catch(_){}
+  dispatchEvent(new CustomEvent('gp747:controls',{detail:clone(S)}));
+  if(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1300);}
+}
+window.GP747Controls={get:()=>clone(S),set:s=>{S=merge(clone(DEFAULTS),s);renderAll();save();}};
+
+/* ---------- context ---------- */
+const CTX=()=>location.hash==='#pause'?'pause':location.hash==='#start'?'start':'flow';
+function ctx(){const c=CTX();$('#ctx').textContent=c==='pause'?'Paused':c==='start'?'Settings':'Pre-race';$('#ctx').classList.toggle('paused',c==='pause');
+  $('#goText').textContent=c==='pause'?'Resume race':c==='start'?'Done':'Continue to race setup';
+  $('#back').textContent=c==='pause'?'‹ Pause menu':c==='start'?'‹ Mode select':'‹ Showroom';$('.steps').hidden=c!=='flow';}
+addEventListener('hashchange',ctx);
+
+/* ---------- scheme plates (radio + accordion) ---------- */
+const NAMES={touch:'Touch',keyboard:'Keyboard',controller:'Controller',pocket:'Pocket Player'};
+function renderSchemes(){
+  $$('.scheme').forEach(b=>{const s=b.dataset.scheme,on=S.scheme===s;b.setAttribute('aria-checked',on);b.setAttribute('aria-expanded',open===s);});
+  $$('.drawer').forEach(d=>d.classList.toggle('open',d.dataset.for===open));
+}
+$$('.scheme').forEach(b=>b.addEventListener('click',()=>{const s=b.dataset.scheme;
+  if(S.scheme===s&&open===s)open=null;else{open=s;if(S.scheme!==s){S.scheme=s;save(NAMES[s]+' selected');}}
+  kbListen=padListen=null;renderSchemes();renderKb();renderPadBinds();}));
+
+/* ---------- option chips ---------- */
+const OPT={
+  orientation:{get:()=>S.touch.orientation,set:v=>S.touch.orientation=v},
+  steering:{get:()=>S.touch.steering,set:v=>S.touch.steering=v},
+  pedals:{get:()=>S.touch.pedals,set:v=>{S.touch.pedals=v;S.touch.layout[S.touch.orientation]={...S.touch.layout[S.touch.orientation],gas:undefined,brake:undefined};}},
+  haptics:{get:()=>S.touch.haptics?'on':'off',set:v=>S.touch.haptics=v==='on'},
+  kbPreset:{get:()=>kbPresetName(),set:v=>S.keyboard.binds=clone(KB_PRESETS[v])},
+  glyphs:{get:()=>S.pad.glyphs,set:v=>S.pad.glyphs=v},
+  padSteer:{get:()=>S.pad.steer,set:v=>S.pad.steer=v},
+  pocketO:{get:()=>S.pocket.orientation,set:v=>S.pocket.orientation=v}
+};
+function renderOpts(){$$('.opts[data-opt]').forEach(g=>{const v=OPT[g.dataset.opt].get();g.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));});}
+$$('.opts[data-opt]').forEach(g=>g.addEventListener('click',e=>{const b=e.target.closest('.opt');if(!b||b.disabled)return;
+  OPT[g.dataset.opt].set(b.dataset.v);sfx('click.select');renderAll();save();}));
+
+/* ---------- steppers: same API as GPUI.stepper ---------- */
+function stepper(btn,values,get,set,fmt){
+  const idx=()=>{const v=get();let i=values.indexOf(v);if(i<0)i=values.reduce((bi,x,k)=>Math.abs(x-v)<Math.abs(values[bi]-v)?k:bi,0);return i;};
+  const upd=()=>btn.querySelector('.gp-val').textContent=fmt(values[idx()]);
+  btn.gpStep=d=>{const i=Math.max(0,Math.min(values.length-1,idx()+d));set(values[i]);upd();changed();};
+  btn.addEventListener('click',()=>{set(values[(idx()+1)%values.length]);upd();changed();});
+  btn.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();btn.gpStep(e.key==='ArrowLeft'?-1:1);}});
+  function changed(){renderTouch();save();}
+  upd();return upd;
+}
+const range=(a,b,s)=>{const r=[];for(let v=a;v<=b;v+=s)r.push(v);return r;};
+const updSize=stepper($('#tSize'),range(50,140,10),()=>S.touch.size,v=>S.touch.size=v,v=>v+'%');
+const updOp=stepper($('#tOp'),range(40,100,10),()=>S.touch.opacity,v=>S.touch.opacity=v,v=>v+'%');
+const updSens=stepper($('#kSens'),range(20,100,10),()=>S.keyboard.sens,v=>S.keyboard.sens=v,v=>v+'%');
+const updDz=stepper($('#pDz'),range(0,30,2),()=>S.pad.deadzone,v=>S.pad.deadzone=v,v=>v+'%');
+const updRum=stepper($('#pRumble'),[0,1],()=>S.pad.rumble?1:0,v=>S.pad.rumble=!!v,v=>v?'On':'Off');
+
+/* ---------- touch layout: one renderer for the mini preview and the full-screen stage ---------- */
+// layout[orientation][id] = {x, y (% of screen), r (degrees)}; landscape and portrait are separate layouts
+function posFor(id,o){const t=S.touch,p=(t.layout[o]&&t.layout[o][id])||DEF_POS[o][t.pedals][id];return {x:p.x,y:p.y,r:p.r||0};}
+function defFor(id,o){const d=DEF_POS[o][S.touch.pedals][id];return {x:d.x,y:d.y,r:0};}
+function setPos(id,o,p){const L=S.touch.layout[o]||(S.touch.layout[o]={});L[id]={x:+p.x.toFixed(1),y:+p.y.toFixed(1),r:Math.round(p.r||0)};}
+// Pad size comes from the short side of the screen (same in landscape and portrait) x the Size setting.
+// Gas and brake share a width; gas is a bit taller so you can tell them apart. Never under a thumb (46px).
+const THUMB=46,PEDAL=52; // pedals get a roomier floor so the brake is always easy to hit
+function sizes(W,H){const t=S.touch,base=Math.min(W,H)*t.size/100,st=t.pedals==='stack',m=v=>Math.max(THUMB,v);
+  const P=st?{gas:[.21,.11],brake:[.21,.10]}:{gas:[.132,.176],brake:[.132,.154]},mp=v=>Math.max(PEDAL,v); // +10%
+  return {gas:[mp(P.gas[0]*base),mp(P.gas[1]*base)],brake:[mp(P.brake[0]*base),mp(P.brake[1]*base)],
+    steer:t.steering==='slide'?[.34*base,m(.08*base)]:[m(.2*base),m(.2*base)],cam:[m(.11*base),m(.11*base)]};}
+const LABEL={gas:'GAS',brake:'BRAKE',steer:'',cam:'CAM'},FULL={gas:'Gas',brake:'Brake',steer:'Steering',cam:'Camera'};
+const ids=()=>['steer','brake','gas','cam'].filter(id=>!(id==='steer'&&S.touch.steering==='tilt'));
+function renderLayout(box,o,interactive){
+  box.innerHTML='';
+  const r=box.getBoundingClientRect(),W=r.width,H=r.height;if(!W||!H)return;
+  const ref=o==='portrait'?[390,844]:[844,390],full=box===stage,sc=full?1:W/ref[0],sz=full?sizes(W,H):Object.fromEntries(Object.entries(sizes(...ref)).map(([k,[w,h]])=>[k,[w*sc,h*sc]]));
+  box.style.setProperty('--o',S.touch.opacity/100);
+  if(S.touch.steering==='tilt'){const c=document.createElement('div');c.className='tiltcue';c.innerHTML='<svg viewBox="0 0 64 36"><rect x="14" y="6" width="36" height="22" rx="4" transform="rotate(-12 32 17)"/><path d="M4 30 q28 10 56 0"/><path d="M8 26l-4 4 5 2M56 26l4 4-5 2"/></svg>TILT TO STEER';box.appendChild(c);}
+  ids().forEach(id=>{
+    const p=posFor(id,o),[w,h]=sz[id];
+    const shape=id==='cam'||(id==='steer'&&S.touch.steering==='stick')?' round':id==='steer'?' slide':'';
+
+    const tw=document.createElement('div');tw.className='tw'+(interactive&&sel===id?' sel':'')+(p.y/100*H-Math.max(w,h)/2<48?' rh-below':'');tw.dataset.id=id;tw.dataset.w=w;tw.dataset.h=h;
+    Object.assign(tw.style,{left:p.x+'%',top:p.y+'%',width:w+'px',height:h+'px'});tw.style.setProperty('--r',p.r+'deg');
+    tw.innerHTML=`<div class="tc${shape}${id==='steer'&&S.touch.steering!=='slide'?' stick':''}">${LABEL[id]}${interactive&&(id==='gas'||id==='brake')?'<span class="pct"></span>':''}</div>`+(interactive?'<div class="rh" title="Rotate"></div>':'');
+    box.appendChild(tw);
+  });
+}
+function renderTouch(){
+  const m=$('#mini');m.className='mini '+S.touch.orientation;const art=$('.scenery img');m.style.backgroundImage='linear-gradient(#0a0c0e99,#0a0c0e99),url("'+(art.currentSrc||art.src)+'")';
+  requestAnimationFrame(()=>renderLayout(m,S.touch.orientation,false));
+  if($('#editor').classList.contains('on'))layoutStage();
+}
+
+/* ---------- full-screen editor ---------- */
+// The stage is the whole screen. On a phone it follows how the phone is held, so turning it
+// switches between the landscape and portrait layouts. On a desktop the other layout shows boxed.
+const ed=$('#editor'),stage=$('#stage'),coarse=matchMedia('(pointer:coarse)');
+let testMode=false,act=null,sel=null,edO='landscape',boxed=false,lastO=null;
+async function lockTo(o){try{if(screen.orientation&&screen.orientation.lock){await screen.orientation.lock(o);return true;}}catch(_){}return false;}
+async function openEditor(){
+  edO=S.touch.orientation;sel=null;lastO=null;ed.classList.add('on');if(menu)menu.active=false;
+  try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(_){}
+  await lockTo(edO);layoutStage();setTimeout(layoutStage,250);sfx('click.select');
+}
+function closeEditor(){
+  ed.classList.remove('on');sel=null;try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock();}catch(_){}
+  try{if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen();}catch(_){}
+  if(menu)menu.active=true;renderTouch();save('Layout saved');
+}
+function layoutStage(){
+  const vw=innerWidth,vh=innerHeight,isL=vw>=vh;
+  if(coarse.matches)edO=isL?'landscape':'portrait';
+  let w=vw,h=vh;boxed=isL!==(edO==='landscape');
+  if(boxed){const a=edO==='landscape'?19.5/9:9/19.5,mw=vw-24,mh=vh-24;if(mw/mh>a){h=mh;w=h*a;}else{w=mw;h=w/a;}}
+  Object.assign(stage.style,{width:w+'px',height:h+'px'});stage.classList.toggle('boxed',boxed);
+  $('#eLand').setAttribute('aria-pressed',edO==='landscape');$('#ePort').setAttribute('aria-pressed',edO==='portrait');
+  if(edO!==lastO){lastO=edO;const ys=ids().map(id=>posFor(id,edO).y); // toolbar goes to whichever edge has fewer controls
+    ed.classList.toggle('bar-bottom',ys.filter(y=>y<22).length>ys.filter(y=>y>78).length);}
+  renderLayout(stage,edO,true);say();
+}
+function say(msg){
+  const O=edO[0].toUpperCase()+edO.slice(1);
+  $('#eSay').textContent=msg||(testMode?'Test mode — press the pedals':
+    sel?FULL[sel]+' · '+posFor(sel,edO).r+'° · drag ⟳ to rotate':
+    boxed?O+' layout — turn your device to '+edO+' to fill the screen':
+    O+' layout · drag anything anywhere · tap one to rotate it');
+}
+addEventListener('resize',()=>{if(ed.classList.contains('on'))layoutStage();else renderTouch();});
+function center(tw){const b=tw.getBoundingClientRect();return [b.left+b.width/2,b.top+b.height/2];}
+stage.addEventListener('pointerdown',e=>{
+  const tw=e.target.closest('.tw');
+  if(!tw){if(sel){sel=null;layoutStage();}return;}
+  e.preventDefault();const id=tw.dataset.id;
+  if(testMode){press(tw,e);return;}
+  if(e.target.closest('.rh')){const [cx,cy]=center(tw);act={kind:'rot',tw,id,cx,cy};}
+  else{
+    if(sel!==id){sel=id;stage.querySelectorAll('.tw').forEach(t=>t.classList.toggle('sel',t===tw));say();}
+    const [cx,cy]=center(tw);act={kind:'move',tw,id,dx:e.clientX-cx,dy:e.clientY-cy};
+  }
+  ed.classList.add('busy');tw.setPointerCapture(e.pointerId);
+});
+stage.addEventListener('pointermove',e=>{
+  if(testMode){const tw=e.target.closest('.tw.down');if(tw)press(tw,e);return;}
+  if(!act)return;const p=posFor(act.id,edO),R=stage.getBoundingClientRect();
+  if(act.kind==='rot'){
+    let a=Math.atan2(e.clientY-act.cy,e.clientX-act.cx)*180/Math.PI+90;a=((a+540)%360)-180;
+    const n=Math.round(a/90)*90;a=Math.abs(a-n)<7?n:Math.round(a/5)*5;if(a===-180)a=180;
+    p.r=a;act.tw.style.setProperty('--r',a+'deg');
+  }else{
+    const t=p.r*Math.PI/180,w=+act.tw.dataset.w,h=+act.tw.dataset.h,
+      ex=(Math.abs(w*Math.cos(t))+Math.abs(h*Math.sin(t)))/2/R.width*100,ey=(Math.abs(w*Math.sin(t))+Math.abs(h*Math.cos(t)))/2/R.height*100;
+    p.x=Math.min(100-ex,Math.max(ex,(e.clientX-act.dx-R.left)/R.width*100));p.y=Math.min(100-ey,Math.max(ey,(e.clientY-act.dy-R.top)/R.height*100));
+    act.tw.style.left=p.x+'%';act.tw.style.top=p.y+'%';
+  }
+  setPos(act.id,edO,p);say();
+});
+function endAct(){if(act){const p=posFor(act.id,edO),top=ed.classList.contains('bar-bottom');
+  if(!top&&p.y<20)ed.classList.add('bar-bottom');else if(top&&p.y>80)ed.classList.remove('bar-bottom'); // toolbar gets out of the way
+  act=null;ed.classList.remove('busy');layoutStage();}}
+stage.addEventListener('pointerup',e=>{const tw=e.target.closest('.tw');if(testMode&&tw)release(tw);endAct();});
+stage.addEventListener('pointercancel',endAct);
+function press(tw,e){
+  let lv=1;const id=tw.dataset.id;
+  if(id==='gas'||id==='brake'){ // pressure along the pedal's own axis, so it still works when rotated
+    const [cx,cy]=center(tw),t=posFor(id,edO).r*Math.PI/180,dx=e.clientX-cx,dy=e.clientY-cy,ly=-dx*Math.sin(t)+dy*Math.cos(t);
+    lv=Math.max(.15,Math.min(1,.65-ly/(+tw.dataset.h)));const pc=tw.querySelector('.pct');if(pc)pc.textContent=Math.round(lv*100)+'%';}
+  if(!tw.classList.contains('down')&&S.touch.haptics&&navigator.vibrate)try{navigator.vibrate(10)}catch(_){}
+  tw.classList.add('down');tw.querySelector('.tc').style.setProperty('--lv',lv);
+  try{if(!tw.hasPointerCapture(e.pointerId))tw.setPointerCapture(e.pointerId);}catch(_){}
+}
+function release(tw){tw.classList.remove('down');tw.querySelector('.tc').style.setProperty('--lv',0);const pc=tw.querySelector('.pct');if(pc)pc.textContent='';}
+$('#place').addEventListener('click',openEditor);
+$('#eDone').addEventListener('click',closeEditor);
+[['#eLand','landscape'],['#ePort','portrait']].forEach(([b,o])=>$(b).addEventListener('click',async()=>{
+  S.touch.orientation=o;renderOpts();sel=null;const ok=await lockTo(o);
+  if(!coarse.matches||ok)edO=o;layoutStage();
+  if(coarse.matches&&!ok&&edO!==o)say('Turn your phone to '+o+' to edit that layout');save();}));
+$('#eMode').addEventListener('click',()=>{testMode=!testMode;sel=null;ed.classList.toggle('move',!testMode);$('#eMode').textContent=testMode?'Move':'Test';layoutStage();});
+$('#eReset').addEventListener('click',()=>{S.touch.layout[edO]={};sel=null;layoutStage();sfx('chime.back');});
+$('#eMirror').addEventListener('click',()=>{ids().concat(S.touch.steering==='tilt'?['steer']:[]).forEach(id=>{const p=posFor(id,edO);setPos(id,edO,{x:100-p.x,y:p.y,r:-p.r});});layoutStage();});
+$('#eBar').addEventListener('click',()=>ed.classList.toggle('bar-bottom'));
+
+
+/* ---------- keyboard ---------- */
+let kbListen=null;const held=new Set();
+function keyLabel(c){if(!c)return '+';const m={ArrowUp:'↑',ArrowDown:'↓',ArrowLeft:'←',ArrowRight:'→',Space:'Space',Escape:'Esc',Enter:'Enter',Backspace:'Bksp',Tab:'Tab',PageUp:'PgUp',PageDown:'PgDn',
+  ShiftLeft:'L Shift',ShiftRight:'R Shift',ControlLeft:'L Ctrl',ControlRight:'R Ctrl',AltLeft:'L Alt',AltRight:'R Alt',CapsLock:'Caps'};
+  return m[c]||(c.startsWith('Key')?c.slice(3):c.startsWith('Digit')?c.slice(5):c.startsWith('Numpad')?'Num '+c.slice(6):c.replace(/([a-z])([A-Z])/g,'$1 $2'));}
+function kbPresetName(){const b=S.keyboard.binds;for(const n in KB_PRESETS)if(Object.keys(KB_PRESETS[n]).every(k=>JSON.stringify(KB_PRESETS[n][k])===JSON.stringify(b[k])))return n;return 'custom';}
+function renderKb(){const box=$('#kbBinds');box.innerHTML='';
+  KB_ACTIONS.forEach(([id,name,sub])=>{const row=document.createElement('div');row.className='bind';
+    row.innerHTML=`<div class="nm">${name}${sub?`<small>${sub}</small>`:''}</div>`;
+    [0,1].forEach(slot=>{const code=S.keyboard.binds[id][slot],b=document.createElement('button'),me=kbListen&&kbListen[0]===id&&kbListen[1]===slot;
+      b.className='gp-chip dark'+(slot?' alt':'')+(me?' listen':'')+(code&&held.has(code)?' live':'');b.dataset.code=code||'';
+      b.textContent=me?'Press…':keyLabel(code);b.addEventListener('click',()=>{kbListen=me?null:[id,slot];padListen=null;renderKb();renderPadBinds();});row.appendChild(b);});
+    box.appendChild(row);});
+  renderOpts();}
+addEventListener('keydown',e=>{
+  if(!kbListen)return;e.preventDefault();e.stopImmediatePropagation();
+  const [id,slot]=kbListen;
+  if(e.code==='Escape'&&id!=='pause'){kbListen=null;renderKb();return;}
+  const B=S.keyboard.binds,prev=B[id][slot];let swapped=null;
+  for(const k in B)B[k].forEach((c,s)=>{if(c===e.code&&!(k===id&&s===slot)){B[k][s]=prev||null;swapped=k;}});
+  B[id][slot]=e.code;kbListen=null;renderKb();sfx('click.select');
+  save(swapped?'Swapped with '+KB_ACTIONS.find(a=>a[0]===swapped)[1]:'Key set');
+},true);
+addEventListener('keydown',e=>{if(open!=='keyboard')return;held.add(e.code);$$('#kbBinds .gp-chip').forEach(k=>k.classList.toggle('live',!!k.dataset.code&&held.has(k.dataset.code)));});
+addEventListener('keyup',e=>{held.delete(e.code);$$('#kbBinds .gp-chip').forEach(k=>k.classList.toggle('live',!!k.dataset.code&&held.has(k.dataset.code)));});
+addEventListener('blur',()=>held.clear());
+
+/* ---------- controller: ice line work, inset fill when pressed ---------- */
+const svg=$('#ctrl'),NS='http://www.w3.org/2000/svg';
+const mk=(tag,a,parent=svg)=>{const n=document.createElementNS(NS,tag);for(const k in a)n.setAttribute(k,a[k]);parent.appendChild(n);return n;};
+const TRIG='h56 a8 8 0 0 1 8 8 v14 h-72 v-14 a8 8 0 0 1 8 -8z';
+const SHAPES=[
+  [6,'path',{d:'M80 8'+TRIG},'L2'],[7,'path',{d:'M264 8'+TRIG},'R2'],
+  [4,'path',{d:'M66 52 q6 -12 24 -14 h46 q8 0 9 8 v6z'},'L1'],[5,'path',{d:'M334 52 q-6 -12 -24 -14 h-46 q-8 0 -9 8 v6z'},'R1'],
+  [17,'rect',{x:140,y:62,width:120,height:62,rx:10}],
+  [8,'rect',{x:118,y:66,width:11,height:20,rx:5}],[9,'rect',{x:271,y:66,width:11,height:20,rx:5}],
+  [16,'circle',{cx:200,cy:186,r:8}],
+  [12,'path',{d:'M89 88 h18 v18 l-9 9 l-9 -9z'}],[13,'path',{d:'M89 142 h18 v-18 l-9 -9 l-9 9z'}],
+  [14,'path',{d:'M71 106 v18 h18 l9 -9 l-9 -9z'}],[15,'path',{d:'M125 106 v18 h-18 l-9 -9 l9 -9z'}],
+  [3,'circle',{cx:302,cy:90,r:12.5}],[1,'circle',{cx:327,cy:115,r:12.5}],[2,'circle',{cx:277,cy:115,r:12.5}],[0,'circle',{cx:302,cy:140,r:12.5}],
+  [10,'circle',{cx:146,cy:170,r:17,id:'stickL'}],[11,'circle',{cx:254,cy:170,r:17,id:'stickR'}]
+];
+const GLYPH={3:['M302 83.5 l6.5 11 h-13z','Y',302,90],1:['M327 115 m-6 0 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0','B',327,115],2:['M271.5 109.5 h11 v11 h-11z','X',277,115],0:['M297 135 l10 10 M307 135 l-10 10','A',302,140]};
+function buildCtrl(){
+  svg.innerHTML='';
+  mk('path',{class:'shell',d:'M118 52 H282 C320 52 344 64 356 98 L386 204 C396 240 374 266 346 264 C324 262 312 246 300 224 L284 198 H116 L100 224 C88 246 76 262 54 264 C26 266 4 240 14 204 L44 98 C56 64 80 52 118 52 Z'});
+  mk('path',{class:'rim',d:'M134 58 H266'});
+  mk('circle',{class:'rim',cx:146,cy:170,r:24});mk('circle',{class:'rim',cx:254,cy:170,r:24});
+  const cl=mk('clipPath',{id:'cL2'});mk('path',{d:'M80 8'+TRIG},cl);const cr=mk('clipPath',{id:'cR2'});mk('path',{d:'M264 8'+TRIG},cr);
+  for(const [i,tag,a,cap] of SHAPES){
+    const g=mk('g',{class:'k','data-btn':i});
+    const {id,...rest}=a;mk(tag,{...rest,class:'fl'},g);mk(tag,{...rest,class:'ol'},g);if(id)g.id=id;
+    if(GLYPH[i]){const [d,l,x,y]=GLYPH[i],gg=mk('g',{class:'glyph'});mk('path',{class:'gl shape',d},gg);const t=mk('text',{class:'gt letter',x,y},gg);t.textContent=l;}
+    if(cap){const t=mk('text',{class:'cap',x:i===6||i===4?110:290,y:i>=6?24:48});t.textContent=cap;}
+  }
+  mk('rect',{class:'trig',id:'tL2',x:80,y:30,width:72,height:0,'clip-path':'url(#cL2)'});
+  mk('rect',{class:'trig',id:'tR2',x:248,y:30,width:84,height:0,'clip-path':'url(#cR2)'});
+  mk('circle',{class:'dot',id:'dL',cx:146,cy:170,r:2.6});mk('circle',{class:'dot',id:'dR',cx:254,cy:170,r:2.6});
+  mk('path',{class:'gl',d:'M196 186 l4 -4 l4 4 v4 h-8z'});
+}
+let padListen=null,padIndex=null,prevP=[];
+const SH={0:'✕',1:'○',2:'□',3:'△'},LT={0:'A',1:'B',2:'X',3:'Y'};
+const BN={4:'L1',5:'R1',6:'L2',7:'R2',8:'Create',9:'Options',10:'L3',11:'R3',12:'D-pad ↑',13:'D-pad ↓',14:'D-pad ←',15:'D-pad →',16:'Home',17:'Touch pad'};
+const BNL={4:'LB',5:'RB',6:'LT',7:'RT',8:'View',9:'Menu',10:'LS',11:'RS'};
+const bname=i=>i==null?'—':i<=3?(S.pad.glyphs==='shapes'?SH[i]:LT[i]):(S.pad.glyphs==='letters'&&BNL[i])||BN[i]||'B'+i;
+function renderPadBinds(){const box=$('#padBinds');box.innerHTML='';
+  const fixed=(n,v,s)=>{const r=document.createElement('div');r.className='bind';r.innerHTML=`<div class="nm">${n}<small>${s}</small></div><button class="gp-chip dark fixed" tabindex="-1">${v}</button>`;box.appendChild(r);};
+  fixed('Steer',S.pad.steer==='ls'?'L stick':'D-pad ◀▶','Set above');
+  PAD_ACTIONS.forEach(([id,name,sub])=>{const r=document.createElement('div');r.className='bind';r.innerHTML=`<div class="nm">${name}${sub?`<small>${sub}</small>`:''}</div>`;
+    const b=document.createElement('button'),me=padListen===id;b.className='gp-chip dark'+(me?' listen':'');b.textContent=me?'Press a button…':bname(S.pad.binds[id]);
+    b.addEventListener('click',()=>{padListen=me?null:id;kbListen=null;renderPadBinds();renderKb();});r.appendChild(b);box.appendChild(r);});
+  fixed('Look around','R stick','Full 360');
+  const bound=new Set(Object.values(S.pad.binds));
+  svg.querySelectorAll('.k').forEach(k=>{const i=+k.dataset.btn;k.classList.toggle('bound',bound.has(i)||(i===10&&S.pad.steer==='ls'));k.classList.toggle('pick',!!padListen&&S.pad.binds[padListen]===i);});
+  $('#mGasName').textContent=bname(S.pad.binds.gas);$('#mBrakeName').textContent=bname(S.pad.binds.brake);
+  svg.setAttribute('class',S.pad.glyphs);
+}
+$('#pReset').addEventListener('click',()=>{S.pad.binds=clone(PAD_DEFAULT);renderPadBinds();save('Buttons reset');});
+$('#pRumbleTest').addEventListener('click',()=>{const gp=padIndex!=null&&navigator.getGamepads()[padIndex],a=gp&&gp.vibrationActuator;
+  if(a&&a.playEffect){a.playEffect('dual-rumble',{duration:300,strongMagnitude:.7,weakMagnitude:.4}).catch(()=>{});save('Rumble sent');}else save(gp?'No rumble on this controller':'Connect a controller first');});
+function status(gp){const s=$('#padStatus');s.classList.toggle('on',!!gp);
+  $('#padText').textContent=gp?gp.id.replace(/\s*\(.*?\)\s*/g,' ').trim().slice(0,56)+(gp.mapping==='standard'?'':' · non-standard'):'Connect a controller and press any button.';}
+addEventListener('gamepadconnected',e=>{padIndex=e.gamepad.index;status(e.gamepad);});
+addEventListener('gamepaddisconnected',e=>{if(e.gamepad.index===padIndex){padIndex=null;status(null);}});
+function poll(){
+  let pads=[];try{pads=navigator.getGamepads?navigator.getGamepads():[];}catch(_){}
+  if(padIndex==null)for(const p of pads)if(p){padIndex=p.index;status(p);break;}
+  const gp=padIndex!=null?pads[padIndex]:null;
+  if(gp){
+    const P=gp.buttons.map(b=>b.pressed||b.value>.5),val=i=>gp.buttons[i]?gp.buttons[i].value:0;
+    svg.querySelectorAll('.k').forEach(k=>{const i=+k.dataset.btn;k.classList.toggle('hot',!!P[i]&&i!==6&&i!==7);});
+    [['tL2',6],['tR2',7]].forEach(([id,i])=>{const v=val(i),el=svg.querySelector('#'+id);if(el){el.setAttribute('y',30-22*v);el.setAttribute('height',22*v);}});
+    $('#mGas').style.width=val(S.pad.binds.gas)*100+'%';$('#mBrake').style.width=val(S.pad.binds.brake)*100+'%';
+    const dz=S.pad.deadzone/100,ax=v=>Math.abs(v)<dz?0:v,[lx,ly,rx,ry]=[0,1,2,3].map(i=>ax(gp.axes[i]||0));
+    const sL=$('#stickL'),sR=$('#stickR');
+    if(sL)sL.setAttribute('transform',`translate(${lx*6} ${ly*6})`);if(sR)sR.setAttribute('transform',`translate(${rx*6} ${ry*6})`);
+    $('#dL').setAttribute('cx',146+lx*11);$('#dL').setAttribute('cy',170+ly*11);$('#dR').setAttribute('cx',254+rx*11);$('#dR').setAttribute('cy',170+ry*11);
+    if(padListen){const i=P.findIndex((p,k)=>p&&!prevP[k]);
+      if(i>=0){const B=S.pad.binds,prev=B[padListen],clash=Object.keys(B).find(k=>k!==padListen&&B[k]===i);if(clash)B[clash]=prev;
+        B[padListen]=i;padListen=null;renderPadBinds();sfx('click.select');save(clash?'Swapped buttons':'Button set');}}
+    prevP=P;
+  }
+  requestAnimationFrame(poll);
+}
+
+/* ---------- menu nav (arrows / Enter / Esc) via the shared kit ---------- */
+let menu=null;
+if(UI&&UI.menu)menu=UI.menu(()=>$$('#ctl .gp-button,#ctl .gp-chip:not(.fixed),.foot .gp-button').filter(e=>!e.closest('.drawer')||e.closest('.drawer.open')),{pad:false,onBack:()=>$('#back').click()});
+
+/* ---------- Pocket Player ---------- */
+// Inside the jerm747.games cabinet the Pocket is already driving; on the site it opens the game in the cabinet.
+function inPocket(){try{return !!(window.top.Jerm747PlayView||window.top.document.querySelector('j747-pocket-surface'));}catch(_){return false;}}
+function pocketNote(){$('#pkNote').textContent=inPocket()?'Pocket Player is running. It takes over as soon as you continue.':
+  /jerm747\.games$/.test(location.hostname)?'Opens 747 GP in the arcade cabinet with the Pocket controls.':'Pocket Player lives on jerm747.games. Your pick is saved for when you play there.';}
+$('#pkStart').addEventListener('click',()=>{S.scheme='pocket';open='pocket';renderSchemes();save('Driving with Pocket Player');
+  if(inPocket()){$('#go').click();return;}
+  const m=location.pathname.match(/\/projects\/([^/]+)\//);
+  if(m&&/jerm747\.games$/.test(location.hostname)){window.top.location.href='/#/play/'+m[1];return;}
+  pocketNote();});
+pocketNote();
+
+/* ---------- leave ---------- */
+const L=(page,o)=>window.GPLaunch?GPLaunch.link(page,o):page;
+$('#go').addEventListener('click',()=>{save('Driving with '+NAMES[S.scheme]);dispatchEvent(new CustomEvent('gp747:controls-done',{detail:clone(S)}));
+  const c=CTX();if(c==='flow')setTimeout(()=>location.assign(L('tracks.html')),280);else if(c==='start')setTimeout(()=>location.assign(L('index.html')+'#setup'),200);});
+$('#back').addEventListener('click',()=>{dispatchEvent(new CustomEvent('gp747:controls-back'));
+  const c=CTX();if(c==='flow')location.assign(L('showroom.html'));else if(c==='start')location.assign(L('index.html')+'#setup');});
+
+function renderAll(){renderSchemes();renderOpts();updSize();updOp();updSens();updDz();updRum();renderTouch();renderKb();renderPadBinds();}
+ctx();buildCtrl();renderAll();requestAnimationFrame(poll);
+});
+</script>
+</body>
+</html>
