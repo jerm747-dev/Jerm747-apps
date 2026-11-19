@@ -34,7 +34,20 @@
       ? 'Shift with Q / E, LB / RB, or the on-screen – / + paddles.'
       : 'The car handles each shift.';
   }
-  for (const b of document.querySelectorAll('[role=radio]')) b.addEventListener('click', () => choose(b.dataset.group, b.dataset.value));
+  let advancing = false;
+  for (const b of document.querySelectorAll('[role=radio]')) b.addEventListener('click', () => {
+    if (advancing) return;
+    choose(b.dataset.group, b.dataset.value);
+    if (b.dataset.group === 'mode') {
+      // next step: the gearbox (keeps the current choice highlighted so a second tap goes straight on)
+      const sel = choices('transmission').find(x => x.getAttribute('aria-checked') === 'true');
+      setTimeout(() => { nav.focus(order().indexOf(sel)); byId('gearbox').classList.add('nudge'); setTimeout(() => byId('gearbox').classList.remove('nudge'), 700); }, 120);
+    } else {
+      advancing = true; b.classList.add('is-focused');
+      setTimeout(() => byId('continue').click(), 260);   // a beat to see the pick land
+    }
+  });
+  addEventListener('pageshow', () => { advancing = false; });
   choose('mode', GPLaunch.mode);
   choose('transmission', GPLaunch.transmission);
 
@@ -45,7 +58,7 @@
     onSide: (dir, el) => {
       if (!el || !el.dataset.group) return;
       const list = choices(el.dataset.group), k = list.indexOf(el), n = list[Math.max(0, Math.min(list.length - 1, k + (dir === 'left' ? -1 : 1)))];
-      n.click(); nav.focus(order().indexOf(n));
+      choose(n.dataset.group, n.dataset.value); nav.focus(order().indexOf(n));
     }
   });
   nav.active = false;

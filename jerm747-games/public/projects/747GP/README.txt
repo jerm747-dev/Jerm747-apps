@@ -42,6 +42,15 @@ Racing line (1.2.18)
   sounds and controller rumble. hazards/747GP-Hazard-Test.html auditions them.
   S.S. 55 (the sleeper) now runs in the 1800 class.
 
+1.3.20 (playtest fixes)
+  Bikes have a rider (the podium rider, posed for each bike) and lean into the turn.
+  Race setup rebuilt like the showroom: the course turns on a studio table, light runs round START.
+  Showroom: switch tick on the press, a light thud as the next ride lands.
+  Rivals in monochrome (black, white, greys). Mode select is one tap per step.
+  Pause: one press = one pause, the HUD steps back, Full screen on the pause menu.
+  Driving: brakes half as strong (gentler in Comfort/Normal), the car coasts off the gas,
+  rivals have a quarter less engine and corner a little slower.
+
 Saved on this device
   Your choices (mode, gearbox, ride, track, opponents), every finished race, your
   best laps, GP points and boost credits. "Share times" on the results screen is an opt-in switch for the online

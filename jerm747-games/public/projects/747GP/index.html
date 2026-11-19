@@ -23,6 +23,8 @@
 .gear-pair .gp-caption{font-size:9.5cqw;inset:0 3% 6% 22%}
 .gear-pair .gp-marks{width:18%;left:3%}
 .continue-plate{margin-top:clamp(10px,2vh,20px)}
+#gearbox.nudge .gp-button{animation:gpNudge .65s ease-out}
+@keyframes gpNudge{30%{transform:translateY(-3px);filter:drop-shadow(0 0 12px #ffd84a88) drop-shadow(0 3px 6px #0007)}}
 #back.gp-chip{min-height:34px;padding:6px 16px;font-size:12px}
 .steps{display:flex;gap:6px;align-items:center;justify-content:center;font:600 10px BarlowCondensed,Arial,sans-serif;letter-spacing:.18em;color:#6d7264;margin-top:14px}
 .steps span.on{color:#ffcf6e}.steps em{width:14px;height:1px;background:#3a3d34}
