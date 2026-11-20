@@ -75,7 +75,10 @@ window.GPPad = (() => {
     if (!k) { const b = gp.buttons[{l: 14, d: 13, r: 15, u: 12}[dir]]; return !!(b && b.pressed); }
     return dirVal(gp, k, c.rest) > 0.5;
   }
-  return {stick, dpad, get cal() { return load(); }, reload() { at = 0; return load(); }};
+  // face buttons: cal.fb = physical index for each standard slot [bottom, right, left, top] (A B X Y / ✕ ○ □ △)
+  function phys(i) { const c = load(), f = c && c.fb; return f && i >= 0 && i <= 3 && f[i] != null ? f[i] : i; }
+  function std(i) { const c = load(), f = c && c.fb; const k = f ? f.indexOf(i) : -1; return k >= 0 ? k : i; }   // physical → slot
+  return {stick, dpad, phys, std, get cal() { return load(); }, reload() { at = 0; return load(); }};
 })();
 
 // Menu navigation responds to new presses. Holding Start through a page transition
@@ -91,7 +94,7 @@ window.watchMenuPad = function (onAction) {
       const pressed = i => !!pad.buttons[i]?.pressed;
       const st = GPPad.stick(pad, 'ls') || [pad.axes[0] || 0, pad.axes[1] || 0];
       const buttons = {
-        back: pressed(1), confirm: pressed(0) || pressed(9),
+        back: pressed(GPPad.phys(1)), confirm: pressed(GPPad.phys(0)) || pressed(9),
         up: GPPad.dpad(pad, 'u') || st[1] < -.6, down: GPPad.dpad(pad, 'd') || st[1] > .6,
         left: GPPad.dpad(pad, 'l') || st[0] < -.6, right: GPPad.dpad(pad, 'r') || st[0] > .6,
         lb: pressed(4), rb: pressed(5)

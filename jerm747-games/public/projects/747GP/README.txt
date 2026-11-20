@@ -95,3 +95,15 @@ Files
   cars/          car + wheel models (base64 GLB in .js)
   veg/ tex/ scene/  trackside art
   hazards/       contact physics, hazard sounds, full-field results
+
+1.3.23
+  Brakes: progressive pedal (feather the top, dig in for 1.4x the old full brake); the brake
+  presses in faster again. Steering: the last 40% of stick turns in more, and braking into a
+  corner loads the front so the nose cuts in.
+  Track Grip Assist (Settings): Off / Low / Medium / High. A light magnet toward the racing line;
+  you can still slide and swerve off. Easy / Medium / Hard will pick High / Medium / Low.
+  Rivals: colour-wheel liveries (body, twin pinstripes, curved side accent) instead of monochrome.
+  Showroom: left/right plays only the landing thud. Select chimes unchanged.
+  Controls > Controller: Steer with Stick + D-pad (new default), Left stick, or D-pad.
+  Calibrate adds a slow roll of each stick (full range) and the four face buttons by position,
+  so swapped A/B or X/Y pads line up in the race, the menus and the controller picture.

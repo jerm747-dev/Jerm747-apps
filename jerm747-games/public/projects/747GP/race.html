@@ -440,7 +440,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
 </div></div>
 <div id="trackList" class="carbon"></div>
 <div id="menu" class="carbon">
-  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.3.22</small></div><button id="menuX" aria-label="Close">✕</button></div>
+  <div class="mhead"><div class="mtitle">747 GP <small id="buildTag" style="font-size:9px;letter-spacing:1px;color:#8b929c;margin-left:6px">v1.3.23</small></div><button id="menuX" aria-label="Close">✕</button></div>
   <div class="ctlrow">
     <div class="ctlgrp">
       <div class="ctlpair">
@@ -465,6 +465,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
     <div class="msec"><h4>RACE</h4>
       <button class="tog" id="gameBtn">GAME: TIME TRIAL</button>
       <button class="tog" id="gearBtn">GEARBOX: AUTOMATIC</button>
+      <button class="tog" id="gripBtn" title="A light magnet toward the racing line. You can still slide and swerve off.">TRACK GRIP ASSIST: MEDIUM</button>
       <button class="tog" id="trackBtn">TRACK: 747 TEST</button>
       <button class="tog" id="trackSelBtn">RACE SETUP ›</button>
       <button class="tog" id="mainBtn">MAIN MENU ›</button>
@@ -517,7 +518,7 @@ body.finished .panel,body.finished #strip,body.finished #mini,body.finished .top
   <div class="label">DRIVE CONTROL</div>
 </div>
 
-<script>window.GP_VERSION="1.3.22";window.GP_BUILD=22;console.log("747 GP v"+GP_VERSION);
+<script>window.GP_VERSION="1.3.23";window.GP_BUILD=23;console.log("747 GP v"+GP_VERSION);
 window.__startGame=async (RENDER_MODE)=>{
 'use strict';
 if(!window.THREE){document.getElementById('err').style.display='flex';return;}
@@ -1678,12 +1679,12 @@ function step(dt){
   suspension.step(dt);scrape=Math.max(0,scrape-dt*6);
   const tgt=input.joyActive?input.steerJoy:input.tiltActive?input.steerTilt:input.mouseActive?input.steerMouse:input.padActive?input.padSteer:(input.kL?-1:0)+(input.kR?1:0);
   if(!input.joyActive)input.rawX=input.tiltActive?input.tiltRaw:input.mouseActive?input.mouseRaw:input.padActive?input.padRaw:tgt;
-  const rate=(input.joyActive||input.tiltActive||input.mouseActive||input.padActive)?14:5*KSENS;
+  const rate=(input.joyActive||input.tiltActive||input.mouseActive||(input.padActive&&!input.padDpad))?14:5*KSENS;
   st.steer+=Math.max(-rate*dt,Math.min(rate*dt,tgt-st.steer));
 
   // pedals ease toward their targets (press in ~0.3s, release ~0.15s) so sliding gas→brake feels progressive
   {const ease=(cur,tgt,up)=>cur+Math.max(-6*dt,Math.min((up||3.2)*dt,tgt-cur));
-   input.gasS=ease(input.gasS,Math.max(input.gas,input.padGas,input.kU||input.mU?1:0));input.brakeS=ease(input.brakeS,Math.max(input.brake,input.padBrake,input.kD||input.mD?1:0),2.2);}
+   input.gasS=ease(input.gasS,Math.max(input.gas,input.padGas,input.kU||input.mU?1:0));input.brakeS=ease(input.brakeS,Math.max(input.brake,input.padBrake,input.kD||input.mD?1:0),4.0);}
   const gasA=input.gasS>0.01?input.gasS:0, brkA=input.brakeS>0.01?input.brakeS:0;
   const gas=gasA>0, brk=brkA>0;
   if((gas||brk)&&!running){running=true;hideMsg();}
@@ -1719,7 +1720,10 @@ function step(dt){
    }}
   st.braking=false;
   if(brk){
-    if(vF>1.5){vF-=BRAKE*brkA*(grass?0.55:1)*dt;st.braking=true;if(vF<0)vF=0;}
+    // progressive pedal: the first part stays soft so you can feather it and keep rolling,
+    // the last part digs in hard (full pedal = 1.4x the old full brake)
+    const bite=0.62*brkA+0.78*brkA*brkA;
+    if(vF>1.5){vF-=BRAKE*bite*(grass?0.55:1)*dt;st.braking=true;if(vF<0)vF=0;}
     else if(!gas)vF=Math.max(vF-8*dt,-9);
   }
   // drag, rolling, grass
@@ -1732,12 +1736,16 @@ function step(dt){
   // steering: speed-sensitive, bounded by tyre + downforce grip
   const v=Math.abs(vF);
   // grip limit: downforce helps, but less than before, so the arc opens up as speed rises
-  const latMax=(grass?14:30+0.2*v*TPHYS.down)+12*Math.tan(loc.bank);   // m/s²; banking helps you round the turn
+  // digging in: the last 40% of stick pushes the steering rack further, and trail-braking
+  // loads the front tyres so the nose cuts in harder on corner entry
+  const dig=Math.max(0,(Math.abs(st.steer)-0.6)/0.4);
+  const trail=st.braking?brkA*Math.min(1,Math.abs(st.steer)*1.5):0;
+  const latMax=((grass?14:30+0.2*v*TPHYS.down)+12*Math.tan(loc.bank))*(1+0.16*dig+0.24*trail);   // m/s²; banking helps you round the turn
   // At high speed the old lock asked for 10-40x more turn than the tyres could give, so the
   // first few % of stick used up all the grip and the rest did nothing. Now full lock is scaled
   // to ~1.25x the grip limit: the whole stick/tilt range stays useful, with a bit left for slides.
-  const gripAngle=Math.atan(1.45*Math.max(latMax,10)*WB/Math.max(v*v,1));
-  const maxAngle=Math.min(0.5*(1-0.7*Math.min(1,v/(320*SF))),Math.max(0.012,gripAngle));
+  const gripAngle=Math.atan(1.45*(1+0.3*dig+0.25*trail)*Math.max(latMax,10)*WB/Math.max(v*v,1));
+  const maxAngle=Math.min(0.5*(1-0.6*Math.min(1,v/(320*SF))),Math.max(0.012,gripAngle));
   const angle=st.steer*maxAngle;
   const yawReq=-vF*Math.tan(angle)/WB;
   const yawCap=latMax/Math.max(v,1);
@@ -1773,6 +1781,18 @@ function step(dt){
   vR*=Math.exp(-grip*dt);
   st.slip=slipAng;
 
+  // ---- TRACK GRIP ASSIST: a fridge-magnet pull toward the racing line (centre line if none) ----
+  // Strongest a car-width or so off the line, fading to nothing ~5 m out, and only a few m/s² at most
+  // (the tyres give 30+), so it never steers for you: you can still slide, swerve off and come back.
+  // It also damps drifting across the line a touch, so once you're on it you tend to stay on it.
+  if(GRIPA.k>0&&!grass&&running&&v>4&&!(typeof AUTO!=='undefined'&&AUTO.on)){
+    const tgt=RL.off&&RL.track===TRK.id?rlAt(st.idx).off:0, d=tgt-st.lat, near=Math.exp(-(d*d)/(2.4*2.4));
+    const vn=(fx*vF+rx*vR)*loc.p.nx+(fz*vF+rz*vR)*loc.p.nz;      // speed across the track (along n)
+    const k=GRIPA.k*Math.min(1,v/20)*(1-0.5*Math.min(1,slipAng/0.5));
+    const a=k*(Math.max(-1.6,Math.min(1.6,d))*near-0.35*vn*near);
+    const nF=loc.p.nx*fx+loc.p.nz*fz,nR=loc.p.nx*rx+loc.p.nz*rz;
+    vF+=a*nF*dt;vR+=a*nR*dt;
+  }
   st.vx=fx*vF+rx*vR; st.vz=fz*vF+rz*vR;
   // yaw has a little inertia, so energy carries through the transition
   st.yawRate+=(yaw-st.yawRate)*Math.min(1,dt/(0.11-0.055*Math.min(1,v/(200*SF)))); // snappier turn-in at speed
@@ -1924,24 +1944,81 @@ function trackFrame(fi,lat){
 // ---- grid opponents: copies of your ride in other liveries (they line up and fade at the green until racing lands in 1.3) ----
 // Falls back to simple box cars while your ride's model is still downloading.
 const ghostGroup=new THREE.Group();scene.add(ghostGroup);let ghosts=[];
-// the field in monochrome: black, white and the greys between, same car and accents (1.3.20)
-const SKINS=[{n:'onyx',c:[0.071,0.075,0.086]},{n:'snow',c:[0.949,0.949,0.941]},{n:'graphite',c:[0.227,0.239,0.263]},{n:'silver',c:[0.788,0.8,0.82]},{n:'slate',c:[0.365,0.38,0.408]},{n:'ash',c:[0.639,0.655,0.678]},{n:'carbon',c:[0.145,0.153,0.169]},{n:'pearl',c:[0.882,0.89,0.902]},{n:'steel',c:[0.498,0.514,0.541]}];
+// 1.3.23 liveries: each rival gets a colour-wheel palette instead of one flat colour —
+// a body colour (c), a twin pinstripe colour (s) and a curved side accent (a) in a shape (style):
+//   rear  = sweep over the lower back / tail     front = sweep over the nose
+//   rocker = wavy lower-third band               blade = curved slash across the door (over the numbers)
+const SKINS=[
+  {n:'azure',  c:[0.18,0.42,0.92],a:[1.0,0.54,0.12],s:[0.96,0.96,0.96],style:'rear',  h:'complementary'},
+  {n:'butter', c:[0.95,0.86,0.45],a:[0.91,0.45,0.16],s:[0.48,0.12,0.17],style:'blade', h:'warm analogous'},
+  {n:'magenta',c:[0.88,0.22,0.6], a:[0.23,0.17,0.56],s:[0.96,0.79,0.27],style:'front', h:'split complementary'},
+  {n:'snow',   c:[0.92,0.93,0.95],a:[0.78,0.13,0.16],s:[0.11,0.25,0.56],style:'rocker',h:'triad'},
+  {n:'onyx',   c:[0.07,0.075,0.085],a:[0.18,0.82,0.75],s:[1.0,0.31,0.63],style:'blade',h:'neon on black'},
+  {n:'amber',  c:[1.0,0.62,0.12],a:[0.48,0.12,0.17],s:[1.0,0.88,0.4],  style:'rear',  h:'warm analogous'},
+  {n:'teal',   c:[0.16,0.68,0.64],a:[1.0,0.44,0.35],s:[1.0,0.95,0.82],style:'front', h:'complementary'},
+  {n:'maroon', c:[0.45,0.1,0.15], a:[1.0,0.54,0.12],s:[1.0,0.82,0.25],style:'rocker',h:'maroon / orange / yellow'},
+  {n:'petrol', c:[0.16,0.52,0.22],a:[0.96,0.79,0.27],s:[0.96,0.96,0.96],style:'rear', h:'analogous + white'}];
 // rival names follow the livery (same order as SKINS and the race-setup grid)
-const RIVALS=[{tag:'ONX',n:'Onyx'},{tag:'SNO',n:'Snow'},{tag:'GRA',n:'Graphite'},{tag:'SLV',n:'Silver'},{tag:'SLT',n:'Slate'},{tag:'ASH',n:'Ash'},{tag:'CRB',n:'Carbon'},{tag:'PRL',n:'Pearl'},{tag:'STL',n:'Steel'}];
-const LIVERY_CSS=['#121316','#f2f2f0','#3a3d43','#c9ccd1','#5d6168','#a3a7ad','#25272b','#e1e3e6','#7f838a'];
+const RIVALS=[{tag:'AZR',n:'Azure'},{tag:'BTR',n:'Butter'},{tag:'MAG',n:'Magenta'},{tag:'SNO',n:'Snow'},{tag:'ONX',n:'Onyx'},{tag:'AMB',n:'Amber'},{tag:'TEA',n:'Teal'},{tag:'MRN',n:'Maroon'},{tag:'PTL',n:'Petrol'}];
+const LIVERY_CSS=SKINS.map(k=>'#'+k.c.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join(''));
 const boxGhosts=[];
-{const cols=[0x121316,0xf2f2f0,0x3a3d43,0xc9ccd1,0x5d6168,0xa3a7ad,0x25272b,0xe1e3e6,0x7f838a];
- const blk=new THREE.MeshStandardMaterial({color:0x111214,roughness:.7});
- for(let k=1;k<GRID_N;k++){const g=new THREE.Group(),m=new THREE.MeshStandardMaterial({color:cols[(k-1)%cols.length],roughness:.35,metalness:.2});
+{const blk=new THREE.MeshStandardMaterial({color:0x111214,roughness:.7});
+ for(let k=1;k<GRID_N;k++){const sk=SKINS[(k-1)%SKINS.length],m=new THREE.MeshStandardMaterial({color:new THREE.Color(...sk.c),roughness:.35,metalness:.2}),
+  ac=new THREE.MeshStandardMaterial({color:new THREE.Color(...sk.a),roughness:.4,metalness:.1}),g=new THREE.Group();
   const add=(geo,mat,x,y,z)=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);g.add(o);return o;};
   add(new THREE.BoxGeometry(0.85,0.42,3.6),m,0,0.42,0);add(new THREE.BoxGeometry(0.45,0.25,1.4),m,0,0.36,2.4);
-  add(new THREE.BoxGeometry(1.9,0.05,0.45),blk,0,0.16,3.1);add(new THREE.BoxGeometry(1.2,0.05,0.4),blk,0,0.95,-2.1);
+  add(new THREE.BoxGeometry(1.9,0.05,0.45),ac,0,0.16,3.1);add(new THREE.BoxGeometry(1.2,0.05,0.4),ac,0,0.95,-2.1);
   add(new THREE.BoxGeometry(1.5,0.45,0.9),m,0,0.45,-0.6);
   for(const [x,z,r] of [[0.95,1.75,0.33],[-0.95,1.75,0.33],[0.98,-1.45,0.36],[-0.98,-1.45,0.36]]){const w=add(new THREE.CylinderGeometry(r,r,0.38,14),blk,x,r,z);w.rotation.z=Math.PI/2;}
-  g.userData.mats=[m,blk];boxGhosts.push(g);}}
+  g.userData.mats=[m,blk,ac];boxGhosts.push(g);}}
 // Recolour a livery: only the clear-coated paint (MR red channel) changes; saturated stripes and bright decals stay.
-const SKIN_TEX={};
-function skinTexture(kind,mat,skin){
+const SKIN_TEX={},LIV_MAP={};
+// Where each texel sits on the car: rasterise the model's triangles into UV space (512²) so the
+// recolour pass knows height (y 0..1), front-ness (f 0 = tail .. 1 = nose) and how side-facing it is.
+function liveryMap(kind,geo){
+  if(LIV_MAP[kind])return LIV_MAP[kind];
+  if(!geo||!geo.attributes.uv)return null;
+  const R=512,P=geo.attributes.position.array,Nn=geo.attributes.normal.array,U=geo.attributes.uv.array,I=geo.index?geo.index.array:null;
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9,z0=1e9,z1=-1e9;
+  for(let i=0;i<P.length;i+=3){const x=P[i],y=P[i+1],z=P[i+2];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;if(z<z0)z0=z;if(z>z1)z1=z;}
+  // nose direction: front wheels when we know them, else +z (the drawn cars put the tail at -z)
+  let fwd=1;const cut=window.__CARCUT&&window.__CARCUT[kind];
+  if(cut&&cut.wheels){let fz=0,rz=0,nf=0,nr=0;for(const w of cut.wheels){if(w.front){fz+=w.z;nf++;}else{rz+=w.z;nr++;}}if(nf&&nr)fwd=fz/nf>=rz/nr?1:-1;}
+  const ys=1/Math.max(1e-3,y1-y0),zs=1/Math.max(1e-3,z1-z0);
+  const Y=new Float32Array(R*R),F=new Float32Array(R*R),S=new Float32Array(R*R),has=new Uint8Array(R*R);
+  const nt=(I?I.length:P.length/3)/3;
+  for(let t=0;t<nt;t++){
+    const a=I?I[t*3]:t*3,b=I?I[t*3+1]:t*3+1,c=I?I[t*3+2]:t*3+2;
+    const ua=(U[a*2]%1+1)%1*R,va=(U[a*2+1]%1+1)%1*R,ub=(U[b*2]%1+1)%1*R,vb=(U[b*2+1]%1+1)%1*R,uc=(U[c*2]%1+1)%1*R,vc=(U[c*2+1]%1+1)%1*R;
+    const den=(vb-vc)*(ua-uc)+(uc-ub)*(va-vc);if(Math.abs(den)<1e-9)continue;
+    const ya=(P[a*3+1]-y0)*ys,yb=(P[b*3+1]-y0)*ys,yc=(P[c*3+1]-y0)*ys;
+    const fa=fwd>0?(P[a*3+2]-z0)*zs:(z1-P[a*3+2])*zs,fb=fwd>0?(P[b*3+2]-z0)*zs:(z1-P[b*3+2])*zs,fc=fwd>0?(P[c*3+2]-z0)*zs:(z1-P[c*3+2])*zs;
+    const sd=(Math.abs(Nn[a*3])+Math.abs(Nn[b*3])+Math.abs(Nn[c*3]))/3;
+    const px0=Math.max(0,Math.floor(Math.min(ua,ub,uc))),px1=Math.min(R-1,Math.ceil(Math.max(ua,ub,uc))),py0=Math.max(0,Math.floor(Math.min(va,vb,vc))),py1=Math.min(R-1,Math.ceil(Math.max(va,vb,vc)));
+    for(let py=py0;py<=py1;py++)for(let px=px0;px<=px1;px++){
+      const qx=px+0.5,qy=py+0.5,l1=((vb-vc)*(qx-uc)+(uc-ub)*(qy-vc))/den,l2=((vc-va)*(qx-uc)+(ua-uc)*(qy-vc))/den,l3=1-l1-l2;
+      if(l1<-0.02||l2<-0.02||l3<-0.02)continue;
+      const o=py*R+px;Y[o]=l1*ya+l2*yb+l3*yc;F[o]=l1*fa+l2*fb+l3*fc;S[o]=sd;has[o]=1;}
+  }
+  return LIV_MAP[kind]={R,Y,F,S,has};
+}
+const livSmooth=(e0,e1,x)=>{const t=Math.min(1,Math.max(0,(x-e0)/(e1-e0)));return t*t*(3-2*t);};
+// signed distance (in car-height units) inside the accent shape: > 0 inside, < 0 outside
+function accentEdge(style,f,y){
+  if(style==='front')f=1-f;
+  if(style==='rear'||style==='front'){
+    // tall at the tail, sweeping down in a curve to a thin line that runs out before the middle
+    const c=f<0.52?0.16+0.6*Math.pow(1-f/0.52,1.3):0.16*Math.max(0,1-(f-0.52)/0.22);
+    return c-y;}
+  if(style==='rocker'){
+    const env=Math.max(0,1-Math.pow(Math.abs(f-0.5)/0.42,6));
+    return (0.32+0.05*Math.sin(f*Math.PI*2.2))*Math.sqrt(env)-y;}
+  // blade: a curved slash climbing from low-front to high-rear across the door
+  const g=(f-0.22)/0.58;if(g<=0||g>=1)return -1;
+  const mid=0.62-0.46*g+0.08*Math.sin(g*Math.PI),w=0.14*Math.sin(Math.PI*Math.pow(g,0.8));
+  return w-Math.abs(y-mid);
+}
+function skinTexture(kind,mat,skin,geo){
   const key=kind+'|'+skin.n;if(SKIN_TEX[key])return SKIN_TEX[key];
   const src=mat.map&&mat.map.image,mk=mat.metalnessMap&&mat.metalnessMap.image;
   const drawable=i=>i&&(i instanceof HTMLImageElement||i instanceof HTMLCanvasElement||(typeof ImageBitmap!=='undefined'&&i instanceof ImageBitmap));
@@ -1958,16 +2035,41 @@ function skinTexture(kind,mat,skin){
   if(satTot>tot*0.15){let sq=0,sn=-1;for(const [q,n] of hsat)if(n>sn){sn=n;sq=q;}bq=(((sq>>6)*2+1)<<8)|((((sq>>3)&7)*2+1)<<4)|((sq&7)*2+1);}
   const Dr=((bq>>8)*16+8)/255,Dg=(((bq>>4)&15)*16+8)/255,Db=((bq&15)*16+8)/255,Dl=0.299*Dr+0.587*Dg+0.114*Db,Dsum=Dr+Dg+Db+1e-3;
   const darkBase=Dl<0.14,[tr,tg,tb]=skin.c,tl=0.299*tr+0.587*tg+0.114*tb,darkT=tl<0.12;
+  const simOf=(r,g,b,l,sat)=>{
+    if(darkBase)return Math.max(0,1-Math.max(0,l-0.22)/0.12)*Math.max(0,1-Math.max(0,sat-0.3)/0.2);
+    const sum=r+g+b+1e-3,dc=Math.hypot(r/sum-Dr/Dsum,g/sum-Dg/Dsum,b/sum-Db/Dsum);return Math.min(1,Math.max(0,1-(dc-0.07)/0.1))*(l>Dl*0.2&&l<Math.min(1,Dl*2.8+0.15)?1:0);};
+  const lm=skin.a?liveryMap(kind,geo):null;
+  // accent shapes are drawn against the painted side panel (not wheels/roof), so find where the paint sits
+  let pyLo=0,pyHi=1;
+  if(lm){const ys=[];for(let i=0;i<d.length;i+=32){if(md[i]<128)continue;const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255,l=0.299*r+0.587*g+0.114*b,mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+      if(simOf(r,g,b,l,mx>0?(mx-mn)/mx:0)<0.5)continue;const p=i>>2,o=((p/N|0)>>1)*lm.R+((p%N)>>1);if(lm.has[o]&&lm.S[o]>0.6)ys.push(lm.Y[o]);}
+    if(ys.length>50){ys.sort((a,b)=>a-b);pyLo=ys[Math.floor(ys.length*0.04)];pyHi=ys[Math.floor(ys.length*0.96)];if(pyHi-pyLo<0.1){pyLo=0;pyHi=1;}}}
+  const pyS=1/(pyHi-pyLo);
   for(let i=0;i<d.length;i+=4){
     const m=md[i]/255;if(m<0.05)continue;
     const r=d[i]/255,g=d[i+1]/255,b=d[i+2]/255,l=0.299*r+0.587*g+0.114*b,mx=Math.max(r,g,b),mn=Math.min(r,g,b),sat=mx>0?(mx-mn)/mx:0;
-    let sim;
-    if(darkBase)sim=Math.max(0,1-Math.max(0,l-0.22)/0.12)*Math.max(0,1-Math.max(0,sat-0.3)/0.2);
-    else{const sum=r+g+b+1e-3,dc=Math.hypot(r/sum-Dr/Dsum,g/sum-Dg/Dsum,b/sum-Db/Dsum);sim=Math.min(1,Math.max(0,1-(dc-0.07)/0.1))*(l>Dl*0.2&&l<Math.min(1,Dl*2.8+0.15)?1:0);}
-    const w=m*sim;if(w<0.01)continue;
+    const sim=simOf(r,g,b,l,sat);
+    // the model's own saturated pinstripes (clear-coated, not body colour) take the palette's stripe colour
+    const own=skin.s&&sim<0.3&&sat>0.45&&l>0.12?m*(1-sim):0;
+    const w=m*sim,wA=m*Math.min(1,sim*2.5);if(wA<0.01&&own<0.01)continue;
     // keep the paint's light and shade, moved onto the new colour
-    const sh=darkBase?(darkT?Math.min(2,0.6+l*5):Math.min(1.35,Math.max(0.35,0.62+(l-Dl)*3))):Math.min(1.6,Math.max(0.25,l/Math.max(0.04,Dl)))*(darkT?0.35:1);
-    d[i]=255*(r+(Math.min(1,tr*sh)-r)*w);d[i+1]=255*(g+(Math.min(1,tg*sh)-g)*w);d[i+2]=255*(b+(Math.min(1,tb*sh)-b)*w);
+    const shL=darkBase?Math.min(1.35,Math.max(0.35,0.62+(l-Dl)*3)):Math.min(1.6,Math.max(0.25,l/Math.max(0.04,Dl)));
+    const shD=darkBase?Math.min(2,0.6+l*5):shL*0.35;
+    const shOf=c=>(0.299*c[0]+0.587*c[1]+0.114*c[2])<0.12?shD:shL;
+    let cr=tr,cg=tg,cb=tb,sh=darkT?shD:shL;
+    let ww=w;
+    if(lm&&wA>=0.01){
+      const p=(i>>2),o=((p/N|0)>>1)*lm.R+((p%N)>>1);
+      if(lm.has[o]){
+        const yy=(lm.Y[o]-pyLo)*pyS,e=accentEdge(skin.style,lm.F[o],yy),side=lm.S[o];
+        const inA=livSmooth(-0.006,0.006,e)*(side>0.3||yy<0.3?1:0);
+        // twin pinstripes just outside the accent edge (side panels only)
+        const pin=side>0.35?Math.max(livSmooth(0.03,0.037,-e)*(1-livSmooth(0.055,0.062,-e)),livSmooth(0.085,0.092,-e)*(1-livSmooth(0.11,0.117,-e))):0;
+        if(inA>0){const k=inA;cr+=(skin.a[0]-cr)*k;cg+=(skin.a[1]-cg)*k;cb+=(skin.a[2]-cb)*k;if(k>0.5)sh=shOf(skin.a);ww=Math.max(ww,wA*k);}
+        if(pin>0&&inA<0.5){const k=pin;cr+=(skin.s[0]-cr)*k;cg+=(skin.s[1]-cg)*k;cb+=(skin.s[2]-cb)*k;if(k>0.5)sh=shOf(skin.s);ww=Math.max(ww,wA*k);}
+      }}
+    if(own>w){ww=own;cr=skin.s[0];cg=skin.s[1];cb=skin.s[2];sh=shOf(skin.s)*Math.min(1.3,Math.max(0.6,l/0.5));}
+    d[i]=255*(r+(Math.min(1,cr*sh)-r)*ww);d[i+1]=255*(g+(Math.min(1,cg*sh)-g)*ww);d[i+2]=255*(b+(Math.min(1,cb*sh)-b)*ww);
   }
   x.putImageData(im,0,0);const t=new THREE.CanvasTexture(cv);t.flipY=false;setSRGB(t);t.anisotropy=MAXANISO;
   return SKIN_TEX[key]=t;
@@ -1979,7 +2081,7 @@ function setupGhosts(){
   const mdl=M.model&&MODEL_READY[M.kind];
   for(let k=1;k<GRID_N;k++){
     let g=null;
-    if(mdl){const skin=SKINS[(k-1)%SKINS.length],tex=skinTexture(M.kind,mdl.mat,skin);
+    if(mdl){const skin=SKINS[(k-1)%SKINS.length],tex=skinTexture(M.kind,mdl.mat,skin,mdl.geo);
       if(tex){g=M.car.clone(true);g.userData.mats=[];g.userData.spins=[];
         g.traverse(o=>{if(o.userData&&o.userData.spinR)g.userData.spins.push(o);if(!o.isMesh)return;const base=o.material===mdl.mat;o.material=o.material.clone();if(base)o.material.map=tex;g.userData.mats.push(o.material);});
         g.traverse(o=>{if(o.userData&&o.userData.rider)o.visible=true;});
@@ -2562,8 +2664,16 @@ $('showBtn').addEventListener('click',()=>{location.assign(GPLaunch.link('showro
 $('trackSelBtn').addEventListener('click',()=>{location.assign(GPLaunch.link('tracks.html'));});
 $('mainBtn').addEventListener('click',()=>{location.assign(GPLaunch.link('index.html#setup'));});
 function updGame(){$('gameBtn').textContent='GAME: '+(GAMEMODE==='arcade'?'ARCADE ('+ARCADE_LAPS+' LAPS)':'TIME TRIAL');}
+// TRACK GRIP ASSIST levels. When race difficulty lands (easy / medium / hard) it picks HIGH / MEDIUM / LOW;
+// hard keeps the minimum. For now it's your choice here (OFF turns it off completely).
+const GRIPA_LEVELS=[{n:'OFF',k:0,d:'no help — pure tyres'},{n:'LOW',k:1.3,d:'barely there — the hard-mode minimum'},{n:'MEDIUM',k:2.5,d:'a light magnet toward the line'},{n:'HIGH',k:4.0,d:'a firmer hold — still slides'}];
+const GRIPA_BY_DIFF={easy:3,medium:2,hard:1};
+const GRIPA={i:2,k:2.5};try{const v=parseInt(localStorage.getItem('gp747gripassist'));if(v>=0&&v<4)GRIPA.i=v;}catch(_){}
+function setGripAssist(i,say){GRIPA.i=i;GRIPA.k=GRIPA_LEVELS[i].k;try{localStorage.setItem('gp747gripassist',String(i));}catch(_){}
+  const b=$('gripBtn');if(b)b.textContent='TRACK GRIP ASSIST: '+GRIPA_LEVELS[i].n;if(say)showMsg('GRIP ASSIST · '+GRIPA_LEVELS[i].n,GRIPA_LEVELS[i].d,1800);}
 function updGear(){$('gearBtn').textContent='GEARBOX: '+(GEARBOX==='manual'?'MANUAL':'AUTOMATIC');document.body.classList.toggle('manual',GEARBOX==='manual');}
 $('gameBtn').addEventListener('click',()=>{GAMEMODE=GAMEMODE==='arcade'?'trial':'arcade';GPLaunch.set('mode',GAMEMODE==='arcade'?'arcade':'time-trial');document.body.classList.toggle('trial',GAMEMODE==='trial');updGame();menuPaused=false;menu.classList.remove('open');if(paused)setPause(false);startRace(true);});
+$('gripBtn').addEventListener('click',()=>setGripAssist((GRIPA.i+1)%GRIPA_LEVELS.length,true));setGripAssist(GRIPA.i,false);
 $('gearBtn').addEventListener('click',()=>{GEARBOX=GEARBOX==='manual'?'auto':'manual';GPLaunch.set('transmission',GEARBOX==='manual'?'manual':'automatic');updGear();});
 updGame();updGear();
 {const tap=(id,f)=>{const b=$(id);b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();f();});};
@@ -2831,24 +2941,28 @@ function pollPad(dt){
   const dz=v=>Math.abs(v)<PAD_DZ?0:Math.sign(v)*(Math.abs(v)-PAD_DZ)/(1-PAD_DZ);
   const btn=i=>g.buttons[i]?(g.buttons[i].value||(g.buttons[i].pressed?1:0)):0;
   const LS=GPPad.stick(g,'ls'),RS=GPPad.stick(g,'rs');   // calibrated sticks (null = standard layout)
-  const lx=PAD_DPAD?(GPPad.dpad(g,'r')?1:0)-(GPPad.dpad(g,'l')?1:0):dz(LS?LS[0]:(g.axes[0]||0));
+  // steering: left stick, D-pad, or both (D-pad takes over whenever the stick is centred; it eases in like the keys)
+  const dpx=(GPPad.dpad(g,'r')?1:0)-(GPPad.dpad(g,'l')?1:0),slx=PAD_DPAD?0:dz(LS?LS[0]:(g.axes[0]||0));
+  const lx=PAD_DPAD?dpx:slx!==0?slx:(PAD_STICKONLY?0:dpx);
+  input.padDpad=lx!==0&&slx===0;
   input.padActive=lx!==0;input.padRaw=lx;
   {const a=Math.abs(lx),EXPO=0.7;input.padSteer=Math.sign(lx)*((1-EXPO)*a+EXPO*a*a*a);}
-  const dflt=PAD_BIND.gas===7&&PAD_BIND.brake===6;   // A / B stay as gas / brake unless remapped
-  input.padGas=Math.max(btn(PAD_BIND.gas),dflt&&btn(0)>0.5?1:0);
-  input.padBrake=Math.max(btn(PAD_BIND.brake),dflt&&btn(1)>0.5?1:0);
+  const dflt=PAD_BIND.gas===7&&PAD_BIND.brake===6;   // A / B stay as gas / brake unless remapped (by position, after face calibration)
+  const FA=GPPad.phys(0),FB=GPPad.phys(1),FX=GPPad.phys(2),FY=GPPad.phys(3);
+  input.padGas=Math.max(btn(PAD_BIND.gas),dflt&&btn(FA)>0.5?1:0);
+  input.padBrake=Math.max(btn(PAD_BIND.brake),dflt&&btn(FB)>0.5?1:0);
   if(input.padGas>0||input.padBrake>0){initAudio();}
   const rx=dz(RS?RS[0]:(g.axes[2]||0)),ry=dz(RS?RS[1]:(g.axes[3]||0));
   padLook=rx!==0||ry!==0;
   if(padLook)orbitInput(-rx*2.6*dt,-ry*1.6*dt);
   const pressed=i=>g.buttons[i]&&g.buttons[i].pressed&&!padPrev[i];
   if(pressed(PAD_BIND.cam))cycleCam();
-  if(GEARBOX==='manual'&&!paused){if(pressed(PAD_BIND.up)||(PAD_BIND.up===5&&pressed(3)))input.shiftUp=true;if(pressed(PAD_BIND.down)||(PAD_BIND.down===4&&pressed(2)))input.shiftDown=true;}
+  if(GEARBOX==='manual'&&!paused){if(pressed(PAD_BIND.up)||(PAD_BIND.up===5&&pressed(FY)))input.shiftUp=true;if(pressed(PAD_BIND.down)||(PAD_BIND.down===4&&pressed(FX)))input.shiftDown=true;}
   if(finished){padPrev=g.buttons.map(b=>b.pressed);return;}
   if(pressed(PAD_BIND.pause))setPause(!paused);
   else if(paused&&!menu.classList.contains('open')){const ax=LS?LS[1]:(g.axes[1]||0),du=GPPad.dpad(g,'u'),dd=GPPad.dpad(g,'d');
     if((du&&!padPrevDU)||(ax<-0.6&&!padAxisHeld))pauseNav.act('up');if((dd&&!padPrevDD)||(ax>0.6&&!padAxisHeld))pauseNav.act('down');padPrevDU=du;padPrevDD=dd;padAxisHeld=Math.abs(ax)>0.6;
-    if(pressed(0))pauseNav.act('confirm');if(pressed(1))setPause(false);}
+    if(pressed(FA))pauseNav.act('confirm');if(pressed(FB))setPause(false);}
   padPrev=g.buttons.map(b=>b.pressed);
 }
 
@@ -2857,7 +2971,7 @@ function pollPad(dt){
 // keyboard and controller remaps. With no saved controls the race behaves exactly as before.
 const CTL_KEY='gp747.controls.v1';
 let CTL=null,KSENS=1,ctlOpen=false;
-const PAD_BIND={gas:7,brake:6,cam:8,up:5,down:4,pause:9};let PAD_DZ=0.12,PAD_DPAD=false;
+const PAD_BIND={gas:7,brake:6,cam:8,up:5,down:4,pause:9};let PAD_DZ=0.12,PAD_DPAD=false,PAD_STICKONLY=false;
 const CTL_KEYS=new Map();   // key code -> action, for the remapped keyboard
 function ctlLoad(){try{CTL=JSON.parse(localStorage.getItem(CTL_KEY)||'null');}catch(_){CTL=null;}return CTL;}
 function ctlSizes(W,H,t){const base=Math.min(W,H)*(t.size||100)/100,st=t.pedals==='stack',mp=v=>Math.max(52,v),m=v=>Math.max(46,v);
@@ -2911,7 +3025,7 @@ function ctlApply(){
   KSENS=CTL.keyboard&&CTL.keyboard.sens?CTL.keyboard.sens/60:1;
   // controller remap
   const pb=CTL.pad&&CTL.pad.binds;if(pb)for(const a in PAD_BIND)if(pb[a]!=null)PAD_BIND[a]=pb[a];
-  PAD_DZ=CTL.pad&&CTL.pad.deadzone!=null?CTL.pad.deadzone/100:0.12;PAD_DPAD=!!(CTL.pad&&CTL.pad.steer==='dpad');
+  PAD_DZ=CTL.pad&&CTL.pad.deadzone!=null?CTL.pad.deadzone/100:0.12;PAD_DPAD=!!(CTL.pad&&CTL.pad.steer==='dpad');PAD_STICKONLY=!!(CTL.pad&&CTL.pad.steer==='ls'&&CTL.pad.steerPicked);   // older saves picked 'ls' by default: they get Stick + D-pad
   if(sch==='controller'&&CTL.pad)rumble.enabled=CTL.pad.rumble!==false;
   else if(sch==='touch')rumble.enabled=t.haptics!==false;
   ctlPlace();

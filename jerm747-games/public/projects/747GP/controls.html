@@ -250,7 +250,7 @@ h1{font:700 clamp(48px,9vw,92px)/.92 BarlowCondensed,'Arial Narrow',sans-serif;t
       <div class="grp-label">Button icons</div>
       <div class="opts" data-opt="glyphs"><button class="gp-chip dark opt" data-v="shapes">Shapes</button><button class="gp-chip dark opt" data-v="letters">Letters</button></div>
       <div class="grp-label">Steer with</div>
-      <div class="opts" data-opt="padSteer"><button class="gp-chip dark opt" data-v="ls">Left stick</button><button class="gp-chip dark opt" data-v="dpad">D-pad</button></div>
+      <div class="opts" data-opt="padSteer"><button class="gp-chip dark opt" data-v="both">Stick + D-pad</button><button class="gp-chip dark opt" data-v="ls">Left stick</button><button class="gp-chip dark opt" data-v="dpad">D-pad</button></div>
       <div class="steps2"><button class="gp-button gp-custom gp-step" id="pDz"><span class="gp-caption">Deadzone<span class="gp-val"></span></span></button>
         <button class="gp-button gp-custom gp-step" id="pRumble"><span class="gp-caption">Rumble<span class="gp-val"></span></span></button></div>
       <div class="binds" id="padBinds"></div>
@@ -330,7 +330,7 @@ const DEF_POS={
 const DEFAULTS={scheme:'touch',pocket:{orientation:'landscape'},
   touch:{orientation:'landscape',steering:'stick',pedals:'side',size:100,opacity:90,haptics:true,layout:{landscape:{},portrait:{}}},
   keyboard:{binds:clone(KB_PRESETS.wasd),sens:60},
-  pad:{binds:clone(PAD_DEFAULT),steer:'ls',deadzone:12,rumble:true,glyphs:'shapes'}};
+  pad:{binds:clone(PAD_DEFAULT),steer:'both',deadzone:12,rumble:true,glyphs:'shapes'}};
 function merge(a,b){for(const k in b){const v=b[k];if(v&&typeof v==='object'&&!Array.isArray(v)&&a[k]&&typeof a[k]==='object')merge(a[k],v);else a[k]=v;}return a;}
 let S=clone(DEFAULTS);
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s)S=merge(clone(DEFAULTS),s);else{if(localStorage.getItem('gp747pstack')==='1')S.touch.pedals='stack';}}catch(_){}
@@ -367,7 +367,7 @@ const OPT={
   haptics:{get:()=>S.touch.haptics?'on':'off',set:v=>S.touch.haptics=v==='on'},
   kbPreset:{get:()=>kbPresetName(),set:v=>S.keyboard.binds=clone(KB_PRESETS[v])},
   glyphs:{get:()=>S.pad.glyphs,set:v=>S.pad.glyphs=v},
-  padSteer:{get:()=>S.pad.steer,set:v=>S.pad.steer=v},
+  padSteer:{get:()=>(S.pad.steer==='ls'&&!S.pad.steerPicked?'both':S.pad.steer),set:v=>{S.pad.steer=v;S.pad.steerPicked=true;}},
   pocketO:{get:()=>S.pocket.orientation,set:v=>S.pocket.orientation=v}
 };
 function renderOpts(){$$('.opts[data-opt]').forEach(g=>{const v=OPT[g.dataset.opt].get();g.querySelectorAll('.opt').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));});}
@@ -581,16 +581,17 @@ let padListen=null,padIndex=null,prevP=[];
 const SH={0:'✕',1:'○',2:'□',3:'△'},LT={0:'A',1:'B',2:'X',3:'Y'};
 const BN={4:'L1',5:'R1',6:'L2',7:'R2',8:'Create',9:'Options',10:'L3',11:'R3',12:'D-pad ↑',13:'D-pad ↓',14:'D-pad ←',15:'D-pad →',16:'Home',17:'Touch pad'};
 const BNL={4:'LB',5:'RB',6:'LT',7:'RT',8:'View',9:'Menu',10:'LS',11:'RS'};
-const bname=i=>i==null?'—':i<=3?(S.pad.glyphs==='shapes'?SH[i]:LT[i]):(S.pad.glyphs==='letters'&&BNL[i])||BN[i]||'B'+i;
+const bname=i=>{if(i==null)return '—';const f=window.GPPad?GPPad.std(i):i;return f<=3&&(i<=3||f!==i)?(S.pad.glyphs==='shapes'?SH[f]:LT[f]):bnameX(i);};
+const bnameX=i=>(S.pad.glyphs==='letters'&&BNL[i])||BN[i]||'B'+i;
 function renderPadBinds(){const box=$('#padBinds');box.innerHTML='';
   const fixed=(n,v,s)=>{const r=document.createElement('div');r.className='bind';r.innerHTML=`<div class="nm">${n}<small>${s}</small></div><button class="gp-chip dark fixed" tabindex="-1">${v}</button>`;box.appendChild(r);};
-  fixed('Steer',S.pad.steer==='ls'?'L stick':'D-pad ◀▶','Set above');
+  fixed('Steer',S.pad.steer==='ls'&&S.pad.steerPicked?'L stick':S.pad.steer==='dpad'?'D-pad ◀▶':'L stick + D-pad','Set above');
   PAD_ACTIONS.forEach(([id,name,sub])=>{const r=document.createElement('div');r.className='bind';r.innerHTML=`<div class="nm">${name}${sub?`<small>${sub}</small>`:''}</div>`;
     const b=document.createElement('button'),me=padListen===id;b.className='gp-chip dark'+(me?' listen':'');b.textContent=me?'Press a button…':bname(S.pad.binds[id]);
     b.addEventListener('click',()=>{padListen=me?null:id;kbListen=null;renderPadBinds();renderKb();});r.appendChild(b);box.appendChild(r);});
   fixed('Look around','R stick','Full 360');
   const bound=new Set(Object.values(S.pad.binds));
-  svg.querySelectorAll('.k').forEach(k=>{const i=+k.dataset.btn;k.classList.toggle('bound',bound.has(i)||(i===10&&S.pad.steer==='ls'));k.classList.toggle('pick',!!padListen&&S.pad.binds[padListen]===i);});
+  svg.querySelectorAll('.k').forEach(k=>{const i=+k.dataset.btn,p=window.GPPad&&i<=3?GPPad.phys(i):i;k.classList.toggle('bound',bound.has(p)||(i===10&&S.pad.steer!=='dpad'));k.classList.toggle('pick',!!padListen&&S.pad.binds[padListen]===p);});
   $('#mGasName').textContent=bname(S.pad.binds.gas);$('#mBrakeName').textContent=bname(S.pad.binds.brake);
   svg.setAttribute('class',S.pad.glyphs);
 }
@@ -608,7 +609,8 @@ function poll(){
   if(gp){
     calAuto();if(CALS){calPoll(gp);requestAnimationFrame(poll);return;}
     const P=gp.buttons.map(b=>b.pressed||b.value>.5),val=i=>gp.buttons[i]?gp.buttons[i].value:0;
-    svg.querySelectorAll('.k').forEach(k=>{const i=+k.dataset.btn;k.classList.toggle('hot',!!P[i]&&i!==6&&i!==7);});
+    const ph=i=>window.GPPad&&i<=3?GPPad.phys(i):i;
+    svg.querySelectorAll('.k').forEach(k=>{const i=+k.dataset.btn;k.classList.toggle('hot',!!P[ph(i)]&&i!==6&&i!==7);});
     [['tL2',6],['tR2',7]].forEach(([id,i])=>{const v=val(i),el=svg.querySelector('#'+id);if(el){el.setAttribute('y',30-22*v);el.setAttribute('height',22*v);}});
     $('#mGas').style.width=val(S.pad.binds.gas)*100+'%';$('#mBrake').style.width=val(S.pad.binds.brake)*100+'%';
     const dz=S.pad.deadzone/100,ax=v=>Math.abs(v)<dz?0:v,cl=window.GPPad&&GPPad.stick(gp,'ls'),cr=window.GPPad&&GPPad.stick(gp,'rs'),
@@ -629,8 +631,13 @@ function poll(){
 // Rest, then each stick through left, down, right, up, then each D-pad arrow. Every step moves on by itself.
 const CAL_STEPS=[{k:'rest'},
   {g:'ls',d:'l',t:'Push the <b>left stick</b> all the way <b>left</b>'},{g:'ls',d:'d',t:'Left stick all the way <b>down</b>'},{g:'ls',d:'r',t:'Left stick all the way <b>right</b>'},{g:'ls',d:'u',t:'Left stick all the way <b>up</b>'},
+  {g:'ls',k:'roll',t:'Now <b>roll the left stick</b> slowly around the edge'},
   {g:'rs',d:'l',t:'<b>Right stick</b> all the way <b>left</b>'},{g:'rs',d:'d',t:'Right stick all the way <b>down</b>'},{g:'rs',d:'r',t:'Right stick all the way <b>right</b>'},{g:'rs',d:'u',t:'Right stick all the way <b>up</b>'},
-  {g:'dp',d:'l',t:'Press the <b>D-pad left</b>'},{g:'dp',d:'d',t:'Press the <b>D-pad down</b>'},{g:'dp',d:'r',t:'Press the <b>D-pad right</b>'},{g:'dp',d:'u',t:'Press the <b>D-pad up</b>'}];
+  {g:'rs',k:'roll',t:'Now <b>roll the right stick</b> slowly around the edge'},
+  {g:'dp',d:'l',t:'Press the <b>D-pad left</b>'},{g:'dp',d:'d',t:'Press the <b>D-pad down</b>'},{g:'dp',d:'r',t:'Press the <b>D-pad right</b>'},{g:'dp',d:'u',t:'Press the <b>D-pad up</b>'},
+  // face buttons by position, so a pad that numbers them differently still lines up (slot 0 bottom, 1 right, 2 left, 3 top)
+  {g:'fb',d:0,t:'Press the <b>bottom</b> face button',s:'A on Xbox · ✕ on PlayStation'},{g:'fb',d:1,t:'Press the <b>right</b> face button',s:'B · ○'},
+  {g:'fb',d:2,t:'Press the <b>left</b> face button',s:'X · □'},{g:'fb',d:3,t:'Press the <b>top</b> face button',s:'Y · △'}];
 const OPP={l:'r',r:'l',u:'d',d:'u'};
 let CALS=null;
 function calArt(st){
@@ -640,9 +647,12 @@ function calArt(st){
   const stick=(cx,on)=>`<circle cx="${cx}" cy="110" r="46" fill="none" stroke="${on?hot:ln}" stroke-width="3"/><circle cx="${cx}" cy="110" r="22" fill="${on?'#ffac2833':dim}" stroke="${on?hot:ln}" stroke-width="2"/>`+(on?arrow(cx,110):'');
   const pad=(cx,cy)=>['u','r','d','l'].map(k=>{const v={u:[0,-1],r:[1,0],d:[0,1],l:[-1,0]}[k];
     return `<rect x="${cx+v[0]*26-13}" y="${cy+v[1]*26-13}" width="26" height="26" rx="4" fill="${g==='dp'&&d===k?hot:dim}" stroke="${ln}" stroke-width="1.5"/>`;}).join('')+`<rect x="${cx-13}" y="${cy-13}" width="26" height="26" fill="${dim}"/>`;
-  $('#calArt').innerHTML=`<text x="95" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">LEFT STICK</text>`+stick(95,g==='ls')+
-    `<text x="210" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">D-PAD</text>`+pad(210,110)+
-    `<text x="325" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">RIGHT STICK</text>`+stick(325,g==='rs')+
+  const face=(cx,cy)=>[[0,1],[1,0],[-1,0],[0,-1]].map(([x,y],k)=>`<circle cx="${cx+x*26}" cy="${cy+y*26}" r="12" fill="${d===k?hot:dim}" stroke="${ln}" stroke-width="1.5"/>`).join('');
+  const roll=(cx)=>st&&st.k==='roll'&&st.g===(cx<200?'ls':'rs')?`<circle cx="${cx}" cy="110" r="46" fill="none" stroke="${hot}" stroke-width="5" stroke-dasharray="${(CALS&&CALS.roll?CALS.roll.n:0)*36.1} 400" transform="rotate(180 ${cx} 110)"/>`:'';
+  $('#calArt').innerHTML=`<text x="95" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">LEFT STICK</text>`+stick(95,g==='ls')+roll(95)+
+    (g==='fb'?`<text x="210" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">FACE</text>`+face(210,110):
+    `<text x="210" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">D-PAD</text>`+pad(210,110))+
+    `<text x="325" y="30" fill="${ln}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">RIGHT STICK</text>`+stick(325,g==='rs')+roll(325)+
     (st&&st.k==='rest'?`<text x="210" y="190" fill="${hot}" font-size="13" text-anchor="middle" font-family="Arial" letter-spacing="2">HANDS OFF</text>`:'');
 }
 function calDots(){$('#calDots').innerHTML=CAL_STEPS.map((_,i)=>`<i class="${i<CALS.k?(CALS.skipped.has(i)?'skip':'ok'):i===CALS.k?'now':''}"></i>`).join('');}
@@ -651,22 +661,24 @@ function calShow(){
   if(!st){calDone();return;}
   $('#calSum').hidden=true;$('#calSkip').hidden=false;$('#calSkipCap').textContent=st.k==='rest'?'Skip this step':'Skip this step';
   $('#calTitle').innerHTML=st.k==='rest'?'Let go of everything':st.t;
-  $('#calSub').textContent=st.k==='rest'?'Hands off the sticks for a second so we can find where they rest.':st.g==='dp'?'Press it and let go.':'Hold it at the edge for a moment, then let go.';
+  $('#calSub').textContent=st.k==='rest'?'Hands off the sticks for a second so we can find where they rest.':st.k==='roll'?'Start at the left and go clockwise (up, right, down) — one full circle, slow. This maps the whole range.':st.g==='fb'?st.s+' — press it and let go.':st.g==='dp'?'Press it and let go.':'Hold it at the edge for a moment, then let go.';
   calArt(st);
 }
 function calOpen(){
-  CALS={k:0,rest:null,acc:[],t0:performance.now(),res:{ls:{},rs:{},dp:{}},cand:null,skipped:new Set(),base:null};
+  CALS={k:0,rest:null,acc:[],t0:performance.now(),res:{ls:{},rs:{},dp:{},fb:{}},roll:null,cand:null,skipped:new Set(),base:null};
   $('#calOv').classList.add('on');$('#calCancel').textContent='Cancel';if(menu)menu.active=false;calShow();sfx('click.select');
   setTimeout(()=>{try{$('#calSkip').focus({preventScroll:true});}catch(_){}},50);
 }
 function calClose(){$('#calOv').classList.remove('on');CALS=null;if(menu)menu.active=true;}
-function calNext(skip){if(!CALS)return;if(skip)CALS.skipped.add(CALS.k);CALS.k++;CALS.cand=null;CALS.base=null;sfx(skip?'click.down':'chime.good');calShow();}
+function calNext(skip){if(!CALS)return;if(skip)CALS.skipped.add(CALS.k);CALS.k++;CALS.cand=null;CALS.base=null;CALS.roll=null;sfx(skip?'click.down':'chime.good');calShow();}
 function calDone(){
   const r=CALS.res,have=g=>Object.keys(r[g]).length>0;
   const cal={id:CALS.id||'',rest:CALS.rest||[]};for(const g of ['ls','rs','dp'])if(have(g))cal[g]=r[g];
+  if(have('fb'))cal.fb=[0,1,2,3].map(k=>r.fb[k]!=null?r.fb[k]:null);
   S.pad.cal=cal;save('Controller calibrated');if(window.GPPad)GPPad.reload();renderCal();
   const fmt=d=>!d?'<i>skipped</i>':d.btn!=null?'button '+d.btn:'axis '+d.axis+' ('+(d.v>(cal.rest[d.axis]||0)?'+':'−')+')';
-  const rows=[['Left stick',r.ls],['Right stick',r.rs],['D-pad',r.dp]].map(([n,o])=>`<b>${n}</b><span>${['l','d','r','u'].map(k=>({l:'←',d:'↓',r:'→',u:'↑'})[k]+' '+fmt(o[k])).join(' · ')}</span>`).join('');
+  const rows=[['Left stick',r.ls],['Right stick',r.rs],['D-pad',r.dp]].map(([n,o])=>`<b>${n}</b><span>${['l','d','r','u'].map(k=>({l:'←',d:'↓',r:'→',u:'↑'})[k]+' '+fmt(o[k])).join(' · ')}</span>`).join('')+
+    `<b>Face</b><span>${['A ✕','B ○','X □','Y △'].map((n,k)=>n+' '+(r.fb[k]!=null?'button '+r.fb[k]:'<i>skipped</i>')).join(' · ')}</span>`;
   $('#calTitle').innerHTML='Calibrated';$('#calSub').textContent='Steering, the camera and the menus now follow these.';
   $('#calSum').innerHTML=rows;$('#calSum').hidden=false;calArt(null);
   $('#calSkipCap').textContent='Done';$('#calCancel').textContent='Close';$('#calSkip').onclick=()=>{$('#calSkip').onclick=null;calClose();};
@@ -681,6 +693,21 @@ function calPoll(gp){
   const rest=CALS.rest||ax.map(()=>0);
   if(!CALS.base)CALS.base={P:P.slice(),t:now};
   if(now-CALS.base.t<250)return;   // a beat between steps
+  if(st.k==='roll'){   // widen each direction to the furthest the stick really goes, and check the circle is covered
+    const R=CALS.res[st.g];if(!['l','d','r','u'].every(k=>R[k]&&R[k].axis!=null)){calNext(true);return;}
+    const dv=k=>{const d=R[k],c=rest[d.axis]||0,span=d.v-c;return Math.abs(span)<1e-3?0:Math.max(0,(ax[d.axis]-c)/span);};
+    for(const k of ['l','d','r','u']){const d=R[k],c=rest[d.axis]||0;if((ax[d.axis]-c)*(d.v-c)>0&&Math.abs(ax[d.axis]-c)>Math.abs(d.v-c))d.v=ax[d.axis];}
+    const x=dv('r')-dv('l'),y=dv('d')-dv('u'),rad=Math.hypot(x,y);
+    const ro=CALS.roll||(CALS.roll={bins:new Set(),n:0,t:now});
+    if(rad>0.7){ro.bins.add(((Math.round(Math.atan2(y,x)/(Math.PI/4))%8)+8)%8);if(ro.bins.size!==ro.n){ro.n=ro.bins.size;calArt(st);}}
+    if((ro.bins.size>=8&&now-ro.t>1500&&rad<0.3)||now-ro.t>15000)calNext(false);
+    return;}
+  if(st.g==='fb'){
+    const used=new Set(Object.values(CALS.res.fb));for(const d of Object.values(CALS.res.dp))if(d&&d.btn!=null)used.add(d.btn);
+    const bi=P.findIndex((p,i)=>p&&!CALS.base.P[i]&&i!==6&&i!==7);
+    if(CALS.cand==null){if(bi>=0){if(used.has(bi)){$('#calSub').textContent='That one is already used. Try the '+['bottom','right','left','top'][st.d]+' face button.';sfx('chime.back');CALS.base={P,t:now};return;}CALS.cand={btn:bi};}}
+    else if(!P[CALS.cand.btn]){CALS.res.fb[st.d]=CALS.cand.btn;calNext(false);}
+    return;}
   if(st.g==='dp'){
     const bi=P.findIndex((p,i)=>p&&!CALS.base.P[i]);
     if(CALS.cand==null){

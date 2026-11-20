@@ -256,7 +256,7 @@ addEventListener('resize',resize);resize();
 /* sound */
 let ac;function ctx(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}return ac}
 function tone(f,v,d,type){const a=ac;if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime;o.type=type||'triangle';o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
-const tink=()=>{tone(2700,.16,.28);setTimeout(()=>tone(4050,.07,.2),35)};
+// left/right: only the landing thud now (the bell and the stat-bar counting ticks are gone; the select chime stays)
 const thunk=()=>tone(110,.25,.18,'sine');
 // landing thud: a short low pitch-drop plus a soft muffled knock (phone speakers have no real bass, the knock carries it)
 function thud(){const a=ac;if(!a)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();
@@ -279,14 +279,14 @@ function paint(){
  cars.forEach((_,j)=>$('d'+j).classList.toggle('on',j===idx));{const t=$('d'+idx);t.parentNode.scrollLeft=t.offsetLeft-t.parentNode.clientWidth/2+t.clientWidth/2;}
  timers.forEach(clearTimeout);timers.length=0;
  keys.forEach((k,i)=>{const f=$('f'+k),v=c.s[k];f.style.width='0';f.style.background=c.col;$('v'+k).textContent='0';
-  timers.push(setTimeout(()=>{f.style.width=v+'%';tone(1300+i*200,.035,.06);const t0=performance.now();const st=setInterval(()=>{const x=Math.min(v,Math.round(v*(performance.now()-t0)/520));$('v'+k).textContent=x;if(x>=v)clearInterval(st)},16)},140+i*120))});
+  timers.push(setTimeout(()=>{f.style.width=v+'%';const t0=performance.now();const st=setInterval(()=>{const x=Math.min(v,Math.round(v*(performance.now()-t0)/520));$('v'+k).textContent=x;if(x>=v)clearInterval(st)},16)},140+i*120))});
 }
 function textSwap(on){['nm','mk'].forEach(id=>$(id).classList.toggle('swap',on))}
 
 /* swap animation */
 let anim=null;
 const easeIn=t=>t*t*t,easeOutBack=t=>{const c=1.4;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)};
-function go(dir,target){if(anim||leaving)return;ctx();tink();textSwap(true);anim={dir,t:0,phase:0,target,thud:false}}
+function go(dir,target){if(anim||leaving)return;ctx();textSwap(true);anim={dir,t:0,phase:0,target,thud:false}}
 function stepAnim(dt){if(!anim)return;anim.t+=dt;
  if(anim.phase===0){const p=Math.min(1,anim.t/.32);holder.position.x=-anim.dir*easeIn(p)*12;
   if(p>=1){holder.remove(current);idx=anim.target!=null?anim.target:(idx+anim.dir+cars.length)%cars.length;current=makeCar(cars[idx]);holder.add(current);anim.phase=1;anim.t=0;paint();textSwap(false)}}
