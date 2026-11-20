@@ -42,6 +42,29 @@ Racing line (1.2.18)
   sounds and controller rumble. hazards/747GP-Hazard-Test.html auditions them.
   S.S. 55 (the sleeper) now runs in the 1800 class.
 
+1.3.22 (controller calibration)
+  Controls > Controller > Calibrate: take each stick left, down, right and up, then press each
+  D-pad arrow. Opens by itself the first time you pick Controller with a pad connected, and from
+  the race's settings menu (CALIBRATE CONTROLLER). Steering, the camera and the menus follow it,
+  so odd or off-brand controllers steer the right way.
+
+1.3.21 (controls)
+  Controls screen between the showroom and race setup (also from mode select and the pause menu):
+  Touch, Keyboard, Controller or Pocket Player. Place controls opens a full-screen editor: drag and
+  turn the stick, gas, brake and camera pads, separately for landscape and portrait. Keys and
+  controller buttons can be remapped. The race uses what you set; changes from the pause menu apply
+  straight away. Pocket Player hides the touch pads; Start Pocket Player opens the game in the
+  jerm747.games cabinet (inside the cabinet it just hands over).
+
+1.3.20 (playtest fixes)
+  Bikes have a rider (the podium rider, posed for each bike) and lean into the turn.
+  Race setup rebuilt like the showroom: the course turns on a studio table, light runs round START.
+  Showroom: switch tick on the press, a light thud as the next ride lands.
+  Rivals in monochrome (black, white, greys). Mode select is one tap per step.
+  Pause: one press = one pause, the HUD steps back, Full screen on the pause menu.
+  Driving: brakes half as strong (gentler in Comfort/Normal), the car coasts off the gas,
+  rivals have a quarter less engine and corner a little slower.
+
 Saved on this device
   Your choices (mode, gearbox, ride, track, opponents), every finished race, your
   best laps, GP points and boost credits. "Share times" on the results screen is an opt-in switch for the online
@@ -59,6 +82,7 @@ Phone on the same Wi-Fi
 Files
   index.html     studio card, title, mode select
   showroom.html  ride selection
+  controls.html  controls (touch layout editor, remapping, Pocket Player)
   tracks.html    race setup
   race.html      the race, pause menu and results
   finish.html    podium ceremony and rewards (Podium & rewards on the results)
@@ -71,3 +95,15 @@ Files
   cars/          car + wheel models (base64 GLB in .js)
   veg/ tex/ scene/  trackside art
   hazards/       contact physics, hazard sounds, full-field results
+
+1.3.23
+  Brakes: progressive pedal (feather the top, dig in for 1.4x the old full brake); the brake
+  presses in faster again. Steering: the last 40% of stick turns in more, and braking into a
+  corner loads the front so the nose cuts in.
+  Track Grip Assist (Settings): Off / Low / Medium / High. A light magnet toward the racing line;
+  you can still slide and swerve off. Easy / Medium / Hard will pick High / Medium / Low.
+  Rivals: colour-wheel liveries (body, twin pinstripes, curved side accent) instead of monochrome.
+  Showroom: left/right plays only the landing thud. Select chimes unchanged.
+  Controls > Controller: Steer with Stick + D-pad (new default), Left stick, or D-pad.
+  Calibrate adds a slow roll of each stick (full range) and the four face buttons by position,
+  so swapped A/B or X/Y pads line up in the race, the menus and the controller picture.
