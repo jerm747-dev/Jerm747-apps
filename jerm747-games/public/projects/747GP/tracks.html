@@ -10,6 +10,7 @@
 <script src="visuals/look.js"></script>
 <script src="intro/session.js"></script>
 <script src="ui/gp-ui.js"></script>
+<script src="visuals/liveries.js"></script>
 <style>
 @font-face{font-family:BarlowCondensed;src:url(intro/BarlowCondensed-Bold.woff) format('woff');font-weight:700;font-display:swap}
 @font-face{font-family:Barlow;src:url(intro/Barlow-SemiBold.woff) format('woff');font-weight:600;font-display:swap}
@@ -103,7 +104,7 @@ const $=id=>document.getElementById(id);
 const COUNTRY={DE:'Germany',CZ:'Czechia',BR:'Brazil',JP:'Japan',US:'United States','US-NY':'New York, USA','US-VA':'Virginia, USA','US-FL':'Florida, USA','US-GA':'Georgia, USA','US-NC':'North Carolina, USA',fictional:'Fictional circuit'};
 const RIDES={kart:['Chili Pup',100],gt:['Velvet Fang',600],hyper:['Cinder Wyvern',1200],f1:['Midnight Talon',1800],ss55:['S.S. 55',1800],brb:['B.R.B. 4×4',600],pto:['P.T.O.',1200],vipgt:['V.I.P. GT',1200],wipsm:['W.I.P. SM',600],ooo:['O.O.O. 1800',1200],iou:['I.O.U. V4',1200],ptar:['P.T.A. R',1800]};
 // grid liveries, same order as the race (race.html SKINS)
-const LIVERY=['#2f6fe0','#f2df7a','#e0409a','#eeeeee','#15161a','#ffac28','#2fb6a8','#b9bec6','#2e8b3d'];
+const LIVERY=GPLivery.list().map(l=>'linear-gradient(90deg,'+l.base+' 0 62%,'+l.accent+' 62% 100%)');   // rival grid follows the livery set (base | accent)
 let car=GPLaunch.car&&RIDES[GPLaunch.car]?GPLaunch.car:'f1';
 let mode=GPLaunch.mode,trans=GPLaunch.transmission,opp=GPLaunch.opp;
 let idx=Math.max(0,TRACKS.findIndex(t=>t.id===GPLaunch.track));

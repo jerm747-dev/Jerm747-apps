@@ -117,7 +117,7 @@ const cars=[
  {id:'iou',cc:1800,kind:'iou',type:'Bikes',n:'I.O.U. V4',m:'Italian Overtaking Unit',c:'1800cc',col:'#ff7a00',wb:1.46,len:3.2,gears:'8-speed auto',dt:'flagship superbike',s:{Speed:98,Accel:99,Handling:82,Braking:88}},
  {id:'ptar',cc:1800,kind:'ptar',type:'Bikes',n:'P.T.A. R',m:'Permission to Apex',c:'1800cc',col:'#ffb347',wb:1.41,len:3.2,gears:'8-speed auto',dt:'track superbike',s:{Speed:100,Accel:97,Handling:88,Braking:92}}
 ];
-const TOPMPH=c=>Math.round(380*({100:.25,600:.5,1200:.75,1800:1}[c.cc])*2.237);
+const TOPMPH=c=>Math.round(380*0.9*({100:.25,600:.5,1200:.75,1800:1}[c.cc])*2.237);
 
 const $=id=>document.getElementById(id);
 const canvas=$('c');
