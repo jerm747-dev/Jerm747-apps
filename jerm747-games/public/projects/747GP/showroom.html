@@ -91,7 +91,7 @@ html,body{height:100%;background:#07080b;color:#e9ecf2;font-family:'Barlow',syst
       <div class="spec"><small>Gearbox</small><b id="ptw">–</b></div>
     </div>
     <button class="go gp-button gp-custom" id="go"><span class="gp-marks"></span><span class="gp-caption" id="goCap">Select ride</span></button>
-    <div class="steps"><span>MODE</span><em></em><span class="on">RIDE</span><em></em><span>RACE SETUP</span><em></em><span>RACE</span></div>
+    <div class="steps"><span>MODE</span><em></em><span class="on">RIDE</span><em></em><span>CONTROLS</span><em></em><span>RACE SETUP</span><em></em><span>RACE</span></div>
   </div>
 </div>
 <script>
@@ -216,6 +216,21 @@ function getModel(kind){
  x.fillStyle=g;x.fillRect(0,0,512,256);x.fillStyle='rgba(255,255,255,.9)';x.fillRect(90,18,110,14);x.fillRect(310,18,110,14);
  const t=new THREE.CanvasTexture(cv);t.mapping=THREE.EquirectangularReflectionMapping;t.encoding=THREE.sRGBEncoding;
  const pm=new THREE.PMREMGenerator(renderer);window.__ENV=pm.fromEquirectangular(t).texture;})();
+const RIDERS={},RLOAD={};
+function getRider(kind){
+ if(RIDERS[kind])return Promise.resolve(RIDERS[kind]);if(RLOAD[kind])return RLOAD[kind];
+ return RLOAD[kind]=(window.__RIDERS&&window.__RIDERS[kind]?Promise.resolve():loadScript('cars/riders/'+kind+'.js')).then(async()=>{
+  const b=atob(window.__RIDERS[kind]),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);delete window.__RIDERS[kind];
+  const buf=u.buffer,dv=new DataView(buf),jl=dv.getUint32(12,true),js=JSON.parse(new TextDecoder().decode(new Uint8Array(buf,20,jl))),bs=20+jl+8,bv=js.bufferViews,a=js.accessors;
+  const arr=(i,T,c)=>new T(buf,bs+bv[a[i].bufferView].byteOffset,a[i].count*c),geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(arr(0,Float32Array,3),3));geo.setAttribute('normal',new THREE.BufferAttribute(arr(1,Float32Array,3),3));
+  geo.setAttribute('uv',new THREE.BufferAttribute(arr(2,Float32Array,2),2));geo.setIndex(new THREE.BufferAttribute(arr(3,a[3].componentType===5123?Uint16Array:Uint32Array,1),1));
+  const tex=await Promise.all(js.images.map(async im=>{const v=bv[im.bufferView],url=URL.createObjectURL(new Blob([new Uint8Array(buf,bs+v.byteOffset,v.byteLength)],{type:im.mimeType}));
+   const img=new Image();img.src=url;await img.decode();const t=new THREE.Texture(img);t.flipY=false;t.needsUpdate=true;return t}));
+  tex[0].encoding=THREE.sRGBEncoding;
+  const mat=new THREE.MeshStandardMaterial({map:tex[0],normalMap:tex[1],roughness:.62,metalness:.1,envMap:window.__ENV,envMapIntensity:.6});mat.normalScale.set(.7,-.7);
+  return RIDERS[kind]={geo,mat};}).catch(e=>{console.warn('rider',e);RLOAD[kind]=null;return null;});
+}
 function makeCar(s){
  const car=new THREE.Group();
  if(!MODELS[s.kind]){$('hint').textContent='LOADING '+s.n.toUpperCase()+'…';$('hint').style.display='block'}
@@ -223,6 +238,7 @@ function makeCar(s){
   const mesh=new THREE.Mesh(m.geo,m.mat);mesh.castShadow=true;mesh.receiveShadow=true;
   const bb=m.geo.boundingBox,L=bb.max.z-bb.min.z,k=s.len/L;mesh.scale.setScalar(k);mesh.position.y=-bb.min.y*k;
   car.add(mesh);if(cars[idx]===s)$('hint').style.display='none';
+  if(s.type==='Bikes')getRider(s.kind).then(r=>{if(!r)return;const rm=new THREE.Mesh(r.geo,r.mat);rm.castShadow=true;mesh.add(rm);});   // bike coordinates, so it rides the same scale
   const i=cars.indexOf(s);[cars[(i+1)%cars.length],cars[(i-1+cars.length)%cars.length]].forEach(c=>getModel(c.kind).catch(()=>{}));
  }).catch(()=>{$('hint').textContent='COULD NOT LOAD '+s.n.toUpperCase();$('hint').style.display='block'});
  car.position.y=.24;return car;
@@ -240,8 +256,15 @@ addEventListener('resize',resize);resize();
 /* sound */
 let ac;function ctx(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}return ac}
 function tone(f,v,d,type){const a=ac;if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime;o.type=type||'triangle';o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
-const tink=()=>{tone(2700,.16,.28);setTimeout(()=>tone(4050,.07,.2),35)};
+// left/right: only the landing thud now (the bell and the stat-bar counting ticks are gone; the select chime stays)
 const thunk=()=>tone(110,.25,.18,'sine');
+// landing thud: a short low pitch-drop plus a soft muffled knock (phone speakers have no real bass, the knock carries it)
+function thud(){const a=ac;if(!a)return;const t=a.currentTime,o=a.createOscillator(),g=a.createGain();
+ o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(46,t+.09);
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.2,t+.006);g.gain.exponentialRampToValueAtTime(.0001,t+.16);o.connect(g).connect(a.destination);o.start(t);o.stop(t+.18);
+ const n=a.createBufferSource(),b=a.createBuffer(1,Math.floor(a.sampleRate*.03),a.sampleRate),d=b.getChannelData(0);
+ for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,3);
+ n.buffer=b;const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=420;const gn=a.createGain();gn.gain.value=.1;n.connect(f).connect(gn).connect(a.destination);n.start(t);}
 
 /* ui */
 const keys=Object.keys(cars[0].s);
@@ -256,19 +279,20 @@ function paint(){
  cars.forEach((_,j)=>$('d'+j).classList.toggle('on',j===idx));{const t=$('d'+idx);t.parentNode.scrollLeft=t.offsetLeft-t.parentNode.clientWidth/2+t.clientWidth/2;}
  timers.forEach(clearTimeout);timers.length=0;
  keys.forEach((k,i)=>{const f=$('f'+k),v=c.s[k];f.style.width='0';f.style.background=c.col;$('v'+k).textContent='0';
-  timers.push(setTimeout(()=>{f.style.width=v+'%';tone(1300+i*200,.035,.06);const t0=performance.now();const st=setInterval(()=>{const x=Math.min(v,Math.round(v*(performance.now()-t0)/520));$('v'+k).textContent=x;if(x>=v)clearInterval(st)},16)},140+i*120))});
+  timers.push(setTimeout(()=>{f.style.width=v+'%';const t0=performance.now();const st=setInterval(()=>{const x=Math.min(v,Math.round(v*(performance.now()-t0)/520));$('v'+k).textContent=x;if(x>=v)clearInterval(st)},16)},140+i*120))});
 }
 function textSwap(on){['nm','mk'].forEach(id=>$(id).classList.toggle('swap',on))}
 
 /* swap animation */
 let anim=null;
 const easeIn=t=>t*t*t,easeOutBack=t=>{const c=1.4;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)};
-function go(dir,target){if(anim||leaving)return;ctx();textSwap(true);anim={dir,t:0,phase:0,target}}
+function go(dir,target){if(anim||leaving)return;ctx();textSwap(true);anim={dir,t:0,phase:0,target,thud:false}}
 function stepAnim(dt){if(!anim)return;anim.t+=dt;
  if(anim.phase===0){const p=Math.min(1,anim.t/.32);holder.position.x=-anim.dir*easeIn(p)*12;
   if(p>=1){holder.remove(current);idx=anim.target!=null?anim.target:(idx+anim.dir+cars.length)%cars.length;current=makeCar(cars[idx]);holder.add(current);anim.phase=1;anim.t=0;paint();textSwap(false)}}
  else if(anim.phase===1){const p=Math.min(1,anim.t/.55);holder.position.x=anim.dir*12*(1-easeOutBack(p));
-  if(p>=1){holder.position.x=0;anim.phase=2;anim.t=0;tink();thunk()}}
+  if(!anim.thud&&p>=.5){anim.thud=true;thud();}
+  if(p>=1){holder.position.x=0;anim.phase=2;anim.t=0}}
  else{const p=Math.min(1,anim.t/.45);holder.position.y=-Math.sin(p*Math.PI)*.06*(1-p);if(p>=1){holder.position.y=0;anim=null}}}
 
 $('nx').onclick=()=>go(1);$('pv').onclick=()=>go(-1);
@@ -278,7 +302,7 @@ $('go').onclick=()=>{
  ctx();tone(880,.12,.15,'square');setTimeout(()=>tone(1320,.1,.3,'square'),110);
  $('goCap').textContent=car.n+' selected';$('go').classList.add('is-focused');
  GPLaunch.set('car',car.id);try{localStorage.setItem('gp747cc',String(car.cc));}catch(e){}
- setTimeout(()=>location.assign(GPLaunch.link('tracks.html',{car:car.id})),450);
+ setTimeout(()=>location.assign(GPLaunch.link('controls.html',{car:car.id})),450);
 };
 addEventListener('pageshow',()=>{leaving=false;$('goCap').textContent='Select ride';});
 addEventListener('keydown',e=>{
