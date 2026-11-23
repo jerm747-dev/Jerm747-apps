@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>jerm747.apps — The Tool Shelf</title>
+<meta name="description" content="jerm747.apps — the tool shelf. Digital and music tools by Jerm747.">
+<meta name="theme-color" content="#d71920">
+<style>
+  :root{
+    --red:#d71920; --red-dk:#a50f15; --ink:#111; --paper:#fff;
+    --bg:#f4f2ef; --card:#fff; --line:#1111; --muted:#5a5a5a;
+    --head:"Arial Black","Helvetica Neue",Helvetica,Arial,sans-serif;
+    --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  [data-theme="black"]{
+    --bg:#0c0c0c; --card:#161616; --ink:#f4f4f4; --line:#ffffff1a; --muted:#a0a0a0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+  a{color:inherit}
+  button{font:inherit;color:inherit}
+
+  /* ---------- header ---------- */
+  .top{background:var(--red);color:#fff;position:relative;overflow:hidden}
+  .top::before{ /* pegboard */
+    content:"";position:absolute;inset:0;opacity:.16;
+    background-image:radial-gradient(circle,#000 2px,transparent 2.6px);
+    background-size:22px 22px;pointer-events:none}
+  .top-in{position:relative;max-width:1180px;margin:0 auto;padding:22px 20px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .mark{display:flex;align-items:baseline;text-decoration:none;font-family:var(--head);font-size:clamp(28px,5.6vw,46px);letter-spacing:-.02em;line-height:1}
+  .mark .j{color:#fff}
+  .mark .a{background:#fff;color:var(--red);padding:2px 10px 4px;margin-left:4px;border-radius:4px;transform:translateY(-2px)}
+  .tag{font-family:var(--head);text-transform:uppercase;font-size:12px;letter-spacing:.14em;line-height:1.35;border-left:3px solid #fff;padding-left:10px;opacity:.95}
+  .tag small{display:block;font-family:var(--body);font-weight:700;letter-spacing:.3em;opacity:.85}
+  .spacer{flex:1}
+  .theme{display:flex;border:2px solid #fff;border-radius:999px;overflow:hidden}
+  .theme button{background:transparent;border:0;padding:7px 12px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.08em;cursor:pointer;color:#fff}
+  .theme button[aria-pressed="true"]{background:#fff;color:var(--red)}
+  .stripe{height:6px;background:repeating-linear-gradient(90deg,var(--ink) 0 26px,var(--paper) 26px 52px)}
+  [data-theme="black"] .stripe{background:repeating-linear-gradient(90deg,#000 0 26px,#fff 26px 52px)}
+
+  /* ---------- toolbar ---------- */
+  main{flex:1;width:100%;max-width:1180px;margin:0 auto;padding:22px 20px 40px}
+  .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  h1{font-family:var(--head);text-transform:uppercase;font-size:clamp(26px,4.4vw,40px);margin:0;line-height:1;letter-spacing:-.01em}
+  h1 .jp{display:block;font-family:var(--body);font-size:13px;font-weight:800;letter-spacing:.35em;color:var(--red);margin-bottom:6px}
+  .count{font-weight:800;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px;background:var(--card);border:2px solid var(--ink);border-radius:10px;margin-bottom:20px;box-shadow:4px 4px 0 var(--red)}
+  .search{flex:1 1 220px;display:flex;align-items:center;gap:8px;padding:0 10px;border:2px solid var(--line);border-radius:8px;min-height:40px}
+  .search input{flex:1;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:15px;min-width:0}
+  .search:focus-within{border-color:var(--red)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:2px solid var(--ink);background:transparent;border-radius:999px;padding:6px 12px;font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.06em;cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+  .view{display:flex;border:2px solid var(--ink);border-radius:8px;overflow:hidden}
+  .view button{border:0;background:transparent;padding:8px 10px;cursor:pointer;display:grid;place-items:center}
+  .view button[aria-pressed="true"]{background:var(--red);color:#fff}
+  .view svg{width:18px;height:18px}
+
+  /* ---------- shelf ---------- */
+  .shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:22px 18px;list-style:none;padding:0;margin:0}
+  .tool{position:relative;background:var(--card);border:2px solid var(--ink);border-radius:12px;display:flex;flex-direction:column;overflow:hidden;transition:transform .12s ease,box-shadow .12s ease}
+  .tool:hover,.tool:focus-within{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--red)}
+  .tool .face{aspect-ratio:16/10;background:var(--red);color:#fff;display:grid;place-items:center;position:relative;border-bottom:2px solid var(--ink)}
+  .tool.soon .face{background:repeating-linear-gradient(135deg,#222 0 14px,#2c2c2c 14px 28px)}
+  .tool .face svg{width:42%;max-width:130px;height:auto}
+  .aisle{position:absolute;top:10px;left:10px;background:#fff;color:#111;font-family:var(--head);font-size:11px;letter-spacing:.08em;padding:4px 8px;border-radius:4px;text-transform:uppercase}
+  .price{position:absolute;top:10px;right:10px;background:#111;color:#fff;font-weight:900;font-size:11px;letter-spacing:.1em;padding:5px 10px 5px 14px;clip-path:polygon(8px 0,100% 0,100% 100%,8px 100%,0 50%);text-transform:uppercase}
+  .soon .price{background:#fff;color:#111}
+  .info{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+  .name{font-family:var(--head);font-size:20px;text-transform:uppercase;margin:0;line-height:1.05;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .ver{font-family:var(--body);font-size:11px;font-weight:800;color:var(--red);border:1.5px solid var(--red);border-radius:4px;padding:1px 6px;letter-spacing:.05em}
+  .desc{margin:0;font-size:14px;line-height:1.45;color:var(--muted)}
+  .specs{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 0;padding:0;list-style:none}
+  .specs li{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border:1.5px solid var(--line);padding:3px 7px;border-radius:4px}
+  .actions{margin-top:auto;padding-top:8px;display:flex;gap:8px}
+  .btn{flex:1;text-align:center;text-decoration:none;font-weight:900;text-transform:uppercase;letter-spacing:.08em;font-size:13px;padding:11px 12px;border-radius:8px;border:2px solid var(--ink);background:var(--red);color:#fff}
+  .btn:hover{background:var(--red-dk)}
+  .btn:focus-visible,.chip:focus-visible,.view button:focus-visible,.theme button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+  .btn.ghost{background:transparent;color:var(--ink);flex:0 0 auto}
+  .btn[aria-disabled="true"]{background:transparent;color:var(--muted);border-style:dashed;pointer-events:none}
+
+  /* list view */
+  .shelf.list{grid-template-columns:1fr;gap:12px}
+  .shelf.list .tool{flex-direction:row}
+  .shelf.list .face{aspect-ratio:auto;width:150px;flex:0 0 150px;border-bottom:0;border-right:2px solid var(--ink)}
+  .shelf.list .face svg{width:60%}
+  .shelf.list .aisle,.shelf.list .price{display:none}
+  .shelf.list .info{flex-direction:row;align-items:center;gap:18px;flex-wrap:wrap}
+  .shelf.list .text{flex:1 1 280px;display:flex;flex-direction:column;gap:6px}
+  .shelf.list .actions{margin:0;padding:0;flex:0 0 auto}
+  .text{display:contents}
+  .shelf.list .text{display:flex}
+  @media (max-width:560px){
+    .shelf.list .face{width:84px;flex-basis:84px}
+    .shelf.list .specs{display:none}
+    .shelf.list .actions{width:100%}
+  }
+
+  .empty{display:none;text-align:center;padding:40px 10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .empty.show{display:block}
+
+  /* ---------- footer: domain tower ---------- */
+  footer{background:#111;color:#eee;border-top:6px solid var(--red)}
+  .foot{max-width:1180px;margin:0 auto;padding:40px 20px 22px;position:relative;min-height:360px;display:flex;flex-direction:column}
+  .foot .legal{margin-top:auto}
+  .foot.stack{min-height:0}
+  .foot.stack .legal{margin-top:30px}
+  .tower{display:flex;align-items:flex-start;font-family:var(--head);font-size:clamp(34px,7.4vw,82px);line-height:.98;letter-spacing:-.03em;width:max-content;max-width:100%}
+  .tower .root{color:#fff}
+  .tlds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+  .tld a{display:flex;align-items:center;gap:12px;text-decoration:none;color:#4d4d4d;transition:color .15s ease,transform .15s ease;transform-origin:left center;outline:none}
+  .tld.here a{color:var(--red)}
+  .tld a:hover,.tld a:focus-visible,.tld.active a{color:#fff;transform:translateX(8px)}
+  .tld.here a:hover,.tld.here a:focus-visible,.tld.here.active a{color:var(--red)}
+  .tld a:focus-visible .nm{text-decoration:underline;text-decoration-thickness:4px;text-underline-offset:6px}
+  .pill{font-family:var(--body);font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;background:var(--red);color:#fff;padding:4px 8px;border-radius:999px;transform:translateY(-.15em)}
+
+  .peek{position:absolute;z-index:5;width:300px;background:#fff;color:#111;border:2px solid #fff;border-radius:12px;overflow:hidden;box-shadow:6px 6px 0 var(--red);opacity:0;transform:translateY(8px) scale(.97);pointer-events:none;transition:opacity .16s ease,transform .16s ease,top .16s ease}
+  .peek.show{opacity:1;transform:none;pointer-events:auto}
+  .peek .thumb{aspect-ratio:16/9;border-bottom:2px solid #111;background:#222}
+  .peek .thumb svg,.peek .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+  .peek .pb{padding:12px 14px 14px;display:flex;flex-direction:column;gap:6px}
+  .peek .dom{font-family:var(--head);font-size:13px;letter-spacing:.02em;text-transform:lowercase;color:var(--red)}
+  .peek h3{margin:0;font-family:var(--head);font-size:18px;text-transform:uppercase;line-height:1.05}
+  .peek p{margin:0;font-size:13px;line-height:1.45;color:#555}
+  .peek .go{align-self:flex-start;margin-top:4px;font-weight:900;font-size:12px;letter-spacing:.08em;text-transform:uppercase;text-decoration:none;background:#111;color:#fff;padding:8px 12px;border-radius:6px}
+  .peek .go:hover{background:var(--red)}
+  .foot.stack .peek{position:static;width:100%;max-width:440px;margin-top:22px;display:none;transition:none}
+  .foot.stack .peek.show{display:block}
+
+  .legal{margin-top:30px;padding-top:14px;border-top:1px solid #ffffff1f;font-size:12px;color:#8a8a8a;letter-spacing:.04em}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <a class="mark" href="./" aria-label="jerm747.apps home"><span class="j">jerm747</span><span class="a">.apps</span></a>
+    <div class="tag">The Tool Shelf<small>Digital · Music</small></div>
+    <div class="spacer"></div>
+    <div class="theme" role="group" aria-label="Color scheme">
+      <button type="button" data-theme-btn="white" aria-pressed="true">Red / White</button>
+      <button type="button" data-theme-btn="black" aria-pressed="false">Red / Black</button>
+    </div>
+  </div>
+  <div class="stripe" aria-hidden="true"></div>
+</header>
+
+<main>
+  <div class="hero">
+    <h1><span class="jp">Tools</span>On the Shelf</h1>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="bar">
+    <label class="search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input id="q" type="search" placeholder="Find a tool…" autocomplete="off" aria-label="Search tools">
+    </label>
+    <div class="chips" id="chips" role="group" aria-label="Filter"></div>
+    <div class="view" role="group" aria-label="Layout">
+      <button type="button" data-view="grid" aria-pressed="true" title="Grid"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg></button>
+      <button type="button" data-view="list" aria-pressed="false" title="List"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="4" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="16" width="18" height="4" rx="1"/></svg></button>
+    </div>
+  </div>
+
+  <ul class="shelf" id="shelf"></ul>
+  <div class="empty" id="empty">Nothing on that aisle yet.</div>
+</main>
+
+<footer>
+  <div class="foot" id="foot">
+    <nav class="tower" aria-label="Sites">
+      <span class="root">jerm747</span>
+      <ul class="tlds" id="tlds"></ul>
+    </nav>
+    <div class="peek" id="peek" role="status" aria-live="polite"></div>
+    <div class="legal">© <span id="yr"></span> · Free tools, free games, original music.</div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   THE SHELF — add a tool by adding an object here.
+   href: path to the tool's folder (relative to this page).
+   status: "live" | "soon"
+   ============================================================ */
+const TOOLS = [
+  {
+    id:"midi-lane", name:"MIDI Lane", version:"1.0",
+    category:"music", status:"live", href:"./midi-lane/",
+    desc:"Full-screen MIDI editor. Import, edit, play back and send live to USB MIDI. Ships with Drumway and Avionyx.",
+    specs:["MIDI in / out","Piano roll","Rhythm sequencer","Export MIDI + MP3"],
+    icon:"lane"
+  },
+  {
+    id:"beat-room", name:"Beat Room", version:"1.0.3",
+    category:"music", status:"live", href:"./beat-room/",
+    desc:"The virtual boombox kit. Sequencer, tape deck, vinyl, synth keys, metronome and tuner in one room.",
+    specs:["Sequencer","Tape deck","Synth","Tuner"],
+    icon:"boombox",
+    extra:{label:"APK", href:"https://jerm747.com"}
+  },
+  {
+    id:"midi-check", name:"MIDI Check", version:"",
+    category:"music", status:"soon", href:"",
+    desc:"Coming soon. Plug in, check your MIDI gear and tie the shelf together.",
+    specs:["Device test","Signal monitor"],
+    icon:"check"
+  }
+];
+
+const CATS = [
+  {id:"all",   label:"All"},
+  {id:"music", label:"Music"},
+  {id:"digital", label:"Digital"},
+  {id:"soon",  label:"Coming Soon"}
+];
+
+const ICONS = {
+  lane:`<svg viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"><rect x="4" y="4" width="112" height="82" rx="8"/><path d="M4 26h112M4 46h112M4 66h112" stroke-width="2" opacity=".45"/><rect x="16" y="12" width="26" height="8" rx="2" fill="currentColor" stroke="none"/><rect x="46" y="32" width="20" height="8" rx="2" fill="currentColor" stroke="none"/><rect x="70" y="52" width="34" height="8" rx="2" fill="currentColor" stroke="none"/><rect x="28" y="72" width="22" height="8" rx="2" fill="currentColor" stroke="none"/></svg>`,
+  boombox:`<svg viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round"><path d="M30 20V10h60v10"/><rect x="4" y="20" width="112" height="64" rx="8"/><circle cx="32" cy="54" r="16"/><circle cx="32" cy="54" r="5" fill="currentColor"/><circle cx="88" cy="54" r="16"/><circle cx="88" cy="54" r="5" fill="currentColor"/><rect x="50" y="32" width="20" height="12" rx="2" stroke-width="3"/></svg>`,
+  check:`<svg viewBox="0 0 120 90" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="60" cy="45" r="38"/><circle cx="34" cy="45" r="4" fill="currentColor" stroke="none"/><circle cx="86" cy="45" r="4" fill="currentColor" stroke="none"/><circle cx="42" cy="27" r="4" fill="currentColor" stroke="none"/><circle cx="78" cy="27" r="4" fill="currentColor" stroke="none"/><circle cx="60" cy="20" r="4" fill="currentColor" stroke="none"/><path d="M46 52l10 10 20-20"/></svg>`
+};
+
+/* ---------- state (remembered per browser) ---------- */
+const store = {
+  get(k,d){ try{ return localStorage.getItem("j747apps."+k) ?? d }catch(e){ return d } },
+  set(k,v){ try{ localStorage.setItem("j747apps."+k,v) }catch(e){} }
+};
+let state = { q:"", cat:"all", view:store.get("view","grid"), theme:store.get("theme","white") };
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function card(t, i){
+  const soon = t.status === "soon";
+  const open = soon
+    ? `<span class="btn" aria-disabled="true">On order</span>`
+    : `<a class="btn" href="${esc(t.href)}">Open tool</a>`;
+  const extra = t.extra && !soon ? `<a class="btn ghost" href="${esc(t.extra.href)}">${esc(t.extra.label)}</a>` : "";
+  return `<li class="tool${soon?" soon":""}">
+    <div class="face">
+      <span class="aisle">Aisle ${String(i+1).padStart(2,"0")}</span>
+      <span class="price">${soon?"Soon":"Free"}</span>
+      ${ICONS[t.icon]||""}
+    </div>
+    <div class="info">
+      <div class="text">
+        <h2 class="name">${esc(t.name)}${t.version?`<span class="ver">v${esc(t.version)}</span>`:""}</h2>
+        <p class="desc">${esc(t.desc)}</p>
+        <ul class="specs">${(t.specs||[]).map(s=>`<li>${esc(s)}</li>`).join("")}</ul>
+      </div>
+      <div class="actions">${open}${extra}</div>
+    </div>
+  </li>`;
+}
+
+function render(){
+  const q = state.q.trim().toLowerCase();
+  const list = TOOLS.map((t,i)=>({t,i})).filter(({t})=>{
+    const catOk = state.cat==="all" || (state.cat==="soon" ? t.status==="soon" : t.category===state.cat);
+    const hay = [t.name,t.desc,...(t.specs||[])].join(" ").toLowerCase();
+    return catOk && (!q || hay.includes(q));
+  });
+  $("#shelf").innerHTML = list.map(({t,i})=>card(t,i)).join("");
+  $("#shelf").classList.toggle("list", state.view==="list");
+  $("#empty").classList.toggle("show", list.length===0);
+  const live = TOOLS.filter(t=>t.status==="live").length;
+  $("#count").textContent = `${live} in stock · ${TOOLS.length-live} on order`;
+}
+
+function setView(v){
+  state.view=v; store.set("view",v);
+  document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.view===v));
+  render();
+}
+function setTheme(th){
+  state.theme=th; store.set("theme",th);
+  document.documentElement.dataset.theme = th;
+  document.querySelectorAll("[data-theme-btn]").forEach(b=>b.setAttribute("aria-pressed", b.dataset.themeBtn===th));
+  document.querySelector('meta[name="theme-color"]').content = "#d71920";
+}
+
+/* chips — only show categories that have something in them */
+$("#chips").innerHTML = CATS
+  .filter(c => c.id==="all" || TOOLS.some(t => c.id==="soon" ? t.status==="soon" : t.category===c.id))
+  .map(c=>`<button type="button" class="chip" data-cat="${c.id}" aria-pressed="${c.id==="all"}">${c.label}</button>`).join("");
+
+$("#chips").addEventListener("click", e=>{
+  const b = e.target.closest("[data-cat]"); if(!b) return;
+  state.cat = b.dataset.cat;
+  document.querySelectorAll("[data-cat]").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  render();
+});
+$("#q").addEventListener("input", e=>{ state.q=e.target.value; render(); });
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>setView(b.dataset.view)));
+document.querySelectorAll("[data-theme-btn]").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.themeBtn)));
+
+/* "/" jumps to search, like a keyboard shortcut on a tool bench */
+document.addEventListener("keydown", e=>{
+  if(e.key==="/" && document.activeElement!==$("#q")){ e.preventDefault(); $("#q").focus(); }
+});
+
+/* ============================================================
+   FOOTER TOWER — the sites. Swap `thumb` for an image path
+   (e.g. "img/games.jpg") to use a real screenshot.
+   ============================================================ */
+const SITES = [
+  { tld:".apps",  href:"./", here:true, title:"The Tool Shelf",
+    desc:"Digital and music tools, free to use. You're on it now.", thumb:"apps" },
+  { tld:".dev",   href:"https://jerm747.dev", title:"Dev & Contract Work",
+    desc:"Web apps, websites and custom builds. Request a quote or check on a project.", thumb:"dev" },
+  { tld:".games", href:"https://jerm747.games", title:"The Arcade",
+    desc:"Browser games and game designs. Free to play, no subscriptions.", thumb:"games" },
+  { tld:".com",   href:"https://jerm747.com", title:"The Music",
+    desc:"A library of original music, with the player and app downloads.", thumb:"com" }
+];
+
+const THUMBS = {
+  apps:`<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="#f4f2ef"/><rect width="160" height="16" fill="#d71920"/><rect x="8" y="5" width="30" height="6" rx="1" fill="#fff"/><rect y="16" width="160" height="2" fill="#111"/><g stroke="#111" stroke-width="1.2"><rect x="10" y="28" width="40" height="52" rx="3" fill="#fff"/><rect x="60" y="28" width="40" height="52" rx="3" fill="#fff"/><rect x="110" y="28" width="40" height="52" rx="3" fill="#fff"/></g><rect x="10.6" y="28.6" width="38.8" height="22" fill="#d71920"/><rect x="60.6" y="28.6" width="38.8" height="22" fill="#d71920"/><rect x="110.6" y="28.6" width="38.8" height="22" fill="#2a2a2a"/><g fill="#111"><rect x="14" y="56" width="22" height="3"/><rect x="64" y="56" width="22" height="3"/><rect x="114" y="56" width="22" height="3"/></g><g fill="#d71920"><rect x="14" y="70" width="32" height="6" rx="1.5"/><rect x="64" y="70" width="32" height="6" rx="1.5"/></g><rect x="114" y="70" width="32" height="6" rx="1.5" fill="none" stroke="#888" stroke-dasharray="2 1.5"/></svg>`,
+  dev:`<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="#16181b"/><rect width="160" height="12" fill="#0e0f11"/><g fill="#6b7078"><rect x="98" y="5" width="12" height="2"/><rect x="114" y="5" width="12" height="2"/><rect x="130" y="5" width="20" height="2"/></g><rect x="10" y="4" width="26" height="4" fill="#e9e9e9"/><g fill="#f2f2f2"><rect x="12" y="26" width="84" height="8"/><rect x="12" y="38" width="62" height="8"/></g><g fill="#7c828b"><rect x="12" y="52" width="70" height="2.5"/><rect x="12" y="57" width="58" height="2.5"/></g><rect x="12" y="66" width="34" height="10" rx="2" fill="#d71920"/><rect x="50" y="66" width="30" height="10" rx="2" fill="none" stroke="#9aa0a8"/><g stroke="#2c3036"><path d="M108 24h42M108 36h42M108 48h42M108 60h42M108 72h42M108 24v48M122 24v48M136 24v48M150 24v48"/></g><circle cx="129" cy="48" r="10" fill="none" stroke="#c9ccd1" stroke-width="2"/></svg>`,
+  games:`<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="#0b0b26"/><g opacity=".35" fill="#fff"><circle cx="20" cy="12" r=".8"/><circle cx="70" cy="8" r=".8"/><circle cx="140" cy="14" r=".8"/><circle cx="110" cy="6" r=".8"/></g><g><rect x="10" y="20" width="40" height="28" rx="3" fill="#ff3ea5"/><rect x="60" y="20" width="40" height="28" rx="3" fill="#2ee6f0"/><rect x="110" y="20" width="40" height="28" rx="3" fill="#ffd23e"/><rect x="10" y="54" width="40" height="28" rx="3" fill="#7a5cff"/><rect x="60" y="54" width="40" height="28" rx="3" fill="#3eff8b"/><rect x="110" y="54" width="40" height="28" rx="3" fill="#ff7a3e"/></g><g fill="#0b0b26"><path d="M30 28l6 10h-12z"/><rect x="74" y="28" width="12" height="12"/><circle cx="130" cy="34" r="6"/><path d="M24 62h12v4h4v8H20v-8h4z"/><rect x="72" y="62" width="4" height="12"/><rect x="80" y="62" width="4" height="12"/><path d="M124 62l12 6-12 6z"/></g></svg>`,
+  com:`<svg viewBox="0 0 160 90"><rect width="160" height="90" fill="#121212"/><circle cx="48" cy="45" r="32" fill="#050505" stroke="#2a2a2a"/><g fill="none" stroke="#1d1d1d"><circle cx="48" cy="45" r="26"/><circle cx="48" cy="45" r="20"/></g><circle cx="48" cy="45" r="11" fill="#d71920"/><circle cx="48" cy="45" r="2" fill="#121212"/><g fill="#f1f1f1"><rect x="92" y="18" width="52" height="5"/></g><rect x="92" y="27" width="34" height="3" fill="#8a8a8a"/><g fill="#d71920"><rect x="92" y="46" width="3" height="10"/><rect x="97" y="42" width="3" height="18"/><rect x="102" y="38" width="3" height="26"/><rect x="107" y="44" width="3" height="14"/><rect x="112" y="40" width="3" height="22"/><rect x="117" y="47" width="3" height="8"/></g><g fill="#555"><rect x="122" y="43" width="3" height="16"/><rect x="127" y="46" width="3" height="10"/><rect x="132" y="41" width="3" height="20"/><rect x="137" y="45" width="3" height="12"/><rect x="142" y="47" width="3" height="8"/></g><rect x="92" y="72" width="54" height="2" fill="#333"/><rect x="92" y="72" width="22" height="2" fill="#fff"/></svg>`
+};
+
+(function tower(){
+  const foot=$("#foot"), ul=$("#tlds"), peek=$("#peek");
+  $("#yr").textContent=new Date().getFullYear();
+  ul.innerHTML = SITES.map((s,i)=>`<li class="tld${s.here?" here":""}" data-i="${i}">
+      <a href="${esc(s.href)}"${s.here?' aria-current="page"':""}><span class="nm">${esc(s.tld)}</span>${s.here?'<span class="pill">Here</span>':""}</a></li>`).join("");
+  const rows=[...ul.children];
+  let active=-1, lastTouch=false, wasActive=false, hideT;
+
+  function layout(){
+    const towerBox=ul.parentElement.getBoundingClientRect(), footBox=foot.getBoundingClientRect();
+    const left=towerBox.right-footBox.left+36;
+    foot.classList.toggle("stack", left+300 > foot.clientWidth-10);
+    return left;
+  }
+  function show(i){
+    clearTimeout(hideT);
+    const s=SITES[i]; active=i;
+    rows.forEach((r,j)=>r.classList.toggle("active",j===i));
+    const t=THUMBS[s.thumb] || `<img src="${esc(s.thumb)}" alt="">`;
+    peek.innerHTML=`<div class="thumb">${t}</div><div class="pb">
+      <div class="dom">jerm747${esc(s.tld)}</div><h3>${esc(s.title)}</h3><p>${esc(s.desc)}</p>
+      ${s.here?"":`<a class="go" href="${esc(s.href)}">Visit ${esc(s.tld)} →</a>`}</div>`;
+    const left=layout();
+    if(!foot.classList.contains("stack")){
+      const r=rows[i].getBoundingClientRect(), fb=foot.getBoundingClientRect();
+      const top=Math.max(10, Math.min(r.top-fb.top + r.height/2 - 120, foot.clientHeight - peek.offsetHeight - 12));
+      peek.style.left=left+"px"; peek.style.top=top+"px";
+    } else { peek.style.left=peek.style.top=""; }
+    peek.classList.add("show");
+  }
+  function hide(){
+    hideT=setTimeout(()=>{ active=-1; peek.classList.remove("show"); rows.forEach(r=>r.classList.remove("active")); },140);
+  }
+
+  rows.forEach((row,i)=>{
+    const a=row.querySelector("a");
+    a.addEventListener("pointerenter",e=>{ if(e.pointerType==="mouse") show(i); });
+    a.addEventListener("pointerdown",e=>{ lastTouch = e.pointerType!=="mouse"; wasActive = active===i && peek.classList.contains("show"); });
+    a.addEventListener("focus",()=>show(i));
+    a.addEventListener("click",e=>{
+      // touch: first tap previews, second tap goes
+      if(lastTouch && !wasActive){ e.preventDefault(); show(i); lastTouch=false; wasActive=true; return; }
+      if(SITES[i].here){ e.preventDefault(); window.scrollTo({top:0,behavior:"smooth"}); }
+    });
+  });
+  ul.addEventListener("pointerleave",e=>{ if(e.pointerType==="mouse") hide(); });
+  peek.addEventListener("pointerenter",()=>clearTimeout(hideT));
+  peek.addEventListener("pointerleave",e=>{ if(e.pointerType==="mouse") hide(); });
+  foot.addEventListener("focusout",e=>{ if(!foot.contains(e.relatedTarget)) hide(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") hide(); });
+  document.addEventListener("pointerdown",e=>{ if(!foot.contains(e.target)) hide(); });
+  window.addEventListener("resize",()=>{ if(active>-1) show(active); else layout(); });
+  layout();
+})();
+
+setTheme(state.theme);
+setView(state.view);
+</script>
+</body>
+</html>
