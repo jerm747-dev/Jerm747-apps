@@ -89,3 +89,18 @@ small{font:500 .63rem ui-monospace,monospace;color:var(--dim);white-space:nowrap
     inset 0 0 12px #0000004d}
 :root[data-finish=black] .brand .plate{background-image:url(nameplate-black.webp);background-color:#161616}
 @media(max-width:360px){.brand p.nameplate{--plate-h:30px}}
+
+.brand{flex-wrap:wrap;gap:clamp(5px,1.2vw,16px);min-width:0}
+.brand p.nameplate{margin:0}
+.brand h1{line-height:0}
+.patchbay-badge{display:block;width:clamp(108px,19vw,220px);max-width:100%;height:auto;user-select:none}
+:root[data-finish=black] .patchbay-badge{content:url(patchbay-black.webp) / "Patch Bay"}
+
+.activity-light{display:inline-block;width:.44rem;aspect-ratio:1;margin-inline:.15rem;border-radius:50%;vertical-align:.16em;
+  background:#10171c;border:1px solid #887454;box-shadow:0 0 0 1px #0007}
+.activity-light[aria-label="Activity this session"]{background:#ffc06f;border-color:#ffd699;box-shadow:0 0 .4rem #f9a14bba}
+
+.brand button.signal{display:block;flex:none;min-height:0;padding:0}
+.brand button.signal[aria-pressed=true]::after{
+  background:radial-gradient(circle at 38% 30%,#fff1bb,#ffc06f 34%,#b76b32 78%);
+  box-shadow:0 0 8px #ffc06faa,inset 0 1px 2px #fff5}

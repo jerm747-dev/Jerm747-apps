@@ -58,13 +58,16 @@ body{margin:0;padding:clamp(8px,2.4vw,30px);display:grid;place-items:center;min-
 .note{width:100%;margin:2px 0 0;color:var(--dim);font-size:.72rem}
 @media(max-width:760px){.tools{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:420px){.side{padding-inline:30px}.tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.enter{font-size:clamp(1.5rem,5vw,3rem);padding-inline:clamp(10px,3.2vw,30px)}
+.enter .patchbay-badge{display:block;width:clamp(106px,37vw,240px);height:auto;user-select:none}
+:root[data-finish=black] .enter .patchbay-badge{content:url(/apps/patchbay-black.webp) / "Patch Bay"}
 </style>
 </head>
 <body>
 <main class="side">
   <div class="ear l" aria-hidden="true"><i></i><i></i></div>
   <div class="ear r" aria-hidden="true"><i></i><i></i></div>
-  <a class="enter" href="/apps/" target="_top"><span class="knob" aria-hidden="true"></span>Patch Bay<span class="go" aria-hidden="true">›</span></a>
+  <a class="enter" href="/apps/" target="_top"><span class="knob" aria-hidden="true"></span><img class="patchbay-badge" src="/apps/patchbay-blue.webp" width="440" height="126" draggable="false" alt="Patch Bay"><span class="go" aria-hidden="true">›</span></a>
   <p class="about">An all-in-one MIDI studio. Manage MIDI files, send and receive with your MIDI devices, and test latency and input channels for live recording.
     Sample sounds, turn your voice into MIDI, and export MP3s in different voices to audition your parts.</p>
   <ul class="tools" id="tools" aria-label="Tools in the rack"></ul>
@@ -73,7 +76,7 @@ body{margin:0;padding:clamp(8px,2.4vw,30px);display:grid;place-items:center;min-
       <button type="button" data-finish="blue" aria-pressed="true">Blue</button>
       <button type="button" data-finish="black" aria-pressed="false">Black</button>
     </div>
-    <a class="apk" href="/apps/download/PatchBay-0.1.0.apk" download>Android app · APK 0.1.0</a>
+    <a class="apk" href="/apps/download/PatchBay-0.1.1.apk" download>Android app · APK 0.1.1</a>
     <p class="note">The Android app is a test build for Android 10 or newer.</p>
   </div>
   <nav class="j747-tower" aria-label="Jerm 747 sites">
