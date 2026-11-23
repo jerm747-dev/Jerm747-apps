@@ -1,0 +1,16 @@
+{
+  "title": "Returnity",
+  "tagline": "Nige Hood · In the workshop",
+  "description": "The Returnity game: Encore's hero and his full move set on CD Man's highway and subway routes. Placeholder for now; the first playable build lands here.",
+  "order": 10,
+  "kind": "game",
+  "status": "prototype",
+  "accent": "#C98A3A",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "touch"
+  ],
+  "credit": "Jerm747 original.",
+  "version": "0.0.1 placeholder"
+}
