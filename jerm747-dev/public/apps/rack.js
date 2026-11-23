@@ -12,7 +12,7 @@ function render() {
   shelf.innerHTML = visible.map(tool => `
     <li class="module" data-icon="${escapeHtml(tool.icon)}">
       <span class="ear left" aria-hidden="true"></span>
-      <img class="cover" src="app-covers/${escapeHtml(tool.id)}.webp" alt="" width="576" height="384">
+      <img class="cover" src="app-covers/${escapeHtml(tool.id)}.webp?v=2" alt="" width="576" height="384">
       <div class="info">
         <h2>${escapeHtml(tool.name)} ${tool.version ? `<small>v${escapeHtml(tool.version)}</small>` : ''}</h2>
         <p>${escapeHtml(tool.desc)}</p>

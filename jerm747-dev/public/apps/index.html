@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0e233d">
 <title>Patch Bay · Jerm 747</title>
-<link rel="stylesheet" href="rack.css">
-<script src="catalog.js" defer></script>
-<script src="rack.js" defer></script>
+<link rel="stylesheet" href="rack.css?v=3"><link rel="stylesheet" href="tower.css">
+<script src="catalog.js?v=2" defer></script>
+<script src="rack.js?v=2" defer></script>
 </head>
 <body>
 <main class="cabinet">
   <header class="faceplate">
-    <div class="brand"><span class="signal" aria-hidden="true"></span><div><p>JERM 747</p><h1>Patch Bay</h1></div></div>
+    <div class="brand"><span class="signal" aria-hidden="true"></span><div><p class="nameplate"><span class="plate" role="img" aria-label="Jerm 747"></span></p><h1>Patch Bay</h1></div></div>
     <div class="finish">
       <button type="button" data-finish="blue" aria-pressed="true">Blue</button>
       <button type="button" data-finish="black" aria-pressed="false">Black</button>
@@ -29,8 +29,13 @@
   <div class="grille" aria-hidden="true"></div>
   <nav class="web-links" aria-label="Jerm 747 sites" hidden>
     <a class="get-apk" href="download/PatchBay-0.1.0.apk" download>Android app · APK 0.1.0</a>
-    <a href="/">jerm747.dev</a><a href="https://jerm747.games">jerm747.games</a><a href="https://jerm747.com">jerm747.com</a>
     <small>Test build for Android 10 or newer. Allow installs from your browser when Android asks.</small>
+    <div class="j747-tower" aria-label="Jerm 747 sites">
+      <p class="tower-cap">JERM 747</p>
+      <a href="/" aria-current="true"><b>.dev</b><span>Development</span></a>
+      <a href="https://jerm747.games/"><b>.games</b><span>Games</span></a>
+      <a href="https://jerm747.com/"><b>.com</b><span>Music</span></a>
+    </div>
   </nav>
 </main>
 </body>

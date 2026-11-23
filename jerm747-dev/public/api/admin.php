@@ -11,12 +11,19 @@
 // POST action=stage    key, stage          -> change stage
 // POST action=items    key, items(json)    -> replace deliverables list
 // POST action=notes    key, notes          -> private notes (never shown to client)
-// POST action=create   name, email, title  -> start a project yourself (phone/in-person leads)
+// POST action=create   name, email, title  -> start a project yourself (phone/in-person leads).
+//                       Doesn't email anyone; call send_key next. A second project for the same
+//                       email within a day comes back as {duplicate} unless allow_duplicate=1.
+// POST action=send_key key                 -> email the client their project key (returns a copy of the email)
+// GET  ?action=key_email                   -> the project-key email with placeholders, for previews
+// POST action=link_site key, slug, on(1|0) -> link a site in development to this project (or unlink it)
+// POST action=delete   key, confirm=key    -> delete a project (moved to api/data/deleted/, not erased)
 // GET  ?action=stats&days=30               -> visitor analytics
 // GET  ?action=settings                    -> report settings + cron command
 // POST action=settings report_hours(0|12|24), report_email, admin_box(0|1)
 // POST action=report_test                  -> send a traffic report now
 require __DIR__ . '/lib.php';
+require_once __DIR__ . '/sites_lib.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $isJson = str_contains($_SERVER['CONTENT_TYPE'] ?? '', 'application/json');
@@ -41,6 +48,36 @@ function must_project(array $in): array {
     return $p;
 }
 
+// Every site in development: slug, title, linked project key.
+function all_sites_brief(): array {
+    $out = [];
+    foreach (glob(data_dir('sites') . '/*.json') as $file) {
+        $s = json_decode((string)file_get_contents($file), true);
+        if (!is_array($s) || empty($s['slug'])) continue;
+        $out[] = ['slug' => $s['slug'], 'title' => $s['title'] ?? $s['slug'], 'project_key' => (string)($s['project_key'] ?? '')];
+    }
+    usort($out, fn($a, $b) => strcasecmp($a['title'], $b['title']));
+    return $out;
+}
+
+// A project plus the site links the admin page shows with it.
+function admin_view(array $p): array {
+    $sites = all_sites_brief();
+    $p['linked_sites'] = array_values(array_filter($sites, fn($s) => $s['project_key'] === $p['key']));
+    $p['all_sites'] = $sites;
+    return $p;
+}
+
+// The email a client gets with their project key. One template for sending and for previews.
+function key_email(string $name, string $key, string $email = ''): array {
+    return [
+        'to' => $email,
+        'from' => 'Jeremy at jerm747.dev <' . MAIL_FROM . '>',
+        'subject' => "Your jerm747.dev project key: $key",
+        'body' => "Hi $name,\n\nI've opened a project page for us. Your project key is:\n\n    $key\n\n" . portal_link($key) . "\n\nJeremy\njerm747.dev\n",
+    ];
+}
+
 switch ($action) {
     case 'list':
         $out = [];
@@ -49,16 +86,59 @@ switch ($action) {
             if (!is_array($p)) continue;
             $last = end($p['messages']) ?: null;
             $out[] = [
+                'sites' => [],
                 'key' => $p['key'], 'title' => $p['title'], 'stage' => $p['stage'],
                 'client' => $p['client'], 'created' => $p['created'], 'updated' => $p['updated'],
                 'waiting' => $last && $last['from'] === 'client',
             ];
         }
         usort($out, fn($a, $b) => strcmp($b['updated'], $a['updated']));
+        $byKey = [];
+        foreach (all_sites_brief() as $s) if ($s['project_key'] !== '') $byKey[$s['project_key']][] = ['slug' => $s['slug'], 'title' => $s['title']];
+        foreach ($out as &$row) $row['sites'] = $byKey[$row['key']] ?? [];
+        unset($row);
         respond(['ok' => true, 'projects' => $out]);
 
     case 'get':
-        respond(['ok' => true, 'project' => must_project($in)]);
+        respond(['ok' => true, 'project' => admin_view(must_project($in))]);
+
+    case 'key_email':
+        respond(['ok' => true, 'email' => key_email('{name}', '{key}', '{email}')]);
+
+    case 'send_key':
+        $p = must_project($in);
+        $mail = key_email($p['client']['name'], $p['key'], $p['client']['email']);
+        $sent = send_mail($mail['to'], $mail['subject'], $mail['body']);
+        $mail['sent'] = $sent;
+        $mail['at'] = now();
+        $p['emails'][] = ['kind' => 'project_key', 'to' => $mail['to'], 'subject' => $mail['subject'], 'at' => $mail['at'], 'sent' => $sent];
+        save_project($p);
+        respond(['ok' => true, 'project' => admin_view($p), 'email' => $mail]);
+
+    case 'link_site':
+        $p = must_project($in);
+        $s = load_site(site_slug($in['slug'] ?? ''));
+        if (!$s) fail('Site not found.', 404);
+        $on = in_array((string)($in['on'] ?? '1'), ['1', 'true'], true);
+        if ($on) $s['project_key'] = $p['key'];
+        elseif (($s['project_key'] ?? '') === $p['key']) $s['project_key'] = '';
+        save_site($s);
+        respond(['ok' => true, 'project' => admin_view($p)]);
+
+    case 'delete':
+        $p = must_project($in);
+        if (normalize_key($in['confirm'] ?? '') !== $p['key']) fail("Type the project key ({$p['key']}) to delete it.");
+        $stamp = gmdate('Ymd-His');
+        $bin = data_dir('deleted');
+        rename(project_path($p['key']), "$bin/{$p['key']}-$stamp.json");
+        $files = data_dir('files') . '/' . $p['key'];
+        if (is_dir($files)) rename($files, "$bin/{$p['key']}-$stamp-files");
+        foreach (all_sites_brief() as $brief) {
+            if ($brief['project_key'] !== $p['key']) continue;
+            $s = load_site($brief['slug']);
+            if ($s) { $s['project_key'] = ''; save_site($s); }
+        }
+        respond(['ok' => true, 'deleted' => $p['key']]);
 
     case 'message':
         $p = must_project($in);
@@ -70,7 +150,7 @@ switch ($action) {
         send_mail($p['client']['email'], "New message on your project {$p['key']}",
             "Hi {$p['client']['name']},\n\n$body\n\n" . ($fileIds ? '(' . count($fileIds) . " file(s) attached on your project page)\n\n" : '') .
             "Reply on your project page:\n" . portal_link($p['key']) . "\n\nJeremy\njerm747.dev\n");
-        respond(['ok' => true, 'project' => $p]);
+        respond(['ok' => true, 'project' => admin_view($p)]);
 
     case 'update':
         $p = must_project($in);
@@ -81,7 +161,7 @@ switch ($action) {
         save_project($p);
         send_mail($p['client']['email'], "Project update: $title",
             "Hi {$p['client']['name']},\n\n$title\n$body\n\nSee the full project:\n" . portal_link($p['key']) . "\n\nJeremy\njerm747.dev\n");
-        respond(['ok' => true, 'project' => $p]);
+        respond(['ok' => true, 'project' => admin_view($p)]);
 
     case 'stage':
         $p = must_project($in);
@@ -89,7 +169,7 @@ switch ($action) {
         if (!in_array($stage, STAGES, true)) fail('Unknown stage.');
         $p['stage'] = $stage;
         save_project($p);
-        respond(['ok' => true, 'project' => $p]);
+        respond(['ok' => true, 'project' => admin_view($p)]);
 
     case 'items':
         $p = must_project($in);
@@ -101,13 +181,13 @@ switch ($action) {
             'status' => in_array($it['status'] ?? '', ['planned', 'in_progress', 'done'], true) ? $it['status'] : 'planned',
         ], array_filter($items, fn($it) => is_array($it) && trim((string)($it['label'] ?? '')) !== '')));
         save_project($p);
-        respond(['ok' => true, 'project' => $p]);
+        respond(['ok' => true, 'project' => admin_view($p)]);
 
     case 'notes':
         $p = must_project($in);
         $p['notes'] = clean($in['notes'] ?? '', 10000);
         save_project($p);
-        respond(['ok' => true, 'project' => $p]);
+        respond(['ok' => true, 'project' => admin_view($p)]);
 
     case 'stats':
         $days = max(1, min(90, (int)($in['days'] ?? 30)));
@@ -149,6 +229,15 @@ switch ($action) {
         $name = clean($in['name'] ?? '', 120);
         $email = clean($in['email'] ?? '', 200);
         if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) fail('Add the client\'s name and a valid email.');
+        if (!in_array((string)($in['allow_duplicate'] ?? ''), ['1', 'true'], true)) {
+            foreach (glob(data_dir('projects') . '/*.json') as $file) {
+                $other = json_decode((string)file_get_contents($file), true);
+                if (!is_array($other) || strcasecmp($other['client']['email'] ?? '', $email) !== 0) continue;
+                if (strtotime($other['created']) < time() - 86400) continue;
+                respond(['ok' => false, 'error' => "You opened {$other['key']} for $email " . ($other['title'] ? "(\"{$other['title']}\") " : '') . 'in the last day.',
+                    'duplicate' => ['key' => $other['key'], 'title' => $other['title'], 'created' => $other['created']]], 409);
+            }
+        }
         $key = make_key();
         $p = [
             'key' => $key, 'created' => now(), 'updated' => now(), 'stage' => 'reviewing',
@@ -156,14 +245,10 @@ switch ($action) {
             'client' => ['name' => $name, 'email' => $email, 'company' => clean($in['company'] ?? '', 160)],
             'request' => ['type' => '', 'budget' => '', 'timeline' => '', 'estimate' => ''],
             'messages' => [], 'updates' => [['id' => new_id(), 'title' => 'Project opened', 'body' => '', 'at' => now()]],
-            'items' => [], 'files' => [], 'notes' => '',
+            'items' => [], 'files' => [], 'notes' => '', 'emails' => [],
         ];
         save_project($p);
-        if (!empty($in['notify'])) {
-            send_mail($email, "Your jerm747.dev project key: $key",
-                "Hi $name,\n\nI've opened a project page for us. Your project key is:\n\n    $key\n\n" . portal_link($key) . "\n\nJeremy\njerm747.dev\n");
-        }
-        respond(['ok' => true, 'project' => $p]);
+        respond(['ok' => true, 'project' => admin_view($p)]);
 }
 
 fail('Unknown action.');

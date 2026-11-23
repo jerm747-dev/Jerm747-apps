@@ -29,14 +29,14 @@ const TOOLS = [
     icon:"rhythm"
   },
   {
-    id:"vox-lane", name:"Vox Lane", version:"",
+    id:"vox-lane", name:"Vox Lane", version:"0.1.0",
     category:"music", status:"live", href:"./vox-lane.html",
     desc:"Turn a vocal take or voice memo into an editable piano-roll melody and export it as MIDI.",
     specs:["Voice recording","Pitch editing","MIDI export"],
     icon:"vox"
   },
   {
-    id:"patch-play", name:"Patch Play", version:"",
+    id:"patch-play", name:"Patch Play", version:"0.1.0",
     category:"music", status:"live", href:"./patch-play.html",
     desc:"Play MIDI phrases with different instrument voices. Start with a demo or import your own MIDI file.",
     specs:["MIDI playback","Voice audition","MIDI and audio export"],

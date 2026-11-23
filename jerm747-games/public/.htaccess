@@ -6,4 +6,8 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 # Never serve stats data directly
 RewriteRule ^api/data/ - [F,L]
 
+# Share links with a picture: /play/<folder> gives link previews the game's title and cover,
+# then opens /#/play/<folder>
+RewriteRule ^play/([A-Za-z0-9][A-Za-z0-9._-]{0,63})/?$ api/share.php?g=$1 [L,QSA]
+
 Options -Indexes

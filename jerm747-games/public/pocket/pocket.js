@@ -29,7 +29,7 @@
    'pulse-runner':'.device .left-wing,.device .right-wing', 'wave-run-747':'#stick,#btnA,#btnB',
    'plugin-twist':'.applet .controls','album-match':'.am-controls,.am-how',
    'flight-control-deck':'#controller-tools,#controller-view,#left,#right,.center-fire',
-   'encore':'#game .deck','cd-man':'#game .deck,#cd-touch','big-bowl-smash':'.controls.deck','catalog-clash':'.climb-deck','gs-fighter-2':'#controller,.gd-ov-controller',
+   'encore':'#game .deck','cd-man':'#game .deck,#cd-touch','returnity':'.touchdeck','big-bowl-smash':'.controls.deck','catalog-clash':'.climb-deck','gs-fighter-2':'#controller,.gd-ov-controller',
    'tic-tac-steel':'#controller-guide'
  };
  function apply(){
@@ -229,6 +229,14 @@ window.createPocketGameMenu=function(host,api){
 (() => {
   'use strict';
   const stylesheet = new URL('pocket-shell.css' + new URL(document.currentScript.src).search, document.currentScript.src).href;
+  // Folder this script was loaded from, so the Pocket works from /pocket/ or a client site's games/pocket/.
+  const base = new URL('.', document.currentScript.src).href;
+  // Site-level options (a client site can set these before or after this script loads):
+  //   defaultFinish  finish used by "Game default" when a game has no finish of its own
+  //   skins          { gameId: finish } per-game defaults
+  //   labels         { finish: label } renames in menus, e.g. {auto: 'Returnity Edition'}
+  //   bezelTitle     text above the screen
+  const site = {defaultFinish:'', skins:{}, labels:{}, bezelTitle:'JERM747 ARCADE', ...(window.Jerm747PocketConfig || {})};
   const faces = [
     ['y', 'top', '#b9c6ff'], ['x', 'left', '#ffa7cc'],
     ['a', 'right', '#ffdc91'], ['b', 'bottom', '#9ef0dc']
@@ -277,9 +285,14 @@ window.createPocketGameMenu=function(host,api){
       else navigator.vibrate?.(duration);
     }catch{}
   }
-  const skins = {'wave-run-747':'ice'};
+  const skins = {'wave-run-747':'ice', 'returnity':'returnity-amber'};
   const finishKey = 'jerm747.pocket.finish.v1';
-  const finishes = Object.freeze({auto: 'Game default', classic: 'Classic Gray', ice: 'Ice Blue'});
+  const finishes = Object.freeze({auto: 'Game default', classic: 'Classic Gray', ice: 'Ice Blue', 'returnity-amber': 'Returnity Edition', 'returnity-violet': 'Returnity Violet'});
+  const finishLabel = value => site.labels?.[value] || finishes[value] || '';
+  function configure(next = {}) {
+    Object.assign(site, next || {});
+    window.dispatchEvent(new Event('pocket-finish-change'));
+  }
   const valid = value => Object.prototype.hasOwnProperty.call(finishes, value);
   let finish = 'auto';
   try {
@@ -293,7 +306,8 @@ window.createPocketGameMenu=function(host,api){
     window.dispatchEvent(new Event('pocket-finish-change'));
   }
   function skinFor(gameId) {
-    return finish === 'auto' ? (skins[gameId] || '') : finish === 'ice' ? 'ice' : '';
+    if (finish === 'auto') return site.skins?.[gameId] || skins[gameId] || site.defaultFinish || '';
+    return finish === 'classic' ? '' : finish;
   }
   const actions = ['up', 'down', 'left', 'right', 'a', 'b', 'x', 'y', 'l', 'r', 'select'];
   const sectors = [['right'], ['up','right'], ['up'], ['up','left'],
@@ -324,7 +338,11 @@ window.createPocketGameMenu=function(host,api){
     link.href = stylesheet;
     const finishSheet = link.cloneNode();
     finishSheet.href = stylesheet.replace('pocket-shell.css', 'pocket-ice.css');
-    shadow.append(link, finishSheet);
+    const amberSheet = link.cloneNode();
+    amberSheet.href = stylesheet.replace('pocket-shell.css', 'pocket-amber.css');
+    const violetSheet = link.cloneNode();
+    violetSheet.href = stylesheet.replace('pocket-shell.css', 'pocket-violet.css');
+    shadow.append(link, finishSheet, amberSheet, violetSheet);
 
     const shell = document.createElement('div');
     shell.className = 'safe';
@@ -342,12 +360,12 @@ window.createPocketGameMenu=function(host,api){
         <div class="bezel">
           <div class="bezel-head">
             <span class="led-group" aria-hidden="true"><i class="led power"></i><b>PWR</b></span>
-            <span class="bezel-title">JERM747 ARCADE</span>
+            <span class="bezel-title"></span>
             <button class="guide-button" type="button" data-command="help" aria-label="Pocket controls guide" title="Controller guide">?</button>
           </div>
           <div class="screen" aria-hidden="true"></div>
         </div>
-        <div class="wordmark" aria-hidden="true"><img src="/pocket/wordmark.svg?v=200" alt=""></div>
+        <div class="wordmark" aria-hidden="true"><img src="${base}wordmark.svg?v=200" alt=""></div>
         <div class="direction-control">${padMarkup}<div class="pocket-stick" role="group" aria-label="Analog joystick" hidden><span></span></div></div>
         <div class="faces">
           ${faces.map(([key,position,color])=>`<button type="button" class="face face-${position}" data-key="${key}" style="--c:${color}"><span class="button-face"><span class="face-letter">${key.toUpperCase()}</span><span class="action-name"></span></span></button>`).join('')}
@@ -549,7 +567,9 @@ window.createPocketGameMenu=function(host,api){
     function setProfile(profile = {}) { hint=profile?.hint||'';setLabels(profile?.labels || {}); }
     function applyFinish() {
       const skin = skinFor(cartridge.id);
-      $('.wordmark img').src='/pocket/'+(skin==='ice'?'wordmark.svg':'wordmark-light.svg')+'?v=200';
+      $('.wordmark img').src=base+(skin==='ice'||skin==='returnity-violet'?'wordmark.svg':'wordmark-light.svg')+'?v=200';
+      $('.bezel-title').textContent=site.bezelTitle||'';
+      device.setAttribute('aria-label',skin==='returnity-amber'?'Returnity Pocket Player':'747 Pocket handheld');
       if (skin) { device.dataset.skin = skin; root.dataset.skin = skin; }
       else { delete device.dataset.skin; delete root.dataset.skin; }
     }
@@ -650,7 +670,9 @@ window.createPocketGameMenu=function(host,api){
       }
     };
   }
-  window.Jerm747Pocket = {mount, finishes, getFinish: () => finish, setFinish, skinFor, getControls:()=>({...controls}),saveControls,refreshControls};
+  // Finishes to mark "New" in theme pickers.
+  const newFinishes = Object.freeze(['returnity-amber', 'returnity-violet']);
+  window.Jerm747Pocket = {mount, finishes, newFinishes, finishLabel, configure, getFinish: () => finish, setFinish, skinFor, getControls:()=>({...controls}),saveControls,refreshControls};
 })();
 
 /* 747 Pocket controls. Attach only inside the currently playing, same-origin game. */
@@ -659,7 +681,7 @@ window.createPocketGameMenu=function(host,api){
   const blank = {a:'',b:'',x:'',y:'',l:'',r:'',select:''};
   const direction = {up:12,down:13,left:14,right:15};
   const arrow = {up:'ArrowUp',down:'ArrowDown',left:'ArrowLeft',right:'ArrowRight'};
-  const standard = {a:0,b:1,x:2,y:3,l:4,r:5,select:8,...direction};
+  const standard = {a:0,b:1,x:2,y:3,l:4,r:5,select:8,start:9,...direction};
   const aliases = {'gs-fighter-iii':'gs-fighter-3',flight:'flight-control-deck','get-down':'groove-squad-get-down'};
   const profile = (mode, labels, hint, buttons={}) => ({mode,labels:{...blank,...labels},hint,buttons:{...standard,...buttons}});
   const fight = profile('pad',{a:'Jump',b:'Kick',x:'Punch',y:'V-wave',l:'Guard',r:'High',select:'Music'},
@@ -671,6 +693,8 @@ window.createPocketGameMenu=function(host,api){
   const profiles = {
     'encore':profile('pad',{a:'Jump',b:'Flip',x:'Fire',y:'Talk',l:'Speed',r:'Flip',select:'Light'},
       'Hold L to run. Combine Jump and Flip for the game’s special moves. A confirms menus.',{x:7,y:6,r:2,select:11}),
+    'returnity':profile('pad',{a:'Jump',b:'Fire',x:'Strike',y:'Backup'},
+      'D-pad moves. A jumps, X strikes (hold to lift), B throws fire, Y calls backup. A confirms menus.'),
     'cd-man':profile('pad',{a:'Jump',b:'Lift',x:'Throw',y:'Run lock',l:'Speed',r:'Speed'},
       'D-pad moves. X throws a light pulse. B lifts or throws a carried item. Hold L to run.'),
     'big-bowl-smash':profile('pad',{a:'Hurdle',b:'Dive',x:'Speed',y:'Stiff arm',l:'Speed',r:'Dive',select:'Sound'},
@@ -702,6 +726,12 @@ window.createPocketGameMenu=function(host,api){
     'controller-check':profile('focus',{a:'Use',b:'Back'},'The checker reads the connected physical controller. D-pad and A navigate test options.'),
   };
   const defaultProfile = focusProfile;
+  // A site can describe its own games: register('returnity', {labels:{a:'Jump'}, hint:'...', buttons:{a:0}}).
+  function register(id, spec = {}) {
+    if (!id) return;
+    // START is the Pocket's own button; a registered game receives it as controller button 9.
+    profiles[id] = profile(spec.mode === 'focus' ? 'focus' : 'pad', {start:'Start', ...(spec.labels || {})}, String(spec.hint || ''), spec.buttons || {});
+  }
   function gameProfile(id, doc) {
     if (id === 'catalog-clash' && doc?.location.pathname.endsWith('catalog-clash-level10.html')) return storyFight;
     return profiles[aliases[id] || id] || defaultProfile;
@@ -896,7 +926,7 @@ window.createPocketGameMenu=function(host,api){
     }
     return {axes,activate(){active=true;sync()},deactivate(){active=false;releaseAll();detach();guest=null;game='';},sync,input,releaseAll,getProfile};
   }
-  window.Jerm747PocketInput=Object.freeze({create});
+  window.Jerm747PocketInput=Object.freeze({create,register});
 })();
 
 /* Embed 747 Pocket around an existing arcade iframe. The game stays in its document. */
@@ -905,8 +935,10 @@ window.createPocketGameMenu=function(host,api){
   const layouts = {
     'word-search': [4/3, 560], 'album-match': [4/3, 680], 'plugin-twist': [4/3, 660],
     'sumi-sudoku': [4/3, 720], 'tic-tac-steel': [4/3, 660], 'big-bowl-smash': [4/3, 680],
-    'beat-room': [4/3, 760], 'controller-check': [4/3, 660]
+    'beat-room': [4/3, 760], 'controller-check': [4/3, 660], 'returnity': [4/3, 880]
   };
+  // Games that open in the Pocket until the player picks the full view for them.
+  const pocketFirst = new Set(['returnity']);
   const aliases = {'gs-fighter-iii':'gs-fighter-3','get-down':'groove-squad-get-down','flight':'flight-control-deck'};
   const storageKey = id => 'jerm747.pocket.view.v1.' + (aliases[id] || id);
   const defaultViewKey = 'jerm747.pocket.view.v1.default';
@@ -969,6 +1001,7 @@ window.createPocketGameMenu=function(host,api){
     `,
     'encore':'#game .deck {display:none!important}',
     'cd-man':'#game .deck {display:none!important}',
+    'returnity':'.mast,.cartridge,.touchdeck,.deck,footer{display:none!important}html,body{overflow:hidden!important;background:#101119!important}.cabinet,.cabinet.playing{width:100%!important;max-width:none!important;height:100dvh!important;margin:0!important;padding:0!important;display:block!important}.machine{height:100%!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}.glass{height:100%!important;padding:0!important;border:0!important;border-radius:0!important}.screen,.screen[data-mode]{aspect-ratio:auto!important;height:100%!important;min-height:0!important}',
     'big-bowl-smash':'.controls.deck {display:none!important}',
     'catalog-clash':'.climb-deck {display:none!important}',
     'wave-run-747':'.pad {display:none!important}',
@@ -1089,11 +1122,14 @@ window.createPocketGameMenu=function(host,api){
       let prefer = remembered.get(gameId);
       if (prefer === undefined) {
         // A game without its own choice follows the last Pocket Player choice.
-        try {prefer = (localStorage.getItem(storageKey(gameId)) ?? localStorage.getItem(defaultViewKey)) === 'on';} catch {}
+        try {
+          const own = localStorage.getItem(storageKey(gameId));
+          prefer = own !== null ? own === 'on' : pocketFirst.has(gameId) || localStorage.getItem(defaultViewKey) === 'on';
+        } catch {}
       }
       // A Pocket page launch explicitly opens this cartridge in its advertised finish.
       // Ordinary arcade links keep the player's existing per-game view choice.
-      const launch = /^#\/play\/([a-z0-9._-]+)\?pocket=(ice|classic)$/.exec(location.hash);
+      const launch = /^#\/play\/([a-z0-9._-]+)\?pocket=(ice|classic|returnity-amber|returnity-violet)$/.exec(location.hash);
       if (launch && (aliases[launch[1]] || launch[1]) === gameId) {
         window.Jerm747Pocket.setFinish(launch[2]);
         setActive(true);

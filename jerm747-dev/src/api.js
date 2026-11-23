@@ -107,6 +107,17 @@ export async function adminGet(password, params) {
   return handle(await fetch(`${BASE}/admin.php?${qs}`, { headers: { 'X-Admin-Password': password } }));
 }
 
+// Like adminPost, but hands back the server's answer when it refuses (e.g. a possible duplicate).
+export async function adminPostRaw(password, action, fields = {}) {
+  const fd = new FormData();
+  fd.append('action', action);
+  for (const [k, v] of Object.entries(fields)) fd.append(k, typeof v === 'string' ? v : JSON.stringify(v));
+  const res = await fetch(`${BASE}/admin.php`, { method: 'POST', headers: { 'X-Admin-Password': password }, body: fd });
+  let data = null;
+  try { data = await res.json(); } catch { throw new Error("The server didn't answer properly. Try again in a minute."); }
+  return data;
+}
+
 export async function adminPost(password, action, fields = {}, files = []) {
   const fd = new FormData();
   fd.append('action', action);

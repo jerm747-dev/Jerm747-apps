@@ -3,10 +3,27 @@ const ROW_SHELL='<svg class="glass-button__shell" viewBox="0 0 160 48" preserveA
 const rowIcon=name=>'<svg class="icon" aria-hidden="true"><use href="#i-'+name+'"/></svg>';
 const ROW_CHEVRON='<span class="row-chevron" aria-hidden="true">›</span>';
 const finishButton = byId('pocket-finish');
+// "New" stickers: on the Theme row until a new finish has been tried, and beside a new finish's name.
+const NEW_THEMES_KEY = 'jerm747.pocket.newthemes.v1';
+const newSticker = () => { const s = document.createElement('b'); s.className = 'new-sticker'; s.textContent = 'New'; return s; };
+{
+  const css = document.createElement('style');
+  css.textContent = '.new-sticker{display:inline-block;margin-left:7px;padding:2px 6px 1px;border-radius:5px;transform:rotate(-4deg);background:linear-gradient(#ffd77d,#e8a463);color:#2a1606;font:800 9px/1.3 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 1px 3px #0006;vertical-align:2px}.new-sticker[hidden]{display:none}';
+  document.head.append(css);
+  finishButton.querySelector('.row-label').append(newSticker());
+}
+function triedNewTheme() { try { return localStorage.getItem(NEW_THEMES_KEY) === '1'; } catch { return false; } }
 function renderFinish() {
   const pocket = embeddedVisor && parent.Jerm747Pocket;
   finishButton.hidden = !pocket || !pocket.finishes || panel!=='pocket';
-  if (!finishButton.hidden) finishButton.querySelector('.pref-value').textContent = pocket.finishes[pocket.getFinish()];
+  if (finishButton.hidden) return;
+  const current = pocket.getFinish();
+  const isNew = (pocket.newFinishes || []).includes(current);
+  if (isNew) { try { localStorage.setItem(NEW_THEMES_KEY, '1'); } catch {} }
+  finishButton.querySelector('.row-label .new-sticker').hidden = triedNewTheme();
+  const value = finishButton.querySelector('.pref-value');
+  value.textContent = pocket.finishLabel ? pocket.finishLabel(current) : pocket.finishes[current];
+  if (isNew) value.append(newSticker());
 }
 finishButton.addEventListener('click', () => {
   const pocket = parent.Jerm747Pocket;

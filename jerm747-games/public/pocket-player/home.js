@@ -9,10 +9,14 @@
   let selected = 'ice';
 
   const launchURL = slug => '/#/play/' + encodeURIComponent(slug) + '?pocket=' + selected;
+  const shown = {
+    ice: ['Ice Blue', 'Wave Run 747'], classic: ['Classic', 'Wave Run 747'],
+    'returnity-amber': ['Returnity Edition', 'Returnity'], 'returnity-violet': ['Returnity Violet', 'Returnity']
+  };
   function preview(finish) {
-    selected = finish === 'classic' ? 'classic' : 'ice';
+    selected = finish in shown ? finish : 'ice';
     device.src = 'handheld-' + selected + '.webp';
-    device.alt = (selected === 'ice' ? 'Ice Blue' : 'Classic') + ' 747 Pocket Player showing Wave Run 747';
+    device.alt = shown[selected][0] + ' 747 Pocket Player showing ' + shown[selected][1];
     for (const button of finishes) button.setAttribute('aria-pressed', String(button.dataset.finish === selected));
     for (const card of cards) card.href = launchURL(card.dataset.game);
   }

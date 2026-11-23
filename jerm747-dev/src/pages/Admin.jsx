@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { adminStatus, adminSetup, adminGet, adminPost } from '../api.js';
+import { adminStatus, adminSetup, adminGet, adminPost, adminPostRaw } from '../api.js';
 import ProjectView, { STAGES } from '../components/ProjectView.jsx';
 import Traffic from './Traffic.jsx';
 import AdminSites from './AdminSites.jsx';
@@ -19,6 +19,7 @@ export default function Admin() {
   const [current, setCurrent] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
   const [view, setView] = useState('projects');
+  const [notice, setNotice] = useState('');
 
   useEffect(() => { adminStatus().then((d) => setSetupDone(d.setup)).catch((e) => setError(e.message)); }, []);
   useEffect(() => { if (pw) refresh(pw); }, [pw]);
@@ -52,10 +53,10 @@ export default function Admin() {
   }
 
   async function act(action, fields, files) {
-    const { project } = await adminPost(pw, action, { key: current.key, ...fields }, files);
-    setCurrent(project);
+    const data = await adminPost(pw, action, { key: current.key, ...fields }, files);
+    if (data.project) setCurrent(data.project);
     refresh();
-    return project;
+    return data;
   }
 
   if (!pw) {
@@ -85,7 +86,8 @@ export default function Admin() {
           project={current}
           viewer="jeremy"
           onSend={(body, files) => act('message', { body }, files)}
-          adminPanel={<AdminPanel project={current} act={act} />}
+          adminPanel={<AdminPanel key={current.key} project={current} act={act} pw={pw}
+            onDeleted={(key) => { setCurrent(null); setError(''); setNotice(`Deleted ${key}. A copy is kept in api/data/deleted/ on the server.`); refresh(); }} />}
         />
       </main>
     );
@@ -108,8 +110,9 @@ export default function Admin() {
         <button role="tab" aria-selected={view === 'traffic'} className={`tab ${view === 'traffic' ? 'is-on' : ''}`} onClick={() => setView('traffic')}>Traffic</button>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
+      {notice && view === 'projects' && <p className="admin-msg" role="status">{notice}</p>}
       {view === 'sites' ? <AdminSites pw={pw} /> : view === 'traffic' ? <Traffic pw={pw} /> : <>
-      {showCreate && <CreateProject pw={pw} onCreated={(p) => { setShowCreate(false); setCurrent(p); refresh(); }} />}
+      {showCreate && <CreateProject pw={pw} onChanged={() => refresh()} onOpen={(p) => { setShowCreate(false); setNotice(''); open(p.key); }} />}
       {projects.length === 0 ? (
         <p className="empty">No requests yet. New ones from the contact form land here and in your inbox.</p>
       ) : (
@@ -118,7 +121,8 @@ export default function Admin() {
             <li key={p.key}>
               <button onClick={() => open(p.key)}>
                 <span className="pl-title">{p.title}{p.waiting && <span className="badge">Needs reply</span>}</span>
-                <span className="pl-meta">{p.key}, {p.client.name}, {STAGES.find((s) => s.id === p.stage)?.label}, updated {new Date(p.updated).toLocaleDateString()}</span>
+                <span className="pl-meta">{p.key}, {p.client.name}, {STAGES.find((s) => s.id === p.stage)?.label}, updated {new Date(p.updated).toLocaleDateString()}
+                  {p.sites?.length > 0 && <span className="pl-site">Site: {p.sites.map((s) => s.title).join(', ')}</span>}</span>
               </button>
             </li>
           ))}
@@ -129,7 +133,7 @@ export default function Admin() {
   );
 }
 
-function AdminPanel({ project, act }) {
+function AdminPanel({ project, act, pw, onDeleted }) {
   const [update, setUpdate] = useState({ title: '', body: '' });
   const [items, setItems] = useState(project.items.length ? project.items : [{ label: '', detail: '', status: 'planned' }]);
   const [notes, setNotes] = useState(project.notes || '');
@@ -180,6 +184,10 @@ function AdminPanel({ project, act }) {
           <button className="btn btn-ghost">Save notes</button>
         </form>
 
+        <LinkedSites project={project} act={act} setMsg={setMsg} />
+
+        <KeyEmail project={project} act={act} />
+
         {project.request?.estimate && (
           <div className="admin-block"><h3>Their request</h3>
             <p>{project.request.type}, budget {project.request.budget || 'not given'}, timeline {project.request.timeline || 'not given'}</p>
@@ -188,32 +196,190 @@ function AdminPanel({ project, act }) {
         )}
       </div>
       {msg && <p className="admin-msg" role="status">{msg}</p>}
+      <div className="admin-danger">
+        <button type="button" className="link-btn danger" onClick={async () => {
+          const typed = window.prompt(`Delete ${project.title}? Its messages, updates and files go with it, and any linked site is unlinked. Type ${project.key} to confirm.`);
+          if (typed === null) return;
+          if (typed.trim().toUpperCase() !== project.key) { setMsg(`Not deleted. Type ${project.key} exactly to delete it.`); return; }
+          try { await adminPost(pw, 'delete', { key: project.key, confirm: project.key }); onDeleted(project.key); }
+          catch (err) { setMsg(err.message); }
+        }}>Delete project</button>
+        <span className="composer-note">For duplicates and test projects. To finish a real one, set the stage to Closed instead.</span>
+      </div>
     </details>
   );
 }
 
-function CreateProject({ pw, onCreated }) {
-  const [f, setF] = useState({ name: '', email: '', company: '', title: '', notify: true });
-  const [err, setErr] = useState('');
+function LinkedSites({ project, act, setMsg }) {
+  const linked = project.linked_sites || [];
+  const others = (project.all_sites || []).filter((s) => s.project_key !== project.key);
+  const link = async (slug, on) => {
+    try { await act('link_site', { slug, on: on ? '1' : '0' }); setMsg(on ? 'Site linked.' : 'Site unlinked.'); } catch (err) { setMsg(err.message); }
+  };
   return (
-    <form className="admin-block create" onSubmit={async (e) => {
-      e.preventDefault();
-      try { const { project } = await adminPost(pw, 'create', { ...f, notify: f.notify ? '1' : '' }); onCreated(project); }
-      catch (x) { setErr(x.message); }
-    }}>
+    <div className="admin-block">
+      <h3>Site in development</h3>
+      {linked.length === 0 ? <p className="composer-note">No site linked to this project yet.</p> : (
+        <ul className="linked-sites">
+          {linked.map((s) => (
+            <li key={s.slug}><a href={`#/sites/${s.slug}`}>{s.title}</a> <code>sites/{s.slug}/</code>
+              <button type="button" className="link-btn" onClick={() => link(s.slug, false)}>Unlink</button></li>
+          ))}
+        </ul>
+      )}
+      {others.length > 0 ? (
+        <label className="field"><span>Link a site</span>
+          <select value="" onChange={(e) => e.target.value && link(e.target.value, true)}>
+            <option value="">Choose a site…</option>
+            {others.map((s) => <option key={s.slug} value={s.slug}>{s.title}{s.project_key ? ` (now with ${s.project_key})` : ''}</option>)}
+          </select>
+        </label>
+      ) : linked.length === 0 && <p className="composer-note">Add the site under Admin › Sites first, then link it here.</p>}
+    </div>
+  );
+}
+
+function EmailCopy({ email, note }) {
+  return (
+    <figure className="email-copy">
+      <figcaption>{note}</figcaption>
+      <dl>
+        <dt>From</dt><dd>{email.from}</dd>
+        <dt>To</dt><dd>{email.to || '—'}</dd>
+        <dt>Subject</dt><dd>{email.subject}</dd>
+      </dl>
+      <pre>{email.body}</pre>
+    </figure>
+  );
+}
+
+function KeyEmail({ project, act }) {
+  const [busy, setBusy] = useState(false);
+  const [copy, setCopy] = useState(null);
+  const [err, setErr] = useState('');
+  const sent = (project.emails || []).filter((e) => e.kind === 'project_key');
+  const last = sent[sent.length - 1];
+  return (
+    <div className="admin-block">
+      <h3>Project key email</h3>
+      <p className="composer-note">{last
+        ? `${last.sent ? 'Sent' : 'Tried to send'} to ${last.to} on ${new Date(last.at).toLocaleString()}${last.sent ? '' : " (the server couldn't send it)"}.`
+        : 'Not sent from here yet.'}</p>
+      <button type="button" className="btn btn-ghost" disabled={busy} onClick={async () => {
+        setBusy(true); setErr('');
+        try { const d = await act('send_key', {}); setCopy(d.email); } catch (x) { setErr(x.message); } finally { setBusy(false); }
+      }}>{busy ? 'Sending…' : last ? 'Send it again' : 'Send project key'}</button>
+      {err && <p className="form-error">{err}</p>}
+      {copy && <EmailCopy email={copy} note={copy.sent ? `Sent ${new Date(copy.at).toLocaleTimeString()}. This is what ${project.client.name} got:` : "The server couldn't send this one. Check the mail settings on your host, then try again."} />}
+    </div>
+  );
+}
+
+const CREATE_STEPS = [
+  { id: 'create', label: 'Create project' },
+  { id: 'email', label: 'Email the key' },
+  { id: 'done', label: 'Done' },
+];
+
+function CreateProgress({ phase, notify, emailFailed }) {
+  const steps = notify ? CREATE_STEPS : CREATE_STEPS.filter((s) => s.id !== 'email');
+  const at = steps.findIndex((s) => s.id === phase);
+  const pct = phase === 'done' ? 100 : Math.round(((at + 0.5) / steps.length) * 100);
+  return (
+    <div className={`create-progress ${phase === 'done' ? 'is-done' : 'is-busy'}`}>
+      <div className="create-bar" role="progressbar" aria-label="Opening the project" aria-valuemin="0" aria-valuemax="100" aria-valuenow={pct}>
+        <span style={{ width: `${pct}%` }} />
+      </div>
+      <ol className="create-steps">
+        {steps.map((s, i) => {
+          const failed = emailFailed && s.id === 'email' && phase === 'done';
+          const done = i < at || phase === 'done';
+          return (
+            <li key={s.id} className={failed ? 'is-failed' : done ? 'is-done' : i === at ? 'is-now' : ''}>
+              <span className="create-dot" aria-hidden="true">{failed ? '✕' : done ? '✓' : i + 1}</span>{failed ? 'Email not sent' : s.label}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+function CreateProject({ pw, onChanged, onOpen }) {
+  const blank = { name: '', email: '', company: '', title: '', notify: true };
+  const [f, setF] = useState(blank);
+  const [err, setErr] = useState('');
+  const [phase, setPhase] = useState('idle'); // idle | create | email | done
+  const [dup, setDup] = useState(null);
+  const [project, setProject] = useState(null);
+  const [sentCopy, setSentCopy] = useState(null);
+  const [template, setTemplate] = useState(null);
+  const busy = phase === 'create' || phase === 'email';
+
+  useEffect(() => { adminGet(pw, { action: 'key_email' }).then((d) => setTemplate(d.email)).catch(() => {}); }, [pw]);
+
+  async function start(allowDuplicate = false) {
+    if (busy) return;
+    setErr(''); setDup(null); setSentCopy(null); setPhase('create');
+    try {
+      const d = await adminPostRaw(pw, 'create', { name: f.name, email: f.email, company: f.company, title: f.title, allow_duplicate: allowDuplicate ? '1' : '' });
+      if (!d?.ok) { setPhase('idle'); setErr(d?.error || 'Something went wrong. Try again.'); if (d?.duplicate) setDup(d.duplicate); return; }
+      setProject(d.project);
+      onChanged();
+      if (f.notify) {
+        setPhase('email');
+        try {
+          const r = await adminPost(pw, 'send_key', { key: d.project.key });
+          setProject(r.project);
+          setSentCopy(r.email);
+          if (!r.email.sent) setErr("The project is open, but the server couldn't send the email. Use Send it again on the project page once mail is working.");
+        } catch (x) { setErr(`The project is open, but the email step failed: ${x.message}`); }
+        onChanged();
+      }
+      setPhase('done');
+    } catch (x) { setPhase('idle'); setErr(x.message); }
+  }
+
+  const fill = (s) => (s || '')
+    .replaceAll('{name}', f.name.trim() || 'Client name')
+    .replaceAll('{email}', f.email.trim())
+    .replaceAll('{key}', project?.key || 'J747-····-····');
+  const preview = template && { ...template, to: fill(template.to), subject: fill(template.subject), body: fill(template.body) };
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
+
+  return (
+    <form className="admin-block create" onSubmit={(e) => { e.preventDefault(); start(false); }}>
       <h3>Open a project for a client</h3>
       <p>For leads that came by phone or in person. They get a project key like everyone else.</p>
-      <div className="field-row">
-        <label className="field"><span>Client name</span><input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
-        <label className="field"><span>Client email</span><input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
-      </div>
-      <div className="field-row">
-        <label className="field"><span>Company</span><input value={f.company} onChange={(e) => setF({ ...f, company: e.target.value })} /></label>
-        <label className="field"><span>Project title</span><input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></label>
-      </div>
-      <label className="check"><input type="checkbox" checked={f.notify} onChange={(e) => setF({ ...f, notify: e.target.checked })} /><span>Email them their project key</span></label>
-      {err && <p className="form-error">{err}</p>}
-      <button className="btn btn-primary">Open project</button>
+      <fieldset disabled={busy || phase === 'done'} className="create-fields">
+        <div className="field-row">
+          <label className="field"><span>Client name</span><input value={f.name} onChange={set('name')} /></label>
+          <label className="field"><span>Client email</span><input type="email" value={f.email} onChange={set('email')} /></label>
+        </div>
+        <div className="field-row">
+          <label className="field"><span>Company</span><input value={f.company} onChange={set('company')} /></label>
+          <label className="field"><span>Project title</span><input value={f.title} onChange={set('title')} /></label>
+        </div>
+        <label className="check"><input type="checkbox" checked={f.notify} onChange={set('notify')} /><span>Email them their project key</span></label>
+      </fieldset>
+      {err && <p className="form-error" role="alert">{err}</p>}
+      {dup && (
+        <div className="btn-row">
+          <button type="button" className="btn btn-primary" onClick={() => onOpen(dup)}>Open {dup.key}</button>
+          <button type="button" className="btn btn-ghost" onClick={() => start(true)}>Open a new one anyway</button>
+        </div>
+      )}
+      {phase === 'idle' && !dup && <button className="btn btn-primary">{f.notify ? 'Open project and email key' : 'Open project'}</button>}
+      {phase !== 'idle' && <CreateProgress phase={phase} notify={f.notify} emailFailed={f.notify && phase === 'done' && !sentCopy?.sent} />}
+      {phase === 'done' && project && (
+        <div className="btn-row">
+          <button type="button" className="btn btn-primary" onClick={() => onOpen(project)}>Open {project.key}</button>
+          <button type="button" className="btn btn-ghost" onClick={() => { setF(blank); setProject(null); setSentCopy(null); setErr(''); setPhase('idle'); }}>Start another</button>
+        </div>
+      )}
+      {sentCopy
+        ? <EmailCopy email={sentCopy} note={sentCopy.sent ? `Sent ${new Date(sentCopy.at).toLocaleTimeString()}. This is what ${f.name || 'they'} got:` : "Not sent. This is the email that would have gone out:"} />
+        : preview && <EmailCopy email={preview} note={f.notify ? 'Email preview. The key fills in when the project opens.' : "Preview only. With the box unchecked, no email is sent."} />}
     </form>
   );
 }

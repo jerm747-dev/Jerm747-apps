@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { listSites, getSite, siteAction } from '../api.js';
+import { listSites, getSite, siteAction, adminGet } from '../api.js';
 import SiteView, { SITE_STATUSES, statusLabel, when } from '../components/SiteView.jsx';
 
 const BLANK = { title: '', new_slug: '', client: '', summary: '', status: 'building', public: false, preview_url: '', project_key: '', notes: '' };
@@ -9,9 +9,11 @@ export default function AdminSites({ pw }) {
   const [current, setCurrent] = useState(null);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState('');
+  const [projects, setProjects] = useState([]);
 
   async function refresh() {
     try { const { sites } = await listSites(); setSites(sites); setError(''); } catch (e) { setError(e.message); }
+    try { const { projects } = await adminGet(pw, { action: 'list' }); setProjects(projects); } catch { /* the list still works without it */ }
   }
   useEffect(() => { refresh(); }, [pw]);
 
@@ -28,7 +30,7 @@ export default function AdminSites({ pw }) {
       <>
         <button className="link-btn back" onClick={() => { setCurrent(null); refresh(); }}>All sites</button>
         <SiteView site={current} token="" onSite={setCurrent}
-          adminPanel={<SiteSettings site={current} onSaved={setCurrent} onDeleted={() => { setCurrent(null); refresh(); }} />} />
+          adminPanel={<SiteSettings site={current} projects={projects} onSaved={setCurrent} onDeleted={() => { setCurrent(null); refresh(); }} />} />
       </>
     );
   }
@@ -41,7 +43,7 @@ export default function AdminSites({ pw }) {
         <div className="create">
           <h3>Add a site in development</h3>
           <p>Each site gets a page at jerm747.dev/#/sites/<em>address</em>, and the folder <code>sites/<em>address</em>/</code> is made on the server for its build. The address comes from the site name (Nige Hood becomes nige-hood).</p>
-          <SiteForm initial={BLANK} isNew onSaved={(s) => { setCreating(false); setCurrent(s); refresh(); }} />
+          <SiteForm initial={BLANK} isNew projects={projects} onSaved={(s) => { setCreating(false); setCurrent(s); refresh(); }} />
         </div>
       )}
       {sites.length === 0 ? (
@@ -54,7 +56,8 @@ export default function AdminSites({ pw }) {
                 <span className="pl-title">{s.title}
                   {s.open > 0 && <span className="badge">{s.open} open comment{s.open > 1 ? 's' : ''}</span>}
                 </span>
-                <span className="pl-meta">Folder sites/{s.folder || s.slug}/{s.has_build ? '' : ' (no index.html yet)'}, {statusLabel(s.status)}{s.client && `, ${s.client}`}, updated {when(s.updated)}</span>
+                <span className="pl-meta">Folder sites/{s.folder || s.slug}/{s.has_build ? '' : ' (no index.html yet)'}, {statusLabel(s.status)}{s.client && `, ${s.client}`}, updated {when(s.updated)}
+                  {(() => { const p = projects.find((x) => x.sites?.some((y) => y.slug === s.slug)); return p && <span className="pl-site">Project: {p.key} · {p.title}</span>; })()}</span>
               </button>
               <button className={`pill pill-toggle ${s.public ? 'pill-public' : ''}`} onClick={() => togglePublic(s)}
                 aria-pressed={!!s.public} title={s.public ? 'Public: on the Sites page. Click to make private.' : 'Private: review link only. Click to make public.'}>
@@ -68,7 +71,7 @@ export default function AdminSites({ pw }) {
   );
 }
 
-function SiteForm({ initial, isNew, onSaved }) {
+function SiteForm({ initial, isNew, onSaved, projects = [] }) {
   const [f, setF] = useState(initial);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -99,7 +102,13 @@ function SiteForm({ initial, isNew, onSaved }) {
         <label className="field"><span>Status</span>
           <select value={f.status} onChange={set('status')}>{SITE_STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select>
         </label>
-        <label className="field"><span>Linked project key <em>optional</em></span><input value={f.project_key} onChange={set('project_key')} placeholder="J747-XXXX-XXXX" /></label>
+        <label className="field"><span>Linked project <em>optional</em></span>
+          <select value={f.project_key} onChange={set('project_key')}>
+            <option value="">No project</option>
+            {f.project_key && !projects.some((p) => p.key === f.project_key) && <option value={f.project_key}>{f.project_key} (not found)</option>}
+            {projects.map((p) => <option key={p.key} value={p.key}>{p.key} · {p.title} ({p.client.name})</option>)}
+          </select>
+        </label>
       </div>
       <label className="field"><span>Preview address <em>leave blank to use the sites/ folder</em></span>
         <input value={f.preview_url} onChange={set('preview_url')} placeholder="/sites/address/  or  https://…" /></label>
@@ -112,7 +121,7 @@ function SiteForm({ initial, isNew, onSaved }) {
   );
 }
 
-function SiteSettings({ site, onSaved, onDeleted }) {
+function SiteSettings({ site, projects, onSaved, onDeleted }) {
   const [msg, setMsg] = useState('');
   const link = `${window.location.origin}/#/sites/${site.slug}/${site.token}`;
 
@@ -206,7 +215,7 @@ function SiteSettings({ site, onSaved, onDeleted }) {
         </div>
         <div className="admin-block">
           <h3>Settings</h3>
-          <SiteForm key={site.updated} initial={{ ...BLANK, ...site, preview_url: site.preview_setting ?? '', project_key: site.project_key || '', notes: site.notes || '' }} onSaved={(s) => { onSaved(s); setMsg('Settings saved.'); }} />
+          <SiteForm key={site.updated} projects={projects} initial={{ ...BLANK, ...site, preview_url: site.preview_setting ?? '', project_key: site.project_key || '', notes: site.notes || '' }} onSaved={(s) => { onSaved(s); setMsg('Settings saved.'); }} />
         </div>
         <div className="admin-block">
           <button className="link-btn danger" onClick={remove}>Delete this site</button>

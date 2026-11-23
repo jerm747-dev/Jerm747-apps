@@ -8,7 +8,7 @@ import './arcade-list.css';
 import './view-switch.css';
 import './cabinet.css';
 
-const NEW_TITLES = new Set(['sound-test', 'wave-run-747', 'pulse-runner', 'big-bowl-smash', 'tic-tac-steel', 'sumi-sudoku']);
+const NEW_TITLES = new Set(['747GP', 'sound-test', 'wave-run-747', 'pulse-runner', 'big-bowl-smash', 'tic-tac-steel', 'sumi-sudoku']);
 function NewBadge({slug}) { return NEW_TITLES.has(slug) ? <span className="game-new">NEW</span> : null; }
 
 const KIND_LABEL = { game: 'Games', app: 'Apps', site: 'Sites', tool: 'Tools', music: 'Music', experiment: 'Experiments' };
@@ -194,8 +194,15 @@ export default function Arcade() {
     }
   }, []);
 
+  // Share links use /play/<folder> (api/share.php) so link previews show the game's cover picture,
+  // then open #/play/<folder>. Phones get the system share sheet; desktops copy the link.
   const copyLink = async (p) => {
-    const url = `${window.location.origin}/#/play/${p.slug === 'sound-test' ? 'game-music' : p.slug}`;
+    const url = `${window.location.origin}/play/${p.slug === 'sound-test' ? 'game-music' : p.slug}`;
+    const phone = matchMedia('(pointer:coarse)').matches;
+    if (phone && navigator.share) {
+      try { await navigator.share({ title: p.title + ' · jerm747.games', text: p.tagline || 'Play ' + p.title + ' free on jerm747.games', url }); return; }
+      catch (e) { if (e?.name === 'AbortError') return; }
+    }
     try { await navigator.clipboard.writeText(url); setCopied(p.slug); setTimeout(() => setCopied(''), 2000); }
     catch { window.prompt('Copy this link', url); }
   };
@@ -391,7 +398,7 @@ export default function Arcade() {
                 <button className="sb-launch" onClick={() => launch(current)}>
                   {source !== 'touch' && <Glyph name="A" source={source} />} {current.kind === 'game' ? 'Play game' : 'Open ' + current.title}
                 </button>
-                <button className="sb-btn" onClick={() => copyLink(current)}>{copied === current.slug ? 'Link copied' : 'Copy link'}</button>
+                <button className="sb-btn" onClick={() => copyLink(current)}>{copied === current.slug ? 'Link copied' : 'Share'}</button>
                 <a className="sb-btn" href={current.url} target="_blank" rel="noopener">Open in new tab</a>
               </div>
               <Gallery shots={current.screenshots} title={current.title} />

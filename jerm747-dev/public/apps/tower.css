@@ -1,0 +1,13 @@
+/* Jerm 747 site tower: one name plate, then the three sites stacked like rack units. */
+.j747-tower{width:min(100%,260px);margin:clamp(16px,2.5vw,26px) auto 4px;padding:7px;border:1px solid #8e754a;border-radius:8px;
+  background:linear-gradient(180deg,#ffffff0d,transparent 40%,#0006),#0d1116;box-shadow:inset 0 1px #ffffff22,0 6px 16px #000a;font-family:system-ui,sans-serif}
+.j747-tower .tower-cap{margin:0 0 6px;padding:6px 0 7px;text-align:center;color:#eac98d;font:800 .78rem ui-monospace,monospace;letter-spacing:.34em;border-bottom:1px solid #8e754a66}
+.j747-tower a{position:relative;display:grid;grid-template-columns:6px 1fr auto 6px;align-items:center;gap:10px;min-height:40px;margin-top:5px;padding:0 9px;
+  border:1px solid #3a3f46;border-radius:4px;background:linear-gradient(180deg,#232930,#161b21);color:#fff7e8;text-decoration:none;
+  box-shadow:inset 0 1px #ffffff1c,0 2px 3px #0008;transition:border-color .15s,box-shadow .15s,transform .15s}
+.j747-tower a::before,.j747-tower a::after{content:"";width:6px;height:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f3e2bd,#9a7a46 60%,#3c2f1a);box-shadow:0 0 0 1px #000}
+.j747-tower a::after{grid-column:4}
+.j747-tower b{color:#eac98d;font:800 1rem ui-monospace,monospace;letter-spacing:.02em}
+.j747-tower span{color:#c1cbd6;font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.j747-tower a:hover,.j747-tower a:focus-visible{border-color:#eac98d;box-shadow:inset 0 1px #ffffff2a,0 0 0 1px #eac98d55,0 0 14px #eac98d33;transform:translateY(-1px);outline:none}
+.j747-tower a[aria-current]{border-color:#8e754a}

@@ -21,7 +21,9 @@
   function syncFinish() {
     const match = location.hash.match(/^#\/play\/([a-z0-9._-]+)/i);
     const choice = pocket.getFinish();
-    const ice = choice === 'auto' ? (!match || pocket.skinFor(match[1]) === 'ice') : choice === 'ice';
+    // Frosted finishes (Ice Blue, Returnity Violet) use the light menu; the rest use the dark one.
+    const frosted = skin => skin === 'ice' || skin === 'returnity-violet';
+    const ice = choice === 'auto' ? (!match || frosted(pocket.skinFor(match[1]))) : frosted(choice);
     document.documentElement.dataset.pocketMenu = ice ? 'ice' : 'classic';
   }
   const cabinet = () => document.querySelector('.cabinet');

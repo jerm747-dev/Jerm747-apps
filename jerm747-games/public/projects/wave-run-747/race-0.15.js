@@ -996,7 +996,7 @@ async function initRenderer(device, signal) {
   };
 }
 /* ================= sound (all synthesized, nothing to download) ================= */
-const VERSION='0.15';
+const VERSION='0.16';
 const sfx=(()=>{
   let ac=null, master, engBus, fxBus, eng, engF, engGain, rushF, rushGain, noiseBuf, muted=false;
   // Two mixer channels: Engine (motor + hull rushing through water) and Effects (splashes, gates, boost, beeps).
@@ -1245,6 +1245,7 @@ addEventListener('keydown',e=>{
   if ((e.key==='v'||e.key==='V') && !e.repeat) cycleView();
   if ((e.key==='p'||e.key==='P'||e.key==='Escape') && (state==='race'||state==='countdown')) pause();
   else if ((e.key==='p'||e.key==='P'||e.key==='Escape') && state==='paused') resume();
+  else if (state==='finish' && settle && (e.key==='Enter'||e.key==='Escape') && !e.repeat) settleDone();
 });
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 addEventListener('blur',()=>keys.clear());
@@ -1266,7 +1267,7 @@ function readInput(){
       const rst=!!gp.buttons[3]?.pressed; if (rst&&!padSelPrev) resetToTrack(); padSelPrev=rst;
       const vw=!!gp.buttons[8]?.pressed; if (vw&&!padViewPrev&&(state==='race'||state==='countdown')) cycleView(); padViewPrev=vw;
       const st=!!gp.buttons[9]?.pressed;
-      if (st && !padStartPrev){ if(state==='race'||state==='countdown') pause(); else if(state==='paused') resume(); else if(state==='menu'||state==='finish') startRace(); }
+      if (st && !padStartPrev){ if(state==='race'||state==='countdown') pause(); else if(state==='paused') resume(); else if(state==='finish'&&settle) settleDone(); else if(state==='menu'||state==='finish') startRace(); }
       padStartPrev=st;
     }
   } catch {}
@@ -1325,7 +1326,7 @@ const msgEl=$('msg'); let msgTimer=0;
 function flash(text,ms=900,warn=false){ msgEl.textContent=text; msgEl.classList.toggle('warn',warn); msgEl.classList.remove('show'); void msgEl.offsetWidth; msgEl.classList.add('show'); clearTimeout(msgTimer); msgTimer=setTimeout(()=>msgEl.classList.remove('show'),ms); }
 function show(id){ for (const o of ['menu','pauseMenu','finishMenu']) $(o).hidden = o!==id; }
 
-function startRace(){ if($('startBtn').disabled)return; sfx.hold('pause',false); defaultView(); resetSki(); rec=[]; curSplits=[]; ghostPos=null; if (mode===2) loadGhost(); else ghost=null; orbit.yaw=0; orbit.pitch=view().pitch; orbit.dist=view().dist; camSnap=true; state='countdown'; cdT=3.0; show(null); $('arrow').hidden=false; flash('3',800); sfx.init(); sfx.beep(false); camSnap=true; }
+function startRace(){ if($('startBtn').disabled)return; settle=null; sfx.hold('pause',false); defaultView(); resetSki(); rec=[]; curSplits=[]; ghostPos=null; if (mode===2) loadGhost(); else ghost=null; orbit.yaw=0; orbit.pitch=view().pitch; orbit.dist=view().dist; camSnap=true; state='countdown'; cdT=3.0; show(null); $('arrow').hidden=false; flash('3',800); sfx.init(); sfx.beep(false); camSnap=true; }
 // drop back onto the racing line on the stretch leading to the next gate, facing along it
 let lastReset=-1e9;
 function resetToTrack(){
@@ -1338,7 +1339,7 @@ function resetToTrack(){
 }
 function pause(){ if(state!=='race'&&state!=='countdown') return; lastOffCourseFrame=null; state='paused'; show('pauseMenu'); sfx.hold('pause',true); requestAnimationFrame(()=>$('resumeBtn').focus({preventScroll:true})); }
 function resume(){ lastOffCourseFrame=null; state=cdT>0?'countdown':'race'; show(null); sfx.hold('pause',false); }
-function toMenu(){ sfx.hold('pause',false); state='menu'; if (mode===3) courseForMode(); resetSki(); show('menu'); $('arrow').hidden=true; $('gatedist').textContent=''; refreshBest(); }
+function toMenu(){ settle=null; sfx.hold('pause',false); state='menu'; if (mode===3) courseForMode(); resetSki(); show('menu'); $('arrow').hidden=true; $('gatedist').textContent=''; refreshBest(); }
 function finishRace(){
   state='finish'; $('arrow').hidden=true; $('gatedist').textContent='';
   if (mode===3){
@@ -1349,14 +1350,23 @@ function finishRace(){
     $('finalBest').textContent='Par '+fmt(par)+' · '+Math.abs(raceT-par).toFixed(1)+'s '+(passedPar?'under':'over');
     $('againBtn').textContent=passedPar?'Next race':'Retry race';
     if (passedPar){ level++; store.set('endless',Math.max(level,parseInt(store.get('endless'))||1)); }
-    show('finishMenu'); flash(passedPar?'CLEARED':'FINISH',1200,!passedPar); sfx.finish(); return;
+    settleThen(); flash(passedPar?'CLEARED':'FINISH',1200,!passedPar); sfx.finish(); return;
   }
   $('finishTitle').textContent='Finish'; $('againBtn').textContent='Race again'; $('newBest').textContent='New best for this sea';
   const prev=getBest(), isBest=prev==null||raceT<prev; if(isBest) setBest(raceT);
   $('finalTime').textContent=fmt(raceT); $('newBest').hidden=!isBest;
   $('finalBest').textContent=isBest?(prev?'Previous best '+fmt(prev):'First recorded time on this sea.'):'Best on this sea: '+fmt(prev);
-  show('finishMenu'); flash('FINISH',1200); sfx.finish();
+  settleThen(); flash('FINISH',1200); sfx.finish();
 }
+// 0.16: after the line the rider coasts with controls off. The results card waits until the ski
+// has landed, slowed down and the splash has dropped back in (2 s minimum, 6 s at most).
+// Start / A / Enter / tap skips the wait.
+let settle=null;
+function settleThen(){ settle={t0:simT}; }
+function settleDone(){ if(!settle) return; settle=null; show('finishMenu'); requestAnimationFrame(()=>$('againBtn').focus({preventScroll:true})); }
+function settleCheck(){ if(!settle||state!=='finish') return; const t=simT-settle.t0;
+  const splashing=spray.some(p=>!p.kind&&p.age<p.life);
+  if (t>=6 || (t>=2 && !ski.air && ski.speed<3.5 && !splashing)) settleDone(); }
 $('startBtn').onclick=startRace; $('againBtn').onclick=()=>{ if (mode===3){ courseForMode(); } startRace(); };
 $('resetBtn').onclick=()=>resetToTrack();
 const paintMute=()=>document.querySelectorAll('.soundSeg button').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.v==='1')!==sfx.muted)));
@@ -1380,6 +1390,7 @@ window.PocketTitleStart=()=>{
   if(state==='race'||state==='countdown'){ pause(); return true; }
   if(state==='paused'){ resume(); return true; }
   if(state==='menu'){ startRace(); return true; }
+  if(state==='finish'&&settle){ settleDone(); return true; }
   if(state==='finish'){ $('againBtn').click(); return true; }
   return false;
 };
@@ -1917,6 +1928,7 @@ function frame(now){
     if (!p.kind && p.v[1]<0 && p.age>0.12 && p.p[1]<surfH(p.p[0],p.p[2])) p.age=p.life;
   }
   for (let i=spray.length-1;i>=0;i--) if (spray[i].age>spray[i].life) spray.splice(i,1);
+  settleCheck();
   updateOffCourse(now);
   updateCam(dt,now);
   sfx.update(state==='race'||state==='countdown', ski.speed, input.gas&&(state==='race'||state==='countdown')?1:0, ski.air, ski.boostT>0, input.brake&&state==='race');

@@ -6,3 +6,12 @@
 @media(max-width:510px){.cards{grid-template-columns:1fr}.game-card{display:grid;grid-template-columns:clamp(94px,29vw,140px) 1fr;align-items:center}.game-card img{height:100%;aspect-ratio:1.65;min-height:67px}.game-card>div{padding:9px 36px 9px 13px}.game-card small{font-size:11px}.play{display:grid;right:10px;width:23px;height:23px;font-size:9px}#picker{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}#picker label{grid-column:1/-1}#picker select{min-width:0}#picker button{font-size:13px}.game-card img{object-position:center}.wrap{width:calc(100% - 32px)}.section-heading{align-items:center}}
 
 .play::after{content:"";border-left:8px solid currentColor;border-block:5px solid transparent;transform:translateX(1px)}.out-arrow::after{content:"";display:inline-block;width:7px;height:7px;border-top:2px solid currentColor;border-right:2px solid currentColor}
+
+.finishes{flex-wrap:wrap;justify-content:center;max-width:100%}
+.swatch.amber{background:linear-gradient(145deg,#f2a25c,#a8481a);border-color:#783b22}
+.swatch.violet{background:linear-gradient(145deg,#d6cdfb,#5e48b8);border-color:#5a4aa0}
+.new-sticker{display:inline-block;margin-left:2px;padding:2px 6px 1px;border-radius:5px;transform:rotate(-5deg);background:linear-gradient(#ffd77d,#e8a463);color:#2a1606;font:800 9px/1.3 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 1px 3px #0005}
+.game-card.is-new{position:relative}
+.game-card.is-new::before{content:"New";position:absolute;z-index:2;top:10px;left:10px;padding:3px 8px 2px;border-radius:6px;transform:rotate(-4deg);background:linear-gradient(#ffd77d,#e8a463);color:#2a1606;font:800 11px/1.3 system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 2px 6px #0006}
+.cards{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:900px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}

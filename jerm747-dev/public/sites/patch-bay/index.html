@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-finish="blue">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e233d">
+<title>Patch Bay · Jerm 747</title>
+<meta name="description" content="An all-in-one MIDI studio: MIDI file management, device in and out, latency and input-channel tests for live recording, sampling, voice to MIDI and MP3 export in different voices.">
+<link rel="stylesheet" href="/apps/tower.css">
+<style>
+:root{color-scheme:dark;--gold:#eac98d;--gold-2:#c9a25c;--case:#1e2b38;--panel:#173651;--edge:#536b80;--text:#fff7e8;--dim:#c1cbd6;
+  font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0b1118;color:var(--text)}
+:root[data-finish=black]{--case:#242426;--panel:#202125;--edge:#575457;--dim:#c9c5c1;background:#111112}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;padding:clamp(8px,2.4vw,30px);display:grid;place-items:center;min-height:100dvh}
+/* The side of the cabinet: leather, gold piping, rack ears with screws. */
+.side{position:relative;width:min(100%,980px);padding:clamp(26px,6vw,70px) clamp(30px,8vw,96px) clamp(20px,4vw,40px);border:1px solid var(--edge);border-radius:22px;
+  background:linear-gradient(160deg,#ffffff0d,transparent 48%,#0008),url(/apps/leather.webp),var(--case);background-blend-mode:normal,soft-light,normal;
+  box-shadow:0 24px 60px #000a,inset 0 0 0 5px #0005,inset 0 2px 6px #ffffff30;text-align:center}
+.side::before{content:"";position:absolute;inset:12px;border:1px solid #8e754a77;border-radius:14px;pointer-events:none;box-shadow:inset 0 0 0 1px #0007}
+.ear{position:absolute;top:18px;bottom:18px;width:clamp(14px,2.2vw,22px);display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:14px 0;
+  background:linear-gradient(90deg,#080b0e,#353a40 43%,#11151a);border-radius:3px;box-shadow:0 0 1px #000}
+.ear.l{left:clamp(4px,1vw,10px)}.ear.r{right:clamp(4px,1vw,10px)}
+.ear i{width:10px;aspect-ratio:1;border-radius:50%;background:linear-gradient(40deg,transparent 42%,#392714 43% 55%,transparent 56%),linear-gradient(#e6c189,#80613e);box-shadow:0 1px 3px #000,0 0 0 1px #1b1611}
+.cap{margin:0;color:var(--gold);font:800 clamp(.68rem,1.4vw,.8rem) ui-monospace,monospace;letter-spacing:.34em}
+/* The big Patch Bay button. */
+.enter{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:clamp(12px,2vw,20px);margin:clamp(16px,3vw,26px) auto clamp(14px,2.6vw,22px);
+  padding:clamp(16px,2.6vw,24px) clamp(26px,5vw,52px);border:2px solid var(--gold);border-radius:12px;color:var(--gold);text-decoration:none;
+  font:800 clamp(2.1rem,8vw,4.6rem)/1 system-ui,sans-serif;letter-spacing:-.05em;background:linear-gradient(180deg,#0c1218cc,#05080bcc);
+  box-shadow:inset 0 1px #ffffff26,0 10px 26px #000a,0 0 0 4px #00000055;transition:background .18s,color .18s,transform .18s,box-shadow .18s;isolation:isolate}
+.enter::after{content:"";position:absolute;inset:-6px;border-radius:16px;border:1px solid var(--gold);opacity:.0;animation:hum 2.8s ease-in-out infinite;z-index:-1}
+@keyframes hum{0%,100%{opacity:0;transform:scale(.98)}50%{opacity:.55;transform:scale(1.02)}}
+.enter .knob{width:clamp(30px,5vw,54px);aspect-ratio:1;border-radius:50%;flex:none;background:repeating-conic-gradient(from 4deg,#e8ca92 0 2deg,#ab8650 2deg 4deg);
+  box-shadow:0 0 0 3px #0d1219,0 0 0 4px #876a43,0 4px 9px #000;border:2px solid #f2d5a4;position:relative;transition:transform .5s}
+.enter .knob::after{content:"";position:absolute;inset:21%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#33465a,#111b26 65%);box-shadow:inset 0 1px 4px #000}
+.enter .go{font-size:.45em;letter-spacing:0;opacity:.85;transition:transform .18s}
+.enter:hover,.enter:focus-visible{background:#c9a44c22;color:#ffe2a8;transform:translateY(-2px);box-shadow:inset 0 1px #ffffff33,0 14px 30px #000b,0 0 0 4px #00000055,0 0 26px #eac98d44;outline:none}
+.enter:hover .knob,.enter:focus-visible .knob{transform:rotate(80deg)}
+.enter:hover .go,.enter:focus-visible .go{transform:translateX(4px)}
+.enter:active{transform:translateY(0)}
+@media(prefers-reduced-motion:reduce){.enter::after{animation:none}.enter,.enter *{transition:none}}
+.about{max-width:60ch;margin:0 auto;color:var(--dim);font-size:clamp(.95rem,1.8vw,1.08rem);line-height:1.55}
+/* The six tools, as small modules in their accent colors. */
+.tools{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;list-style:none;margin:clamp(20px,3.4vw,32px) 0 0;padding:6px;background:#090d12;border:1px solid #08090b;border-radius:6px;box-shadow:inset 0 2px 6px #000}
+.tools a{display:block;color:var(--text);text-decoration:none;border:1px solid var(--edge);border-top:2px solid var(--accent);border-radius:4px;background:#ffffff08;overflow:hidden;transition:transform .15s,border-color .15s}
+.tools a:hover,.tools a:focus-visible{transform:translateY(-2px);border-color:var(--accent);outline:none}
+.tools img{display:block;width:100%;height:auto;aspect-ratio:3/2;object-fit:cover}
+.tools span{display:block;padding:6px 4px 7px;font-size:.72rem;font-weight:700}
+.tools small{color:var(--dim);font:600 .62rem ui-monospace,monospace}
+.row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px 16px;margin-top:clamp(16px,2.6vw,24px)}
+.finish{display:flex;border:1px solid #857150;border-radius:6px;background:#10151c;padding:2px}
+.finish button{min-height:32px;padding:4px 14px;border:0;border-radius:4px;background:transparent;color:var(--dim);font:700 .8rem system-ui,sans-serif;cursor:pointer}
+.finish button[aria-pressed=true]{background:linear-gradient(#f3dca9,#d9b46c);color:#0e233d}
+.apk{color:#0e233d;background:linear-gradient(#f3dca9,#d9b46c);border:1px solid #8e754a;border-radius:6px;padding:8px 13px;text-decoration:none;
+  font:700 .72rem ui-monospace,monospace;letter-spacing:.12em;text-transform:uppercase;box-shadow:inset 0 1px #fff8,0 2px 6px #0007}
+.apk:hover,.apk:focus-visible{filter:brightness(1.07);outline:none}
+.note{width:100%;margin:2px 0 0;color:var(--dim);font-size:.72rem}
+@media(max-width:760px){.tools{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:420px){.side{padding-inline:30px}.tools{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<main class="side">
+  <div class="ear l" aria-hidden="true"><i></i><i></i></div>
+  <div class="ear r" aria-hidden="true"><i></i><i></i></div>
+  <a class="enter" href="/apps/" target="_top"><span class="knob" aria-hidden="true"></span>Patch Bay<span class="go" aria-hidden="true">›</span></a>
+  <p class="about">An all-in-one MIDI studio. Manage MIDI files, send and receive with your MIDI devices, and test latency and input channels for live recording.
+    Sample sounds, turn your voice into MIDI, and export MP3s in different voices to audition your parts.</p>
+  <ul class="tools" id="tools" aria-label="Tools in the rack"></ul>
+  <div class="row">
+    <div class="finish" role="group" aria-label="Finish">
+      <button type="button" data-finish="blue" aria-pressed="true">Blue</button>
+      <button type="button" data-finish="black" aria-pressed="false">Black</button>
+    </div>
+    <a class="apk" href="/apps/download/PatchBay-0.1.0.apk" download>Android app · APK 0.1.0</a>
+    <p class="note">The Android app is a test build for Android 10 or newer.</p>
+  </div>
+  <nav class="j747-tower" aria-label="Jerm 747 sites">
+    <p class="tower-cap">JERM 747</p>
+    <a href="/" target="_top" aria-current="true"><b>.dev</b><span>Development</span></a>
+    <a href="https://jerm747.games/" target="_top"><b>.games</b><span>Games</span></a>
+    <a href="https://jerm747.com/" target="_top"><b>.com</b><span>Music</span></a>
+  </nav>
+</main>
+<script src="/apps/catalog.js?v=2"></script>
+<script>
+(() => {
+  const ACCENT = {lane:'#7278c6', boombox:'#489e95', check:'#c47750', rhythm:'#c49243', vox:'#ad85cf', patch:'#f36573'};
+  const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  const list = document.getElementById('tools');
+  if (typeof TOOLS !== 'undefined') {
+    list.innerHTML = TOOLS.map(t => `<li><a href="/apps/${esc(t.href.replace(/^\.\//, ''))}" target="_top" style="--accent:${ACCENT[t.icon] || '#eac98d'}">
+      <img src="/apps/app-covers/${esc(t.id)}.webp?v=2" alt="" width="576" height="384" loading="lazy">
+      <span>${esc(t.name)} ${t.version ? `<small>v${esc(t.version)}</small>` : ''}</span></a></li>`).join('');
+  } else list.hidden = true;
+  // Same choice as the rack (same site, same saved setting).
+  const root = document.documentElement;
+  const buttons = [...document.querySelectorAll('[data-finish]')].filter(b => b.tagName === 'BUTTON');
+  const set = f => {
+    root.dataset.finish = f;
+    buttons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.finish === f)));
+    try { localStorage.setItem('patchbay.finish', f); } catch {}
+  };
+  let saved = 'blue';
+  try { saved = localStorage.getItem('patchbay.finish') || 'blue'; } catch {}
+  set(saved === 'black' ? 'black' : 'blue');
+  buttons.forEach(b => b.addEventListener('click', () => set(b.dataset.finish)));
+})();
+</script>
+</body>
+</html>
