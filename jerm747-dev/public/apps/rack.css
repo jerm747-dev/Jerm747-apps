@@ -2,71 +2,54 @@
 :root[data-finish=black]{--case:#242426;--panel:#202125;--edge:#575457;--module:#252528;--dim:#c9c5c1;background:#111112}
 *{box-sizing:border-box}
 body{margin:0;padding:clamp(8px,3vw,38px)}
-.cabinet{max-width:1080px;margin:auto;padding:clamp(10px,2.5vw,27px);border:1px solid var(--edge);border-radius:18px;background:linear-gradient(145deg,#ffffff0e,transparent 54%,#0007),url(leather.webp),var(--case);background-blend-mode:normal,soft-light,normal;box-shadow:0 20px 52px #0009,inset 0 0 0 4px #0005,inset 0 2px 5px #ffffff35}
-.faceplate{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:clamp(15px,3.5vw,42px);border:1px solid var(--edge);border-bottom-color:#8e754a;border-radius:9px 9px 3px 3px;background:linear-gradient(180deg,transparent 55%,#0005),repeating-linear-gradient(0deg,transparent 0 2px,#fff1 3px,transparent 4px),var(--panel);box-shadow:inset 0 1px 0 #fff3,0 4px 11px #0009}
+.cabinet{--rail:clamp(86px,15vw,140px);--rack-inset:clamp(16px,3.2vw,32px);max-width:1080px;margin:auto;padding:clamp(10px,2.5vw,27px);border:1px solid var(--edge);border-radius:18px;background:linear-gradient(145deg,#ffffff0e,transparent 54%,#0007),url(leather.webp),var(--case);background-blend-mode:normal,soft-light,normal;box-shadow:0 20px 52px #0009,inset 0 0 0 4px #0005,inset 0 2px 5px #ffffff35}
+.faceplate{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:clamp(12px,3.5vw,28px) var(--rack-inset);border:1px solid var(--edge);border-bottom-color:#8e754a;border-radius:9px 9px 3px 3px;background:linear-gradient(125deg,#ffffff12,transparent 45%,#0006),repeating-linear-gradient(0deg,transparent 0 2px,#fff1 3px,transparent 4px),var(--panel);box-shadow:inset 0 1px 0 #fff3,0 4px 11px #0009}
 .brand{display:flex;align-items:center;gap:clamp(10px,2vw,23px)}
 .brand p{margin:0 0 6px;color:var(--gold);font:700 .68rem ui-monospace,monospace;letter-spacing:.26em}
 h1{margin:0;font-size:clamp(1.75rem,7vw,4rem);line-height:.98;letter-spacing:-.06em}
 .signal{width:clamp(22px,5vw,52px);aspect-ratio:1;border-radius:50%;background:repeating-conic-gradient(from 4deg,#e8ca92 0 2deg,#ab8650 2deg 4deg);box-shadow:0 0 0 3px #0d1219,0 0 0 4px #876a43,0 4px 9px #000;border:2px solid #f2d5a4;position:relative}
 .signal::after{content:'';position:absolute;inset:21%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#33465a,#111b26 65%);box-shadow:inset 0 1px 4px #000}
-.finish,.views{display:flex;border:1px solid #857150;border-radius:6px;background:#10151c;padding:2px}
+.finish,.views{display:flex;flex:none;width:var(--rail);border:1px solid #857150;border-radius:6px;background:#10151c;padding:2px}
+.finish button,.views button{flex:1;min-width:0;padding-inline:3px}
 button,input,a{font:inherit}
 button{min-height:42px;padding:0 clamp(8px,1.6vw,17px);border:0;border-radius:4px;background:transparent;color:var(--dim);font-size:.8rem;font-weight:700;cursor:pointer}
 button[aria-pressed=true]{color:#24190e;background:linear-gradient(#f3dcae,#ba9457);box-shadow:inset 0 1px #fff8}
-.toolbar{display:flex;gap:10px;justify-content:space-between;margin:12px 0}
+.toolbar{display:flex;gap:10px;justify-content:space-between;margin:12px 0;padding-inline:var(--rack-inset)}
 input{min-width:0;width:min(100%,440px);padding:8px 12px;background:#0b1118;color:var(--text);border:1px solid var(--edge);border-radius:6px}
 .chassis{padding:5px;background:#090d12;border:1px solid #08090b;border-radius:5px;box-shadow:inset 0 2px 6px #000}
 #shelf{display:grid;gap:5px;list-style:none;padding:0;margin:0}
-.module{--accent:#7278c6;display:grid;grid-template-columns:15px clamp(58px,14vw,154px) minmax(0,1fr) auto 15px;gap:clamp(7px,1.6vw,18px);align-items:center;min-width:0;position:relative;padding:8px 0;border:1px solid var(--edge);border-radius:4px;background:linear-gradient(165deg,#ffffff0e,transparent 54%,#0003),var(--module);box-shadow:inset 0 1px #fff2,0 3px 5px #0009}
+.module{--accent:#7278c6;display:grid;grid-template-columns:clamp(62px,18vw,154px) minmax(0,1fr) var(--rail);
+  gap:clamp(6px,1.6vw,18px);align-items:center;min-width:0;position:relative;
+  padding:10px calc(var(--rack-inset) - 7px);border:1px solid var(--edge);border-radius:5px;
+  background:linear-gradient(165deg,#ffffff0e,transparent 54%,#0003),var(--module);box-shadow:inset 0 1px #fff2,0 3px 5px #0009}
 .module[data-icon=boombox]{--accent:#489e95}.module[data-icon=patch]{--accent:#f36573}.module[data-icon=vox]{--accent:#ad85cf}.module[data-icon=rhythm]{--accent:#c49243}.module[data-icon=check]{--accent:#c47750}
 .cover{width:100%;height:auto;display:block;border-radius:4px;border-bottom:2px solid var(--accent);box-shadow:0 3px 10px #0009;background:#10161c}
-.ear{align-self:stretch;display:grid;place-items:center;background:linear-gradient(90deg,#080b0e,#353a40 43%,#11151a);box-shadow:0 0 1px #000}
-.ear::after{content:'';width:10px;aspect-ratio:1;border-radius:50%;background:linear-gradient(40deg,transparent 42%,#392714 43% 55%,transparent 56%),linear-gradient(#e6c189,#80613e);box-shadow:0 1px 3px #000,0 0 0 1px #1b1611}
 h2{margin:0;font-size:clamp(1rem,2.2vw,1.5rem);line-height:1.1}
 small{font:500 .63rem ui-monospace,monospace;color:var(--dim);white-space:nowrap}
-.info p{margin:.38rem 0;color:var(--dim);font-size:.83rem;line-height:1.35}
-.specs{font:600 .66rem ui-monospace,monospace;color:#ddd6c8;line-height:1.5}
+.info p{margin:.25rem 0 0;color:var(--dim);font-size:.78rem;line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .controls{display:grid;gap:5px;justify-items:stretch;text-align:center}
 .launch{min-height:42px;display:flex;justify-content:center;align-items:center;gap:5px;padding:5px 12px;border:1px solid #ffffff45;border-radius:4px;color:#090e13;background:var(--accent);font-size:.8rem;font-weight:800;text-decoration:none;white-space:nowrap;box-shadow:inset 0 1px #ffffff55,0 2px 4px #0007}
 .apk{padding:5px 0;color:var(--gold);font-size:.69rem}
 :focus-visible{outline:2px solid #ffe1a6;outline-offset:2px}
-[data-view=grid] #shelf{grid-template-columns:repeat(3,minmax(0,1fr))}
-[data-view=grid] .module{grid-template-columns:1fr;grid-template-rows:10px auto 1fr auto 10px;gap:9px;padding:0 10px;border-top:2px solid var(--accent);align-items:start}
-[data-view=grid] .ear{height:10px;margin:0 -10px;background:linear-gradient(#333a40,#101317)}
-[data-view=grid] .ear::after{width:8px}
-[data-view=grid] .cover{aspect-ratio:3/2;object-fit:cover}
-[data-view=grid] .specs{display:none}
+[data-view=grid] #shelf{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+[data-view=grid] .module{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr;
+  gap:0;padding:0;border-top:2px solid var(--accent);overflow:hidden;background:#13181e}
+[data-view=grid] .cover{aspect-ratio:3/2;object-fit:cover;border:0;border-radius:0;box-shadow:none}
+[data-view=grid] .info{padding:7px 4px 5px;text-align:center}
+[data-view=grid] .info p{display:none}
+[data-view=grid] .controls{align-self:start;padding:0 7px 7px}
+[data-view=grid] .launch{min-height:44px}
+@media(max-width:650px){[data-view=grid] #shelf{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .grille{height:24px;margin-top:10px;border:1px solid #07090c;border-radius:3px;background:radial-gradient(circle,#090b0d 36%,transparent 41%) 0 0/5px 5px,linear-gradient(#43413e,#222320);box-shadow:inset 0 3px 7px #000a}
 #empty{padding:14px}
-@media(max-width:650px){[data-view=grid] #shelf{grid-template-columns:repeat(2,minmax(0,1fr))}.module{grid-template-columns:12px 64px minmax(0,1fr) 12px;column-gap:7px}.left{grid-column:1;grid-row:1/3}.right{grid-column:4;grid-row:1/3}.cover{grid-column:2;grid-row:1/3}.info{grid-column:3}.controls{grid-column:3;display:flex;align-items:center;gap:9px}.specs{display:none}[data-view=grid] .module>*{grid-column:1;grid-row:auto}[data-view=grid] .controls{display:grid}}
-@media(max-width:360px){.faceplate{padding:12px 9px}.brand{gap:7px}.signal{display:none}.module{grid-template-columns:12px 52px minmax(0,1fr) 12px}.controls{flex-wrap:wrap}.toolbar{gap:5px}}
-
-.web-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin:clamp(12px,2vw,20px) 0 2px;font:600 .72rem ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
-.web-links[hidden]{display:none}
-.web-links a{color:var(--gold);text-decoration:none;opacity:.85}
-.web-links a:hover,.web-links a:focus-visible{opacity:1;text-decoration:underline}
-.web-links .get-apk{flex-basis:auto;color:#0e233d;background:linear-gradient(#f3dca9,#d9b46c);border:1px solid #8e754a;border-radius:6px;padding:9px 14px;box-shadow:inset 0 1px #fff8,0 2px 6px #0007}
-.web-links .get-apk:hover,.web-links .get-apk:focus-visible{text-decoration:none;filter:brightness(1.06)}
-.web-links small{flex-basis:100%;min-width:0;max-width:100%;white-space:normal;text-align:center;color:var(--dim);font:500 .7rem system-ui,sans-serif;letter-spacing:0;text-transform:none}
-.web-links .j747-tower{flex-basis:100%;max-width:260px;text-transform:none;letter-spacing:0}
-/* One column of switches: Blue/Black, Rack/Grid and every Open button share a width and a right edge. */
-.cabinet{--gap:clamp(7px,1.6vw,18px);--sw:clamp(118px,13vw,140px)}
-.finish button,.views button{flex:1}
-.info p{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
-.specs{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.info h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media(min-width:651px){
-  .module{grid-template-columns:15px clamp(58px,14vw,154px) minmax(0,1fr) var(--sw) 15px;gap:var(--gap)}
-  .finish,.views{width:var(--sw);flex:none}
-  .faceplate{padding-right:calc(21px + var(--gap))}
-  .toolbar{padding-right:calc(22px + var(--gap))}
-  .controls{width:var(--sw)}
-  .launch{width:100%}
-  [data-view=grid] .module{grid-template-columns:1fr}
-  [data-view=grid] .controls{width:auto}
-  [data-view=grid] .info p{-webkit-line-clamp:3}
+@media(max-width:360px){
+  .faceplate{gap:6px}
+  .toolbar{gap:5px}
+  .module{grid-template-columns:58px minmax(0,1fr) var(--rail)}
+  .info h2{font-size:.87rem}
+  .info p{font-size:.73rem}
+  .launch{padding-inline:4px}
 }
-
 /* Jerm 747 nameplate: a solid brushed-metal block with the gold signature inlaid, pressed into a
    leather-wrapped pocket in the faceplate. Flush with the panel, tight gap all round. */
 .brand p.nameplate{--plate-h:clamp(36px,6vw,66px);display:inline-block;margin:0 0 clamp(6px,1vw,10px);padding:clamp(5px,.9vw,9px);line-height:0;border-radius:9px;
@@ -90,10 +73,13 @@ small{font:500 .63rem ui-monospace,monospace;color:var(--dim);white-space:nowrap
 :root[data-finish=black] .brand .plate{background-image:url(nameplate-black.webp);background-color:#161616}
 @media(max-width:360px){.brand p.nameplate{--plate-h:30px}}
 
-.brand{flex-wrap:wrap;gap:clamp(5px,1.2vw,16px);min-width:0}
+.brand{gap:clamp(11px,2.4vw,24px);min-width:0}
+.badges{display:grid;justify-items:start;gap:5px;min-width:0}
+.brand p.nameplate{max-width:100%}
+.brand .plate{width:clamp(84px,24vw,171px);height:auto;aspect-ratio:3/1;max-width:100%}
 .brand p.nameplate{margin:0}
-.brand h1{line-height:0}
-.patchbay-badge{display:block;width:clamp(108px,19vw,220px);max-width:100%;height:auto;user-select:none}
+.brand h1{line-height:0;min-width:0;max-width:100%}
+.patchbay-badge{display:block;width:clamp(82px,23vw,165px);max-width:100%;height:auto;user-select:none}
 :root[data-finish=black] .patchbay-badge{content:url(patchbay-black.webp) / "Patch Bay"}
 
 .activity-light{display:inline-block;width:.44rem;aspect-ratio:1;margin-inline:.15rem;border-radius:50%;vertical-align:.16em;
@@ -104,3 +90,24 @@ small{font:500 .63rem ui-monospace,monospace;color:var(--dim);white-space:nowrap
 .brand button.signal[aria-pressed=true]::after{
   background:radial-gradient(circle at 38% 30%,#fff1bb,#ffc06f 34%,#b76b32 78%);
   box-shadow:0 0 8px #ffc06faa,inset 0 1px 2px #fff5}
+
+/* Use the rack controls' own pressed feedback in Android WebView. */
+button,a{-webkit-tap-highlight-color:transparent}
+button:active,.launch:active{filter:brightness(1.16)}
+@media(orientation:landscape) and (max-height:500px){
+  body{padding-block:8px}
+  .faceplate{padding-block:8px}
+  .brand .plate{width:110px}
+  .patchbay-badge{width:103px}
+  .toolbar{margin-block:8px}
+}
+
+/* Web only: APK download and Jerm 747 site links (hidden inside the Android app). */
+.web-links{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 18px;margin:clamp(12px,2vw,20px) 0 2px;font:600 .72rem ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase}
+.web-links[hidden]{display:none}
+.web-links a{color:var(--gold);text-decoration:none;opacity:.85}
+.web-links a:hover,.web-links a:focus-visible{opacity:1;text-decoration:underline}
+.web-links .get-apk{flex-basis:auto;color:#0e233d;background:linear-gradient(#f3dca9,#d9b46c);border:1px solid #8e754a;border-radius:6px;padding:9px 14px;box-shadow:inset 0 1px #fff8,0 2px 6px #0007}
+.web-links .get-apk:hover,.web-links .get-apk:focus-visible{text-decoration:none;filter:brightness(1.06)}
+.web-links small{flex-basis:100%;min-width:0;max-width:100%;white-space:normal;text-align:center;color:var(--dim);font:500 .7rem system-ui,sans-serif;letter-spacing:0;text-transform:none}
+.web-links .j747-tower{flex-basis:100%;max-width:260px;text-transform:none;letter-spacing:0}

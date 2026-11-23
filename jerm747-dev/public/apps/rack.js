@@ -19,18 +19,15 @@ function render() {
     [name, desc, ...specs].join(' ').toLowerCase().includes(query));
   shelf.innerHTML = visible.map(tool => `
     <li class="module" data-icon="${escapeHtml(tool.icon)}">
-      <span class="ear left" aria-hidden="true"></span>
-      <img class="cover" src="app-covers/${escapeHtml(tool.id)}.webp?v=2" alt="" width="576" height="384">
+      <img class="cover" src="app-covers/${escapeHtml(tool.id)}.webp?v=3" alt="" width="576" height="384">
       <div class="info">
         <h2>${escapeHtml(tool.name)} <span class="activity-light" role="img" aria-label="${activityLabel(tool.href)}" title="${activityLabel(tool.href)}"></span> ${tool.version ? `<small>v${escapeHtml(tool.version)}</small>` : ''}</h2>
         <p>${escapeHtml(tool.desc)}</p>
-        <div class="specs">${tool.specs.map(escapeHtml).join(' · ')}</div>
       </div>
       <div class="controls">
         <a class="launch" href="${escapeHtml(tool.href)}" aria-label="Open ${escapeHtml(tool.name)}">Open <span aria-hidden="true">›</span></a>
         ${tool.extra ? `<a class="apk" href="${escapeHtml(tool.extra.href)}">Beat Room APK</a>` : ''}
       </div>
-      <span class="ear right" aria-hidden="true"></span>
     </li>`).join('');
   document.querySelector('#empty').hidden = visible.length > 0;
 }
@@ -51,8 +48,6 @@ for (const [key, fallback] of [['finish', 'blue'], ['view', 'list']]) {
 }
 search.addEventListener('input', render);
 window.addEventListener('pageshow', event => { if (event.persisted) render(); });
-// On the web (not inside the Android app) show links back to the Jerm 747 sites.
-if (!window.RackMidi) document.querySelector('.web-links')?.removeAttribute('hidden');
 render();
 
 const cabinetLight = document.querySelector('.signal');
@@ -68,3 +63,6 @@ cabinetLight.addEventListener('click', () => {
 });
 window.addEventListener('pageshow', refreshCabinetLight);
 refreshCabinetLight();
+
+// On the web (not inside the Android app) show links back to the Jerm 747 sites.
+if (!window.RackMidi) document.querySelector(".web-links")?.removeAttribute("hidden");
