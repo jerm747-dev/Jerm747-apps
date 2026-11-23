@@ -1,0 +1,17 @@
+ENCORE v11 — THE GOLD MIC
+Café Block → Sunset Market → Roofline Rise → Rooftop Run → The Listening Party.
+
+Walk right across the party deck to meet the team. Nige takes the last few
+steps himself. His four illustrated expressions play in order: calm, curious,
+wide-eyed and open-mouthed, then relieved. The crowd calls “Surprise!” before
+he smiles. Join the party to see the invitation and performance, then open
+your collection. Gold Mic is awarded once. Uncollected merch is marked.
+
+Timed replay starts from the café with a fresh inventory. Only active play
+counts; pauses, transitions, optional conversations and the finale do not.
+Your fastest completed timed run and the replay unlock stay in this browser.
+If storage is unavailable, the current session still works.
+
+For a quick story preview, open index.html?area=party&autostart=1 and walk
+right. Timed runs always start at level one, including from this preview.
+No build step, tracking service or online leaderboard.

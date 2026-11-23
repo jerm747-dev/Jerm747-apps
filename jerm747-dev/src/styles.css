@@ -107,18 +107,24 @@ p { margin: 0 0 1em; }
 .topbar nav .nav-sites { opacity: 1; color: var(--mask); background: var(--gold); padding: 8px 14px; border-radius: var(--r-sm); font-weight: 600; letter-spacing: .02em; }
 .topbar nav .nav-sites:hover { background: #D9B65E; color: var(--mask); }
 .topbar nav .nav-sites.is-on { box-shadow: 0 0 0 2px var(--mask), 0 0 0 3.5px var(--gold); }
+.topbar nav .nav-apps { opacity: 1; color: var(--gold); border: 1px solid var(--gold); padding: 7px 13px; border-radius: var(--r-sm); font-weight: 600; letter-spacing: .02em; }
+.topbar nav .nav-apps:hover { background: #C9A44C22; }
 @media (max-width: 860px) {
-  .topbar nav a:not(.nav-cta):not(.nav-sites):not([href="#/project"]) { display: none; }
+  .topbar nav a:not(.nav-cta):not(.nav-sites):not(.nav-apps):not([href="#/project"]) { display: none; }
   .topbar nav { gap: 14px; font-size: .9rem; }
 }
 @media (max-width: 560px) {
   .topbar nav a[href="#/project"] { display: none; }
   .topbar nav { gap: 8px; }
   .topbar nav .nav-sites, .topbar nav .nav-cta { padding: 8px 10px; }
+  .topbar nav .nav-apps { padding: 7px 9px; }
 }
 @media (max-width: 400px) {
   .topbar .wordmark { font-size: 1.15rem; }
   .topbar nav .nav-sites, .topbar nav .nav-cta { padding: 7px 8px; font-size: .85rem; }
+}
+@media (max-width: 400px) {
+  .topbar nav .nav-apps { padding: 6px 7px; font-size: .85rem; }
 }
 @media (max-width: 340px) {
   .topbar nav .nav-cta { display: none; }

@@ -1,0 +1,43 @@
+ENCORE — PLATFORM DROPS & IDLE (v10)
+4 November 2026
+
+DOUBLE-TAP DOWN TO DROP
+Press Down / S once to crouch. Release and press again within 0.36 seconds
+to drop through a step, balcony, awning or fire escape. This works during
+the squat or stand-up motion; the second tap immediately uses the falling
+pose. Keyboard repeat and holding Down cannot trigger an unintended drop.
+Only the starting level is ignored, so the next surface below catches him.
+A held Down input will not continue dropping through more levels.
+Sideways steering and the existing single airborne boost remain available.
+
+Building rooftops in every area stay solid, as do the sidewalk, gold reward
+boxes and breakable NH loot crates. Pausing, switching supports or leaving
+an area cancels an unfinished double tap. Pause freezes an active fall.
+
+IDLE THAT SETTLES IN
+At the current character scale, the first stance turns the shoulders about
+30 degrees toward the viewer while looking toward the route ahead.
+After 2.6 seconds, the shoulders and hips open another 30 degrees. At four
+seconds he glances left, then right at 5.2 seconds, returning to a frontward
+stance at 6.5 seconds. At eight seconds, the original relaxed idle takes over.
+Four new transparent poses share the same anatomical scale and foot line.
+The existing quiet breathing movement remains. Any movement or action
+interrupts the idle immediately; time airborne or paused does not advance it.
+
+The new poses are integrated into gameplay. The existing Motion Workshop's
+Idle card also follows the sequence when Animate moves is enabled.
+
+UNCHANGED GAMEPLAY
+Boosted running, momentum jumps, double jump, aerial dive, timed/offscreen
+fireball burnout, NH merchandise, optional chat and the controller layout.
+
+VALIDATION
+72 engine checks passed. New coverage includes single/held Down, slower
+double taps during stand-up, expired tap windows, next-level landings,
+all protected rooftops, crates, tightly stacked ledges, pause/resume,
+air steering/boost, idle timing and interruption. The haptics suite passed.
+Browser QA verified the new idle at in-game scale and the falling pose from
+a balcony onto its next awning.
+
+Run: node tests/street-game.test.cjs
+     node tests/haptics.test.cjs

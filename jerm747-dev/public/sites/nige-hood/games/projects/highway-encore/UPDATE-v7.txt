@@ -1,0 +1,27 @@
+ENCORE — SUNSET MARKET + FIREBALLS (v7)
+3 November 2026
+
+Walk off the café block on the right to fade into a new sunset rooftop market.
+The market adds 22 platforms and eight gold reward crates. Walk right again
+to loop to the café, or use the market’s left edge to return.
+
+Head-bump a gold crate to release a bouncing fireball. Catch it for three
+throws. Press F or tap the new Fire button. Thrown fireballs bounce along
+surfaces and can open other gold crates. Pedestrians are unaffected.
+
+Fireball inventory, collected merchant tokens, opened crates and uncollected
+fireballs carry between the two blocks during a run. New run resets them.
+Progress is not saved after closing or reloading the page.
+
+Walking, running, skidding, jumping and flipping retain the v6 movement.
+The existing three action buttons and D-pad keep their positions. Fire sits
+in the open space above Speed and has a minimum 44px touch target.
+
+For a quick look at the new area, open index.html?autostart=1&area=market
+from the same web server. The normal start still begins at the café.
+
+Validation: 26 engine regression checks, browser play-through of crate pop,
+collection, throwing and fade transition; 390×844 portrait and 844×390
+landscape control layouts. Physical Android hardware was not available.
+
+Run the regression suite with: node tests/street-game.test.cjs

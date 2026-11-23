@@ -1,0 +1,19 @@
+ENCORE v13 — BACKSTAGE ALLEY
+
+The After Party now opens in a long alley behind Club Encore. Walk right
+to reach the amber streetlight, or take the optional fire escape overhead.
+
+Nige starts with his flashlight on. Tap the Flashlight action button or
+press L to put it away or bring it back, including while moving. Street
+lighting stays on when the flashlight is off.
+
+Head-bump the alley's gold supply box and catch the fireball for three
+throws. If you miss every shot, head-bump the box again for another supply.
+Jump up the five fire-escape landings. On the top platform, face the wooden
+NH loot crate, tap Fire or press F, then touch the backpack it drops.
+You can return from Club Encore if you walked past it.
+
+The tour backpack appears as the fourth NH find in the night HUD and in
+the rooftop café collection beside your other finds and Gold Mic.
+
+Direct play: index.html?mode=afterparty&autostart=1

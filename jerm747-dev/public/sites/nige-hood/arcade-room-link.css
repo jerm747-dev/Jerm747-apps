@@ -1,0 +1,5 @@
+.arcade-shelf-callout{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 20px;margin:0 0 24px;border:1px solid #dbb75b66;border-radius:12px;background:linear-gradient(120deg,#d6ab4720,#47674814);color:inherit}
+.arcade-shelf-callout strong{display:block;font:800 18px/1.2 'Bricolage Grotesque',system-ui,sans-serif}
+.arcade-shelf-callout p{font-size:13px;line-height:1.5;margin:6px 0 0;max-width:450px;opacity:.8}
+.arcade-shelf-callout a{flex:0 0 auto;min-height:44px;text-decoration:none}
+@media(max-width:600px){.arcade-shelf-callout{align-items:flex-start;flex-direction:column;gap:12px;padding:15px}.arcade-shelf-callout strong{font-size:17px}}

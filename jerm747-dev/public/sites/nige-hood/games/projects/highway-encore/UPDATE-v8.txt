@@ -1,0 +1,60 @@
+ENCORE — NH LOOT + DOUBLE JUMP (v8)
+3 November 2026
+
+THREE MERCH PRIZES
+Shoot the brown wooden NH crates. Each breaks with one fireball, throwing
+wood splinters and releasing its item. Touch the item to collect it:
+- White T-shirt with black NH: street height in the Café Block.
+- White baseball cap with black NH: above the Sunset Market awning.
+- Special-edition LP, record and signed-style sleeve: highest Roofline Rise roof.
+Crates gently bob and remain solid until destroyed. The collection tracker
+fills in as you find each piece; all three trigger a brief FULL SET banner.
+Fireballs still bounce and never hurt or interrupt pedestrians.
+
+DOUBLE JUMP
+Jump or Flip from the ground, then tap Jump once more in the air for an
+upward boost. The boost softens sideways momentum; direction controls let
+you steer. Three new sprites show the rise, peak and fall. Landing restores
+the air jump. A third press cannot add another midair boost. New spring,
+tuck-entry and unfurl poses also smooth the first front flip.
+
+THE ROUTE
+Café Block -> Sunset Market -> Roofline Rise -> Rooftop Run.
+Area three exits only from its highest roof at the right. Keep travelling
+across the buildings in area four; the right edge continues the rooftop loop.
+Left exits lead back. Missing a roof safely returns you to your last ledge.
+Ammo, collected merch and broken/opened crates carry between areas during
+the run. They reset on New run or page reload.
+
+OPTIONAL CHAT
+Run straight past the speech bubble without stopping. Tap 'Tap to talk'
+or press E when nearby to choose a conversation. 'Keep walking' leaves
+without a reward and lets you return later. A completed conversation still
+awards one merchant token, once per run.
+
+LIGHT HAPTICS
+Fire: short tap. Loot crate destruction: brief two-part rumble.
+Uses phone vibration / connected controller haptics when supported.
+Turn it off in How to play. The choice is remembered on that browser.
+Physical phone/controller rumble has not been feel-tested here.
+
+CONTROLS
+Arrows or A/D: move. Space / Up / W: jump, then double jump.
+Shift / double-tap direction / Speed: run. X: front flip. F: fire.
+E: optional talk. Down / S: duck. P / Escape: pause.
+
+PREVIEWS
+index.html?autostart=1&area=market
+index.html?autostart=1&area=rise
+index.html?autostart=1&area=rooftops
+motion-workshop.html shows all movement poses, including six new aerial poses.
+
+VALIDATION
+Engine regression suite covers loot hits/collection/persistence, safe NPCs,
+optional talk, one air jump only, real jumps up the third-area climb, high
+exit gating, rooftop returns and pause/reset behavior. Haptics checks cover
+patterns, opt-out, preference persistence and unavailable/rejected APIs.
+Browser QA checks crate destruction and pickup, optional chat, aerial poses,
+new environments and portrait/landscape touch layouts.
+Run: node tests/street-game.test.cjs
+     node tests/haptics.test.cjs

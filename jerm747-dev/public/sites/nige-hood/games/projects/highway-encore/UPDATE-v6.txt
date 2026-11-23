@@ -1,0 +1,38 @@
+ENCORE — MOVEMENT WORKSHOP v6
+3 November 2026
+
+WHAT CHANGED
+- Eight selected poses per walk/run cycle, aligned to a consistent head baseline.
+- Gentle head, shoulder and spine movement; stronger running bounce.
+- Compact, correctly proportioned forward flip with a takeoff before the tuck.
+- New plant, takeoff, rise, fall, contact, compression, recoil and braking art.
+- Shift, Speed button and double-tap running. Reverse while running to skid.
+- Running momentum carries through a jump; early release makes a shorter hop.
+- Existing jump buffering, ledges, golden crates and optional conversations retained.
+- Removed the browser's rectangular tap flash; kept the shaped SVG cap highlights.
+- Encore title artwork and arcade shelf cover; installed folder stays highway-encore.
+- Homepage arcade-shelf shortcut above the interactive tape player.
+
+TRY IT
+index.html is the game. motion-workshop.html compares all the poses and can
+animate the walk/run cycles. Serve the folder over HTTP for normal testing.
+The original highway demo remains in classic/.
+
+TUNING
+street-game.js: MOTION contains walk/run speed, acceleration, skid friction,
+air steering, takeoff anticipation and landing duration. Default skid friction
+is 850 px/s²; a 304 px/s run takes about 0.36 seconds to stop into a reversal.
+street-art.js: stride() holds the head/body bounce and spine sway.
+sprite-data.js: walk/run.sequence selects eight source poses from each 16-pose
+atlas. The original sheets stay intact for later choices. parkour contains
+crop rectangles, anatomical scale and anchors for the new eight-pose sheet.
+
+CHECKS
+node tests/street-game.test.cjs — 17 movement and encounter regression checks.
+Browser: title, motion sheet, homepage jump, arcade shelf art and responsive
+frames checked. Physical Android touch and connected gamepad feel still need
+hands-on playtesting.
+
+SCOPE
+This pass uses the existing 2D street game. The dive flip, ground pound and
+new left/right idle artwork remain future workshop items.

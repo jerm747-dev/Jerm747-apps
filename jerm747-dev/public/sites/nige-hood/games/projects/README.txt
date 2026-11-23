@@ -63,3 +63,37 @@ Players open it from the toolbar. To give your game its own Music button (say, o
   parent.postMessage({ type: 'sound-arcade-music-open' }, location.origin)   // button pressed
     -> the arcade sends 'sound-arcade-music-opened', then 'sound-arcade-music-closed' and
        gives your game focus back. Pause your game before opening it.
+
+747 Pocket Player (handheld view)
+---------------------------------
+Every game can be played inside the 747 Pocket Player: the "Pocket" button in the game toolbar
+turns it on, SCREEN on the Pocket goes back to the full game view, and the ⏏ eject button returns
+to the shelf. SELECT opens the Pocket menu (theme, D-pad or joystick, full view, shelf).
+The shell is public/pocket/pocket.js, the same file jerm747.games uses.
+
+Site-wide settings live in site.config.json → games.pocket:
+
+  "pocket": {
+    "enabled": true,
+    "defaultFinish": "returnity-amber",          returnity-amber | returnity-violet | ice | "" (Classic Gray)
+    "finishes": ["auto", "returnity-violet", "classic"],  themes offered in the Pocket menu, in order
+    "labels": { "auto": "Returnity Edition" },  menu names ("auto" = the site default above)
+    "bezelTitle": "JERM747 ARCADE"
+  }
+
+Per game, add "pocket" to project.json (all optional):
+
+  "pocket": {
+    "mode": "gamepad",      gamepad = the Pocket acts as a controller for games that read the
+                            gamepad themselves (Returnity). keys (default) = the Pocket presses
+                            the keys from the game's "actions" (A/B/X/Y/LB/RB pads, START, SELECT).
+    "default": true,        open in the Pocket the first time (players' own choice wins after that)
+    "labels": { "a": "Jump", "b": "Fire", "x": "Strike", "y": "Backup" },   names on the buttons
+    "buttons": { "a": 0 },  gamepad mode: controller button number per Pocket button (standard map)
+    "hint": "One line for the Pocket's ? guide.",
+    "hide": ".deck",        selectors hidden inside the game while it's in the Pocket (its own touch deck)
+    "css": "...",           extra CSS put into the game while it's in the Pocket
+    "ratio": 1.3333,        game screen shape inside the Pocket (default 4:3)
+    "width": 880,           smallest layout width the game is drawn at before scaling (default 800)
+    "off": true             never offer the Pocket for this game
+  }

@@ -1,1 +1,5 @@
+node_modules
+dist
+public/api/data/*
+!public/api/data/.htaccess
 *.apk

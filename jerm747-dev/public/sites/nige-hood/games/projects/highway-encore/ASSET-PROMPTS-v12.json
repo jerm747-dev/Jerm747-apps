@@ -1,0 +1,122 @@
+{
+  "generation": "Built-in image generation",
+  "streetAndMarket": {
+    "tool": "Built-in Imagegen",
+    "jobs": [
+      {
+        "name": "cafe",
+        "file": "street-day.png",
+        "prompt": "Edit the supplied painted 2D side-scrolling game background from daylight into a lively, tasteful late-night city street. Strict geometry lock: the supplied 1672×941 wide illustration is the precise original plate to relight. Retain EXACT viewpoint, framing, proportions, sidewalk and curb horizontal line near y=770, bottom stone cutaway, positions and outlines of all three buildings, fire escape, ledges, balconies, tree trunks, windows, awning, bench, lamppost and lane opening. No camera shift, zoom, recrop, extra floors, changed elevations or relocated objects. Collision and parallax depend on pixel alignment. Keep the precise traditional painterly outlined arcade street style. Rich indigo midnight sky only in the original sky slivers, cool indigo masonry, moonlit blue-gray paving and readable silhouette edges, warm inviting window light and muted reflected light across sidewalk. Make the opening block urban and alive: transform the LEFT storefront's existing CAFÉ sign panel into a luminous, CLEARLY LEGIBLE tasteful neon nightclub name exactly 'CLUB ENCORE' using celadon/teal neon and restrained violet/rose accents; same sign location and panel footprint. The MIDDLE shop under its existing terra-cotta awning becomes a cozy open cocktail bar with a modest elegant readable 'LOW NOTE' sign lettered on the awning/front, warm interior and cocktails on shelves. The RIGHT corner storefront has a discreet legible sign 'LATE RX' above its warmly lit drugstore windows. Show quiet patrons ONLY inside selected shop windows, never on the pavement. Preserve existing architectural trim and make platforms/ledge highlights visible. Select upper windows warmly inhabited, other windows cool dark. Existing street lights cast warm pools. Subtle colorful celebratory light accents near the left club entrance, restrained refinement rather than billboards or cyberpunk. No external people, no new structures or blocking street props, no HUD or game sprites. Keep every wall edge, floor and sidewalk at its original location. Entire image opaque, landscape aspect matching input."
+      },
+      {
+        "name": "market",
+        "file": "street-market-v7.png",
+        "prompt": "Edit the supplied Sunset Market 2D game painting into its nighttime form, using the original plate as a precise tracing and relighting target. Geometry LOCK: retain exact 1672×941 original landscape framing and camera. Preserve pixel alignment of the entire curb and playable sidewalk at y=770, lower stone cutaway, brick building frontages, top roof edges and runways, fire escapes, awning top edges at y~482 and scalloped edges, rooftop water tower, rails, pipework, planters, windows and all string-light cables. No crop, zoom, camera reframe, perspective change, added floor or changed architecture. Preserve the rich painterly outlined arcade background style. Replace peach sunset sky and sun with a rich indigo MIDNIGHT sky; do not leave a daylight sun, orange horizon or daytime cloud color. City background cool blue silhouettes with selected distant lit windows. Lower-key open market storefronts, a few lifted shutters only within the existing shop bays showing warm softly lit interiors, other bays closed. Warmly lit occupied upper windows mixed with dark windows. Sparse tasteful colorful lamps along the existing string lights (warm amber plus a few celadon or rose bulbs), practical lamps cast gentle warm pools, fewer neon accents than a nightclub street. Brick, teal awnings, terracotta fabric, roofline trim and sidewalk stay readable and sufficiently bright for jumping; use cool moonlight and warm windows, not muddy black. No new signage or words required. No painted people on the sidewalk or rooftops, no new foreground props, no game objects, no UI. All of the original geometry and collision-relevant edges stay fixed. Entire image opaque."
+      }
+    ]
+  },
+  "riseAndRoof": [
+    {
+      "file": "night-rise-v12.webp",
+      "reference": "street-rise-v8.png",
+      "moonCenter": [
+        1049,
+        195
+      ],
+      "bulbCenters": [
+        [
+          369,
+          583
+        ],
+        [
+          689,
+          550
+        ],
+        [
+          811,
+          553
+        ],
+        [
+          898,
+          555
+        ],
+        [
+          1063,
+          549
+        ],
+        [
+          1225,
+          546
+        ],
+        [
+          1337,
+          527
+        ],
+        [
+          1472,
+          555
+        ],
+        [
+          1581,
+          535
+        ]
+      ],
+      "prompt": "Use case: lighting-weather. Edit this Roofline Rise world (Image 1 is the exact edit target). This is a strict lighting edit of an existing side scrolling platform video game level plate. Preserve the entire original full frame without crop, zoom, reframe, or camera movement. Trace the architectural drawing with all windows, pipes, water tanks, flowers, roof ledges, steps, floor, windows, chimneys and silhouettes in exactly the same pixel positions of the supplied picture. Static collision maps already depend on these painted lines so this is essential! 1672x941 wide world coordinates; output same aspect ratio. Hand-painted warm, inviting, detailed urban pixel-illustration style and small precise ink outlines. No new structures, characters, UI, objects, signs, lettering, player character or flying particles. No daylight or twilight glow. Only the colors, sky lighting and visible light sources change. The long ascending staircase-like roof profile of the FIVE existing terraced brick buildings must register exactly to the original: from left to right roof surfaces run near 52.5%, 43.6%, 35.6%, 26.5% and 16% of frame height. Retain original sidewalk line near 81.5%. Transform the sunset into deep indigo late night with a luminous soft ivory moon exactly in place of the sun around x63%, y22%, a few faint faraway sky stars, charcoal clouds and quiet blue skyline. Scattered warm golden occupied windows in dark facades, a few cosy existing balcony pendant lamps. A handful of irregularly spaced muted coral/amber/aqua celebratory bistro pinlights on existing wires, less than half of bulbs lit, decidedly not Christmas. Blue-gray stone landing ledges and fire escapes are clear even in shadows. Preserve appealing foliage yet de-saturate in moonlight. Empty street; rich night values with beautiful visible architectural penwork.",
+      "method": "built-in image generation, reference edit",
+      "size": [
+        1672,
+        941
+      ],
+      "bytes": 416418
+    },
+    {
+      "file": "night-roofs-v12.webp",
+      "reference": "street-rooftops-v8.png",
+      "moonCenter": [
+        1161,
+        243
+      ],
+      "bulbCenters": [
+        [
+          594,
+          319
+        ],
+        [
+          723,
+          409
+        ],
+        [
+          789,
+          429
+        ],
+        [
+          884,
+          419
+        ],
+        [
+          1331,
+          400
+        ]
+      ],
+      "prompt": "Use case: lighting-weather. Edit this Rooftop Run level (Image 1 is the exact edit target). This is a strict lighting edit of an existing side scrolling platform video game level plate. Preserve the entire original full frame without crop, zoom, reframe, or camera movement. Trace the architectural drawing with all windows, pipes, water tanks, flowers, roof ledges, steps, floor, windows, chimneys and silhouettes in exactly the same pixel positions of the supplied picture. Static collision maps already depend on these painted lines so this is essential! 1672x941 wide world coordinates; output same aspect ratio. Hand-painted warm, inviting, detailed urban pixel-illustration style and small precise ink outlines. No new structures, characters, UI, objects, signs, lettering, player character or flying particles. No daylight or twilight glow. Only the colors, sky lighting and visible light sources change. Preserve original five horizontal foreground stone roof landing lines, the gaps between them and all positions. Their collision / front cap heights left to right are at 58.7%, 52.2%, 58.7%, 55.3%, 58.7% of the frame. Preserve both water towers. True serene midnight, ink-blue and desaturated cobalt. Make the bright moon where the sun was, x70%, y32% of the frame, pale cream-white moon with subtle texture and very gentle halo, surrounded by dark urban negative sky with a small number of delicate stars, no dusk pink at all. The moon dominates the sky. City windows make very scattered warm tiny glints. Only a few foreground windows still illuminated. Existing single span of 6 little bistro bulbs should have a few lit gold; the others unlit. Very selective soft amber practical light, rest moonlight. Silver blue highlights trace upper stone edge, cool brick and blue-gray walkable planes. Rich readable stylized night city illustration, no festival canopy, confetti or Xmas features.",
+      "method": "built-in image generation, reference edit",
+      "size": [
+        1672,
+        941
+      ],
+      "bytes": 412976
+    }
+  ],
+  "cafe": {
+    "file": "predawn-cafe-moon-v12.webp",
+    "direction": "Keep the original terrace geometry. Restage it as a pre-dawn breakfast café with a high moon, practical warm lamps, casual occupied tables, and bagel and coffee stations."
+  },
+  "server": {
+    "file": "cafe-server-v12.webp",
+    "direction": "Restage the waiter in a casual tee, green apron, jeans and sneakers, carrying a coffee mug and bagel on a tray, with two registered walking frames."
+  },
+  "coda": {
+    "file": "party-breakfast-v12.webp",
+    "prompt": "Use case: illustration-story. Draw one full-frame 16:9 landscape game cinematic, a quiet morning-after epilogue. The first two reference images establish Nige Hood, the painterly warm inked-comic realism, brick patio with a cloth canopy, string lights, planters, water tower and city skyline. The third reference establishes Nige's precise facial identity. The fourth is the young adult male rooftop café host from last night; preserve his short curly dark hair and medium-bronze complexion. Create a truly NEW and calm scene on that same rooftop at the very start of dawn.\nA candid, naturally smiling two-shot across the breakfast counter. The familiar café host, now casually dressed in a clean ochre overshirt with rolled sleeves, stands LEFT behind the counter, leaning forward slightly with one hand open invitingly toward a plate of freshly baked, appetizing golden bagels. Nige, on the RIGHT, relaxed after a very long night, returns his knowing smile, with both hands gently around a single beautifully drawn steaming ceramic coffee cup just below chest level. Match Nige's exact face, big dense curly afro, short neat beard, open olive-green jacket and white T-shirt. The two make warm, friendly eye contact. Compose the mug, open hands, a little silver-and-glass coffee carafe full of coffee, and a ceramic plate of unmistakable whole ring-shaped sesame and everything bagels as a clear still life on the counter, readable even as a thumbnail. Put the counter/plate around two thirds down the frame, with the lowest 16% quieter and clear for separate runtime captions. Faces and gesture should be fully visible above that lower area.\nBeyond the canopy is a spacious blue-hour urban skyline reminiscent of Chicago, dark tapered towers, just a thin pale peach glow on the horizon, and only a few golden bulbs glowing faintly overhead. Cool indigo and lilac morning air contrast with warm café light on the characters. Beautiful confident ink contours with richly textured, natural painted color, same visual world and level of finish as the reference shots. Waist-up conversational staging, crisp art-directed shapes and purposeful details, a quiet pocket of city life. No caption or lettering of any kind, no dialogue balloons, borders, logos, watermarks, microphone, DJ equipment, crowd, party cocktails or alcohol. SINGLE landscape illustration; no collage or panels.\n"
+  }
+}

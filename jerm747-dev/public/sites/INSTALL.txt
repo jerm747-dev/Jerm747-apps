@@ -1,0 +1,21 @@
+RETURNITY ARCADE • ENCORE v14 + CD MAN v1
+
+Merge the included nige-hood/ folder into
+jerm747-dev/public/sites/nige-hood/
+
+Install both games/projects/highway-encore/ and games/projects/cd-man/.
+Each game is self-contained and requires no build. CD Man is the original
+highway game with its own title, launcher and shelf cover.
+
+The shelf order is Encore, CD Man, Flight Control Deck. The included
+games/projects/index.json preserves the existing Flight Control Deck entry.
+If your shelf has newer edits, merge the highway-encore and cd-man entries
+into your current catalog. Keep your existing Flight Control Deck folder.
+
+The arcade-room-link.css and arcade-room-link.js files provide the existing
+homepage shelf shortcut. Preserve their existing include tags. If this is
+a first install, include each file once on the homepage.
+
+Read highway-encore/UPDATE-v14.txt inside games/projects/ for the ground
+pound and black tour gear controls. To distribute only CD Man, use
+games/projects/cd-man/CD-Man-Standalone-v1.zip. Unzip and open its index.html.

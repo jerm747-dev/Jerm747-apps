@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIDI Check · jerm747.apps</title>
+
+
+<style>
+/* VOICE: late-night studio rack, glowing but calm
+   IDEA: a rack patch bay; every device is a labeled channel strip with lit legends
+   PICTURE: the device strips themselves, with live LEDs in the accent colour
+   COLOUR and TYPE: near-black graphite, one neon accent (gold / hot pink / orange); Archivo + Narrow
+   LAYOUT: profile bar, strips left, clock + monitor right; stacks on phone */
+:root,:root[data-theme=light],:root[data-theme=dark]{color-scheme:dark;
+ --bg:#121113;--ink:#efeae4;--mute:#a19b95;--line:#38343a;--card:#1f1d21;--field:#171519;
+ --hi:#36323a;--lo:#08070a;--ok:#3ddc84;
+ --red:#e8b33a;--redk:#f2c45a;--glow:rgba(232,179,58,.45);--on:#1a1408}
+:root[data-accent=pink]{--red:#f0559e;--redk:#ff7ab4;--glow:rgba(240,85,158,.45);--on:#1d0812}
+:root[data-accent=orange]{--red:#f5872e;--redk:#ffa057;--glow:rgba(245,135,46,.45);--on:#1d0e04}
+:root{--led:var(--red)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Archivo,system-ui,sans-serif;overflow-x:clip}
+header{background:#0b0a0c;color:var(--ink);border-bottom:2px solid var(--red);box-shadow:0 2px 18px -6px var(--glow);padding:14px max(4vw,16px);display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.app-nameplate{--nameplate-accent:var(--red);--nameplate-font:Archivo,sans-serif}
+.pbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-left:auto}
+.pbar select,.pbar button{background:var(--card);color:var(--ink);border:1.5px solid;border-color:var(--hi) var(--lo) var(--lo) var(--hi)}
+.pbar .ghost{background:transparent;color:var(--redk);border:1.5px solid var(--red)}
+#status{font:500 14px 'Archivo Narrow';color:var(--mute);min-width:6em}
+button,select,input{font:600 15px 'Archivo Narrow',sans-serif;min-height:40px;border-radius:3px;padding:6px 12px;border:1.5px solid var(--lo);background:var(--field);color:var(--ink)}
+button{background:var(--card);border-color:var(--hi) var(--lo) var(--lo) var(--hi)}
+button:active{border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
+input[type=checkbox]{min-height:0;width:20px;height:20px;accent-color:var(--red)}
+button{cursor:pointer}button:hover{outline:1px solid var(--red)}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+button.pri{background:var(--red);color:var(--on);border-color:var(--red);box-shadow:0 0 12px -2px var(--glow)}
+main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;padding:20px max(4vw,16px);max-width:1400px;margin:auto}
+h2{font:800 22px/1.1 Archivo;margin:0 0 12px;color:var(--redk)}
+.note{color:var(--mute);font-size:14px;margin:0 0 12px}
+.banner{background:var(--card);color:var(--ink);border:2px solid var(--red);border-radius:4px;padding:14px 16px;margin-bottom:14px}
+.banner button{margin-top:8px}
+.dev{background:var(--card);border:1.5px solid var(--red);border-radius:4px;box-shadow:inset 1px 1px 0 var(--hi),inset -1px -1px 0 var(--lo);padding:12px 14px;margin-bottom:12px}
+.dev.off{border-color:var(--line);opacity:.72}.dev.gone{border-style:dashed;opacity:.6}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ord{display:flex;flex-direction:column;gap:2px}.ord button{min-height:22px;padding:0 8px;font-size:12px;line-height:1}
+.top input.nm{flex:1 1 200px;font:700 18px Archivo;min-height:44px}
+.sub{font:500 14px 'Archivo Narrow';color:var(--mute);margin:6px 0 8px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{display:inline-block;padding:1px 8px;border-radius:99px;border:1px solid var(--line);font:600 12.5px 'Archivo Narrow';color:var(--ink)}
+.chip{border-color:var(--lo);background:var(--field)}.chip.y{background:var(--ink);color:var(--card);border-color:var(--ink)}.chip.r{background:var(--red);color:var(--on);border-color:var(--red)}
+.sw{display:flex;gap:6px;align-items:center;font:700 15px 'Archivo Narrow';cursor:pointer}
+.row{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid var(--lo);box-shadow:inset 0 1px 0 var(--hi)}
+.row>b{font:800 13px Archivo;color:var(--redk);padding-top:10px}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl label{font:600 14px 'Archivo Narrow';color:var(--mute);display:flex;gap:6px;align-items:center}
+.ctl select,.ctl input[type=number]{min-height:36px;padding:4px 8px}
+.ctl button{min-height:36px;padding:4px 10px;font-size:14px}
+.chs{display:grid;grid-template-columns:repeat(16,minmax(0,1fr));gap:3px;margin-top:8px;max-width:520px}
+.chs i{display:block;height:18px;border-radius:2px;background:var(--field);border:1px solid var(--lo);font:600 10px/18px 'Archivo Narrow';text-align:center;font-style:normal;color:var(--mute);transition:background .25s}
+.chs i.seen{box-shadow:inset 0 -3px 0 var(--red)}
+.chs i.hit{background:var(--led);color:var(--on);box-shadow:0 0 8px var(--glow);transition:none}
+.led{width:12px;height:12px;border-radius:50%;background:var(--field);border:1px solid var(--lo);display:inline-block;transition:background .2s}
+.led.hit{background:var(--led);box-shadow:0 0 8px var(--led);transition:none}
+.stat{font:500 13.5px 'JetBrains Mono',monospace;color:var(--mute)}
+.panel{background:var(--card);border:1.5px solid var(--red);border-radius:4px;box-shadow:inset 1px 1px 0 var(--hi),inset -1px -1px 0 var(--lo);padding:14px;margin-bottom:16px}
+.bpm{font:800 clamp(44px,7vw,68px)/1 Archivo;letter-spacing:-2px;color:var(--red);text-shadow:0 0 18px var(--glow);font-variant-numeric:tabular-nums}
+.bpm small{font:700 16px 'Archivo Narrow';letter-spacing:0;color:var(--mute)}
+.clk{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.beat.hit{box-shadow:0 0 14px var(--glow)}.beat{width:26px;height:26px;border-radius:50%;background:var(--field);border:1px solid var(--lo)}.beat.hit{background:var(--red)}
+#log{height:340px;overflow:auto;background:#050506;color:#e9e9e9;border-radius:2px;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);padding:8px 10px;font:12.5px/1.55 'JetBrains Mono',monospace;margin-top:10px}
+#log div{white-space:nowrap}#log .d{color:var(--redk)}#log .t{color:#8a8a8a}
+dialog{border:2px solid var(--red);border-radius:4px;padding:18px;max-width:min(640px,94vw);width:100%;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:#000b}
+textarea{width:100%;min-height:240px;font:12.5px 'JetBrains Mono',monospace;background:var(--field);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:8px}
+.dlgb{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;justify-content:flex-end}
+@media(max-width:900px){main{grid-template-columns:minmax(0,1fr)}.pbar{margin-left:0}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<link rel="stylesheet" href="./app-nameplate.css">
+<script src="./android-tools.js"></script>
+</head>
+<body>
+<header>
+ <h1 class="app-nameplate" aria-label="MIDI Check"><img class="nameplate-wordmark" src="./app-nameplates/midi-check.png" alt=""></h1>
+ <div class="pbar">
+  <select id="prof" aria-label="Profile"></select>
+  <button id="pNew">New</button><button id="pDup">Duplicate</button><button id="pRen">Rename</button><button id="pDel" class="ghost">Delete</button>
+  <button id="pExp" class="ghost">Export JSON</button><button id="pImp" class="ghost">Import</button>
+  <select id="accent" aria-label="Accent colour"><option value="gold">Gold</option><option value="pink">Hot pink</option><option value="orange">Neon orange</option></select>
+  <span id="status">Not saved</span>
+ </div>
+</header>
+<main>
+ <section>
+  <div id="msg"></div>
+  <h2>Devices</h2>
+  <p class="note">Names start as the system name; type over them to rename. Order, names, channels and clock routing save to the active profile, which MIDI Lane and Beat Room read.</p>
+  <div id="devs"></div>
+ </section>
+ <aside>
+  <div class="panel">
+   <h2>Clock</h2>
+   <div class="ctl">
+    <label>Source <select id="cSrc"></select></label>
+    <label>BPM <input id="cBpm" type="number" min="20" max="300" step="0.1" style="width:90px"></label>
+    <button id="cGo" class="pri">Start</button>
+    <label><input type="checkbox" id="cFol"> Apps follow Start/Stop</label>
+   </div>
+   <div class="clk"><div class="bpm" id="bpmOut">–<small> BPM</small></div><div class="beat" id="beat"></div>
+    <div class="stat" id="clkStat">Waiting for clock</div></div>
+   <p class="note">Internal: this page is the master and sends 24-PPQN clock to every output marked "Send clock". External: one input is the master; its clock and transport are forwarded to those same outputs (clock thru).</p>
+  </div>
+  <div class="panel">
+   <h2>Monitor</h2>
+   <div class="ctl">
+    <label><input type="checkbox" id="mClk"> Show clock / active sense</label>
+    <button id="mPause">Pause</button><button id="mClr">Clear</button>
+   </div>
+   <div id="log" aria-live="off"></div>
+  </div>
+ </aside>
+</main>
+<dialog id="dlg">
+ <h2 id="dT">Profile JSON</h2>
+ <p class="note" id="dN"></p>
+ <textarea id="dTx" spellcheck="false"></textarea>
+ <div class="dlgb"><input type="file" id="dFile" accept=".json,application/json" hidden>
+  <button id="dLoad" hidden>Choose file…</button><button id="dCopy">Copy</button><button id="dDown">Download</button><button id="dOk" class="pri">Import</button><button id="dX">Close</button></div>
+</dialog>
+<dialog id="ask"><h2 id="aT"></h2><input id="aIn" style="width:100%"><div class="dlgb"><button id="aNo">Cancel</button><button id="aOk" class="pri">OK</button></div></dialog>
+<script>
+{
+const LS_P='jerm747.midi.profiles.v1', LS_A='jerm747.midi.active.v1';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+ set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};
+const newProfile=name=>({schema:'jerm747.midi-profile',version:1,name,updated:new Date().toISOString(),
+ clock:{source:'internal',bpm:120,sendTo:[],followTransport:true},devices:[]});
+let profiles=store.get(LS_P,null)||{Default:newProfile('Default')};
+let active=store.get(LS_A,'Default'); if(!profiles[active]) active=Object.keys(profiles)[0];
+let P=profiles[active];
+let access=null, live={}, stats={}, paused=false, saveT=0;
+const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const nn=n=>NOTES[n%12]+(Math.floor(n/12)-1);
+const keyOf=p=>((p.manufacturer||'').trim()+'|'+(p.name||'').trim());
+const dev=k=>P.devices.find(d=>d.key===k);
+const st=k=>stats[k]||(stats[k]={n:0,lat:[],last:'',ping:null,id:''});
+
+function save(now){clearTimeout(saveT);saveT=setTimeout(()=>{P.updated=new Date().toISOString();
+ const ok=store.set(LS_P,profiles)&&store.set(LS_A,active);$('status').textContent=ok?'Saved '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):'Storage blocked: use Export';},now?0:300)}
+
+function profBar(){$('prof').innerHTML=Object.keys(profiles).map(n=>`<option ${n===active?'selected':''}>${esc(n)}</option>`).join('')}
+function switchTo(n){active=n;P=profiles[n];syncDevices();renderAll();save(true)}
+function ask(title,val){return new Promise(res=>{const d=$('ask');$('aT').textContent=title;$('aIn').value=val||'';
+ const done=v=>{d.close();$('aOk').onclick=$('aNo').onclick=null;res(v)};
+ $('aOk').onclick=()=>done($('aIn').value.trim()||null);$('aNo').onclick=()=>done(null);d.showModal();$('aIn').select()})}
+const uniq=n=>{let b=n,i=2;while(profiles[n])n=b+' '+i++;return n};
+
+$('prof').onchange=e=>switchTo(e.target.value);
+$('pNew').onclick=async()=>{const n=await ask('New profile name','My rig');if(!n)return;const k=uniq(n);profiles[k]=newProfile(k);switchTo(k);profBar()};
+$('pDup').onclick=async()=>{const n=await ask('Copy profile as',active+' copy');if(!n)return;const k=uniq(n);profiles[k]=JSON.parse(JSON.stringify(P));profiles[k].name=k;switchTo(k);profBar()};
+$('pRen').onclick=async()=>{const n=await ask('Rename profile',active);if(!n||n===active)return;const k=uniq(n);profiles[k]=P;P.name=k;delete profiles[active];active=k;profBar();save(true)};
+$('pDel').onclick=()=>{if(Object.keys(profiles).length<2){$('status').textContent='Keep one profile';return}delete profiles[active];switchTo(Object.keys(profiles)[0]);profBar()};
+
+/* export / import */
+const dlg=$('dlg');
+$('pExp').onclick=()=>{$('dT').textContent='Export profile';$('dN').textContent='Save this as a .json next to MIDI Lane or Beat Room, or paste it into another browser or the APK.';
+ $('dTx').value=JSON.stringify(P,null,2);$('dOk').hidden=$('dLoad').hidden=true;$('dCopy').hidden=$('dDown').hidden=false;dlg.showModal()};
+$('pImp').onclick=()=>{$('dT').textContent='Import profile';$('dN').textContent='Paste profile JSON or choose a file. It is added as a new profile.';
+ $('dTx').value='';$('dOk').hidden=$('dLoad').hidden=false;$('dCopy').hidden=$('dDown').hidden=true;dlg.showModal()};
+$('dX').onclick=()=>dlg.close();
+$('dCopy').onclick=()=>navigator.clipboard.writeText($('dTx').value).then(()=>$('dCopy').textContent='Copied',()=>{$('dTx').select()});
+$('dDown').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([$('dTx').value],{type:'application/json'}));
+ a.download='midi-profile-'+active.replace(/\W+/g,'-').toLowerCase()+'.json';document.body.append(a);a.click();a.remove()};
+$('dLoad').onclick=()=>$('dFile').click();
+$('dFile').onchange=e=>{const f=e.target.files[0];if(f)f.text().then(t=>$('dTx').value=t)};
+$('dOk').onclick=()=>{try{const j=JSON.parse($('dTx').value);if(j.schema!=='jerm747.midi-profile'||!Array.isArray(j.devices))throw 0;
+ const k=uniq(j.name||'Imported');j.name=k;j.clock=Object.assign(newProfile(k).clock,j.clock||{});profiles[k]=j;dlg.close();profBar();switchTo(k)}
+ catch(e){$('dN').textContent='That is not a MIDI Check profile (needs "schema": "jerm747.midi-profile").'}};
+
+/* MIDI access + device sync */
+async function connect(sysex){
+ if(!navigator.requestMIDIAccess){$('msg').innerHTML='<div class="banner"><b>Web MIDI isn\'t available here.</b> Use Chrome, Edge or Opera on desktop, or Chrome on Android, over https or localhost. Safari and iOS don\'t support it.</div>';renderAll();return}
+ try{access=await navigator.requestMIDIAccess({sysex:!!sysex});P.sysex=!!sysex;$('msg').innerHTML='';
+  access.onstatechange=()=>{syncDevices();renderAll()};syncDevices();renderAll()}
+ catch(e){$('msg').innerHTML=`<div class="banner"><b>MIDI permission was refused.</b> ${sysex?'SysEx needs its own permission. ':''}Allow MIDI for this site in the address bar, then retry.<br><button id="retry">Retry</button></div>`;
+  $('retry').onclick=()=>connect(false);renderAll()}}
+
+function syncDevices(){
+ live={};if(!access)return;
+ const add=(p,dir)=>{const k=keyOf(p);(live[k]||(live[k]={}))[dir]=p};
+ access.inputs.forEach(p=>add(p,'input'));access.outputs.forEach(p=>add(p,'output'));
+ for(const k in live){let d=dev(k);const p=live[k].input||live[k].output;
+  if(!d){d={key:k,defaultName:p.name,name:p.name,manufacturer:p.manufacturer||'',order:P.devices.length,enabled:true,
+   input:{channel:'omni'},output:{channel:1},seen:{channels:[],types:[]}};P.devices.push(d)}
+  d.hasIn=!!live[k].input;d.hasOut=!!live[k].output;
+  if(live[k].input)live[k].input.onmidimessage=e=>onMsg(k,e)}
+ save()}
+
+/* incoming */
+const TYPES={8:'Note Off',9:'Note On',10:'Poly AT',11:'CC',12:'Program',13:'Chan AT',14:'Pitch Bend'};
+const SYS={0xF0:'SysEx',0xF1:'MTC',0xF2:'Song Pos',0xF3:'Song Sel',0xF6:'Tune',0xF8:'Clock',0xFA:'Start',0xFB:'Continue',0xFC:'Stop',0xFE:'Active Sense',0xFF:'Reset'};
+const clk={times:[],state:'Stopped',ticks:0};
+function onMsg(k,e){
+ const d=dev(k);if(!d||!d.enabled)return;
+ const b=e.data,s=b[0],S=st(k),now=performance.now();
+ S.n++;S.lat.push(Math.max(0,now-e.timeStamp));if(S.lat.length>64)S.lat.shift();
+ let ch=0,type,desc='';
+ if(s<0xF0){ch=(s&15)+1;type=TYPES[s>>4];
+  if(d.input.channel!=='omni'&&+d.input.channel!==ch)return;
+  if(type==='Note On'&&b[2]===0)type='Note Off';
+  if(type==='Note On'||type==='Note Off'||type==='Poly AT')desc=`${nn(b[1])} (${b[1]}) vel ${b[2]}`;
+  else if(type==='CC')desc=`#${b[1]} = ${b[2]}`;else if(type==='Program')desc=`${b[1]+1}`;
+  else if(type==='Pitch Bend')desc=`${((b[2]<<7)|b[1])-8192}`;else desc=`${b[1]}`;
+  if(!d.seen.channels.includes(ch)){d.seen.channels.push(ch);d.seen.channels.sort((a,c)=>a-c);save()}
+ }else{type=SYS[s]||('0x'+s.toString(16));
+  if(s===0xF0&&b[1]===0x7E&&b[3]===6&&b[4]===2)identity(k,b);
+  if(k===P.clock.source&&(s===0xF8||(s>=0xFA&&s<=0xFC)))extClock(s,e.timeStamp)}
+ if(!d.seen.types.includes(type)){d.seen.types.push(type);save();renderChips(k)}
+ if(S.ping&&s>=0x80&&s<0xF0&&b[1]===0&&(s&0xF0)===0x90){const rt=now-S.ping.t;S.ping.done(rt)}
+ flash(k,ch);
+ const hideClk=(s===0xF8||s===0xFE)&&!$('mClk').checked;
+ S.last=type+(ch?' ch'+ch:'')+(desc?' '+desc:'');
+ if(!hideClk)log(d.name,ch,type,desc,b);
+ updStat(k)}
+
+function flash(k,ch){const c=document.querySelector(`[data-k="${CSS.escape(k)}"]`);if(!c)return;
+ const l=c.querySelector('.led.in');l.classList.add('hit');setTimeout(()=>l.classList.remove('hit'),60);
+ if(ch){const i=c.querySelectorAll('.chs i')[ch-1];i.classList.add('hit','seen');setTimeout(()=>i.classList.remove('hit'),80)}}
+function updStat(k){const c=document.querySelector(`[data-k="${CSS.escape(k)}"] .stat.inS`);if(!c)return;const S=st(k);
+ const avg=S.lat.length?S.lat.reduce((a,b)=>a+b,0)/S.lat.length:0;
+ c.textContent=`${S.n} msgs · delivery ${avg.toFixed(2)} ms · ${S.last}`}
+let logLines=[];
+function log(name,ch,type,desc,b){if(paused)return;
+ const t=new Date(),ts=t.toLocaleTimeString([], {hour12:false})+'.'+String(t.getMilliseconds()).padStart(3,'0');
+ const hex=[...b].slice(0,12).map(x=>x.toString(16).padStart(2,'0')).join(' ');
+ const el=document.createElement('div');el.innerHTML=`<span class="t">${ts}</span> <span class="d">${esc(name)}</span> ${ch?'ch'+String(ch).padStart(2,'0'):'sys '} ${esc(type)} ${esc(desc)} <span class="t">[${hex}${b.length>12?' …':''}]</span>`;
+ const L=$('log');L.prepend(el);while(L.childElementCount>300)L.lastChild.remove()}
+$('mPause').onclick=e=>{paused=!paused;e.target.textContent=paused?'Resume':'Pause'};
+$('mClr').onclick=()=>$('log').innerHTML='';
+
+/* SysEx identity (Universal Identity Reply) */
+function identity(k,b){const S=st(k);let i=5,man;
+ if(b[i]===0){man='00 '+b[i+1].toString(16).padStart(2,'0')+' '+b[i+2].toString(16).padStart(2,'0');i+=3}else{man=b[i].toString(16).padStart(2,'0');i++}
+ const h=x=>x===undefined?'--':x.toString(16).padStart(2,'0');
+ S.id=`Mfr ${man} · family ${h(b[i+1])}${h(b[i])} · model ${h(b[i+3])}${h(b[i+2])} · fw ${[4,5,6,7].map(j=>h(b[i+j])).join('.')}`;
+ const d=dev(k);d.identity=S.id;save();renderAll()}
+
+/* clock: external measure + forward, internal master */
+function clkOuts(){return P.clock.sendTo.map(k=>live[k]&&live[k].output&&dev(k)&&dev(k).enabled?live[k].output:null).filter(Boolean)}
+function extClock(s,ts){
+ const outs=clkOuts().filter(o=>keyOf(o)!==P.clock.source);outs.forEach(o=>{try{o.send([s])}catch(e){}});
+ if(s===0xF8){clk.times.push(ts);if(clk.times.length>97)clk.times.shift();tick()}
+ else{clk.state=s===0xFC?'Stopped':'Playing';if(s===0xFA)clk.ticks=0;showClock()}}
+function tick(){clk.ticks++;if(clk.ticks%24===1){$('beat').classList.add('hit');setTimeout(()=>$('beat').classList.remove('hit'),90)}
+ if(clk.ticks%12===0)showClock()}
+function showClock(){const t=clk.times;let txt=clk.state;
+ if(t.length>24){const iv=[];for(let i=1;i<t.length;i++)iv.push(t[i]-t[i-1]);
+  const m=iv.reduce((a,b)=>a+b,0)/iv.length,sd=Math.sqrt(iv.reduce((a,b)=>a+(b-m)**2,0)/iv.length);
+  $('bpmOut').innerHTML=(60000/(m*24)).toFixed(1)+'<small> BPM</small>';txt+=` · jitter ±${sd.toFixed(2)} ms · ${t.length-1} ticks sampled`}
+ $('clkStat').textContent=txt}
+let run=null;
+function startInternal(){if(run)return;const outs=()=>clkOuts();let next=performance.now()+20;
+ outs().forEach(o=>{try{o.send([0xFA],next)}catch(e){}});clk.times=[];clk.ticks=0;clk.state='Playing (internal)';
+ run=setInterval(()=>{const per=60000/(P.clock.bpm*24),lim=performance.now()+100;
+  while(next<lim){const t=next;outs().forEach(o=>{try{o.send([0xF8],t)}catch(e){}});clk.times.push(t);if(clk.times.length>97)clk.times.shift();
+   setTimeout(tick,Math.max(0,t-performance.now()));next+=per}},25);$('cGo').textContent='Stop';showClock()}
+function stopInternal(){if(!run)return;clearInterval(run);run=null;clkOuts().forEach(o=>{try{o.send([0xFC])}catch(e){}});
+ clk.state='Stopped';$('cGo').textContent='Start';showClock()}
+$('cGo').onclick=()=>run?stopInternal():startInternal();
+$('cBpm').onchange=e=>{P.clock.bpm=Math.min(300,Math.max(20,+e.target.value||120));e.target.value=P.clock.bpm;save()};
+$('cFol').onchange=e=>{P.clock.followTransport=e.target.checked;save()};
+$('cSrc').onchange=e=>{stopInternal();P.clock.source=e.target.value;clk.times=[];$('bpmOut').innerHTML='–<small> BPM</small>';
+ $('clkStat').textContent=P.clock.source==='internal'?'Internal master ready':'Waiting for clock from '+(dev(P.clock.source)||{}).name;renderClock();save()};
+
+/* outgoing tools */
+function out(k,bytes){const o=live[k]&&live[k].output;if(!o)return;try{o.send(bytes);flashOut(k)}catch(e){log(dev(k).name,0,'Send failed',e.message,bytes)}}
+function flashOut(k){const l=document.querySelector(`[data-k="${CSS.escape(k)}"] .led.out`);if(l){l.classList.add('hit');setTimeout(()=>l.classList.remove('hit'),80)}}
+const act={
+ note(k,c){out(k,[0x90|c,60,100]);setTimeout(()=>out(k,[0x80|c,60,0]),300)},
+ anoff(k,c){out(k,[0xB0|c,123,0]);out(k,[0xB0|c,120,0])},
+ locOn(k,c){out(k,[0xB0|c,122,127])},locOff(k,c){out(k,[0xB0|c,122,0])},
+ mono(k,c){out(k,[0xB0|c,126,0])},poly(k,c){out(k,[0xB0|c,127,0])},
+ pc(k,c,card){const n=Math.min(128,Math.max(1,+card.querySelector('.pcn').value||1));out(k,[0xC0|c,n-1])},
+ ping(k){const S=st(k),btn=document.querySelector(`[data-k="${CSS.escape(k)}"] [data-a=ping]`);
+  S.ping={t:performance.now(),done(rt){clearTimeout(S.ping.to);S.ping=null;btn.textContent=`Round trip ${rt.toFixed(1)} ms`}};
+  S.ping.to=setTimeout(()=>{S.ping=null;btn.textContent='No echo (needs thru/loopback)'},800);out(k,[0x9F,0,1]);setTimeout(()=>out(k,[0x8F,0,0]),50)},
+ ident(k){if(!P.sysex||!access.sysexEnabled){connect(true).then(()=>{if(access&&access.sysexEnabled)out(k,[0xF0,0x7E,0x7F,0x06,0x01,0xF7])});return}
+  out(k,[0xF0,0x7E,0x7F,0x06,0x01,0xF7])},
+ up(k){move(k,-1)},down(k){move(k,1)},
+ reset(k){const d=dev(k);d.name=d.defaultName;save();renderAll()},
+ forget(k){P.devices=P.devices.filter(d=>d.key!==k);P.clock.sendTo=P.clock.sendTo.filter(x=>x!==k);renumber();save();renderAll()}};
+function renumber(){P.devices.sort((a,b)=>a.order-b.order).forEach((d,i)=>d.order=i)}
+function move(k,dir){renumber();const i=P.devices.findIndex(d=>d.key===k),j=i+dir;if(j<0||j>=P.devices.length)return;
+ [P.devices[i].order,P.devices[j].order]=[j,i];renumber();save();renderAll()}
+
+/* render */
+const chOpts=(v,omni)=>(omni?`<option value="omni" ${v==='omni'?'selected':''}>Omni</option>`:'')+Array.from({length:16},(_,i)=>`<option value="${i+1}" ${+v===i+1?'selected':''}>Ch ${i+1}${i===9?' (drums)':''}</option>`).join('');
+function card(d){const k=d.key,on=!!live[k],S=st(k),mf=d.manufacturer||'Unknown maker';
+ const sendClk=P.clock.sendTo.includes(k);
+ return `<div class="dev ${d.enabled?'':'off'} ${on?'':'gone'}" data-k="${esc(k)}">
+ <div class="top"><div class="ord"><button data-a="up" aria-label="Move up">▲</button><button data-a="down" aria-label="Move down">▼</button></div>
+  <input class="nm" value="${esc(d.name)}" placeholder="${esc(d.defaultName)}" aria-label="Device name">
+  <label class="sw"><input type="checkbox" class="en" ${d.enabled?'checked':''}> Enabled</label></div>
+ <div class="sub">${d.name!==d.defaultName?`System name: ${esc(d.defaultName)} · <a href="#" data-a="reset">reset</a> · `:''}${esc(mf)}
+  <span class="chip ${on?'y':'r'}">${on?'Connected':'Not connected'}</span>${d.hasIn?'<span class="chip y">IN</span>':''}${d.hasOut?'<span class="chip y">OUT</span>':''}
+  ${P.clock.source===k?'<span class="chip r">Clock master</span>':''}${on?'':' <a href="#" data-a="forget">forget</a>'}</div>
+ ${d.hasIn?`<div class="row"><b>IN <span class="led in"></span></b><div>
+  <div class="ctl"><label>Listen <select class="inCh">${chOpts(d.input.channel,true)}</select></label></div>
+  <div class="chs">${Array.from({length:16},(_,i)=>`<i class="${d.seen.channels.includes(i+1)?'seen':''}">${i+1}</i>`).join('')}</div>
+  <div class="stat inS" style="margin-top:6px">${S.n?'':'Play something on it…'}</div>
+  <div class="sub tps">${chips(d)}</div></div></div>`:''}
+ ${d.hasOut?`<div class="row"><b>OUT <span class="led out"></span></b><div class="ctl">
+  <label>Send on <select class="outCh">${chOpts(d.output.channel,false)}</select></label>
+  <label><input type="checkbox" class="sclk" ${sendClk?'checked':''}> Send clock</label>
+  <button data-a="note">Test note</button><button data-a="anoff">All notes off</button>
+  <button data-a="locOff">Local off</button><button data-a="locOn">Local on</button>
+  <button data-a="poly">Poly</button><button data-a="mono">Mono</button>
+  <label>Program <input class="pcn" type="number" min="1" max="128" value="1" style="width:70px"></label><button data-a="pc">Send</button>
+  ${d.hasIn?'<button data-a="ping">Ping round trip</button>':''}<button data-a="ident">Identify (SysEx)</button>
+  ${d.identity?`<span class="stat">${esc(d.identity)}</span>`:''}</div></div>`:''}
+ </div>`}
+const chips=d=>d.seen.types.length?'Seen: '+d.seen.types.map(t=>`<span class="chip">${esc(t)}</span>`).join(' '):'Message types it sends will show up here.';
+function renderChips(k){const c=document.querySelector(`[data-k="${CSS.escape(k)}"] .tps`);if(c)c.innerHTML=chips(dev(k))}
+function renderClock(){
+ $('cSrc').innerHTML='<option value="internal">Internal (this page)</option>'+P.devices.filter(d=>d.hasIn).map(d=>`<option value="${esc(d.key)}" ${P.clock.source===d.key?'selected':''}>${esc(d.name)}</option>`).join('');
+ if(P.clock.source==='internal')$('cSrc').value='internal';
+ $('cBpm').value=P.clock.bpm;$('cBpm').disabled=P.clock.source!=='internal';$('cGo').hidden=P.clock.source!=='internal';$('cFol').checked=P.clock.followTransport}
+function renderAll(){renumber();profBar();
+ $('devs').innerHTML=P.devices.length?P.devices.map(card).join(''):`<p class="note">${access?'No MIDI devices found. Plug one in; it appears here without a reload.':'Waiting for MIDI access…'}</p>`;
+ P.devices.forEach(d=>updStat(d.key));renderClock()}
+
+$('devs').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;e.preventDefault();
+ const c=b.closest('.dev'),k=c.dataset.k,d=dev(k);act[b.dataset.a](k,(d.output.channel||1)-1,c)});
+$('devs').addEventListener('change',e=>{const c=e.target.closest('.dev');if(!c)return;const k=c.dataset.k,d=dev(k),t=e.target;
+ if(t.classList.contains('en')){d.enabled=t.checked;c.classList.toggle('off',!d.enabled)}
+ else if(t.classList.contains('inCh'))d.input.channel=t.value==='omni'?'omni':+t.value;
+ else if(t.classList.contains('outCh'))d.output.channel=+t.value;
+ else if(t.classList.contains('sclk')){P.clock.sendTo=P.clock.sendTo.filter(x=>x!==k);if(t.checked)P.clock.sendTo.push(k)}
+ else if(t.classList.contains('nm')){d.name=t.value.trim()||d.defaultName;renderAll()}
+ save()});
+$('devs').addEventListener('input',e=>{if(e.target.classList.contains('nm')){const d=dev(e.target.closest('.dev').dataset.k);d.name=e.target.value.trim()||d.defaultName;save()}});
+window.addEventListener('storage',e=>{if(e.key===LS_P){profiles=store.get(LS_P,profiles);P=profiles[active]||P;syncDevices();renderAll()}});
+
+const ac=store.get('jerm747.midicheck.accent','gold');document.documentElement.dataset.accent=ac;$('accent').value=ac;
+$('accent').onchange=e=>{document.documentElement.dataset.accent=e.target.value;store.set('jerm747.midicheck.accent',e.target.value)};
+renderAll();connect(!!P.sysex);
+}
+</script>
+</body>
+</html>

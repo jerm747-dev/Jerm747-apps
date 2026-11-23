@@ -1,0 +1,10 @@
+# Flowtainment preview: make sure the streaming and caption formats get the right types.
+AddType text/vtt .vtt
+AddType application/vnd.apple.mpegurl .m3u8
+AddType video/mp2t .ts
+AddType application/dash+xml .mpd
+AddType video/iso.segment .m4s
+AddType video/mp4 .mp4
+AddType video/webm .webm
+AddType font/woff2 .woff2
+Options -Indexes

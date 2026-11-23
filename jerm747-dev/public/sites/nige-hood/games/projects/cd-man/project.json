@@ -1,0 +1,78 @@
+{
+  "title": "CD Man",
+  "tagline": "Catch the disc. Raise the mansion flag.",
+  "description": "Run the highway with Nige Hood. Stomp the road crew, lift and throw them, and catch a flashing CD on the way to the mansion stage.",
+  "kind": "game",
+  "status": "playable",
+  "version": "v1",
+  "order": 2,
+  "credit": "Nige Hood · Returnity Arcade",
+  "accent": "#cc76c9",
+  "cover": "cover.png",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "touch"
+  ],
+  "controllerMode": "mapping",
+  "gamepad": {
+    "LEFT": "ArrowLeft",
+    "RIGHT": "ArrowRight",
+    "DOWN": "ArrowDown",
+    "UP": "ArrowUp",
+    "A": " ",
+    "X": "x",
+    "RB": "Shift",
+    "START": "p"
+  },
+  "gamepadLabels": {
+    "A": "Jump",
+    "X": "Lift / throw",
+    "RB": "Speed",
+    "START": "Pause"
+  },
+  "actions": [
+    {
+      "id": "left",
+      "label": "Move left",
+      "key": "ArrowLeft",
+      "pad": "LEFT"
+    },
+    {
+      "id": "right",
+      "label": "Move right",
+      "key": "ArrowRight",
+      "pad": "RIGHT"
+    },
+    {
+      "id": "down",
+      "label": "Duck",
+      "key": "ArrowDown",
+      "pad": "DOWN"
+    },
+    {
+      "id": "jump",
+      "label": "Jump",
+      "key": " ",
+      "pad": "A"
+    },
+    {
+      "id": "lift",
+      "label": "Lift / throw",
+      "key": "x",
+      "pad": "X"
+    },
+    {
+      "id": "speed",
+      "label": "Speed",
+      "key": "Shift",
+      "pad": "RB"
+    },
+    {
+      "id": "pause",
+      "label": "Pause",
+      "key": "p",
+      "pad": "START"
+    }
+  ]
+}

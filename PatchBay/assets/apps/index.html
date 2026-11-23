@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" data-finish="blue">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0e233d">
+<title>Patch Bay · Jerm 747</title>
+<link rel="stylesheet" href="rack.css">
+<script src="catalog.js" defer></script>
+<script src="rack.js" defer></script>
+</head>
+<body>
+<main class="cabinet">
+  <header class="faceplate">
+    <div class="brand"><span class="signal" aria-hidden="true"></span><div><p>JERM 747</p><h1>Patch Bay</h1></div></div>
+    <div class="finish">
+      <button type="button" data-finish="blue" aria-pressed="true">Blue</button>
+      <button type="button" data-finish="black" aria-pressed="false">Black</button>
+    </div>
+  </header>
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="Search the rack" aria-label="Search the rack">
+    <div class="views" aria-label="Layout">
+      <button type="button" data-view="list" aria-pressed="true">Rack</button>
+      <button type="button" data-view="grid" aria-pressed="false">Grid</button>
+    </div>
+  </div>
+  <div class="chassis"><ul id="shelf" aria-label="Studio tools"></ul><p id="empty" hidden>No matching tools.</p></div>
+  <div class="grille" aria-hidden="true"></div>
+</main>
+</body>
+</html>

@@ -1,0 +1,52 @@
+ENCORE — THROW, BOOST & DIVE (v9)
+3 November 2026
+
+FIREBALL THROW
+Four new poses: cock beside the ear, drive forward, release slightly down,
+then follow through. The projectile, sound and light vibration begin at the
+release frame (0.14 seconds). Movement stays responsive during the throw.
+A flip or dive interrupts an unreleased throw without spending ammunition.
+Shots move at 540 px/sec, with a longer bounce (about 440 px on level ground).
+They fizzle into a small smoke-and-ember puff after five active seconds or
+when fully offscreen. They cannot hit anything after they have burned out.
+Pause freezes their lifetime. Collectible fireball pickups remain available.
+
+EXTRA RUNNING GEAR
+Double-tap Left or Right and keep moving to run. While that run is latched,
+tap Speed on the controller (or hold Shift) for a faster 416 px/sec boost;
+normal running remains 304 px/sec and walking remains 172 px/sec.
+Three subtle blue streaks show the extra speed. Tap Speed again to disable
+it. Jump and Flip preserve launch speed, with a gentle loss of speed in the
+air when Speed is released. Direction input still steers. The second jump
+retains more sideways momentum when launched from the extra gear, while
+still providing its single upward boost. Reversing direction keeps the skid.
+
+AERIAL DIVE
+Tap Flip / X again during a flip or double jump to turn into a downward
+dive. Two new sprites show entry and extended descent. Sideways momentum
+continues with a small forward burst; steering remains available. The move
+lands on platforms with the existing compression/recoil and a light puff.
+One dive per airtime; repeated taps cannot stack boosts. Jump does not cancel
+a committed dive. Landing or a safe rooftop recovery restores the move.
+
+SQUAT AND ROUTE CLEANUP
+Four new grounded poses: shallow bend, deeper bend, hold, then rise.
+The head cannot grow through a solid crate when standing up under it.
+Removed three crowded gold boxes and moved five others clear of platform
+headroom. All gold pickups leave at least full standing clearance on nearby
+walking surfaces. The three breakable NH merch crates remain in place.
+
+PRESERVED
+Four areas, rooftop loop, double jump, optional conversation, collectible
+NH shirt/cap/vinyl, light haptics, controller layout and safe pedestrians.
+Motion Workshop shows the new moves at the top; Animate moves loops them.
+
+VALIDATION
+57 engine checks pass, including boost/air momentum, dive/landing, throw
+release timing, pause, five-second expiry, offscreen culling before hits,
+squat headroom and real jumps through the third-area climb. Haptics suite
+passes. Browser checks cover the new poses and effects in the actual game.
+Physical controller/phone vibration remains dependent on device support.
+
+Run: node tests/street-game.test.cjs
+     node tests/haptics.test.cjs

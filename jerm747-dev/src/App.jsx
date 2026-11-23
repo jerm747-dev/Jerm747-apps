@@ -61,6 +61,7 @@ export default function App() {
           <a className="wordmark" href="#">jerm747<span>.dev</span></a>
           <nav aria-label="Main">
             <a className={`nav-sites ${route.page === 'sites' ? 'is-on' : ''}`} href="#/sites" aria-current={route.page === 'sites' ? 'page' : undefined}>Sites</a>
+            <a className="nav-apps" href="/apps/" title="Jerm 747 Patch Bay: MIDI Lane, Beat Room and more studio tools">Patch Bay</a>
             <a href="#services">Services</a>
             <a href="#packages">Packages</a>
             <a href="#quote">Estimate</a>
@@ -83,6 +84,7 @@ export default function App() {
           <p>Freelance development and consulting, Charlotte, NC</p>
           <p><a href="mailto:admin@jerm747.dev">admin@jerm747.dev</a></p>
           <p><a href="#/sites">Sites in development</a></p>
+          <p><a href="/apps/">Patch Bay studio tools</a></p>
           <p><a href="#/about">About</a></p>
           <p><a href="#/project">Check your project</a></p>
           <p className="copy">© {new Date().getFullYear()} Jeremy Currence</p>

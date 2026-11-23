@@ -1,0 +1,2882 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Application Console</title>
+<style>
+  :root {
+    --band-red:   #0F766E;
+    --band-blue:  #334155;
+    --band-gray:  #C2C2C2;
+    --band-light: #F0F0F0;
+
+    --banner-h: 40px;
+    /* Horizontal offset of each slanted edge = height / tan(180° - angle)
+       135° -> x 1.000   120° -> x 0.577   110° -> x 0.364 */
+    --slant: calc(var(--banner-h) * 0.577);   /* 120° */
+    --overlap: 6px;        /* how far each band tucks under the one on its left */
+    --shadow-x: 4px;       /* shadow cast to the right */
+    --shadow-blur: 3px;
+    --shadow-color: rgba(0, 0, 0, 0.38);
+
+    --text: #1a1a1a;
+    --muted: #5f6368;
+    --line: #e2e2e2;
+    --title-shadow: rgba(0, 0, 0, 0.22);
+
+    --sidebar-w: 280px;
+    --rail-w: 76px;
+    --topbar-h: 52px;
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }   /* "hidden" must win over display rules like .field { display:flex } */
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: #fff;
+    color: var(--text);
+    font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+  button { font: inherit; color: inherit; }
+
+  /* ---------- Head banner ---------- */
+  .banner {
+    display: flex;
+    flex: 0 0 var(--banner-h);
+    overflow: hidden;
+  }
+  /* Outer .band carries the shadow (filter isn't clipped);
+     inner .band__shape carries the slanted clip-path + color. */
+  .band {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    margin-right: calc(-1 * var(--slant) - var(--overlap));
+    filter: drop-shadow(var(--shadow-x) 0 var(--shadow-blur) var(--shadow-color));
+  }
+  .band__shape {
+    width: 100%;
+    height: 100%;
+    clip-path: polygon(0 0, calc(100% - var(--slant)) 0, 100% 100%, 0 100%);
+  }
+  .band:last-child { margin-right: 0; filter: none; }
+  .band--red   { z-index: 4; flex: 1.15; }
+  .band--blue  { z-index: 3; flex: 1.1;  }
+  .band--gray  { z-index: 2; }
+  .band--light { z-index: 1; }
+  .band--red   .band__shape { background: var(--band-red); }
+  .band--blue  .band__shape { background: var(--band-blue); }
+  .band--gray  .band__shape { background: var(--band-gray); }
+  .band--light .band__shape { background: var(--band-light); clip-path: none; }
+
+  /* ---------- Top bar (compact title, top-left) ---------- */
+  .topbar {
+    flex: 0 0 var(--topbar-h);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 20px;
+    border-bottom: 2px solid transparent;
+    border-image: linear-gradient(90deg, var(--band-red), var(--band-blue) 45%, transparent 85%) 1;
+  }
+  .menu-toggle {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+  }
+  .menu-toggle:hover { background: #f6f6f6; }
+  .menu-toggle svg { width: 20px; height: 20px; }
+  .brand { line-height: 1.15; }
+  .conn {
+    margin-left: auto; font-size: .72rem; font-weight: 600; padding: 4px 10px;
+    border-radius: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45vw;
+  }
+  .conn--mock { background: #f1f1f1; color: #666; }
+  .conn--live { background: #e6f4ea; color: #1a7f37; }
+  .conn--live::before { content: "● "; }
+  .page-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-shadow: 1px 1px 2px var(--title-shadow);
+  }
+  .page-subtitle {
+    margin: 1px 0 0;
+    font-size: 0.68rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- Shell: sidebar + content ---------- */
+  .shell {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    position: relative;
+  }
+  .sidebar {
+    flex: 0 0 var(--sidebar-w);
+    width: var(--sidebar-w);
+    background: #fafafa;
+    border-right: 1px solid var(--line);
+    padding: 16px 12px;
+    overflow-y: auto;
+    transition: flex-basis .2s ease, width .2s ease;
+  }
+  .nav-label {
+    margin: 4px 10px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .nav { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .nav-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border: 0;
+    border-left: 4px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+  .nav-item:hover { background: #efefef; }
+  .nav-item[aria-current="page"] {
+    background: #fff;
+    border-left-color: var(--band-red);
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  }
+  .nav-abbr {
+    flex: 0 0 auto;
+    min-width: 46px;
+    padding: 4px 6px;
+    border-radius: 4px;
+    background: var(--band-blue);
+    color: #fff;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-align: center;
+  }
+  .nav-item[aria-current="page"] .nav-abbr { background: var(--band-red); }
+  .nav-text { font-size: 0.9rem; line-height: 1.25; }
+  .nav-version {
+    margin: 18px 10px 0; font-size: .68rem; color: #999;
+    font-family: Consolas, "Courier New", monospace; white-space: normal; line-height: 1.5;
+  }
+  body.nav-collapsed .nav-version { margin-inline: 0; text-align: center; font-size: .6rem; }
+
+  /* Collapsed (desktop): slim rail showing just the abbreviations */
+  body.nav-collapsed .sidebar { flex-basis: var(--rail-w); width: var(--rail-w); padding-inline: 8px; }
+  body.nav-collapsed .nav-label,
+  body.nav-collapsed .nav-text { display: none; }
+  body.nav-collapsed .nav-item { justify-content: center; padding-inline: 4px; }
+
+  .content {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+  .content h2 { margin: 0 0 4px; font-size: 1.4rem; }
+  .content .lede { margin: 0 0 24px; color: var(--muted); }
+  .placeholder {
+    border: 2px dashed #ccc;
+    border-radius: 6px;
+    padding: 48px;
+    text-align: center;
+    color: #999;
+  }
+
+  /* ---------- Tool header ---------- */
+  .tool-head h2 { font-size: 1.15rem; margin: 0 0 2px; }
+  .tool-head .lede { margin: 0 0 18px; font-size: 0.85rem; }
+
+  /* ---------- Stepper ---------- */
+  .stepper {
+    list-style: none; margin: 0 0 20px; padding: 0;
+    display: flex; gap: 4px; overflow-x: auto;
+  }
+  .step {
+    flex: 1 0 auto;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 3px solid var(--line);
+    font-size: 0.78rem; color: var(--muted);
+    white-space: nowrap;
+  }
+  .step__num {
+    width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--line); color: #555;
+    font-size: 0.72rem; font-weight: 700;
+  }
+  .step.is-current { border-bottom-color: var(--band-red); color: var(--text); font-weight: 600; }
+  .step.is-current .step__num { background: var(--band-red); color: #fff; }
+  .step.is-done { border-bottom-color: var(--band-blue); }
+  .step.is-done .step__num { background: var(--band-blue); color: #fff; }
+
+  /* ---------- Panels & fields ---------- */
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 20px 22px 18px;
+    margin: 0;
+    max-width: 920px;
+  }
+  .panel legend {
+    padding: 0 6px;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .panel-intro { margin: 0 0 16px; font-size: 0.85rem; color: var(--muted); }
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 20px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field--full { grid-column: 1 / -1; }
+  .field label { font-size: 0.8rem; font-weight: 600; }
+  .field .req { color: var(--band-red); margin-left: 2px; }
+  .field input, .field select, .field textarea {
+    font: inherit; font-size: 0.88rem;
+    padding: 8px 10px;
+    border: 1px solid #c9c9c9;
+    border-radius: 5px;
+    background: #fff;
+    min-width: 0;
+  }
+  .field textarea { font-family: Consolas, "Courier New", monospace; font-size: 0.8rem; resize: vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: 2px solid var(--band-blue); outline-offset: 0; border-color: var(--band-blue);
+  }
+  .field .mono { font-family: Consolas, "Courier New", monospace; font-size: 0.82rem; }
+  .field .help { font-size: 0.74rem; color: var(--muted); }
+  .field .error { font-size: 0.74rem; color: var(--band-red); display: none; }
+  .field.invalid input, .field.invalid select { border-color: var(--band-red); }
+  .field.invalid .error { display: block; }
+  .inline { display: flex; gap: 8px; }
+  .inline > select, .inline > input { flex: 1; }
+
+  .actions {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 10px; margin-top: 20px; flex-wrap: wrap;
+  }
+  .actions .right { display: flex; gap: 10px; margin-left: auto; }
+  .btn {
+    padding: 8px 16px; border-radius: 5px; cursor: pointer;
+    font-size: 0.85rem; font-weight: 600;
+    border: 1px solid #c9c9c9; background: #fff;
+  }
+  .btn:hover { background: #f4f4f4; }
+  .btn--primary { background: var(--band-blue); border-color: var(--band-blue); color: #fff; }
+  .btn--primary:hover { background: #1e293b; }
+  .status { font-size: 0.78rem; color: var(--muted); }
+  .status.ok { color: #1a7f37; }
+
+  /* ---------- Scan results ---------- */
+  .scan-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .scan-bar code {
+    font-family: Consolas, "Courier New", monospace; font-size: 0.76rem;
+    background: #f4f4f4; border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px;
+  }
+  .summary { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .stat {
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px; min-width: 110px;
+  }
+  .stat b { display: block; font-size: 1.1rem; }
+  .stat span { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    font-family: Consolas, "Courier New", monospace; font-size: 0.74rem;
+    padding: 2px 8px; border-radius: 10px; background: #eef0ff; color: var(--band-blue);
+    border: 1px solid #d5d8ff; white-space: nowrap;
+  }
+  .chip small { color: var(--muted); margin-left: 4px; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+  table.results { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .results th, .results td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+  .results th { background: #f7f7f7; font-size: 0.72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .results tr:last-child td { border-bottom: 0; }
+  .results .path { font-family: Consolas, "Courier New", monospace; font-size: 0.78rem; }
+  .badge { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+  .badge--ok    { background: #e6f4ea; color: #1a7f37; }
+  .badge--mixed { background: #fff4e0; color: #9a5b00; }
+  .badge--none  { background: #f1f1f1; color: #666; }
+  .note { font-size: 0.74rem; color: var(--muted); margin-top: 8px; }
+  .occ-wrap { max-height: 380px; overflow: auto; }
+  .occ-wrap th { position: sticky; top: 0; z-index: 1; }
+
+  /* ---------- Step 4: select & normalize ---------- */
+  .sub { margin: 22px 0 10px; font-size: 0.78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .sub:first-of-type { margin-top: 4px; }
+  .seg { display: inline-flex; border: 1px solid #c9c9c9; border-radius: 6px; overflow: hidden; }
+  .seg label { cursor: pointer; position: relative; }
+  .seg input { position: absolute; opacity: 0; pointer-events: none; }
+  .seg span { display: block; padding: 5px 10px; font-size: 0.76rem; font-weight: 600; border-right: 1px solid #c9c9c9; color: #444; }
+  .seg label:last-child span { border-right: 0; }
+  .seg input:focus-visible + span { outline: 2px solid var(--band-blue); outline-offset: -2px; }
+  .seg input[value="normalize"]:checked + span { background: var(--band-blue); color: #fff; }
+  .seg input[value="keep"]:checked + span { background: #e6f4ea; color: #1a7f37; }
+  .seg input[value="remove"]:checked + span { background: #fde8e2; color: var(--band-red); }
+  .families { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .mini td.where { font-family: Consolas, "Courier New", monospace; font-size: .72rem; color: #444; line-height: 1.55; }
+  .step.is-reachable { cursor: pointer; }
+  .step.is-reachable:not(.is-current):hover { background: #f4f4f4; }
+  .step.is-locked { opacity: .5; cursor: not-allowed; }
+  .step:focus-visible { outline: 2px solid var(--band-blue); outline-offset: -2px; }
+
+  /* Panels whose earlier steps aren't done show only a pointer back */
+  .empty { display: none; }
+  .panel.is-blocked > .empty {
+    display: block; padding: 28px; text-align: center; color: var(--muted);
+    border: 2px dashed #ccc; border-radius: 6px; font-size: .9rem;
+  }
+  .panel.is-blocked > .empty p { margin: 0 0 12px; }
+  .panel.is-blocked > :not(legend):not(.empty):not(.actions) { display: none !important; }
+
+  /* ---------- Step 6: package ---------- */
+  .banner-warn {
+    background: #fff4e0; border: 1px solid #f1d29b; color: #7a4a00;
+    border-radius: 6px; padding: 10px 12px; font-size: .82rem; margin-bottom: 14px;
+  }
+  .pkg-target {
+    padding: 8px 10px; border: 1px dashed #c9c9c9; border-radius: 5px; background: #fafafa;
+    font-family: Consolas, "Courier New", monospace; font-size: .8rem; word-break: break-all;
+  }
+  .family { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 10px; align-content: start; }
+  .family__head { display: flex; justify-content: space-between; align-items: center; }
+  .family__head code { font-family: Consolas, "Courier New", monospace; font-size: .74rem; color: var(--muted); }
+  table.mini { width: 100%; border-collapse: collapse; font-size: .8rem; }
+  .mini th, .mini td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: left; }
+  .mini th { font-size: .68rem; color: var(--muted); text-transform: uppercase; }
+  .mini select { font: inherit; font-size: .78rem; padding: 3px 4px; border: 1px solid #c9c9c9; border-radius: 4px; }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-size: .85rem; margin-bottom: 12px; cursor: pointer; }
+  .check input { margin-top: 3px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  /* ---------- EMVT ---------- */
+  .em-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .em-toolbar label.btn { display: inline-block; }
+  .em-inline { margin: 0; }
+  .em-mode { margin-left: auto; font-size: .72rem; font-weight: 600; padding: 3px 10px; border-radius: 12px; background: #f1f1f1; color: #666; }
+  .em-summary .stat--active b { color: var(--band-blue); }
+  .em-summary .stat--ok b { color: #1a7f37; }
+  .em-summary .stat--bad b { color: var(--band-red); }
+  .em-table td { vertical-align: middle; }
+  .em-table tr.em-row { cursor: pointer; }
+  .em-table tr.em-row:hover td { background: #fafafa; }
+  .em-app b { display: block; font-size: .85rem; }
+  .em-app small { color: var(--muted); font-family: Consolas, "Courier New", monospace; font-size: .72rem; }
+  .srv { font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; text-transform: uppercase; letter-spacing: .03em; }
+  .srv--tomcat { background: #fff1e6; color: #a04a00; }
+  .srv--jboss { background: #fde8e2; color: #a3260a; }
+  .srv--websphere { background: #e8eaff; color: var(--band-blue); }
+  .ph { font-size: .72rem; font-weight: 700; padding: 3px 9px; border-radius: 10px; white-space: nowrap; }
+  .ph--idle { background: #f1f1f1; color: #666; }
+  .ph--activity { background: #fff4e0; color: #9a5b00; }
+  .ph--deploying { background: #e8eaff; color: var(--band-blue); }
+  .ph--settling { background: #e6f0ff; color: #1d4fb8; }
+  .ph--deployed { background: #e6f4ea; color: #1a7f37; }
+  .ph--failed, .ph--stalled { background: #fde8e2; color: var(--band-red); }
+  .ph--deploying::before, .ph--activity::before { content: "● "; animation: blink 1.2s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .bar { height: 8px; border-radius: 4px; background: #eee; overflow: hidden; position: relative; }
+  .bar > span { display: block; height: 100%; background: var(--band-blue); transition: width .4s ease; }
+  .bar.is-done > span { background: #1a7f37; }
+  .bar.is-bad > span { background: var(--band-red); }
+  .bar-label { font-size: .74rem; margin-top: 3px; font-family: Consolas, "Courier New", monospace; }
+  .bar-label .grow { color: #1a7f37; font-weight: 700; }
+  .bar-label .shrink { color: var(--band-red); font-weight: 700; }
+  .em-size { font-family: Consolas, "Courier New", monospace; font-size: .76rem; white-space: nowrap; }
+  .em-play { border: 1px solid #c9c9c9; background: #fff; border-radius: 4px; cursor: pointer; padding: 2px 8px; font-size: .75rem; }
+  .em-play:disabled { opacity: .35; cursor: default; }
+  .em-detail td { background: #fbfbfb; padding: 12px 16px 14px; }
+  .timeline { list-style: none; margin: 0; padding: 0 0 0 4px; border-left: 2px solid var(--line); }
+  .timeline li { position: relative; padding: 2px 0 8px 16px; font-size: .8rem; }
+  .timeline li::before { content: ""; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; border-radius: 50%; background: #bbb; }
+  .timeline li.t-deploying::before { background: var(--band-blue); }
+  .timeline li.t-deployed::before { background: #1a7f37; }
+  .timeline li.t-failed::before, .timeline li.t-stalled::before { background: var(--band-red); }
+  .timeline time { font-family: Consolas, "Courier New", monospace; color: var(--muted); margin-right: 8px; }
+  .em-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+  .em-kv { font-size: .78rem; display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; }
+  .em-kv dt { color: var(--muted); } .em-kv dd { margin: 0; font-family: Consolas, "Courier New", monospace; word-break: break-all; }
+  @media (max-width: 800px) { .em-detail-grid { grid-template-columns: 1fr; } }
+  .em-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+  @media (min-width: 1600px) { .em-layout { grid-template-columns: minmax(0, 1fr) 320px; } }
+  .em-app b, .em-app small { white-space: nowrap; }
+  .em-feed { border: 1px solid var(--line); border-radius: 6px; background: #fff; display: flex; flex-direction: column; max-height: 560px; }
+  .em-feed__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line); background: #f7f7f7; border-radius: 6px 6px 0 0; }
+  .em-feed__head h3 { margin: 0; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .em-feed__count { font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 4px; }
+  .em-feed__head select { font: inherit; font-size: .76rem; padding: 3px 6px; border: 1px solid #c9c9c9; border-radius: 4px; background: #fff; }
+  .em-feed__list { list-style: none; margin: 0; padding: 4px 0; overflow-y: auto; }
+  .em-feed__list li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 4px 10px; padding: 7px 12px; cursor: pointer; border-bottom: 1px solid #f2f2f2; }
+  .em-feed__list li:hover { background: #fafafa; }
+  .em-feed__list li.is-empty { display: block; cursor: default; color: var(--muted); font-size: .8rem; padding: 14px 12px; }
+  .em-feed__dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; background: #bbb; }
+  .em-feed__dot.d-activity { background: #e0a100; } .em-feed__dot.d-deploying, .em-feed__dot.d-settling { background: var(--band-blue); }
+  .em-feed__dot.d-deployed { background: #1a7f37; } .em-feed__dot.d-failed, .em-feed__dot.d-stalled { background: var(--band-red); }
+  .em-feed__what { font-size: .8rem; line-height: 1.35; min-width: 0; }
+  .em-feed__what b { font-weight: 600; }
+  .em-feed__what small { display: block; color: var(--muted); font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .em-feed__when { font-size: .7rem; color: var(--muted); font-family: Consolas, "Courier New", monospace; white-space: nowrap; }
+  tr.em-row.is-flash td { background: #fff4c2; transition: background .4s; }
+  .em-add { margin-bottom: 16px; max-width: none; }
+  /* EMVT sub-tabs */
+  .em-tabs { display: flex; align-items: flex-end; gap: 4px; border-bottom: 2px solid var(--line); margin-bottom: 16px; }
+  .em-tab { border: 0; background: none; padding: 8px 14px; font-size: .86rem; font-weight: 600; color: var(--muted);
+    cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+  .em-tab:hover { color: var(--text); }
+  .em-tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--band-red); }
+  .em-tab__count { font-weight: 400; color: var(--muted); }
+  .em-tabs .em-mode { margin-bottom: 6px; }
+  /* Today's tickets */
+  .tk-date { font-size: .82rem; color: var(--muted); font-weight: 600; }
+  .tk-apps { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2px 14px; }
+  .tk-apps .check { margin: 0; } .tk-apps small { color: var(--muted); }
+  .tk-list { display: grid; gap: 14px; }
+  .tk-card { border: 1px solid var(--line); border-left: 4px solid #bbb; border-radius: 6px; background: #fff; }
+  .tk--planned { border-left-color: #bbb; } .tk--active, .tk--partial { border-left-color: var(--band-blue); }
+  .tk--deployed { border-left-color: #1a7f37; } .tk--validated { border-left-color: #0f5f29; } .tk--issue { border-left-color: var(--band-red); }
+  .tk-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tk-title { margin: 0; font-size: .92rem; flex: 1; min-width: 200px; }
+  .tk-status { font-size: .74rem; font-weight: 700; padding: 3px 10px; border-radius: 10px; background: #f1f1f1; color: #555; }
+  .tk--active .tk-status, .tk--partial .tk-status { background: #e8eaff; color: var(--band-blue); }
+  .tk--deployed .tk-status { background: #e6f4ea; color: #1a7f37; }
+  .tk--validated .tk-status { background: #1a7f37; color: #fff; }
+  .tk--issue .tk-status { background: #fde8e2; color: var(--band-red); }
+  .tk-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; padding: 12px 14px; }
+  .tk-apps-list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 6px; }
+  .tk-apps-list li { display: flex; align-items: center; gap: 8px; font-size: .82rem; flex-wrap: wrap; }
+  .tk-apps-list small { color: var(--muted); font-size: .72rem; }
+  .tk-empty { color: var(--muted); }
+  .tk-x { margin-left: auto; border: 0; background: none; color: #999; font-size: 1rem; cursor: pointer; line-height: 1; }
+  .tk-x:hover { color: var(--band-red); }
+  .tk-add-app { font: inherit; font-size: .8rem; padding: 5px 8px; border: 1px dashed #b9b9b9; border-radius: 5px; background: #fafafa; }
+  .tk-update { display: flex; flex-direction: column; min-width: 0; }
+  .tk-update__head { display: flex; align-items: center; justify-content: space-between; font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 6px; }
+  .tk-update__head .btn { padding: 4px 12px; font-size: .78rem; text-transform: none; letter-spacing: 0; }
+  .tk-update pre { margin: 0; flex: 1; white-space: pre-wrap; word-break: break-word; font-family: Consolas, "Courier New", monospace;
+    font-size: .74rem; line-height: 1.5; background: #f8f8f8; border: 1px solid var(--line); border-radius: 5px; padding: 10px; max-height: 260px; overflow: auto; }
+  .tk-foot { padding: 8px 14px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
+  .em-ticket { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .em-ticket h3 { flex-basis: 100%; }
+  .em-ticket__title { font-size: .82rem; }
+  .em-ticket__go { margin-left: auto; padding: 4px 12px; font-size: .78rem; }
+  @media (max-width: 1000px) { .tk-body { grid-template-columns: 1fr; } }
+  .em-tpl { margin-bottom: 16px; max-width: 760px; padding: 14px 16px; }
+  .em-tpl code { font-family: Consolas, "Courier New", monospace; }
+  .tkt-wrap { display: inline-flex; align-items: stretch; border: 1px solid #c8cdf5; border-radius: 4px; overflow: hidden; vertical-align: middle; font-size: .72rem; }
+  .tkt { padding: 1px 7px; background: #eef0ff; color: var(--band-blue); font-weight: 700; font-family: Consolas, "Courier New", monospace; text-decoration: none; }
+  a.tkt:hover { text-decoration: underline; }
+  .tkt-env { padding: 1px 6px; background: #fff; color: #555; font-weight: 600; border-left: 1px solid #c8cdf5; }
+  .tkt-env.is-mismatch { background: #fde8e2; color: var(--band-red); }
+  .tkt-wrap.is-mini { font-size: .66rem; margin-left: 4px; }
+  .em-tkt-line { margin-top: 5px; display: flex; align-items: center; gap: 6px; }
+  .em-tkt-line small { font-size: .66rem; color: var(--muted); }
+  .em-ticket { border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin-bottom: 14px; background: #fff; }
+  .em-ticket__form { display: grid; grid-template-columns: 160px 110px minmax(0, 1fr) auto; gap: 10px; align-items: end; }
+  .em-ticket__form.has-attach { grid-template-columns: 160px 110px minmax(0, 1fr) 210px auto; }
+  .em-ticket__form .field input, .em-ticket__form .field select { font-size: .82rem; padding: 6px 8px; }
+  .em-ticket__for { font-size: .78rem; color: var(--muted); margin-left: 6px; }
+  .em-ticket__warn { margin: 8px 0 0; font-size: .78rem; color: var(--band-red); }
+  .em-feed__dot.d-ticket, .timeline li.t-ticket::before { background: #7b5cd6; }
+  @media (max-width: 1100px) { .em-ticket__form, .em-ticket__form.has-attach { grid-template-columns: 1fr 1fr; } }
+  .em-add__title { margin: 0 0 4px; font-size: .95rem; }
+  .em-auth { display: grid; gap: 4px; }
+  .em-auth .check { margin: 0; }
+  .em-detail .btn + .btn { margin-left: 8px; }
+
+  .sub__opt { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; color: #999; }
+  .extras { display: grid; gap: 12px; }
+  .extra { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; }
+  .extra.is-on { border-color: var(--band-blue); background: #fafaff; }
+  .extra .check { margin-bottom: 4px; }
+  .extra__desc { margin: 0 0 10px 24px; font-size: .78rem; color: var(--muted); line-height: 1.45; }
+  .extra__desc code { font-family: Consolas, "Courier New", monospace; font-size: .74rem; }
+  .extra .field-grid { margin-left: 24px; }
+  .field-grid.one-col { grid-template-columns: 1fr; gap: 10px; }
+  .extra input:disabled { background: #f4f4f4; color: #999; }
+  .results tr.is-removed td { color: #999; }
+
+  /* ---------- Step 5: validate & review ---------- */
+  .badge--bad { background: #fde8e2; color: var(--band-red); }
+  .warnlist { margin: 10px 0 0; padding-left: 18px; font-size: .78rem; color: #9a5b00; }
+  .warnlist:empty { display: none; }
+  .diff {
+    border: 1px solid var(--line); border-radius: 6px; overflow: auto; max-height: 380px;
+    font-family: Consolas, "Courier New", monospace; font-size: .76rem; background: #fbfbfb;
+    margin: 10px 0 14px; padding: 4px 0;
+  }
+  .dl { display: flex; white-space: pre; min-width: max-content; }
+  .dl .ln { width: 38px; flex: none; text-align: right; padding-right: 8px; color: #aaa; user-select: none; }
+  .dl .sg { width: 16px; flex: none; color: #999; user-select: none; }
+  .dl code { font: inherit; padding-right: 12px; }
+  .dl.del { background: #fdecea; } .dl.del .sg { color: var(--band-red); }
+  .dl.add { background: #e6f4ea; } .dl.add .sg { color: #1a7f37; }
+
+  @media (max-width: 800px) {
+    .families { grid-template-columns: 1fr; }
+    .field-grid { grid-template-columns: 1fr; }
+    .panel { padding: 16px 14px; }
+  }
+
+  .backdrop { display: none; }
+
+  /* ---------- Mobile: sidebar becomes an overlay drawer ---------- */
+  @media (max-width: 800px) {
+    .page-title { font-size: 0.95rem; }
+    .page-subtitle { display: none; }
+    .content { padding: 20px 16px; }
+
+    .sidebar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      z-index: 20;
+      width: min(85vw, var(--sidebar-w));
+      transform: translateX(-100%);
+      transition: transform .22s ease;
+      box-shadow: 4px 0 12px rgba(0,0,0,.18);
+    }
+    body.nav-open .sidebar { transform: none; }
+    body.nav-open .backdrop {
+      display: block;
+      position: absolute; inset: 0;
+      z-index: 10;
+      background: rgba(0,0,0,.3);
+    }
+    /* rail mode doesn't apply on mobile */
+    body.nav-collapsed .sidebar { width: min(85vw, var(--sidebar-w)); padding-inline: 12px; }
+    body.nav-collapsed .nav-label,
+    body.nav-collapsed .nav-text { display: revert; }
+    body.nav-collapsed .nav-item { justify-content: flex-start; padding-inline: 10px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="banner" aria-hidden="true">
+    <div class="band band--red"><div class="band__shape"></div></div>
+    <div class="band band--blue"><div class="band__shape"></div></div>
+    <div class="band band--gray"><div class="band__shape"></div></div>
+    <div class="band band--light"><div class="band__shape"></div></div>
+  </div>
+
+  <header class="topbar">
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu" aria-controls="sidebar" aria-expanded="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+    <div class="brand">
+      <h1 class="page-title">Application Console</h1>
+      <p class="page-subtitle">Environment Management · Demo</p>
+    </div>
+    <span class="conn conn--mock" id="connBadge">Sample data (no backend)</span>
+  </header>
+
+  <div class="shell">
+    <nav class="sidebar" id="sidebar" aria-label="Tools">
+      <p class="nav-label">Tools</p>
+      <ul class="nav">
+        <li>
+          <button class="nav-item" data-tool="wasvc" aria-current="page"
+                  title="WebSphere Application Server Version Control">
+            <span class="nav-abbr">WASVC</span>
+            <span class="nav-text">WebSphere Application Server Version Control</span>
+          </button>
+        </li>
+        <li>
+          <button class="nav-item" data-tool="emvt" title="EM Validation Tool">
+            <span class="nav-abbr">EMVT</span>
+            <span class="nav-text">EM Validation Tool</span>
+          </button>
+        </li>
+      </ul>
+      <p class="nav-version" id="appVersion"></p>
+    </nav>
+    <div class="backdrop" id="backdrop"></div>
+
+    <main class="content" id="content">
+
+      <!-- ===================== WASVC ===================== -->
+      <section id="tool-wasvc">
+        <div class="tool-head">
+          <h2>WebSphere Application Server Version Control</h2>
+          <p class="lede">Normalize WAS versions across BladeLogic job folders for patching.</p>
+        </div>
+
+        <ol class="stepper" id="stepper">
+          <li class="step" data-step="1"><span class="step__num">1</span>Connect</li>
+          <li class="step" data-step="2"><span class="step__num">2</span>Job Source</li>
+          <li class="step" data-step="3"><span class="step__num">3</span>Scan Versions</li>
+          <li class="step" data-step="4"><span class="step__num">4</span>Select &amp; Normalize</li>
+          <li class="step" data-step="5"><span class="step__num">5</span>Validate &amp; Review</li>
+          <li class="step" data-step="6"><span class="step__num">6</span>Package</li>
+        </ol>
+
+        <form id="wasvcForm" novalidate autocomplete="off">
+
+          <!-- Step 1: Connect -->
+          <fieldset class="panel" data-panel="1">
+            <legend>Connect to BladeLogic</legend>
+            <p class="panel-intro">Sign in to the BladeLogic server that hosts the patching jobs.</p>
+            <div class="field-grid">
+              <div class="field field--full">
+                <label for="blServer">BladeLogic server (FQDN:port)<span class="req">*</span></label>
+                <input id="blServer" name="blServer" class="mono" required
+                       placeholder="bladelogic-server-01.corporation.com:9841"
+                       pattern="^[A-Za-z0-9.\-]+:\d{2,5}$">
+                <span class="help">Fully qualified host name and port.</span>
+                <span class="error">Use the form host.domain.com:port</span>
+              </div>
+              <div class="field">
+                <label for="blUser">Username<span class="req">*</span></label>
+                <input id="blUser" name="blUser" required placeholder="userid">
+                <span class="error">Required</span>
+              </div>
+              <div class="field">
+                <label for="blDomain">Domain<span class="req">*</span></label>
+                <input id="blDomain" name="blDomain" required placeholder="domainName.com">
+                <span class="help" id="upnPreview">Signs in as userid@domainName.com</span>
+                <span class="error">Required</span>
+              </div>
+              <div class="field">
+                <label for="blPassword">Password<span class="req">*</span></label>
+                <input id="blPassword" name="blPassword" type="password" required autocomplete="off">
+                <span class="help">Used for this session only. Never saved.</span>
+                <span class="error">Required</span>
+              </div>
+              <div class="field">
+                <label for="blRole">Role<span class="req">*</span></label>
+                <select id="blRole" name="blRole" required>
+                  <option value="APP_DEPLOYER_ROLE" selected>APP_DEPLOYER_ROLE</option>
+                  <option value="DeployerRoleName">DeployerRoleName</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn" id="testConn">Test connection</button>
+              <span class="status" id="connStatus"></span>
+              <div class="right">
+                <button type="button" class="btn btn--primary" data-next>Next</button>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Step 2: Job source -->
+          <fieldset class="panel" data-panel="2" hidden>
+            <legend>Job Source &amp; Output</legend>
+            <p class="panel-intro">Choose the job folder to copy and normalize, and where the package goes.</p>
+            <div class="field-grid">
+              <div class="field field--full">
+                <label for="nshDir">NSH script directory<span class="req">*</span></label>
+                <input id="nshDir" name="nshDir" class="mono" required
+                       value="/Jobs/Shared/Scripts/WAS/">
+                <span class="help">Where the script that unpacks normalized job ZIPs lives.</span>
+                <span class="error">Required</span>
+              </div>
+              <div class="field field--full">
+                <label for="sourceFolder">Source folder<span class="req">*</span></label>
+                <div class="inline">
+                  <select id="sourceFolder" name="sourceFolder" class="mono" required>
+                    <option value="">Select a job folder…</option>
+                  </select>
+                  <button type="button" class="btn" id="loadFolders">Load</button>
+                </div>
+                <span class="help">Which job folder on the job server should get a normalized copy?</span>
+                <span class="error">Pick a source folder</span>
+              </div>
+              <div class="field">
+                <label for="outDir">Output directory<span class="req">*</span></label>
+                <input id="outDir" name="outDir" class="mono" required placeholder="/opt/wasvc/output">
+                <span class="help">Fills in with the source folder's parent. Type over it to use another path.</span>
+                <span class="error">Required</span>
+              </div>
+              <div class="field">
+                <label for="zipName">ZIP package name<span class="req">*</span></label>
+                <input id="zipName" name="zipName" class="mono" required placeholder="WAS_Upgrade_9.0.5.29_r02_normalized.zip">
+                <span class="error">Required</span>
+              </div>
+              <div class="field field--full">
+                <label for="protected">Protected files (never normalized)</label>
+                <textarea id="protected" name="protected" rows="3">/Jobs/Shared/Scripts/WAS/StageApp8.5.5.nsh</textarea>
+                <span class="help">One path per line. Any mapping entry that references one of these files stays unchanged.</span>
+              </div>
+              <div class="field field--full">
+                <label for="protectedStrings">Protected strings (never normalized)</label>
+                <textarea id="protectedStrings" name="protectedStrings" rows="3"
+                          placeholder="Install WAS 8.5.5"></textarea>
+                <span class="help">One string per line, not case-sensitive. Any mapping.xml line that contains one keeps its versions exactly as they are.</span>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn" data-back>Back</button>
+              <div class="right">
+                <button type="button" class="btn btn--primary" data-next>Next</button>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- Steps 3–6: placeholders -->
+          <fieldset class="panel" data-panel="3" hidden>
+            <legend>Scan Versions</legend>
+            <p class="panel-intro">Read every <code>mapping.xml</code> under the source folder and list the WAS versions found.</p>
+
+            <div class="scan-bar">
+              <button type="button" class="btn btn--primary" id="runScan">Scan source folder</button>
+              <code id="regexLabel"></code>
+              <span class="status" id="scanStatus"></span>
+            </div>
+
+            <div id="scanResults" hidden>
+              <div class="summary">
+                <div class="stat"><b id="sumFolders">0</b><span>Job folders</span></div>
+                <div class="stat"><b id="sumFiles">0</b><span>mapping.xml</span></div>
+                <div class="stat"><b id="sumMixed">0</b><span>Mixed versions</span></div>
+                <div class="stat"><b id="sumProtected">0</b><span>Protected refs skipped</span></div>
+              </div>
+              <div class="field" style="margin-bottom:14px">
+                <label>Versions found across all jobs</label>
+                <div class="chips" id="allVersions"></div>
+              </div>
+              <div class="table-wrap">
+                <table class="results">
+                  <thead><tr><th>Job folder</th><th>Files</th><th>Versions found</th><th>Status</th></tr></thead>
+                  <tbody id="scanBody"></tbody>
+                </table>
+              </div>
+
+              <h3 class="sub">Where each version was found</h3>
+              <div class="inline" style="align-items:center;margin-bottom:8px">
+                <label for="occFilter" style="font-size:.8rem;font-weight:600">Show</label>
+                <select id="occFilter" class="mono" style="flex:0 1 260px;font-size:.82rem;padding:5px 8px;border:1px solid #c9c9c9;border-radius:5px"></select>
+                <span class="status" id="occCount"></span>
+              </div>
+              <div class="table-wrap occ-wrap">
+                <table class="results">
+                  <thead><tr><th>Folder</th><th>Job / object</th><th>Key</th><th>Value</th><th>Line</th><th>Version</th></tr></thead>
+                  <tbody id="occBody"></tbody>
+                </table>
+              </div>
+              <p class="note">Line numbers are in that folder's mapping.xml. Mock data: the matching logic is real, but the files are sample stand-ins until the job server is wired up.</p>
+            </div>
+
+            <div class="actions"><button type="button" class="btn" data-back>Back</button>
+              <div class="right"><button type="button" class="btn btn--primary" data-next>Next</button></div></div>
+          </fieldset>
+          <fieldset class="panel" data-panel="4" hidden>
+            <legend>Select &amp; Normalize</legend>
+            <div class="empty"></div>
+            <p class="panel-intro">Choose what happens to each job folder, set the approved versions per product, then apply to the in-memory copy.</p>
+
+            <h3 class="sub">1 · Job folders</h3>
+            <div class="table-wrap">
+              <table class="results">
+                <thead><tr><th>Job folder</th><th>Versions found</th><th>Action</th></tr></thead>
+                <tbody id="folderBody"></tbody>
+              </table>
+            </div>
+            <p class="note">Remove only leaves a folder out of the ZIP. Nothing is deleted on the server.</p>
+
+            <h3 class="sub">2 · Version rules</h3>
+            <div class="families" id="families"></div>
+
+            <h3 class="sub">3 · Group &amp; name updates <span class="sub__opt">optional, off by default</span></h3>
+            <div class="extras" id="extras"></div>
+
+            <h3 class="sub">4 · Apply</h3>
+            <label class="check">
+              <input type="checkbox" id="forceNorm">
+              <span><b>Force normalization:</b> overwrite non-approved versions with the target in the copied files. Protected files stay untouched.</span>
+            </label>
+            <div class="scan-bar">
+              <button type="button" class="btn btn--primary" id="applyNorm" disabled>Apply</button>
+              <span class="status" id="applyStatus"></span>
+            </div>
+
+            <div id="applyResults" hidden>
+              <div class="summary">
+                <div class="stat"><b id="appFolders">0</b><span>Folders in ZIP</span></div>
+                <div class="stat"><b id="appRemoved">0</b><span>Removed</span></div>
+                <div class="stat"><b id="appFiles">0</b><span>Files changed</span></div>
+                <div class="stat"><b id="appRepl">0</b><span>Replacements</span></div>
+                <div class="stat" id="appGroupsStat" hidden><b id="appGroups">0</b><span>Groups retargeted</span></div>
+                <div class="stat" id="appNamesStat" hidden><b id="appNames">0</b><span>Job names renamed</span></div>
+              </div>
+              <div class="table-wrap">
+                <table class="results">
+                  <thead><tr><th>Job folder</th><th>Action</th><th>Replaced</th><th>Versions after</th><th>Result</th></tr></thead>
+                  <tbody id="applyBody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="actions"><button type="button" class="btn" data-back>Back</button>
+              <div class="right"><button type="button" class="btn btn--primary" data-next>Next</button></div></div>
+          </fieldset>
+          <fieldset class="panel" data-panel="5" hidden>
+            <legend>Validate &amp; Review</legend>
+            <div class="empty"></div>
+            <p class="panel-intro">Check every file going into the package, then review sample changes before building the ZIP.</p>
+
+            <h3 class="sub">1 · Validate</h3>
+            <div class="scan-bar">
+              <button type="button" class="btn btn--primary" id="runValidate">Validate files</button>
+              <span class="status" id="valStatus"></span>
+            </div>
+            <div id="valResults" hidden>
+              <div class="summary">
+                <div class="stat"><b id="valFiles">0</b><span>Files checked</span></div>
+                <div class="stat"><b id="valOk">0</b><span>Well-formed</span></div>
+                <div class="stat"><b id="valWarn">0</b><span>Structure warnings</span></div>
+                <div class="stat"><b id="valChanged">0</b><span>Files changed</span></div>
+              </div>
+              <div class="table-wrap">
+                <table class="results">
+                  <thead><tr><th>File</th><th>Action</th><th>XML</th><th>Structure</th><th>Lines changed</th></tr></thead>
+                  <tbody id="valBody"></tbody>
+                </table>
+              </div>
+              <ul class="warnlist" id="warnList"></ul>
+              <p class="note">No XSD is used. Checks are well-formed XML (blocking) plus the expected mapping elements (warnings only, since layouts vary).</p>
+            </div>
+
+            <h3 class="sub">2 · Review samples</h3>
+            <div class="inline" style="align-items:center">
+              <label for="sampleFile" style="font-size:.8rem;font-weight:600;white-space:nowrap">Sample file</label>
+              <select id="sampleFile" class="mono" style="font-size:.82rem;padding:6px 8px;border:1px solid #c9c9c9;border-radius:5px"></select>
+            </div>
+            <div class="diff" id="diffView"></div>
+            <label class="check">
+              <input type="checkbox" id="reviewedChk">
+              <span>I reviewed the sample changes and the versions look as expected. The ZIP still goes to the team for review.</span>
+            </label>
+            <div class="actions"><button type="button" class="btn" data-back>Back</button>
+              <div class="right"><button type="button" class="btn btn--primary" data-next>Next</button></div></div>
+          </fieldset>
+          <fieldset class="panel" data-panel="6" hidden>
+            <legend>Package</legend>
+            <div class="empty"></div>
+            <p class="panel-intro">Build the ZIP of normalized job files. Removed folders are left out; kept folders go in unchanged.</p>
+
+            <div class="banner-warn" id="pkgWarn" hidden></div>
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="pkgRoot">Root folder inside ZIP</label>
+                <input id="pkgRoot" class="mono" placeholder="(none, files sit at the ZIP root)">
+                <span class="help">Defaults to the source folder name. Clear it to unzip straight into the job folder.</span>
+              </div>
+              <div class="field">
+                <label>Package target</label>
+                <div class="mono pkg-target" id="pkgTarget"></div>
+                <span class="help">Set on the Job Source step (output directory + ZIP name).</span>
+              </div>
+            </div>
+            <label class="check" style="margin-top:14px">
+              <input type="checkbox" id="pkgManifest" checked>
+              <span>Include <code>WASVC_MANIFEST.txt</code>: targets, folder actions and every line changed, for the team review.</span>
+            </label>
+
+            <h3 class="sub">Contents</h3>
+            <div class="table-wrap occ-wrap">
+              <table class="results">
+                <thead><tr><th>Path in ZIP</th><th>Folder action</th><th>Changes</th></tr></thead>
+                <tbody id="pkgBody"></tbody>
+              </table>
+            </div>
+
+            <div class="scan-bar" style="margin-top:16px">
+              <button type="button" class="btn btn--primary" id="buildZip">Build ZIP</button>
+              <button type="button" class="btn" id="downloadZip" hidden>Download ZIP</button>
+              <button type="button" class="btn" id="sendZip" disabled title="Needs the WASVC backend">Send to output directory</button>
+              <span class="status" id="pkgStatus"></span>
+            </div>
+            <label class="check" style="margin-top:10px">
+              <input type="checkbox" id="pkgOverwrite">
+              <span>Replace the file if it already exists in the output directory</span>
+            </label>
+            <p class="note">Download always works. "Send to output directory" writes the ZIP to the package target through the WASVC backend.</p>
+
+            <div class="actions"><button type="button" class="btn" data-back>Back</button></div>
+          </fieldset>
+        </form>
+      </section>
+
+      <!-- ===================== EMVT ===================== -->
+      <section id="tool-emvt" hidden>
+        <div class="tool-head">
+          <h2>EM Validation Tool</h2>
+          <p class="lede">Watch known apps and follow each deployment as it happens.</p>
+        </div>
+
+        <div class="em-tabs" role="tablist" aria-label="EMVT views">
+          <button type="button" role="tab" class="em-tab" id="emTabWatch" aria-selected="true" aria-controls="emPaneWatch">Watch</button>
+          <button type="button" role="tab" class="em-tab" id="emTabTickets" aria-selected="false" aria-controls="emPaneTickets">
+            Today's tickets <span class="em-tab__count" id="emTicketCount"></span></button>
+          <span class="em-mode" id="emMode">Simulated activity</span>
+        </div>
+
+        <div id="emPaneWatch" role="tabpanel" aria-labelledby="emTabWatch">
+        <div class="em-toolbar">
+          <button type="button" class="btn btn--primary" id="emAddToggle" aria-expanded="false" aria-controls="emAddForm">+ Add watch folder</button>
+          <label class="btn" for="emFile">Load watch list…</label>
+          <input type="file" id="emFile" accept=".json,application/json" hidden>
+          <button type="button" class="btn" id="emSave">Save watch list</button>
+          <button type="button" class="btn" id="emSample">Sample watch list</button>
+          <label class="check em-inline"><input type="checkbox" id="emActiveOnly"><span>Active only</span></label>
+          <span class="status" id="emStatus"></span>
+        </div>
+
+        <form class="panel em-add" id="emAddForm" novalidate autocomplete="off" hidden>
+          <h3 class="em-add__title">Add watch folder</h3>
+          <p class="panel-intro">Where the app lives and how to reach it. Saved watch lists never include passwords.</p>
+          <div class="field-grid">
+            <div class="field">
+              <label for="emName">App name<span class="req">*</span></label>
+              <input id="emName" required placeholder="Orders Web">
+              <span class="error">Required</span>
+            </div>
+            <div class="field">
+              <label for="emEnv">Environment</label>
+              <select id="emEnv"><option>DEV</option><option>SIT</option><option selected>UAT</option><option>PROD</option><option>Other</option></select>
+            </div>
+            <div class="field">
+              <label for="emServer">Server type<span class="req">*</span></label>
+              <select id="emServer" required>
+                <option value="tomcat">Tomcat</option><option value="jboss">JBoss</option>
+                <option value="websphere">WebSphere</option><option value="other">Other</option>
+              </select>
+              <span class="help" id="emServerHint">Watches the exploded app folder and its .war.</span>
+            </div>
+            <div class="field">
+              <label for="emHost">Host or IP address<span class="req">*</span></label>
+              <input id="emHost" class="mono" required placeholder="10.0.0.25 or app-server-01">
+              <span class="error">Enter an IP address (10.0.0.25) or a host name</span>
+            </div>
+            <div class="field">
+              <label for="emPort">SSH port</label>
+              <input id="emPort" class="mono" inputmode="numeric" placeholder="22">
+              <span class="help">Leave blank for 22.</span>
+              <span class="error">A number from 1 to 65535</span>
+            </div>
+            <div class="field">
+              <label for="emUser">SSH username<span class="req">*</span></label>
+              <input id="emUser" required placeholder="svc_emvt">
+              <span class="error">Required</span>
+            </div>
+            <div class="field field--full">
+              <label>Sign-in</label>
+              <div class="em-auth">
+                <label class="check"><input type="radio" name="emAuth" value="key" checked>
+                  <span><b>SSH key</b> (recommended): nothing secret is stored or typed here.</span></label>
+                <label class="check"><input type="radio" name="emAuth" value="password">
+                  <span><b>Password</b>: held in memory for this session only, never saved.</span></label>
+              </div>
+            </div>
+            <div class="field" id="emKeyField">
+              <label for="emKey">Key file on the EMVT host</label>
+              <input id="emKey" class="mono" placeholder="~/.ssh/id_ed25519">
+              <span class="help">Leave blank to use the default SSH key.</span>
+            </div>
+            <div class="field" id="emPassField" hidden>
+              <label for="emPass">Password<span class="req">*</span></label>
+              <input id="emPass" type="password" autocomplete="new-password">
+              <span class="error">Required for password sign-in</span>
+            </div>
+            <div class="field field--full">
+              <label for="emPath">Folder to watch<span class="req">*</span></label>
+              <input id="emPath" class="mono" required placeholder="/opt/tomcat/webapps/orders">
+              <span class="error">Use a full path starting with /</span>
+            </div>
+            <div class="field">
+              <label for="emArtifact">Deployment artifact (EAR/WAR)</label>
+              <input id="emArtifact" class="mono" placeholder="/opt/tomcat/webapps/orders.war">
+              <span class="help">Optional. Its change marks the start of the deploy.</span>
+              <span class="error">Use a full path starting with /</span>
+            </div>
+            <div class="field">
+              <label for="emSize">Known size (MB)</label>
+              <input id="emSize" class="mono" inputmode="decimal" placeholder="Learn on first check">
+              <span class="help">Optional. Blank = measured the first time it's checked.</span>
+              <span class="error">A positive number</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" class="btn" id="emAddCancel">Cancel</button>
+            <span class="status" id="emAddStatus"></span>
+            <div class="right"><button type="submit" class="btn btn--primary">Add to watch list</button></div>
+          </div>
+        </form>
+
+        <div class="summary em-summary">
+          <div class="stat"><b id="emWatching">0</b><span>Watching</span></div>
+          <div class="stat stat--active"><b id="emActive">0</b><span>Deploying now</span></div>
+          <div class="stat stat--ok"><b id="emDone">0</b><span>Deployed</span></div>
+          <div class="stat stat--bad"><b id="emFailed">0</b><span>Failed / stalled</span></div>
+        </div>
+
+        <div class="em-layout">
+        <div class="table-wrap em-main">
+          <table class="results em-table">
+            <thead><tr>
+              <th>App</th><th>Server</th><th>Status</th><th style="min-width:200px">Progress</th>
+              <th>Size vs. baseline</th><th>Last activity</th><th></th>
+            </tr></thead>
+            <tbody id="emBody"></tbody>
+          </table>
+        </div>
+
+        <aside class="em-feed" aria-labelledby="emFeedTitle">
+          <div class="em-feed__head">
+            <h3 id="emFeedTitle">Recent activity <span class="em-feed__count" id="emFeedCount"></span></h3>
+            <select id="emWindow" aria-label="Time window">
+              <option value="900000">Last 15 min</option>
+              <option value="3600000" selected>Last hour</option>
+              <option value="86400000">Last 24 hours</option>
+              <option value="0">All</option>
+            </select>
+          </div>
+          <ol class="em-feed__list" id="emFeed"></ol>
+        </aside>
+        </div>
+        <p class="note" id="emNote">Simulated activity: the stages and math are real, but the file changes are generated. Click ▶ on a row to start a deployment.</p>
+        </div><!-- /emPaneWatch -->
+
+        <!-- ===== Today's tickets ===== -->
+        <div id="emPaneTickets" role="tabpanel" aria-labelledby="emTabTickets" hidden>
+          <div class="em-toolbar">
+            <button type="button" class="btn btn--primary" id="tkAddToggle" aria-expanded="false" aria-controls="tkForm">+ Add ticket</button>
+            <button type="button" class="btn" id="emTplToggle" aria-expanded="false" aria-controls="emTplPanel">Ticket link format</button>
+            <span class="tk-date" id="tkDate"></span>
+            <span class="status" id="tkStatus"></span>
+          </div>
+
+          <div class="panel em-tpl" id="emTplPanel" hidden>
+            <div class="field">
+              <label for="emTpl">Ticket link format</label>
+              <div class="inline">
+                <input id="emTpl" class="mono" placeholder="https://jira.example.com/browse/{id}">
+                <button type="button" class="btn btn--primary" id="emTplSave">Use this format</button>
+              </div>
+              <span class="help">Put <code>{id}</code> where the ticket ID goes. Typing a ticket ID then fills in its link. Saved with the watch list.</span>
+              <span class="error" id="emTplErr">Must start with http:// or https:// and contain {id}</span>
+            </div>
+          </div>
+
+          <form class="panel em-add" id="tkForm" novalidate autocomplete="off" hidden>
+            <h3 class="em-add__title">Add ticket</h3>
+            <p class="panel-intro">One ticket can cover several apps. Each app follows its own deployment; the ticket rolls them up.</p>
+            <div class="field-grid">
+              <div class="field">
+                <label for="tkId">Ticket ID<span class="req">*</span></label>
+                <input id="tkId" class="mono" required placeholder="CHG-12345">
+                <span class="error">Letters, numbers, dot, dash or underscore, e.g. CHG-12345</span>
+              </div>
+              <div class="field">
+                <label for="tkEnv">Environment</label>
+                <select id="tkEnv"><option>DEV</option><option>SIT</option><option selected>UAT</option><option>PROD</option><option>Other</option></select>
+              </div>
+              <div class="field field--full">
+                <label for="tkTitle">Title</label>
+                <div class="inline">
+                  <input id="tkTitle" placeholder="Summary from Jira">
+                  <button type="button" class="btn" id="tkFetch">Fetch title</button>
+                </div>
+                <span class="help" id="tkFetchHelp">Type it, or fetch it from Jira once the backend has Jira access.</span>
+              </div>
+              <div class="field field--full">
+                <label for="tkUrl">Link</label>
+                <input id="tkUrl" class="mono" placeholder="Filled from the ticket link format">
+                <span class="error">Must start with http:// or https://</span>
+              </div>
+              <div class="field field--full">
+                <label>Apps in this ticket</label>
+                <div class="tk-apps" id="tkApps"></div>
+                <span class="help">An app can belong to one ticket at a time; picking it here moves it from another ticket.</span>
+              </div>
+              <div class="field field--full">
+                <label for="tkNotes">Notes</label>
+                <textarea id="tkNotes" rows="2" placeholder="Anything to include in the Jira update"></textarea>
+              </div>
+            </div>
+            <div class="actions">
+              <button type="button" class="btn" id="tkCancel">Cancel</button>
+              <span class="status" id="tkFormStatus"></span>
+              <div class="right"><button type="submit" class="btn btn--primary">Add ticket</button></div>
+            </div>
+          </form>
+
+          <div class="tk-list" id="tkList"></div>
+          <p class="note">Tickets for today live in this page for now; the EMVT backend will keep them with the deployment history.</p>
+        </div><!-- /emPaneTickets -->
+      </section>
+
+    </main>
+  </div>
+
+<script>
+  // Keep in step with "version" in package.json (npm test checks this).
+  const WASVC_VERSION = '0.1.0';
+  document.getElementById('appVersion').textContent = `WASVC v${WASVC_VERSION}`;
+
+  const body = document.body;
+  const toggle = document.getElementById('menuToggle');
+  const backdrop = document.getElementById('backdrop');
+  const mobile = window.matchMedia('(max-width: 800px)');
+
+  function syncExpanded() {
+    const open = mobile.matches ? body.classList.contains('nav-open')
+                                : !body.classList.contains('nav-collapsed');
+    toggle.setAttribute('aria-expanded', String(open));
+  }
+
+  toggle.addEventListener('click', () => {
+    if (mobile.matches) body.classList.toggle('nav-open');
+    else body.classList.toggle('nav-collapsed');
+    syncExpanded();
+  });
+  backdrop.addEventListener('click', () => { body.classList.remove('nav-open'); syncExpanded(); });
+  mobile.addEventListener('change', () => { body.classList.remove('nav-open'); syncExpanded(); });
+
+  // Switch the active tool
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(b => b.removeAttribute('aria-current'));
+      btn.setAttribute('aria-current', 'page');
+      document.getElementById('tool-wasvc').hidden = btn.dataset.tool !== 'wasvc';
+      document.getElementById('tool-emvt').hidden  = btn.dataset.tool !== 'emvt';
+      if (mobile.matches) { body.classList.remove('nav-open'); syncExpanded(); }
+    });
+  });
+
+  // ---------- WASVC wizard ----------
+  let step = 1;
+  const panels = document.querySelectorAll('[data-panel]');
+  const steps  = document.querySelectorAll('.step');
+
+  // What each step needs before its content can show (null = always ready)
+  const PREREQ = {
+    4: () => scanResult ? null : { msg: 'Run a version scan first.', go: 3, label: 'Go to Scan Versions' },
+    5: () => normState?.applied ? null : { msg: 'Apply normalization first.', go: 4, label: 'Go to Select & Normalize' },
+    6: () => normState?.applied ? null : { msg: 'Apply normalization first, so there is something to package.', go: 4, label: 'Go to Select & Normalize' },
+  };
+
+  function showStep(n) {
+    step = n;
+    panels.forEach(p => p.hidden = Number(p.dataset.panel) !== n);
+    steps.forEach(s => s.classList.toggle('is-current', Number(s.dataset.step) === n));
+    const panel = document.querySelector(`[data-panel="${n}"]`);
+    const block = PREREQ[n]?.();
+    panel.classList.toggle('is-blocked', !!block);
+    const empty = panel.querySelector('.empty');
+    if (empty) empty.innerHTML = block
+      ? `<p>${block.msg}</p><button type="button" class="btn" data-goto="${block.go}">${block.label}</button>` : '';
+    if (!block) {
+      if (n === 4) renderStep4();
+      if (n === 5) renderStep5();
+      if (n === 6) renderStep6();
+    }
+    refreshStepper();
+  }
+
+  // ---------- Clickable stepper ----------
+  // Every step can be opened at any time; a blue check marks the ones that are complete.
+  const silentValid = n => [...document.querySelectorAll(
+    `[data-panel="${n}"] input, [data-panel="${n}"] select`)].every(el => el.checkValidity());
+  function stepComplete(k) {
+    switch (k) {
+      case 1: return silentValid(1);
+      case 2: return silentValid(2);
+      case 3: return !!scanResult;
+      case 4: return !!normState?.applied;
+      case 5: return !!(normState?.validation?.every(f => f.ok) && normState.reviewed);
+      case 6: return !!normState?.zip;
+    }
+    return false;
+  }
+  function refreshStepper() {
+    steps.forEach(s => {
+      const k = Number(s.dataset.step);
+      s.classList.add('is-reachable');
+      s.classList.toggle('is-done', k !== step && stepComplete(k));
+    });
+  }
+  document.getElementById('wasvcForm').addEventListener('click', e => {
+    const b = e.target.closest('[data-goto]');
+    if (b) showStep(Number(b.dataset.goto));
+  });
+  steps.forEach(s => {
+    s.tabIndex = 0;
+    s.setAttribute('role', 'button');
+    const go = () => { const k = Number(s.dataset.step); if (k !== step) showStep(k); };
+    s.addEventListener('click', go);
+    s.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  // Keep lock state current as fields and results change
+  ['input', 'change'].forEach(t => document.getElementById('wasvcForm').addEventListener(t, () => setTimeout(refreshStepper)));
+
+  function validatePanel(n) {
+    const panel = document.querySelector(`[data-panel="${n}"]`);
+    let ok = true;
+    panel.querySelectorAll('input, select').forEach(el => {
+      const valid = el.checkValidity();
+      el.closest('.field')?.classList.toggle('invalid', !valid);
+      if (!valid) ok = false;
+    });
+    return ok;
+  }
+
+  document.querySelectorAll('[data-next]').forEach(b =>
+    b.addEventListener('click', () => {
+      if (step === 3 && !scanResult) {
+        document.getElementById('scanStatus').textContent = 'Run the scan before continuing.';
+        return;
+      }
+      if (step === 5) {
+        const v = normState?.validation, s = document.getElementById('valStatus');
+        let msg = '';
+        if (!v) msg = 'Run validation before continuing.';
+        else if (v.some(f => !f.ok)) msg = 'Fix the files that are not well-formed XML first.';
+        else if (!normState.reviewed) msg = 'Confirm you reviewed the sample changes.';
+        if (msg) { s.className = 'status'; s.textContent = msg; return; }
+      }
+      if (step === 4 && !normState?.applied) {
+        const s = document.getElementById('applyStatus');
+        s.className = 'status'; s.textContent = 'Apply normalization before continuing.';
+        return;
+      }
+      if (validatePanel(step)) showStep(step + 1);
+    }));
+  document.querySelectorAll('[data-back]').forEach(b =>
+    b.addEventListener('click', () => showStep(step - 1)));
+
+  // Clear error once the field is fixed
+  document.querySelectorAll('.field input, .field select').forEach(el =>
+    el.addEventListener('input', () => {
+      if (el.checkValidity()) el.closest('.field')?.classList.remove('invalid');
+    }));
+
+  // Live UPN preview
+  const user = document.getElementById('blUser'), dom = document.getElementById('blDomain');
+  const upn = () => document.getElementById('upnPreview').textContent =
+    `Signs in as ${user.value || 'userid'}@${dom.value || 'domainName.com'}`;
+  user.addEventListener('input', upn); dom.addEventListener('input', upn);
+
+  // Mock: test connection (not wired to a server yet)
+  // ---------- Backend connection ----------
+  // When the page is served by the WASVC backend, everything goes through /api.
+  // Opened as a plain file, it falls back to built-in sample data.
+  const API = { on: false, info: null };
+  async function api(path, opts = {}) {
+    const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...opts });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const e = new Error(data.error || `HTTP ${res.status}`); e.status = res.status; throw e; }
+    return data;
+  }
+  function renderConnBadge() {
+    const b = document.getElementById('connBadge');
+    b.className = 'conn ' + (API.on ? 'conn--live' : 'conn--mock');
+    b.textContent = API.on ? `Connected · ${API.info.source.label}` : 'Sample data (no backend)';
+    b.title = API.on ? `Jobs base: ${API.info.jobsBase}\nUI v${WASVC_VERSION} · backend v${API.info.version || '?'}`
+                     : 'Start the WASVC backend and open the page from it to use real files.';
+    if (API.on && API.info.version && API.info.version !== WASVC_VERSION) {
+      b.textContent += ` · version mismatch (UI ${WASVC_VERSION}, backend ${API.info.version})`;
+    }
+    document.getElementById('sendZip').title = API.on ? '' : 'Needs the WASVC backend';
+    if (normState) renderZipStatus();
+  }
+  if (location.protocol.startsWith('http')) {
+    api('api/health').then(info => { API.on = true; API.info = info; renderConnBadge(); }).catch(() => {});
+  }
+
+  document.getElementById('testConn').addEventListener('click', async () => {
+    const s = document.getElementById('connStatus');
+    if (!API.on) {
+      if (!validatePanel(1)) { s.className = 'status'; s.textContent = 'Fill in the required fields first.'; return; }
+      s.className = 'status ok'; s.textContent = 'No backend running: using sample data. Fields look valid.';
+      return;
+    }
+    s.className = 'status'; s.textContent = 'Checking…';
+    try {
+      const info = await api('api/health');
+      s.className = 'status ok';
+      s.textContent = `Backend reachable: ${info.source.label}.` +
+        (info.source.type === 'blcli' ? '' : ' (BladeLogic login is used once the blcli adapter is wired.)');
+    } catch (err) { s.className = 'status'; s.textContent = `Backend error: ${err.message}`; }
+  });
+
+  // Load job folders: real list from the backend, or sample names
+  document.getElementById('loadFolders').addEventListener('click', async () => {
+    const sel = document.getElementById('sourceFolder');
+    const help = sel.closest('.field').querySelector('.help');
+    let base = '/Jobs/Middleware/WebSphere/Fixpack Upgrades';
+    let names = ['WAS Upgrade 9.0.5.27_r01', 'WAS Upgrade 9.0.5.28_r03', 'WAS Upgrade 9.0.5.29_r02'];
+    if (API.on) {
+      try {
+        base = API.info.jobsBase;
+        names = (await api(`api/folders?path=${encodeURIComponent(base)}`)).folders;
+      } catch (err) { help.textContent = `Could not list folders: ${err.message}`; return; }
+    }
+    const opts = names.map(n => `${base.replace(/\/+$/, '')}/${n}`);
+    sel.innerHTML = `<option value="">${opts.length ? 'Select a job folder…' : 'No folders found'}</option>` +
+      opts.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+    help.textContent = `${opts.length} folder${opts.length === 1 ? '' : 's'} under ${base}`;
+  });
+
+  // Prefill the output directory with the source folder's parent (one level up).
+  // Stops once the user types their own output directory.
+  const outDirEl = document.getElementById('outDir');
+  outDirEl.addEventListener('input', () => { outDirEl.dataset.touched = outDirEl.value.trim() ? '1' : ''; });
+  document.getElementById('sourceFolder').addEventListener('change', e => {
+    if (outDirEl.dataset.touched) return;
+    const src = e.target.value.replace(/\/+$/, '');
+    outDirEl.value = src.includes('/') ? (src.slice(0, src.lastIndexOf('/')) || '/') : '';
+    if (outDirEl.value) outDirEl.closest('.field')?.classList.remove('invalid');
+  });
+
+  // ---------- Step 3: version scan ----------
+  // Matches: nd8.5.5  nd9.0.5.27  nd9.0.5.27_r02  ihs_plg_9.0.5.28_r03
+  // Edges reject letters/digits only, so "_", "/", "." and spaces can sit next to a version
+  // (e.g. Install_nd9.0.5.28_r03, nd9.0.5.28_r03.tar.gz).
+  const VERSION_RE = /(?<![A-Za-z0-9])(?:nd|ihs_plg_)\d+(?:\.\d+){2,3}(?:_r\d{2})?(?![A-Za-z0-9])/g;
+  document.getElementById('regexLabel').textContent = VERSION_RE.toString();
+  let scanResult = null;
+
+  // Sample stand-ins for what the job server will return: { folder, files: [{ path, content }] }
+  function mockJobData(source) {
+    // Mirrors the real layout: mapping > grouped_object_mapping > source_object (+ containing_group)
+    const entry = (type, name, gid, group) => `  <grouped_object_mapping>
+    <source_object>
+      <object_type>${type}</object_type>
+      <object_name>${name}</object_name>
+      <group_id>${gid}</group_id>
+    </source_object>${group === null ? '' : `
+    <containing_group>${group}</containing_group>`}
+  </grouped_object_mapping>`;
+    const mapping = (...entries) => `<?xml version="1.0" encoding="UTF-8"?>\n<mapping>\n${entries.join('\n')}\n</mapping>`;
+    // Real-style entries: NSH Script Jobs named with a bare version, grouped under the source folder
+    const bare = (baseName(source).match(BARE_VERSION_RE) || ['9.0.5.29_r02'])[0];
+    const depot = v => entry('Depot Software', `${v}.tar.gz`, 2001, '/Depot/Middleware/WebSphere/Packages');
+    const job   = v => entry('NSH Script Job', `Install_${v}`, 3001, '/Jobs/Middleware/WebSphere/Fixpack');
+    const stageJob = sub => entry('NSH Script Job', `StageApp${bare}`, 3101, `${source}/${sub}`);
+    const stage = entry('NSH Script', 'StageApp8.5.5', 4001,
+      '/Jobs/Shared/Scripts/WAS/nd8.5.5');
+    return [
+      { folder: 'AppA/DEV', files: [{ path: 'AppA/DEV/mapping.xml', content: mapping(depot('nd9.0.5.29_r02'), job('nd9.0.5.29_r02'), stageJob('AppA/DEV'), stage) }] },
+      { folder: 'AppA/UAT', files: [{ path: 'AppA/UAT/mapping.xml', content: mapping(depot('nd9.0.5.28_r03'), depot('ihs_plg_9.0.5.28_r03'), job('nd9.0.5.28_r03')) }] },
+      { folder: 'AppB/DEV', files: [{ path: 'AppB/DEV/mapping.xml', content: mapping(depot('nd9.0.5.27_r01'), job('nd9.0.5.29_r02'), stageJob('AppB/DEV')) }] },
+      { folder: 'AppB/SIT', files: [{ path: 'AppB/SIT/mapping.xml', content: mapping(depot('nd8.5.5'), job('nd8.5.5')) }] },
+      { folder: 'AppC/PROD-STAGE', files: [{ path: 'AppC/PROD-STAGE/mapping.xml', content: mapping(entry('NSH Script Job', 'Prep_Servers', 5001, null)) }] },
+    ].map(j => ({ ...j, folder: `${source}/${j.folder}` }));
+  }
+
+  // A "unit" is one <grouped_object_mapping> block (or a plain line outside blocks).
+  // If a unit mentions a protected file, every version inside that unit is left alone.
+  const BLOCK_RE = /(<grouped_object_mapping\b[\s\S]*?<\/grouped_object_mapping>)/;
+  const mapUnits = (content, fn) => content.split(BLOCK_RE)
+    .map((part, i) => i % 2 ? fn(part) : part.split('\n').map(fn).join('\n')).join('');
+
+  // Protected files match by file name as a whole token, so "StageApp8.5.5.nsh" does not
+  // also catch "OldStageApp8.5.5.nsh" or "StageApp8.5.5.nsh.bak".
+  // BSA object names usually drop the extension (StageApp8.5.5.nsh is listed as StageApp8.5.5),
+  // so each entry matches both with and without its script extension.
+  function protectedMatchers(paths) {
+    const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const names = new Set();
+    paths.map(p => p.trim().split('/').pop()).filter(Boolean).forEach(n => {
+      names.add(n);
+      const stem = n.replace(/\.(nsh|sh|ksh|bash|bat|cmd|ps1|py|pl)$/i, '');
+      if (stem) names.add(stem);
+    });
+    return [...names].map(n => new RegExp(`(?<![A-Za-z0-9._-])${escRe(n)}(?![A-Za-z0-9._-])`));
+  }
+  const isProtectedText = (text, matchers) => matchers.some(m => m.test(text));
+
+  // Protected strings: any line containing one (ignoring case) is left exactly as is.
+  const protectedStringList = raw => raw.split('\n').map(s => s.trim()).filter(Boolean).map(s => s.toLowerCase());
+  const hasProtectedString = (line, strings) => { const l = line.toLowerCase(); return strings.some(s => l.includes(s)); };
+
+  function currentProtection() {
+    return {
+      files: protectedMatchers(document.getElementById('protected').value.split('\n')),
+      strings: protectedStringList(document.getElementById('protectedStrings').value),
+    };
+  }
+
+  // Every version hit with its context: folder, job/object name, key, value, line number.
+  // Protection uses the same unit rule as normalization (whole block, else the line).
+  function findOccurrences(job, prot) {
+    const out = [];
+    job.files.forEach(f => {
+      const blocks = [];
+      const re = new RegExp(BLOCK_RE.source, 'g');
+      let m;
+      while ((m = re.exec(f.content))) {
+        const start = f.content.slice(0, m.index).split('\n').length;      // 1-based line
+        blocks.push({
+          start, end: start + m[0].split('\n').length - 1, text: m[0],
+          name: ((m[0].match(/<object_name>([^<]*)<\/object_name>/) || [])[1] || '').trim(),
+          type: ((m[0].match(/<object_type>([^<]*)<\/object_type>/) || [])[1] || '').trim(),
+        });
+      }
+      f.content.split('\n').forEach((line, i) => {
+        const hits = line.match(VERSION_RE);
+        if (!hits) return;
+        const n = i + 1;
+        const block = blocks.find(b => n >= b.start && n <= b.end);
+        const protectedBy = isProtectedText(block ? block.text : line, prot.files) ? 'file'
+          : hasProtectedString(line, prot.strings) ? 'string' : null;
+        const isProtected = !!protectedBy;
+        let key = '—', value = line.trim();
+        const el = line.match(/<([\w:.-]+)[^>]*>([^<]*)<\/\1>/);
+        if (el && el[2].match(VERSION_RE)) { key = el[1]; value = el[2].trim(); }
+        else {
+          const attr = [...line.matchAll(/([\w:.-]+)="([^"]*)"/g)].find(a => a[2].match(VERSION_RE));
+          if (attr) { key = `@${attr[1]}`; value = attr[2]; }
+        }
+        hits.forEach(v => out.push({
+          folder: job.folder, file: f.path, line: n, job: block?.name || '—', type: block?.type || '', key, value, version: v, protected: isProtected, protectedBy,
+        }));
+      });
+    });
+    return out;
+  }
+
+  function scanJobs(jobs, prot) {
+    const totals = new Map();
+    const occurrences = [];
+    let protectedSkips = 0;
+    const rows = jobs.map(job => {
+      const counts = new Map();
+      findOccurrences(job, prot).forEach(o => {
+        occurrences.push(o);
+        if (o.protected) { protectedSkips++; return; }
+        counts.set(o.version, (counts.get(o.version) || 0) + 1);
+        totals.set(o.version, (totals.get(o.version) || 0) + 1);
+      });
+      const status = counts.size === 0 ? 'none' : counts.size === 1 ? 'ok' : 'mixed';
+      return { folder: job.folder, files: job.files.length, counts, status };
+    });
+    return { rows, totals, protectedSkips, occurrences };
+  }
+
+  const relFolder = p => scanResult && p.startsWith(scanResult.source + '/') ? p.slice(scanResult.source.length + 1) : p;
+
+  function renderOccurrences() {
+    const r = scanResult, filter = document.getElementById('occFilter').value;
+    const rel = relFolder;
+    const list = r.occurrences.filter(o => !filter || o.version === filter);
+    document.getElementById('occCount').textContent = `${list.length} of ${r.occurrences.length}`;
+    document.getElementById('occBody').innerHTML = list.map(o => `
+      <tr class="${o.protected ? 'is-removed' : ''}">
+        <td class="path" title="${esc(o.folder)}">${esc(rel(o.folder))}</td>
+        <td class="path">${esc(o.job)}${o.type ? `<br><small style="color:var(--muted)">${esc(o.type)}</small>` : ''}</td>
+        <td class="path">${esc(o.key)}</td>
+        <td class="path">${esc(o.value)}</td>
+        <td title="${esc(o.file)}">${o.line}</td>
+        <td>${o.protected ? `<span class="badge badge--none" title="${esc(o.version)}">Protected (${o.protectedBy})</span>` : `<span class="chip">${esc(o.version)}</span>`}</td>
+      </tr>`).join('') || '<tr><td colspan="6">No matches.</td></tr>';
+  }
+
+  function renderScan(r) {
+    const chips = m => [...m].sort().map(([v, n]) => `<span class="chip">${v}<small>×${n}</small></span>`).join('') || '—';
+    const label = { ok: ['badge--ok', 'Single version'], mixed: ['badge--mixed', 'Mixed'], none: ['badge--none', 'None found'] };
+    document.getElementById('sumFolders').textContent = r.rows.length;
+    document.getElementById('sumFiles').textContent = r.rows.reduce((a, x) => a + x.files, 0);
+    document.getElementById('sumMixed').textContent = r.rows.filter(x => x.status === 'mixed').length;
+    document.getElementById('sumProtected').textContent = r.protectedSkips;
+    document.getElementById('allVersions').innerHTML = chips(r.totals);
+    document.getElementById('scanBody').innerHTML = r.rows.map(x => `
+      <tr>
+        <td class="path">${x.folder}</td>
+        <td>${x.files}</td>
+        <td><div class="chips">${chips(x.counts)}</div></td>
+        <td><span class="badge ${label[x.status][0]}">${label[x.status][1]}</span></td>
+      </tr>`).join('');
+    const versions = [...new Set(r.occurrences.map(o => o.version))].sort(cmpVer);
+    document.getElementById('occFilter').innerHTML = '<option value="">All versions</option>' +
+      versions.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    renderOccurrences();
+    document.getElementById('scanResults').hidden = false;
+  }
+
+  document.getElementById('occFilter').addEventListener('change', renderOccurrences);
+
+  document.getElementById('runScan').addEventListener('click', async () => {
+    const status = document.getElementById('scanStatus');
+    const source = document.getElementById('sourceFolder').value;
+    if (API.on && !source) { status.className = 'status'; status.textContent = 'Pick a source folder on the Job Source step first.'; return; }
+    status.className = 'status'; status.textContent = API.on ? 'Reading mapping.xml files from the server…' : 'Scanning…';
+    try {
+      if (API.on) {
+        const res = await api('api/read', { method: 'POST', body: JSON.stringify({ source }) });
+        jobsData = res.jobs;
+      } else {
+        await new Promise(r => setTimeout(r, 500));
+        jobsData = mockJobData(source || '(no source selected)');
+      }
+    } catch (err) {
+      status.className = 'status'; status.textContent = `Scan failed: ${err.message}`;
+      return;
+    }
+    scanResult = scanJobs(jobsData, currentProtection());
+    scanResult.source = source || '(no source selected)';
+    initNormState();
+    renderScan(scanResult);
+    status.className = 'status ok';
+    status.textContent = `Scan complete: ${jobsData.length} job folder${jobsData.length === 1 ? '' : 's'}, ${scanResult.totals.size} distinct versions.`;
+    refreshStepper();
+  });
+
+  // Editing the protected list after a scan makes every later result stale: start over from the scan.
+  ['protected', 'protectedStrings'].forEach(id => document.getElementById(id).addEventListener('input', () => {
+    if (!scanResult) return;
+    scanResult = null; normState = null;
+    document.getElementById('scanResults').hidden = true;
+    const s = document.getElementById('scanStatus');
+    s.className = 'status';
+    s.textContent = `Protected ${id === 'protected' ? 'files' : 'strings'} changed. Run the scan again.`;
+    refreshStepper();
+  }));
+
+  // ---------- Step 4: select & normalize ----------
+  // Each product family keeps its own target and approved list; the prefix never changes.
+  const FAMILIES = [
+    { key: 'nd',       label: 'WebSphere ND' },
+    { key: 'ihs_plg_', label: 'IHS Plugin' },
+  ];
+  const FULL_VERSION_RE = /^(?:nd|ihs_plg_)\d+(?:\.\d+){2,3}(?:_r\d{2})?$/;
+  const familyOf = v => v.startsWith('ihs_plg_') ? 'ihs_plg_' : 'nd';
+  const verParts = v => (v.replace(/^(?:ihs_plg_|nd)/, '').match(/\d+/g) || []).map(Number);
+  function cmpVer(a, b) {
+    const x = verParts(a), y = verParts(b);
+    for (let i = 0; i < Math.max(x.length, y.length); i++) {
+      const d = (x[i] ?? -1) - (y[i] ?? -1);
+      if (d) return d;
+    }
+    return 0;
+  }
+  const esc = s => String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  let jobsData = null, normState = null;
+
+  // ---------- Optional group & name updates ----------
+  // Bare versions have no product prefix: 9.0.5.29_r02 in "WAS Upgrade 9.0.5.29_r02" or "StageApp9.0.5.29_r02".
+  const BARE_VERSION_RE = /\d+(?:\.\d+){2,3}(?:_r\d{2})?/;
+  const BARE_FULL_RE = /^\d+(?:\.\d+){2,3}(?:_r\d{2})?$/;
+  const escRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const ndBare = () => (normState?.families.nd?.target || '').replace(/^nd/, '');
+
+  // Defaults come from the source folder name and the WebSphere ND target, until the user edits them.
+  function extraDefaults() {
+    const src = scanResult.source, base = baseName(src);
+    const fromBare = (base.match(BARE_VERSION_RE) || [''])[0];
+    const toBare = ndBare();
+    const toGroup = fromBare && toBare ? src.slice(0, src.length - base.length) + base.replace(fromBare, toBare) : '';
+    return { group: { from: src, to: toGroup }, names: { from: fromBare, to: toBare } };
+  }
+  function refreshExtraDefaults() {
+    const d = extraDefaults(), x = normState.extras;
+    ['group', 'names'].forEach(k => { if (!x[k].touched) { x[k].from = d[k].from; x[k].to = d[k].to; } });
+  }
+
+  function extrasProblem() {
+    const { group: g, names: n } = normState.extras;
+    if (g.on) {
+      if (!g.from.startsWith('/') || !g.to.startsWith('/')) return 'Job group paths must start with "/".';
+      if (g.from === g.to) return 'The new job group is the same as the current one.';
+    }
+    if (n.on) {
+      if (!BARE_FULL_RE.test(n.from) || !BARE_FULL_RE.test(n.to)) return 'Job name versions must look like 9.0.5.29_r02.';
+      if (n.from === n.to) return 'The new job name version is the same as the current one.';
+    }
+    return '';
+  }
+
+  function renderExtras() {
+    const { group: g, names: n } = normState.extras;
+    const field = (key, label, value, on, ok, ph) => `
+      <div class="field ${on && !ok ? 'invalid' : ''}">
+        <label for="x-${key}">${label}</label>
+        <input id="x-${key}" class="mono" data-extra="${key}" value="${esc(value)}" placeholder="${ph}" ${on ? '' : 'disabled'}>
+      </div>`;
+    const gOk = v => v.startsWith('/') && g.from !== g.to;
+    const nOk = v => BARE_FULL_RE.test(v) && n.from !== n.to;
+    document.getElementById('extras').innerHTML = `
+      <div class="extra ${g.on ? 'is-on' : ''}">
+        <label class="check"><input type="checkbox" data-extra="group.on" ${g.on ? 'checked' : ''}>
+          <span><b>Retarget job group</b></span></label>
+        <p class="extra__desc">Points each job's <code>containing_group</code> at the new version folder, so the import places the jobs there.
+          Only paths that start with the current group change. <b>The new group must already exist in BSA.</b></p>
+        <div class="field-grid one-col">
+          ${field('group.from', 'Current job group', g.from, g.on, gOk(g.from), '/Jobs/…/WAS Upgrade 9.0.5.29_r02')}
+          ${field('group.to', 'New job group', g.to, g.on, gOk(g.to), '/Jobs/…/WAS Upgrade 9.0.5.30_r01')}
+        </div>
+      </div>
+      <div class="extra ${n.on ? 'is-on' : ''}">
+        <label class="check"><input type="checkbox" data-extra="names.on" ${n.on ? 'checked' : ''}>
+          <span><b>Rename versions in job names</b> <span class="badge badge--mixed">Try on one job first</span></span></label>
+        <p class="extra__desc">Swaps a bare version in <b>job</b> names only, e.g. <code>StageApp9.0.5.29_r02</code> → <code>StageApp9.0.5.30_r01</code>.
+          Scripts and depot packages keep their names. Test one import first: BSA may match exported jobs by their original name.</p>
+        <div class="field-grid">
+          ${field('names.from', 'Current version in names', n.from, n.on, nOk(n.from), '9.0.5.29_r02')}
+          ${field('names.to', 'New version in names', n.to, n.on, nOk(n.to), '9.0.5.30_r01')}
+        </div>
+      </div>`;
+  }
+
+  function initNormState() {
+    const families = {};
+    FAMILIES.forEach(f => {
+      const found = [...scanResult.totals.keys()].filter(v => familyOf(v) === f.key).sort(cmpVer);
+      families[f.key] = {
+        target: found[found.length - 1] || '',          // default: highest version found
+        found,
+        actions: Object.fromEntries(found.map(v => [v, 'replace'])),
+      };
+    });
+    const folders = Object.fromEntries(scanResult.rows.map(r =>
+      [r.folder, r.status === 'none' ? 'keep' : 'normalize']));
+    normState = { folders, families, force: false, applied: null,
+      extras: { group: { on: false, touched: false, from: '', to: '' }, names: { on: false, touched: false, from: '', to: '' } } };
+    refreshExtraDefaults();
+  }
+
+  function targetOk(key) {
+    const fam = normState.families[key];
+    if (!fam.target) return fam.found.length === 0;
+    return FULL_VERSION_RE.test(fam.target) && familyOf(fam.target) === key;
+  }
+
+  function renderStep4() {
+    if (!normState) return;
+    const acts = [['keep', 'Keep'], ['normalize', 'Normalize'], ['remove', 'Remove']];
+    document.getElementById('folderBody').innerHTML = scanResult.rows.map((r, i) => `
+      <tr>
+        <td class="path">${esc(r.folder)}</td>
+        <td><div class="chips">${[...r.counts.keys()].sort(cmpVer)
+          .map(v => `<span class="chip">${esc(v)}</span>`).join('') || '—'}</div></td>
+        <td><div class="seg" role="radiogroup" aria-label="Action for ${esc(r.folder)}">${acts.map(([k, l]) => `
+          <label><input type="radio" name="act-${i}" value="${k}" data-folder="${esc(r.folder)}"
+            ${normState.folders[r.folder] === k ? 'checked' : ''}><span>${l}</span></label>`).join('')}</div></td>
+      </tr>`).join('');
+    renderFamilies();
+    renderExtras();
+    document.getElementById('forceNorm').checked = normState.force;
+    updateApplyButton();
+    renderApplied();
+  }
+
+  // One bracketed, semicolon-delimited entry per hit, e.g. [AppA/UAT; Install_nd9.0.5.28_r03; L22; name]
+  function whereFound(v) {
+    return scanResult.occurrences
+      .filter(o => !o.protected && o.version === v)
+      .map(o => `<div>[${esc(relFolder(o.folder))}; ${esc(o.job)}; L${o.line}; ${o.key === 'object_name' ? 'name' : 'value'}]</div>`)
+      .join('') || '—';
+  }
+
+  function renderFamilies() {
+    document.getElementById('families').innerHTML = FAMILIES.map(f => {
+      const fam = normState.families[f.key];
+      const rows = fam.found.map(v => `
+        <tr>
+          <td class="path">${esc(v)}</td>
+          <td>${scanResult.totals.get(v)}</td>
+          <td>${v === fam.target
+            ? '<span class="badge badge--ok">Target</span>'
+            : `<select class="rule" data-family="${f.key}" data-version="${esc(v)}">
+                 <option value="replace" ${fam.actions[v] === 'replace' ? 'selected' : ''}>Replace with target</option>
+                 <option value="allow" ${fam.actions[v] === 'allow' ? 'selected' : ''}>Allow (approved)</option>
+               </select>`}</td>
+          <td class="where">${whereFound(v)}</td>
+        </tr>`).join('');
+      return `
+        <div class="family">
+          <div class="family__head"><b>${f.label}</b><code>${f.key}…</code></div>
+          <div class="field ${targetOk(f.key) ? '' : 'invalid'}">
+            <label for="target-${f.key}">Target version</label>
+            <input id="target-${f.key}" class="mono" data-target="${f.key}"
+                   value="${esc(fam.target)}" placeholder="${f.key}9.0.5.29_r02">
+            <span class="error">Must look like ${f.key}9.0.5.29_r02</span>
+          </div>
+          ${fam.found.length
+            ? `<table class="mini"><thead><tr><th>Found</th><th>#</th><th>Rule</th><th>Where found [folder; job; line; name/value]</th></tr></thead><tbody>${rows}</tbody></table>`
+            : '<p class="note">No versions of this type found in the scan.</p>'}
+        </div>`;
+    }).join('');
+  }
+
+  function updateApplyButton() {
+    const btn = document.getElementById('applyNorm'), s = document.getElementById('applyStatus');
+    const bad = FAMILIES.find(f => !targetOk(f.key));
+    const anyIncluded = Object.values(normState.folders).some(a => a !== 'remove');
+    let msg = '';
+    const extraMsg = extrasProblem();
+    if (bad) msg = `Fix the ${bad.label} target version.`;
+    else if (extraMsg) msg = extraMsg;
+    else if (!anyIncluded) msg = 'Every folder is marked Remove, so there is nothing to package.';
+    else if (!normState.force) msg = 'Check "Force normalization" to enable Apply.';
+    btn.disabled = !!msg;
+    if (!normState.applied) { s.className = 'status'; s.textContent = msg; }
+  }
+
+  // Real logic on the in-memory copy: swap "replace" versions for the family target
+  function applyNormalization() {
+    const prot = currentProtection();
+    const { group: xg, names: xn } = normState.extras;
+    // A bare version inside a name: not part of a longer number, and not an nd…/ihs_plg_… version
+    const nameRe = xn.on ? new RegExp(`(?<![0-9.]|nd|plg_)${escRegex(xn.from)}(?![0-9]|\\.[0-9]|_r)`, 'g') : null;
+    const jobs = jobsData.map(job => {
+      const action = normState.folders[job.folder];
+      let replacements = 0, groupRetargets = 0, nameRenames = 0;
+      const after = new Set();
+      const files = action === 'remove' ? [] : job.files.map(f => {
+        const content = mapUnits(f.content, unit => {
+          const blockProtected = isProtectedText(unit, prot.files);          // protected file: whole block
+          const objType = ((unit.match(/<object_type>([^<]*)<\/object_type>/) || [])[1] || '');
+          const isJob = unit.startsWith('<grouped_object_mapping') && /job/i.test(objType);
+          return unit.split('\n').map(line => {
+            if (blockProtected || hasProtectedString(line, prot.strings)) return line;  // protected string: that line
+            let out = line.replace(VERSION_RE, v => {
+              const fam = normState.families[familyOf(v)];
+              if (action === 'normalize' && v !== fam.target && fam.actions[v] === 'replace') {
+                replacements++; after.add(fam.target); return fam.target;
+              }
+              after.add(v); return v;
+            });
+            if (action !== 'normalize') return out;
+            if (xg.on) out = out.replace(/(<containing_group>)([^<]*)(<\/containing_group>)/, (m, a, val, c) => {
+              if (val !== xg.from && !val.startsWith(xg.from + '/')) return m;
+              groupRetargets++; return a + xg.to + val.slice(xg.from.length) + c;
+            });
+            if (nameRe && isJob) out = out.replace(/(<object_name>)([^<]*)(<\/object_name>)/, (m, a, val, c) =>
+              a + val.replace(nameRe, () => { nameRenames++; return xn.to; }) + c);
+            return out;
+          }).join('\n');
+        });
+        return { path: f.path, original: f.content, content, changed: content !== f.content };
+      });
+      return { folder: job.folder, action, files, replacements, groupRetargets, nameRenames, after };
+    });
+    normState.applied = { jobs };
+  }
+
+  function renderApplied() {
+    const box = document.getElementById('applyResults');
+    const a = normState && normState.applied;
+    if (!a) { box.hidden = true; return; }
+    const inc = a.jobs.filter(j => j.action !== 'remove');
+    const label = { normalize: 'Normalized', keep: 'Kept as-is', remove: 'Removed' };
+    document.getElementById('appFolders').textContent = inc.length;
+    document.getElementById('appRemoved').textContent = a.jobs.length - inc.length;
+    document.getElementById('appFiles').textContent = inc.reduce((n, j) => n + j.files.filter(f => f.changed).length, 0);
+    document.getElementById('appRepl').textContent = inc.reduce((n, j) => n + j.replacements, 0);
+    const xs = normState.extras;
+    document.getElementById('appGroupsStat').hidden = !xs.group.on;
+    document.getElementById('appNamesStat').hidden = !xs.names.on;
+    document.getElementById('appGroups').textContent = inc.reduce((n, j) => n + j.groupRetargets, 0);
+    document.getElementById('appNames').textContent = inc.reduce((n, j) => n + j.nameRenames, 0);
+    document.getElementById('applyBody').innerHTML = a.jobs.map(j => {
+      const removed = j.action === 'remove';
+      const mixed = !removed && FAMILIES.some(f => [...j.after].filter(v => familyOf(v) === f.key).length > 1);
+      const badge = removed ? '<span class="badge badge--none">Not in ZIP</span>'
+                  : mixed   ? '<span class="badge badge--mixed">Still mixed</span>'
+                            : '<span class="badge badge--ok">Clean</span>';
+      const versions = removed ? '—' : ([...j.after].sort(cmpVer)
+        .map(v => `<span class="chip">${esc(v)}</span>`).join('') || '—');
+      return `<tr class="${removed ? 'is-removed' : ''}">
+        <td class="path">${esc(j.folder)}</td><td>${label[j.action]}</td>
+        <td>${removed ? '—' : j.replacements}</td>
+        <td><div class="chips">${versions}</div></td><td>${badge}</td></tr>`;
+    }).join('');
+    box.hidden = false;
+  }
+
+  document.querySelector('[data-panel="4"]').addEventListener('change', e => {
+    const t = e.target;
+    if (t.matches('input[type="radio"][data-folder]')) normState.folders[t.dataset.folder] = t.value;
+    else if (t.matches('select.rule')) normState.families[t.dataset.family].actions[t.dataset.version] = t.value;
+    else if (t.matches('input[data-target]')) {
+      normState.families[t.dataset.target].target = t.value.trim();
+      renderFamilies();
+      refreshExtraDefaults(); renderExtras();       // new ND target updates the suggested group and name version
+    }
+    else if (t.matches('[data-extra]')) {
+      const [k, prop] = t.dataset.extra.split('.');
+      if (prop === 'on') normState.extras[k].on = t.checked;
+      else { normState.extras[k][prop] = t.value.trim(); normState.extras[k].touched = true; }
+      renderExtras();
+    }
+    else if (t.id === 'forceNorm') normState.force = t.checked;
+    else return;
+    normState.applied = null;      // any change invalidates the last apply
+    normState.validation = null; normState.reviewed = false; normState.zip = null;
+    renderApplied();
+    updateApplyButton();
+  });
+
+  document.getElementById('applyNorm').addEventListener('click', () => {
+    const btn = document.getElementById('applyNorm'), s = document.getElementById('applyStatus');
+    btn.disabled = true;
+    s.className = 'status'; s.textContent = 'Applying normalization…';
+    setTimeout(() => {
+      applyNormalization();
+      normState.validation = null; normState.reviewed = false; normState.zip = null;
+      renderApplied();
+      updateApplyButton();
+      s.className = 'status ok';
+      s.textContent = 'Applied to the in-memory copy. Live jobs are untouched.';
+      refreshStepper();
+    }, 600);
+  });
+
+  // ---------- Step 5: validate & review ----------
+  const includedFiles = () => normState.applied.jobs
+    .filter(j => j.action !== 'remove')
+    .flatMap(j => j.files.map(f => ({ ...f, action: j.action })))
+    .sort((x, y) => Number(y.changed) - Number(x.changed));
+  const changedLines = f => {
+    const a = f.original.split('\n'), b = f.content.split('\n');
+    return a.filter((l, i) => l !== b[i]).length;
+  };
+
+  // Well-formed check (blocking) + expected mapping elements (warnings)
+  function validateXml(text) {
+    const doc = new DOMParser().parseFromString(text, 'application/xml');
+    const err = doc.getElementsByTagName('parsererror')[0];
+    if (err) return { ok: false, error: err.textContent.trim().split('\n')[0], warnings: [] };
+    const warnings = [];
+    const root = doc.documentElement;
+    if (root.nodeName !== 'mapping') warnings.push(`root element is <${root.nodeName}>, expected <mapping>`);
+    const groups = [...doc.getElementsByTagName('grouped_object_mapping')];
+    if (!groups.length) warnings.push('no <grouped_object_mapping> entries');
+    groups.forEach((g, i) => {
+      const so = g.getElementsByTagName('source_object')[0];
+      const name = so?.getElementsByTagName('object_name')[0]?.textContent.trim() || `entry ${i + 1}`;
+      if (!so) warnings.push(`${name}: missing <source_object>`);
+      else ['object_type', 'object_name', 'group_id'].forEach(t => {
+        if (!so.getElementsByTagName(t)[0]) warnings.push(`${name}: missing <${t}>`);
+      });
+      if (!g.getElementsByTagName('containing_group')[0]) warnings.push(`${name}: missing <containing_group>`);
+    });
+    return { ok: true, warnings };
+  }
+
+  function renderValidation() {
+    const v = normState.validation, box = document.getElementById('valResults');
+    if (!v) { box.hidden = true; return; }
+    const label = { normalize: 'Normalized', keep: 'Kept as-is' };
+    document.getElementById('valFiles').textContent = v.length;
+    document.getElementById('valOk').textContent = v.filter(f => f.ok).length;
+    document.getElementById('valWarn').textContent = v.reduce((n, f) => n + f.warnings.length, 0);
+    document.getElementById('valChanged').textContent = v.filter(f => f.changed).length;
+    document.getElementById('valBody').innerHTML = v.map(f => `
+      <tr>
+        <td class="path">${esc(f.path)}</td>
+        <td>${label[f.action]}</td>
+        <td>${f.ok ? '<span class="badge badge--ok">Well-formed</span>'
+                   : `<span class="badge badge--bad" title="${esc(f.error)}">Invalid</span>`}</td>
+        <td>${!f.ok ? '—' : f.warnings.length
+              ? `<span class="badge badge--mixed">${f.warnings.length} warning${f.warnings.length > 1 ? 's' : ''}</span>`
+              : '<span class="badge badge--ok">OK</span>'}</td>
+        <td>${f.lines}</td>
+      </tr>`).join('');
+    document.getElementById('warnList').innerHTML = v.flatMap(f =>
+      f.ok ? f.warnings.map(w => `<li><b>${esc(f.path)}</b>: ${esc(w)}</li>`)
+           : [`<li><b>${esc(f.path)}</b>: ${esc(f.error)}</li>`]).join('');
+    box.hidden = false;
+  }
+
+  function showSample() {
+    const path = document.getElementById('sampleFile').value;
+    const f = includedFiles().find(x => x.path === path);
+    const view = document.getElementById('diffView');
+    if (!f) { view.innerHTML = ''; return; }
+    const a = f.original.split('\n'), b = f.content.split('\n');
+    const row = (cls, n, sg, text) =>
+      `<div class="dl ${cls}"><span class="ln">${n}</span><span class="sg">${sg}</span><code>${esc(text)}</code></div>`;
+    view.innerHTML = a.map((line, i) => line === b[i]
+      ? row('', i + 1, ' ', line)
+      : row('del', i + 1, '−', line) + row('add', i + 1, '+', b[i])).join('');
+  }
+
+  function renderStep5() {
+    if (!normState?.applied) return;
+    const files = includedFiles();
+    const sel = document.getElementById('sampleFile');
+    const prev = sel.value;
+    sel.innerHTML = files.map(f => `<option value="${esc(f.path)}">${esc(f.path)} ${
+      f.changed ? `(${changedLines(f)} line${changedLines(f) > 1 ? 's' : ''} changed)` : '(no changes)'}</option>`).join('');
+    if (files.some(f => f.path === prev)) sel.value = prev;
+    showSample();
+    document.getElementById('reviewedChk').checked = !!normState.reviewed;
+    renderValidation();
+  }
+
+  document.getElementById('runValidate').addEventListener('click', () => {
+    const s = document.getElementById('valStatus');
+    s.className = 'status'; s.textContent = 'Validating…';
+    setTimeout(() => {
+      normState.validation = includedFiles().map(f => ({
+        path: f.path, action: f.action, changed: f.changed, lines: changedLines(f), ...validateXml(f.content),
+      }));
+      renderValidation();
+      const bad = normState.validation.filter(f => !f.ok).length;
+      s.className = bad ? 'status' : 'status ok';
+      s.textContent = bad ? `${bad} file(s) are not well-formed XML.` : 'All files are well-formed XML.';
+      refreshStepper();
+    }, 400);
+  });
+  document.getElementById('sampleFile').addEventListener('change', showSample);
+  document.getElementById('reviewedChk').addEventListener('change', e => { normState.reviewed = e.target.checked; });
+
+  // ---------- Step 6: package ----------
+  // Minimal ZIP writer ("stored", no compression): no library needed, works offline.
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+  function crc32(bytes) {
+    let c = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function buildZip(entries, when = new Date()) {
+    const enc = new TextEncoder();
+    const dosTime = (when.getHours() << 11) | (when.getMinutes() << 5) | (when.getSeconds() >> 1);
+    const dosDate = ((when.getFullYear() - 1980) << 9) | ((when.getMonth() + 1) << 5) | when.getDate();
+    const locals = [], centrals = [];
+    let offset = 0;
+    entries.forEach(({ path, text }) => {
+      const name = enc.encode(path), data = enc.encode(text), crc = crc32(data);
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); // UTF-8 names
+      lh.setUint16(8, 0, true); lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true);
+      lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+      lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 0x0314, true); ch.setUint16(6, 20, true);
+      ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true); ch.setUint16(12, dosTime, true);
+      ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true);
+      ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+      ch.setUint32(38, (0o100644 << 16) >>> 0, true);   // -rw-r--r-- when unzipped on Unix
+      ch.setUint32(42, offset, true);
+      locals.push(new Uint8Array(lh.buffer), name, data);
+      centrals.push(new Uint8Array(ch.buffer), name);
+      offset += 30 + name.length + data.length;
+    });
+    const cdSize = centrals.reduce((n, a) => n + a.length, 0);
+    const end = new DataView(new ArrayBuffer(22));
+    end.setUint32(0, 0x06054b50, true);
+    end.setUint16(8, entries.length, true); end.setUint16(10, entries.length, true);
+    end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+    const parts = [...locals, ...centrals, new Uint8Array(end.buffer)];
+    const out = new Uint8Array(parts.reduce((n, a) => n + a.length, 0));
+    let p = 0; parts.forEach(a => { out.set(a, p); p += a.length; });
+    return out;
+  }
+
+  const baseName = p => p.replace(/\/+$/, '').split('/').pop();
+  const joinPath = (...xs) => xs.filter(Boolean).join('/').replace(/\/{2,}/g, '/');
+  const relToSource = p => scanResult && p.startsWith(scanResult.source + '/') ? p.slice(scanResult.source.length + 1) : p;
+  function pkgFileName() {
+    const n = document.getElementById('zipName').value.trim() || 'wasvc_normalized.zip';
+    return /\.zip$/i.test(n) ? n : `${n}.zip`;
+  }
+  const lineChanges = f => {
+    const a = f.original.split('\n'), b = f.content.split('\n');
+    return a.map((l, i) => l !== b[i] ? { line: i + 1, before: l.trim(), after: (b[i] ?? '').trim() } : null).filter(Boolean);
+  };
+
+  function pkgEntries() {
+    const root = document.getElementById('pkgRoot').value.trim().replace(/^\/+|\/+$/g, '');
+    const files = normState.applied.jobs.filter(j => j.action !== 'remove')
+      .flatMap(j => j.files.map(f => ({ ...f, action: j.action, zipPath: joinPath(root, relToSource(f.path)) })));
+    const entries = files.map(f => ({ path: f.zipPath, text: f.content }));
+    if (document.getElementById('pkgManifest').checked)
+      entries.push({ path: joinPath(root, 'WASVC_MANIFEST.txt'), text: buildManifest(files) });
+    return { files, entries };
+  }
+
+  function buildManifest(files) {
+    const v = normState.validation;
+    const L = [];
+    L.push('WASVC normalized job package', '='.repeat(40));
+    L.push(`Created:        ${new Date().toISOString()}`);
+    L.push(`Tool:           WASVC v${WASVC_VERSION}`);
+    L.push(`Source folder:  ${scanResult.source}`);
+    L.push(`Package target: ${joinPath(document.getElementById('outDir').value.trim(), pkgFileName())}`);
+    L.push(`Validation:     ${!v ? 'NOT RUN' : v.every(f => f.ok) ? 'all files well-formed XML' : 'FAILED on some files'}`);
+    L.push(`Reviewed:       ${normState.reviewed ? 'yes (sample changes confirmed)' : 'NO'}`);
+    L.push('', 'Version rules');
+    FAMILIES.forEach(f => {
+      const fam = normState.families[f.key];
+      if (!fam.found.length && !fam.target) return;
+      const allowed = fam.found.filter(x => x !== fam.target && fam.actions[x] === 'allow');
+      const replaced = fam.found.filter(x => x !== fam.target && fam.actions[x] === 'replace');
+      L.push(`  ${f.label}: target ${fam.target || '(none)'}`);
+      if (allowed.length) L.push(`    allowed:  ${allowed.join(', ')}`);
+      if (replaced.length) L.push(`    replaced: ${replaced.join(', ')}`);
+    });
+    const xs = normState.extras, sum = k => normState.applied.jobs.reduce((n, j) => n + (j[k] || 0), 0);
+    if (xs.group.on || xs.names.on) L.push('', 'Group & name updates');
+    if (xs.group.on) L.push(`  job group: ${xs.group.from} -> ${xs.group.to}  (${sum('groupRetargets')} changed; new group must exist in BSA)`);
+    if (xs.names.on) L.push(`  job names: ${xs.names.from} -> ${xs.names.to}  (${sum('nameRenames')} changed; test one import first)`);
+    const listOf = id => document.getElementById(id).value.split('\n').map(s => s.trim()).filter(Boolean);
+    const pFiles = listOf('protected'), pStrings = listOf('protectedStrings');
+    L.push('', 'Protected (left unchanged)');
+    L.push(`  files:   ${pFiles.length ? pFiles.join(', ') : '(none)'}`);
+    L.push(`  strings: ${pStrings.length ? pStrings.map(s => `"${s}"`).join(', ') : '(none)'}`);
+    L.push(`  version hits skipped in scan: ${scanResult.protectedSkips}`);
+    L.push('', 'Folders');
+    normState.applied.jobs.forEach(j => L.push(`  [${j.action.toUpperCase().padEnd(9)}] ${relToSource(j.folder)}`));
+    L.push('', 'Changes');
+    const changed = files.filter(f => f.changed);
+    if (!changed.length) L.push('  (none)');
+    changed.forEach(f => {
+      L.push(`  ${f.zipPath}`);
+      lineChanges(f).forEach(c => L.push(`    L${c.line}  - ${c.before}`, `    L${c.line}  + ${c.after}`));
+    });
+    return L.join('\n') + '\n';
+  }
+
+  function renderStep6() {
+    const root = document.getElementById('pkgRoot');
+    if (!root.dataset.touched) root.value = baseName(scanResult.source).startsWith('(') ? '' : baseName(scanResult.source);
+    document.getElementById('pkgTarget').textContent =
+      joinPath(document.getElementById('outDir').value.trim() || '(output directory not set)', pkgFileName());
+
+    const v = normState.validation, problems = [];
+    if (!v) problems.push('validation has not been run');
+    else if (v.some(f => !f.ok)) problems.push('some files are not well-formed XML');
+    if (!normState.reviewed) problems.push('sample changes have not been marked reviewed');
+    const warn = document.getElementById('pkgWarn');
+    warn.hidden = !problems.length;
+    warn.textContent = problems.length ? `Heads up: ${problems.join(' and ')}. You can still build the ZIP; the manifest will say so.` : '';
+
+    const { files } = pkgEntries();
+    document.getElementById('pkgBody').innerHTML = files.map(f => {
+      const n = lineChanges(f).length;
+      return `<tr><td class="path">${esc(f.zipPath)}</td>
+        <td>${f.action === 'normalize' ? 'Normalized' : 'Kept as-is'}</td>
+        <td>${n ? `${n} line${n > 1 ? 's' : ''}` : '<span style="color:var(--muted)">none</span>'}</td></tr>`;
+    }).join('') || '<tr><td colspan="3">No folders are included. Every folder is marked Remove.</td></tr>';
+    document.getElementById('buildZip').disabled = !files.length;
+    renderZipStatus();
+  }
+
+  function renderZipStatus() {
+    const z = normState.zip, s = document.getElementById('pkgStatus');
+    document.getElementById('downloadZip').hidden = !z;
+    document.getElementById('sendZip').disabled = !(z && API.on);
+    s.className = z ? 'status ok' : 'status';
+    s.textContent = !z ? '' : z.sentTo ? `Sent to ${z.sentTo}`
+      : `Built ${z.name}: ${z.count} file${z.count > 1 ? 's' : ''}, ${(z.bytes.length / 1024).toFixed(1)} KB.`;
+  }
+
+  document.getElementById('sendZip').addEventListener('click', async () => {
+    const z = normState?.zip, s = document.getElementById('pkgStatus');
+    const dir = document.getElementById('outDir').value.trim();
+    if (!z || !API.on) return;
+    if (!dir) { s.className = 'status'; s.textContent = 'Set the output directory on the Job Source step.'; return; }
+    s.className = 'status'; s.textContent = 'Sending…';
+    const q = new URLSearchParams({ dir, name: z.name, overwrite: document.getElementById('pkgOverwrite').checked ? '1' : '0' });
+    try {
+      const res = await fetch(`api/upload?${q}`, { method: 'POST', headers: { 'Content-Type': 'application/zip' }, body: z.bytes });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(res.status === 409
+        ? `${z.name} already exists there. Tick "Replace the file" to overwrite it.` : (data.error || `HTTP ${res.status}`));
+      z.sentTo = data.path;
+      renderZipStatus();
+    } catch (err) { s.className = 'status'; s.textContent = `Send failed: ${err.message}`; }
+  });
+
+  document.getElementById('buildZip').addEventListener('click', () => {
+    const s = document.getElementById('pkgStatus');
+    s.className = 'status'; s.textContent = 'Building ZIP…';
+    setTimeout(() => {
+      const { entries } = pkgEntries();
+      normState.zip = { name: pkgFileName(), bytes: buildZip(entries), count: entries.length };
+      renderZipStatus();
+      refreshStepper();
+    }, 300);
+  });
+
+  document.getElementById('downloadZip').addEventListener('click', () => {
+    const z = normState.zip;
+    if (!z) return;
+    const url = URL.createObjectURL(new Blob([z.bytes], { type: 'application/zip' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = z.name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  // Changing package options invalidates a built ZIP
+  ['pkgRoot', 'pkgManifest'].forEach(id => document.getElementById(id).addEventListener(
+    id === 'pkgRoot' ? 'input' : 'change', e => {
+      if (id === 'pkgRoot') e.target.dataset.touched = '1';
+      if (!normState) return;
+      normState.zip = null;
+      renderStep6();
+    }));
+
+  // =====================================================================
+  // EMVT: deployment watcher
+  // =====================================================================
+  const EMVT_VERSION = '0.4.0';
+  document.getElementById('appVersion').textContent = `WASVC v${WASVC_VERSION} · EMVT v${EMVT_VERSION}`;
+
+  // Watch list format (JSON). The real watcher reads the same file.
+  const SAMPLE_WATCHLIST = {
+    watchlistVersion: 1,
+    pollSeconds: 10,           // how often each app folder is checked
+    quietSeconds: 60,          // no changes for this long = deployment finished
+    ticketUrlTemplate: 'https://jira.example.com/browse/{id}',   // {id} is replaced by the ticket ID
+    apps: [
+      { id: 'orders-web', name: 'Orders Web', env: 'UAT', server: 'tomcat', host: 'app-server-01',
+        path: '/opt/tomcat/webapps/orders', artifact: '/opt/tomcat/webapps/orders.war', baselineBytes: 184549376 },
+      { id: 'billing-svc', name: 'Billing Service', env: 'UAT', server: 'jboss', host: 'app-server-02',
+        path: '/opt/jboss/standalone/deployments/billing.ear', artifact: '/opt/jboss/standalone/deployments/billing.ear',
+        baselineBytes: 98566144 },
+      { id: 'statements', name: 'Statements', env: 'SIT', server: 'websphere', host: 'was-node-01',
+        path: '/opt/IBM/WebSphere/AppServer/profiles/AppSrv01/installedApps/Cell01/Statements.ear',
+        artifact: '/opt/IBM/WebSphere/AppServer/profiles/AppSrv01/installedApps/Cell01/Statements.ear', baselineBytes: 251658240 },
+      { id: 'alerts-api', name: 'Alerts API', env: 'SIT', server: 'tomcat', host: 'app-server-03',
+        path: '/opt/tomcat/webapps/alerts-api', artifact: '/opt/tomcat/webapps/alerts-api.war', baselineBytes: 62914560 },
+      { id: 'payments-core', name: 'Payments Core', env: 'UAT', server: 'jboss', host: 'app-server-04',
+        path: '/opt/jboss/standalone/deployments/payments-core.ear',
+        artifact: '/opt/jboss/standalone/deployments/payments-core.ear', baselineBytes: 146800640 },
+      { id: 'profile-web', name: 'Profile Web', env: 'DEV', server: 'tomcat', host: 'app-server-05',
+        path: '/opt/tomcat/webapps/profile-web', artifact: '/opt/tomcat/webapps/profile-web.war' },
+    ].map(a => ({ ...a, port: 22, user: 'svc_emvt', auth: 'key' })),
+  };
+
+  const PHASE_LABEL = { idle: 'Watching', activity: 'Activity detected', deploying: 'Deploying',
+    settling: 'Settling', deployed: 'Deployed', failed: 'Failed', stalled: 'Stalled' };
+  const SERVERS = ['tomcat', 'jboss', 'websphere', 'other'];
+
+  const fmtBytes = n => {
+    const a = Math.abs(n);
+    if (a >= 1024 ** 3) return `${(n / 1024 ** 3).toFixed(2)} GB`;
+    if (a >= 1024 ** 2) return `${(n / 1024 ** 2).toFixed(1)} MB`;
+    return `${(n / 1024).toFixed(0)} KB`;
+  };
+  const fmtClock = t => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const fmtDur = ms => { const s = Math.round(ms / 1000); return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`; };
+  const artifactKind = app => (/\.(ear|war|jar)$/i.exec(app.artifact || app.path || '') || [, 'artifact'])[1].toUpperCase();
+
+  // ---------- Stage tracking (pure logic, shared with the future backend watcher) ----------
+  // A snapshot is one poll of an app folder:
+  //   totalBytes, fileCount     current size of the app folder
+  //   changedFiles              files modified since the previous poll
+  //   updatedBytes              bytes of files modified since this deployment started
+  //   artifactChanged           the EAR/WAR itself changed since the previous poll
+  //   marker                    JBoss deployment-scanner marker if present: dodeploy | isdeploying | deployed | failed
+  function emNewState(app) {
+    return { app, phase: 'idle', steps: [], start: null, finish: null, lastChange: null, lastActivity: null,
+      totalBytes: app.baselineBytes || 0, fileCount: 0, updatedBytes: 0, expanded: false, sim: null,
+      baselineLearned: !app.baselineBytes,
+      // Tracking ticket for a deployment. forRun = start time of the deployment it belongs to, or 'next'.
+      ticket: null, ticketDraft: { id: '', url: '', env: app.env || 'UAT', urlTouched: false }, ticketError: '' };
+  }
+
+  // Every timeline step remembers which ticket was attached at that moment
+  const ticketTag = st => st.ticket ? { id: st.ticket.id, url: st.ticket.url, env: st.ticket.env } : null;
+
+  function emAdvance(st, snap, now, cfg) {
+    const step = (phase, label, detail = '') => st.steps.push({ t: now, phase, label, detail, ticket: ticketTag(st) });
+    const app = st.app;
+    const changed = snap.changedFiles > 0 || snap.artifactChanged;
+    if (!app.baselineBytes) { app.baselineBytes = snap.totalBytes; st.baselineLearned = true; }   // learn on first look
+    st.totalBytes = snap.totalBytes; st.fileCount = snap.fileCount;
+    if (changed) st.lastActivity = now;
+    const quiet = cfg.quietSeconds * 1000, poll = cfg.pollSeconds * 1000;
+
+    // JBoss markers are authoritative when present
+    if (snap.marker === 'failed' && st.phase !== 'failed' && st.start) {
+      st.updatedBytes = snap.updatedBytes; st.phase = 'failed'; st.finish = now;
+      step('failed', 'Deployment failed', `.failed marker written after ${fmtDur(now - st.start)}`);
+      return;
+    }
+
+    switch (st.phase) {
+      case 'idle': case 'deployed': case 'failed': case 'stalled':
+        if (!changed) return;
+        // A ticket linked "for the next deployment" attaches now; one from a finished deployment stays with that one
+        if (st.ticket) { if (st.ticket.forRun === 'next') st.ticket.forRun = now; else st.ticket = null; }
+        Object.assign(st, { phase: 'activity', start: now, finish: null, lastChange: now, updatedBytes: snap.updatedBytes });
+        step('activity', 'Activity detected', `${snap.changedFiles} file${snap.changedFiles === 1 ? '' : 's'} changed in the app folder`);
+        if (!snap.artifactChanged && !/deploy/.test(snap.marker || '')) return;
+        // falls through when the artifact changed in the same poll
+      case 'activity':
+        st.updatedBytes = snap.updatedBytes;
+        if (snap.artifactChanged || snap.marker === 'dodeploy' || snap.marker === 'isdeploying') {
+          st.phase = 'deploying'; st.lastChange = now;
+          step('deploying', `${artifactKind(app)} updated`, snap.marker ? `.${snap.marker} marker seen` : 'Deployment artifact changed');
+        } else if (changed) st.lastChange = now;
+        else if (now - st.lastChange >= quiet) {
+          st.phase = 'idle'; step('idle', 'Activity ended without a deployment', `No ${artifactKind(app)} change`);
+        }
+        return;
+      case 'deploying': case 'settling': {
+        st.updatedBytes = snap.updatedBytes;
+        if (snap.marker === 'deployed') return emFinish(st, now, step, '.deployed marker written');
+        if (changed) {
+          st.lastChange = now;
+          if (st.phase === 'settling') { st.phase = 'deploying'; step('deploying', 'Changes resumed'); }
+          return;
+        }
+        const idleFor = now - st.lastChange;
+        if (st.phase === 'deploying' && idleFor >= poll * 2) {
+          st.phase = 'settling'; step('settling', 'Changes stopped, settling', `Waiting ${cfg.quietSeconds}s for quiet`);
+        } else if (st.phase === 'settling' && idleFor >= quiet) {
+          const pct = st.updatedBytes / app.baselineBytes;
+          if (pct < 0.5) {
+            st.phase = 'stalled'; st.finish = now;
+            step('stalled', `Stalled at ${Math.round(pct * 100)}%`, `No changes for ${fmtDur(idleFor)}`);
+          } else emFinish(st, now, step, `No changes for ${fmtDur(idleFor)}`);
+        }
+        return;
+      }
+    }
+  }
+
+  function emFinish(st, now, step, why) {
+    st.phase = 'deployed'; st.finish = now;
+    const d = st.totalBytes - st.app.baselineBytes;
+    const size = Math.abs(d) < 1024 * 1024 ? 'same size' : `${d > 0 ? '+' : '−'}${fmtBytes(Math.abs(d))} vs. baseline`;
+    step('deployed', 'Deployed', `${why} · took ${fmtDur(now - st.start)} · ${size}`);
+  }
+
+  // "64%" while deploying; "100% + 12.3 MB" when more was written than the known size
+  function emProgress(st) {
+    const base = st.app.baselineBytes || 1;
+    if (!st.start) return { pct: 0, label: '—', cls: '' };
+    const over = st.updatedBytes - base;
+    const done = st.phase === 'deployed';
+    const grown = done ? st.totalBytes - base : over;
+    let label = `${Math.min(100, Math.round(st.updatedBytes / base * 100))}%`;
+    if (done || over > 0) label = grown > 1024 * 1024 ? `100% <span class="grow">+ ${fmtBytes(grown)}</span>` : (done ? '100%' : label);
+    return { pct: done ? 1 : Math.min(1, st.updatedBytes / base), label,
+      cls: done ? 'is-done' : (st.phase === 'failed' || st.phase === 'stalled') ? 'is-bad' : '' };
+  }
+
+  // ---------- Simulator: generates realistic snapshots until the backend watcher exists ----------
+  const SIM_CFG = { pollSeconds: 1, quietSeconds: 6 };          // sped up so a demo takes ~30 seconds
+  const SIM_PLANS = { 'orders-web': 'grow', 'billing-svc': 'jboss-ok', 'statements': 'grow-small',
+    'alerts-api': 'same', 'payments-core': 'jboss-fail', 'profile-web': 'stall' };
+
+  function simStart(st) {
+    const plan = SIM_PLANS[st.app.id] || (Math.random() < 0.5 ? 'grow' : 'same');
+    const base = st.app.baselineBytes || 80 * 1024 * 1024;
+    const growth = { grow: 0.12, 'grow-small': 0.03, same: 0, 'jboss-ok': 0.05, 'jboss-fail': 0.02, stall: 0.04 }[plan] ?? 0.05;
+    st.sim = { plan, tick: 0, base, target: base * (1 + growth), written: 0,
+      rate: base * (0.09 + Math.random() * 0.05), jboss: plan.startsWith('jboss') };
+  }
+
+  function simSnapshot(st) {
+    const s = st.sim, app = st.app;
+    const total0 = app.baselineBytes || (s ? s.base : 80 * 1024 * 1024);
+    const files0 = Math.round(total0 / 85000);
+    if (!s) return { totalBytes: st.totalBytes || total0, fileCount: st.fileCount || files0, changedFiles: 0, updatedBytes: st.updatedBytes, artifactChanged: false, marker: null };
+    s.tick++;
+    let changedFiles = 0, artifactChanged = false, marker = null;
+    if (s.tick <= 2) {                                   // config files touched before the artifact lands
+      changedFiles = 3 + Math.floor(Math.random() * 6); s.written += s.base * 0.004;
+    } else if (s.tick === 3) {                           // the EAR/WAR lands
+      artifactChanged = true; changedFiles = 1; if (s.jboss) marker = 'isdeploying';
+    } else if (s.written < s.target && !s.halted) {      // exploding / copying files
+      s.written = Math.min(s.target, s.written + s.rate * (0.7 + Math.random() * 0.6));
+      changedFiles = 40 + Math.floor(Math.random() * 120);
+      if (s.jboss) marker = 'isdeploying';
+      if (s.plan === 'stall' && s.written > s.base * 0.38) { s.written = s.base * 0.38; s.halted = true; }
+      if (s.plan === 'jboss-fail' && s.written > s.base * 0.6) { s.halted = true; marker = 'failed'; }
+    } else if (s.jboss && !s.halted && !s.done) { marker = 'deployed'; s.done = true; }
+    else if (s.jboss) marker = s.halted ? 'failed' : 'deployed';
+    const frac = Math.min(1, s.written / s.target);
+    return { totalBytes: Math.round(total0 + (s.target - total0) * frac), fileCount: Math.round(files0 * (1 + (s.target / total0 - 1) * frac)),
+      changedFiles, updatedBytes: Math.round(s.written), artifactChanged, marker };
+  }
+
+  // ---------- State, rendering, events ----------
+  // secrets: session-only passwords keyed by app id. Never written to a watch list or anywhere else.
+  let em = { cfg: SIM_CFG, list: null, states: [], secrets: new Map() };
+
+  function emLoad(list) {
+    em.list = list;
+    em.states = list.apps.map(a => emNewState({ ...a }));
+  }
+
+  function emValidate(list) {
+    const errs = [];
+    if (!list || !Array.isArray(list.apps)) return ['The file needs an "apps" list.'];
+    const ids = new Set();
+    list.apps.forEach((a, i) => {
+      const where = a && a.id ? `"${a.id}"` : `app #${i + 1}`;
+      if (!a || typeof a !== 'object') { errs.push(`${where}: not an object`); return; }
+      ['id', 'name', 'server', 'path'].forEach(k => { if (!a[k]) errs.push(`${where}: missing "${k}"`); });
+      if (a.server && !SERVERS.includes(a.server)) errs.push(`${where}: server must be one of ${SERVERS.join(', ')}`);
+      if (a.baselineBytes != null && !(a.baselineBytes > 0)) errs.push(`${where}: baselineBytes must be a positive number`);
+      if (a.id && ids.has(a.id)) errs.push(`${where}: duplicate id`);
+      ids.add(a.id);
+    });
+    if (list.ticketUrlTemplate != null && !(SAFE_URL_RE.test(list.ticketUrlTemplate) && list.ticketUrlTemplate.includes('{id}'))) {
+      errs.push('ticketUrlTemplate must start with http(s):// and contain {id}');
+    }
+    return errs;
+  }
+
+  // A ticket chip: the ID as a link (when there is one) plus its environment, flagged if it doesn't match the app
+  function ticketChip(t, appEnv, mini) {
+    if (!t) return '';
+    const idPart = t.url ? `<a class="tkt" href="${esc(t.url)}" target="_blank" rel="noopener noreferrer" title="Open ${esc(t.id)}">${esc(t.id)}</a>`
+                         : `<span class="tkt">${esc(t.id)}</span>`;
+    const mismatch = appEnv && t.env && t.env !== appEnv;
+    return `<span class="tkt-wrap${mini ? ' is-mini' : ''}">${idPart}<span class="tkt-env${mismatch ? ' is-mismatch' : ''}"
+      title="${mismatch ? `Ticket is for ${esc(t.env)}, app is ${esc(appEnv)}` : 'Ticket environment'}">${esc(t.env || '?')}</span></span>`;
+  }
+
+  function emRender() {
+    const now = Date.now(), active = s => ['activity', 'deploying', 'settling'].includes(s.phase);
+    document.getElementById('emWatching').textContent = em.states.length;
+    document.getElementById('emActive').textContent = em.states.filter(active).length;
+    document.getElementById('emDone').textContent = em.states.filter(s => s.phase === 'deployed').length;
+    document.getElementById('emFailed').textContent = em.states.filter(s => s.phase === 'failed' || s.phase === 'stalled').length;
+    // Don't rebuild the table while someone is typing in it (e.g. a ticket ID); the feed and counts still update
+    const focus = document.activeElement, body = document.getElementById('emBody');
+    if (focus && body.contains(focus) && /^(INPUT|SELECT|TEXTAREA)$/.test(focus.tagName)) { emRenderFeed(now); return; }
+    const onlyActive = document.getElementById('emActiveOnly').checked;
+    const rows = em.states.filter(s => !onlyActive || active(s) || s.expanded);
+    document.getElementById('emBody').innerHTML = rows.map(st => {
+      const a = st.app, p = emProgress(st), base = a.baselineBytes || 0, d = st.totalBytes - base;
+      const delta = !base ? '' : Math.abs(d) < 1024 * 1024 ? '<span style="color:var(--muted)">same</span>'
+        : `<span class="${d > 0 ? 'grow' : 'shrink'}">${d > 0 ? '+' : '−'}${fmtBytes(Math.abs(d))} (${d > 0 ? '+' : '−'}${Math.abs(Math.round(d / base * 100))}%)</span>`;
+      const busy = active(st);
+      const row = `<tr class="em-row${st.flashUntil > now ? ' is-flash' : ''}" data-id="${esc(a.id)}">
+        <td class="em-app"><b>${esc(a.name)}</b><small>${esc(a.env || '')}${a.env ? ' · ' : ''}${esc(a.host || '')}</small></td>
+        <td><span class="srv srv--${esc(a.server)}">${esc(a.server)}</span></td>
+        <td><span class="ph ph--${st.phase}">${PHASE_LABEL[st.phase]}</span>${st.ticket ? `<div class="em-tkt-line">${ticketChip(st.ticket, a.env)}${st.ticket.forRun === 'next' ? '<small>next deploy</small>' : ''}</div>` : ''}</td>
+        <td><div class="bar ${p.cls}"><span style="width:${(p.pct * 100).toFixed(1)}%"></span></div>
+            <div class="bar-label">${p.label}</div></td>
+        <td class="em-size bar-label">${fmtBytes(st.totalBytes)} / ${base ? fmtBytes(base) : '—'}<br>${delta}</td>
+        <td class="em-size">${st.lastActivity ? `${fmtDur(now - st.lastActivity)} ago` : '—'}</td>
+        <td><button type="button" class="em-play" data-sim="${esc(a.id)}" ${busy ? 'disabled' : ''} title="Simulate a deployment">▶</button></td>
+      </tr>`;
+      if (!st.expanded) return row;
+      const steps = st.steps.length ? st.steps.slice().reverse().map(s =>
+        `<li class="t-${s.phase}"><time>${fmtClock(s.t)}</time><b>${esc(s.label)}</b>${s.detail ? ` · ${esc(s.detail)}` : ''}${s.ticket && s.phase !== 'ticket' ? ` ${ticketChip(s.ticket, a.env, true)}` : ''}</li>`).join('')
+        : '<li><time>—</time>No activity yet</li>';
+      const canAccept = st.phase === 'deployed' && Math.abs(d) >= 1024 * 1024;
+      // Tickets are managed on the Today's tickets tab; the row only shows which one applies
+      const t = st.ticket, T = t && em.tickets.find(x => x.id === t.id);
+      const ticketBlock = `
+          <div class="em-ticket">
+            <h3 class="sub" style="margin:0 0 6px">Tracking ticket</h3>
+            ${t ? `${ticketChip(t, a.env)} <b class="em-ticket__title">${esc(T?.title || '')}</b>
+              <span class="em-ticket__for">${t.forRun === 'next' ? 'for the next deployment' : `for the deployment started ${fmtClock(t.forRun)}`}</span>
+              ${t.env !== a.env ? `<p class="em-ticket__warn">Ticket environment (${esc(t.env)}) doesn't match this app (${esc(a.env || '?')}).</p>` : ''}`
+              : '<span class="em-ticket__for" style="margin:0">No ticket for this app today.</span>'}
+            <button type="button" class="btn em-ticket__go" data-goto-ticket="${esc(t ? t.id : '')}">${t ? 'Open in Today\'s tickets' : 'Add one in Today\'s tickets'}</button>
+          </div>`;
+      return row + `<tr class="em-detail"><td colspan="7">${ticketBlock}<div class="em-detail-grid">
+        <div><h3 class="sub" style="margin-top:0">Timeline</h3><ul class="timeline">${steps}</ul></div>
+        <div><h3 class="sub" style="margin-top:0">Details</h3><dl class="em-kv">
+          <dt>Connection</dt><dd>${esc(a.user || '?')}@${esc(a.host || '?')}:${esc(a.port || 22)}</dd>
+          <dt>Sign-in</dt><dd>${a.auth === 'password' ? (em.secrets.has(a.id) ? 'Password (this session only)' : 'Password (re-enter after reload)') : `SSH key${a.identityFile ? ` (${esc(a.identityFile)})` : ''}`}</dd>
+          <dt>App folder</dt><dd>${esc(a.path)}</dd>
+          <dt>Artifact</dt><dd>${esc(a.artifact || '—')}</dd>
+          <dt>Files</dt><dd>${st.fileCount.toLocaleString()}</dd>
+          <dt>Baseline</dt><dd>${base ? fmtBytes(base) : '—'}${st.baselineLearned ? ' (learned from first check)' : ''}</dd>
+          <dt>Started</dt><dd>${st.start ? fmtClock(st.start) : '—'}</dd>
+          <dt>Duration</dt><dd>${st.start ? fmtDur((st.finish || now) - st.start) : '—'}</dd>
+        </dl>
+        <div style="margin-top:12px">
+          ${canAccept ? `<button type="button" class="btn" data-accept="${esc(a.id)}">Accept ${fmtBytes(st.totalBytes)} as the new baseline</button>` : ''}
+          <button type="button" class="btn" data-remove="${esc(a.id)}" ${busy ? 'disabled title="Wait for the deployment to finish"' : ''}>Remove from watch list</button>
+        </div>
+        </div></div></td></tr>`;
+    }).join('') || `<tr><td colspan="7">${onlyActive ? 'No deployments in progress.' : 'The watch list is empty.'}</td></tr>`;
+    emRenderFeed(now);
+  }
+
+  // ---------- Recent activity: every step from every app, newest first, within the chosen window ----------
+  const fmtAgo = ms => ms < 5000 ? 'just now' : ms < 3600000 ? `${fmtDur(ms)} ago` : `${Math.floor(ms / 3600000)}h ${Math.floor(ms % 3600000 / 60000)}m ago`;
+  function emRenderFeed(now) {
+    const windowMs = +document.getElementById('emWindow').value;
+    const events = em.states.flatMap(st => st.steps.map(s => ({ ...s, app: st.app })))
+      .filter(e => !windowMs || now - e.t <= windowMs)
+      .sort((a, b) => b.t - a.t);
+    const shown = events.slice(0, 100);
+    document.getElementById('emFeedCount').textContent = events.length ? `(${events.length})` : '';
+    document.getElementById('emFeed').innerHTML = shown.map(e => `
+      <li data-app="${esc(e.app.id)}" title="${esc(fmtClock(e.t))} · ${esc(e.app.path)}">
+        <span class="em-feed__dot d-${e.phase}"></span>
+        <span class="em-feed__what"><b>${esc(e.app.name)}</b>: ${esc(e.label)}${e.ticket && e.phase !== 'ticket' ? ` ${ticketChip(e.ticket, e.app.env, true)}` : ''}${e.detail ? `<small>${esc(e.detail)}</small>` : ''}</span>
+        <span class="em-feed__when">${fmtAgo(now - e.t)}</span>
+      </li>`).join('') || '<li class="is-empty">No activity in this window.</li>';
+  }
+
+  // Clicking an event opens that app's row and brings it into view
+  document.getElementById('emFeed').addEventListener('click', e => {
+    if (e.target.closest('a')) return;                 // ticket links open on their own
+    const li = e.target.closest('li[data-app]');
+    if (!li) return;
+    const st = em.states.find(s => s.app.id === li.dataset.app);
+    if (!st) return;
+    st.expanded = true;
+    st.flashUntil = Date.now() + 2000;          // highlighted for 2s so it's easy to spot
+    document.getElementById('emActiveOnly').checked = false;
+    emRender();
+    const row = document.querySelector(`tr.em-row[data-id="${CSS.escape(st.app.id)}"]`);
+    if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  document.getElementById('emWindow').addEventListener('change', () => emRenderFeed(Date.now()));
+
+  function emTick() {
+    const now = Date.now();
+    em.states.forEach(st => {
+      emAdvance(st, simSnapshot(st), now, em.cfg);
+      if (st.sim && ['deployed', 'failed', 'stalled'].includes(st.phase)) st.sim = null;
+    });
+    if (document.getElementById('tool-emvt').hidden) return;
+    if (document.getElementById('emPaneTickets').hidden) emRender(); else renderTickets();
+  }
+
+  // ---------- Tracking tickets ----------
+  const TICKET_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
+  const SAFE_URL_RE = /^https?:\/\/[^\s<>"]+$/i;                 // only http(s) links are ever rendered
+  const ticketUrlFor = id => {
+    const tpl = em.list?.ticketUrlTemplate;
+    return tpl && id ? tpl.replace('{id}', encodeURIComponent(id)) : '';
+  };
+
+  // ---------- Today's tickets ----------
+  // em.tickets: [{ id, title, url, env, apps: [appId], validated, notes, addedAt }]
+  em.tickets = [];
+  const ACTIVE = ['activity', 'deploying', 'settling'], DONE = ['deployed', 'failed', 'stalled'];
+  const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+
+  // Which deployment a ticket attaches to: the one in progress; one that finished today; otherwise the next one
+  function attachRun(st, now = Date.now()) {
+    if (ACTIVE.includes(st.phase)) return st.start;
+    if (DONE.includes(st.phase) && st.start && sameDay(st.finish || st.start, now)) return st.start;
+    return 'next';
+  }
+  function setAppTicket(st, T) {
+    if (st.ticket?.id === T.id) return;
+    const forRun = attachRun(st);
+    st.ticket = { id: T.id, url: T.url, env: T.env, forRun };
+    st.steps.push({ t: Date.now(), phase: 'ticket', label: `Ticket ${T.id} linked`,
+      detail: `${T.env} · ${forRun === 'next' ? 'for the next deployment' : `to the deployment started ${fmtClock(forRun)}`}`, ticket: ticketTag(st) });
+  }
+  function clearAppTicket(st, why = 'unlinked') {
+    if (!st.ticket) return;
+    st.steps.push({ t: Date.now(), phase: 'ticket', label: `Ticket ${st.ticket.id} ${why}`, detail: '', ticket: ticketTag(st) });
+    st.ticket = null;
+  }
+  // Put an app on a ticket, taking it off any other ticket first
+  function assignApp(T, appId) {
+    em.tickets.forEach(o => { if (o !== T) o.apps = o.apps.filter(x => x !== appId); });
+    if (!T.apps.includes(appId)) T.apps.push(appId);
+    const st = em.states.find(s => s.app.id === appId);
+    if (st) { if (st.ticket && st.ticket.id !== T.id) clearAppTicket(st, 'moved to ' + T.id); setAppTicket(st, T); }
+  }
+  function unassignApp(T, appId) {
+    T.apps = T.apps.filter(x => x !== appId);
+    const st = em.states.find(s => s.app.id === appId);
+    if (st?.ticket?.id === T.id) clearAppTicket(st);
+  }
+
+  // What happened to one app under this ticket, read from the timeline steps tagged with the ticket
+  function appRunFor(st, T) {
+    if (st.ticket?.id === T.id && ACTIVE.includes(st.phase)) return { state: 'active', start: st.start, progress: emProgress(st) };
+    const tagged = st.steps.filter(s => s.ticket?.id === T.id && s.phase !== 'ticket');
+    const end = [...tagged].reverse().find(s => DONE.includes(s.phase));
+    if (end) {
+      const startStep = [...tagged].reverse().find(s => s.phase === 'activity' && s.t <= end.t);
+      return { state: end.phase, start: startStep?.t, end: end.t, label: end.label, detail: end.detail };
+    }
+    return { state: 'planned' };
+  }
+
+  // One status for the whole ticket
+  function ticketStatus(T) {
+    const runs = T.apps.map(id => em.states.find(s => s.app.id === id)).filter(Boolean).map(st => appRunFor(st, T));
+    if (!runs.length) return { key: 'empty', label: 'No apps yet', runs };
+    const n = k => runs.filter(r => r.state === k).length;
+    const bad = n('failed') + n('stalled');
+    if (bad) return { key: 'issue', label: `Issue: ${bad} app${bad > 1 ? 's' : ''} failed or stalled`, runs };
+    if (n('active')) return { key: 'active', label: `In progress (${n('deployed')}/${runs.length} done)`, runs };
+    if (n('deployed') === runs.length) return T.validated ? { key: 'validated', label: 'Deployed and validated', runs }
+                                                          : { key: 'deployed', label: 'Deployed, pending validation', runs };
+    if (n('deployed')) return { key: 'partial', label: `Partly deployed (${n('deployed')}/${runs.length})`, runs };
+    return { key: 'planned', label: 'Planned', runs };
+  }
+
+  const longDate = t => new Date(t).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  // Plain text that pastes cleanly into a Jira comment
+  function ticketUpdateText(T) {
+    const s = ticketStatus(T), L = [];
+    L.push(`${T.id}${T.title ? ` · ${T.title}` : ''}`);
+    L.push(`Deployment update · ${longDate(Date.now())} · ${T.env}`);
+    L.push(`Status: ${s.label}`, '');
+    T.apps.forEach((id, i) => {
+      const st = em.states.find(x => x.app.id === id), r = s.runs[i];
+      if (!st) return;
+      const SERVER_NAME = { tomcat: 'Tomcat', jboss: 'JBoss', websphere: 'WebSphere', other: 'Other' };
+      const a = st.app, who = `${a.name} (${SERVER_NAME[a.server] || a.server}${a.host ? ` · ${a.host}` : ''}${a.env ? ` · ${a.env}` : ''})`;
+      let what;
+      if (r.state === 'deployed') what = `Deployed ${r.start ? `${fmtClock(r.start)} to ` : 'at '}${fmtClock(r.end)}. ${r.detail}`;
+      else if (r.state === 'failed' || r.state === 'stalled') what = `${r.label} at ${fmtClock(r.end)}. ${r.detail}`;
+      else if (r.state === 'active') what = `In progress since ${fmtClock(r.start)} (${r.progress.label.replace(/<[^>]+>/g, '')})`;
+      else what = 'Not deployed yet';
+      L.push(`- ${who}: ${what}`);
+    });
+    if (T.notes) L.push('', `Notes: ${T.notes}`);
+    if (T.validated) L.push('', 'Deployment validated.');
+    L.push('', `Tracked with EMVT v${EMVT_VERSION}`);
+    return L.join('\n');
+  }
+
+  function renderTickets() {
+    const n = em.tickets.length;
+    document.getElementById('emTicketCount').textContent = n ? `(${n})` : '';
+    if (document.getElementById('emPaneTickets').hidden) return;
+    document.getElementById('tkDate').textContent = longDate(Date.now());
+    // Don't rebuild while someone is typing in a card
+    const list = document.getElementById('tkList'), f = document.activeElement;
+    if (f && list.contains(f) && /^(INPUT|SELECT|TEXTAREA)$/.test(f.tagName)) return;
+    list.innerHTML = em.tickets.map(T => {
+      const s = ticketStatus(T);
+      const others = em.states.filter(st => !T.apps.includes(st.app.id));
+      const apps = T.apps.map((id, i) => {
+        const st = em.states.find(x => x.app.id === id), r = s.runs[i];
+        if (!st) return '';
+        const ph = r.state === 'active' ? st.phase : r.state === 'planned' ? 'idle' : r.state;
+        const label = r.state === 'planned' ? 'Not deployed yet' : r.state === 'active' ? `${PHASE_LABEL[st.phase]} · ${r.progress.label}` : `${PHASE_LABEL[r.state]} ${fmtClock(r.end)}`;
+        return `<li><span class="ph ph--${ph}">${label}</span> <b>${esc(st.app.name)}</b>
+          <small>${esc(st.app.server)} · ${esc(st.app.env || '')}</small>
+          ${st.app.env && st.app.env !== T.env ? `<span class="tkt-env is-mismatch" title="App is ${esc(st.app.env)}, ticket is ${esc(T.env)}">${esc(st.app.env)}</span>` : ''}
+          <button type="button" class="tk-x" data-tk-unassign="${esc(T.id)}" data-app="${esc(id)}" title="Remove from this ticket">×</button></li>`;
+      }).join('');
+      return `<article class="tk-card tk--${s.key}" id="tk-${esc(T.id)}">
+        <header class="tk-head">
+          ${ticketChip({ id: T.id, url: T.url, env: T.env })}
+          <h3 class="tk-title">${esc(T.title || '(no title)')}</h3>
+          <span class="tk-status">${esc(s.label)}</span>
+        </header>
+        <div class="tk-body">
+          <div>
+            <ul class="tk-apps-list">${apps || '<li class="tk-empty">No apps on this ticket yet.</li>'}</ul>
+            ${others.length ? `<select class="tk-add-app" data-tk-assign="${esc(T.id)}" aria-label="Add an app to ${esc(T.id)}">
+              <option value="">+ Add app…</option>${others.map(st => `<option value="${esc(st.app.id)}">${esc(st.app.name)} (${esc(st.app.env || '')})</option>`).join('')}</select>` : ''}
+            <div class="field" style="margin-top:10px"><label for="tkn-${esc(T.id)}">Notes</label>
+              <textarea id="tkn-${esc(T.id)}" rows="2" data-tk-notes="${esc(T.id)}" placeholder="Included in the Jira update">${esc(T.notes)}</textarea></div>
+            <label class="check" style="margin-top:8px"><input type="checkbox" data-tk-validated="${esc(T.id)}" ${T.validated ? 'checked' : ''} ${s.key === 'deployed' || s.key === 'validated' ? '' : 'disabled'}>
+              <span><b>Deployment validated</b>${s.key === 'deployed' || s.key === 'validated' ? '' : ' (available once every app is deployed)'}</span></label>
+          </div>
+          <div class="tk-update">
+            <div class="tk-update__head"><span>Jira update</span>
+              <button type="button" class="btn" data-tk-copy="${esc(T.id)}">Copy</button></div>
+            <pre id="tku-${esc(T.id)}">${esc(ticketUpdateText(T))}</pre>
+          </div>
+        </div>
+        <footer class="tk-foot"><button type="button" class="btn" data-tk-remove="${esc(T.id)}">Remove ticket</button></footer>
+      </article>`;
+    }).join('') || '<div class="placeholder">No tickets for today yet. Add the Jira tickets you expect to work, then pick the apps each one covers.</div>';
+  }
+
+  // Tabs
+  function showEmTab(which) {
+    const tickets = which === 'tickets';
+    document.getElementById('emPaneWatch').hidden = tickets;
+    document.getElementById('emPaneTickets').hidden = !tickets;
+    document.getElementById('emTabWatch').setAttribute('aria-selected', String(!tickets));
+    document.getElementById('emTabTickets').setAttribute('aria-selected', String(tickets));
+    if (tickets) renderTickets(); else emRender();
+  }
+  document.getElementById('emTabWatch').addEventListener('click', () => showEmTab('watch'));
+  document.getElementById('emTabTickets').addEventListener('click', () => showEmTab('tickets'));
+
+  // Add-ticket form
+  const tkForm = document.getElementById('tkForm');
+  let tkUrlTouched = false;
+  const tkToggle = open => {
+    tkForm.hidden = !open;
+    document.getElementById('tkAddToggle').setAttribute('aria-expanded', String(open));
+    if (open) {
+      tkUrlTouched = false;
+      document.getElementById('tkApps').innerHTML = em.states.map(st => {
+        const owner = em.tickets.find(T => T.apps.includes(st.app.id));
+        return `<label class="check"><input type="checkbox" value="${esc(st.app.id)}">
+          <span>${esc(st.app.name)} <small>${esc(st.app.server)} · ${esc(st.app.env || '')}${owner ? ` · on ${esc(owner.id)}` : ''}</small></span></label>`;
+      }).join('') || '<span class="help">The watch list is empty.</span>';
+      document.getElementById('tkId').focus();
+    }
+  };
+  document.getElementById('tkAddToggle').addEventListener('click', () => tkToggle(tkForm.hidden));
+  document.getElementById('tkCancel').addEventListener('click', () => { tkForm.reset(); tkToggle(false); });
+  document.getElementById('tkId').addEventListener('input', e => {
+    if (!tkUrlTouched) document.getElementById('tkUrl').value = ticketUrlFor(e.target.value.trim());
+  });
+  document.getElementById('tkUrl').addEventListener('input', e => { tkUrlTouched = !!e.target.value.trim(); });
+
+  // Title from Jira needs the backend: browsers can't call Jira directly (sign-in and cross-site rules)
+  document.getElementById('tkFetch').addEventListener('click', async () => {
+    const id = document.getElementById('tkId').value.trim(), help = document.getElementById('tkFetchHelp');
+    if (!TICKET_ID_RE.test(id)) { help.textContent = 'Enter a valid ticket ID first.'; return; }
+    if (!API.on) { help.textContent = 'Title lookup runs through the EMVT backend with Jira access (not connected here). Type the title for now.'; return; }
+    help.textContent = 'Fetching…';
+    try {
+      const r = await api(`api/jira/issue?id=${encodeURIComponent(id)}`);
+      document.getElementById('tkTitle').value = r.summary || '';
+      help.textContent = r.summary ? 'Title fetched from Jira.' : 'Jira returned no title.';
+    } catch (err) { help.textContent = err.status === 404 ? 'Jira lookup is not set up on the backend yet. Type the title for now.' : `Could not fetch: ${err.message}`; }
+  });
+
+  tkForm.addEventListener('submit', e => {
+    e.preventDefault();
+    tkForm.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid'));
+    const id = document.getElementById('tkId').value.trim(), url = document.getElementById('tkUrl').value.trim();
+    let bad = false;
+    if (!TICKET_ID_RE.test(id)) { document.getElementById('tkId').closest('.field').classList.add('invalid'); bad = true; }
+    if (url && !SAFE_URL_RE.test(url)) { document.getElementById('tkUrl').closest('.field').classList.add('invalid'); bad = true; }
+    if (!bad && em.tickets.some(T => T.id.toLowerCase() === id.toLowerCase())) {
+      document.getElementById('tkFormStatus').textContent = `${id} is already on today's list.`; return;
+    }
+    if (bad) { document.getElementById('tkFormStatus').textContent = 'Fix the highlighted fields.'; return; }
+    const T = { id, title: document.getElementById('tkTitle').value.trim(), url, env: document.getElementById('tkEnv').value,
+      apps: [], validated: false, notes: document.getElementById('tkNotes').value.trim(), addedAt: Date.now() };
+    em.tickets.push(T);
+    [...document.querySelectorAll('#tkApps input:checked')].forEach(cb => assignApp(T, cb.value));
+    tkForm.reset(); document.getElementById('tkFormStatus').textContent = '';
+    tkToggle(false);
+    renderTickets();
+    const s = document.getElementById('tkStatus'); s.className = 'status ok'; s.textContent = `Added ${id}.`;
+  });
+
+  // Card actions
+  const tkList = document.getElementById('tkList');
+  const findT = id => em.tickets.find(T => T.id === id);
+  tkList.addEventListener('change', e => {
+    const t = e.target;
+    if (t.dataset.tkAssign && t.value) { assignApp(findT(t.dataset.tkAssign), t.value); t.blur(); }
+    else if (t.dataset.tkValidated) findT(t.dataset.tkValidated).validated = t.checked;
+    else return;
+    renderTickets();
+  });
+  tkList.addEventListener('input', e => {
+    const id = e.target.dataset.tkNotes;
+    if (!id) return;
+    findT(id).notes = e.target.value;
+    const pre = document.getElementById(`tku-${id}`);
+    if (pre) pre.textContent = ticketUpdateText(findT(id));
+  });
+  tkList.addEventListener('click', async e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.tkUnassign) { unassignApp(findT(b.dataset.tkUnassign), b.dataset.app); renderTickets(); }
+    else if (b.dataset.tkRemove) {
+      const T = findT(b.dataset.tkRemove);
+      [...T.apps].forEach(id => unassignApp(T, id));
+      em.tickets = em.tickets.filter(x => x !== T);
+      renderTickets();
+    } else if (b.dataset.tkCopy) {
+      const text = ticketUpdateText(findT(b.dataset.tkCopy));
+      try { await navigator.clipboard.writeText(text); }
+      catch {                                               // older browsers / blocked clipboard: select-and-copy fallback
+        const ta = Object.assign(document.createElement('textarea'), { value: text });
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500);
+    }
+  });
+
+  document.getElementById('emBody').addEventListener('click', e => {
+    if (e.target.closest('a.tkt')) { e.stopPropagation(); return; }            // open the ticket, don't toggle the row
+    const go = e.target.closest('[data-goto-ticket]');
+    if (go) {
+      showEmTab('tickets');
+      if (go.dataset.gotoTicket) document.getElementById(`tk-${go.dataset.gotoTicket}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      else tkToggle(true);
+      return;
+    }
+    if (e.target.closest('.em-ticket')) return;      // clicks inside the ticket box don't collapse the row
+    const sim = e.target.closest('[data-sim]'), acc = e.target.closest('[data-accept]'), row = e.target.closest('tr.em-row');
+    const rem = e.target.closest('[data-remove]');
+    const find = id => em.states.find(s => s.app.id === id);
+    if (sim) { simStart(find(sim.dataset.sim)); e.stopPropagation(); }
+    else if (acc) { const st = find(acc.dataset.accept); st.app.baselineBytes = st.totalBytes; st.baselineLearned = false; }
+    else if (rem && !rem.disabled) {
+      em.states = em.states.filter(s => s.app.id !== rem.dataset.remove);
+      em.secrets.delete(rem.dataset.remove);
+      emSetStatus(`Removed. Save the watch list to keep the change.`, true);
+    }
+    else if (row) { const st = find(row.dataset.id); st.expanded = !st.expanded; }
+    emRender();
+  });
+  document.getElementById('emActiveOnly').addEventListener('change', emRender);
+
+  document.getElementById('emFile').addEventListener('change', async e => {
+    const f = e.target.files[0], s = document.getElementById('emStatus');
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const list = JSON.parse(await f.text());
+      const errs = emValidate(list);
+      if (errs.length) { s.className = 'status'; s.textContent = `Not loaded: ${errs.slice(0, 3).join('; ')}${errs.length > 3 ? ` (+${errs.length - 3} more)` : ''}`; return; }
+      emLoad(list); emRender();
+      s.className = 'status ok'; s.textContent = `Loaded ${f.name}: ${list.apps.length} app${list.apps.length === 1 ? '' : 's'}.`;
+    } catch (err) { s.className = 'status'; s.textContent = `Not loaded: ${err.message}`; }
+  });
+
+  function emSetStatus(msg, ok) { const s = document.getElementById('emStatus'); s.className = ok ? 'status ok' : 'status'; s.textContent = msg; }
+
+  function downloadJson(obj, name) {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(obj, null, 2) + '\n'], { type: 'application/json' }));
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  document.getElementById('emSample').addEventListener('click', () => downloadJson(SAMPLE_WATCHLIST, 'emvt-watchlist.sample.json'));
+
+  // Save the current list. Only the fields below are written, so a password can never end up in the file.
+  const SAVED_FIELDS = ['id', 'name', 'env', 'server', 'host', 'port', 'user', 'auth', 'identityFile', 'path', 'artifact', 'baselineBytes'];
+  document.getElementById('emSave').addEventListener('click', () => {
+    const apps = em.states.map(s => Object.fromEntries(SAVED_FIELDS.filter(k => s.app[k] != null && s.app[k] !== '').map(k => [k, s.app[k]])));
+    const out = { watchlistVersion: 1, pollSeconds: em.list?.pollSeconds ?? 10, quietSeconds: em.list?.quietSeconds ?? 60 };
+    if (em.list?.ticketUrlTemplate) out.ticketUrlTemplate = em.list.ticketUrlTemplate;
+    downloadJson({ ...out, apps }, 'emvt-watchlist.json');
+    emSetStatus(`Saved ${apps.length} app${apps.length === 1 ? '' : 's'} (no passwords included).`, true);
+  });
+
+  // ---------- Ticket link format ----------
+  const tplPanel = document.getElementById('emTplPanel');
+  document.getElementById('emTplToggle').addEventListener('click', () => {
+    tplPanel.hidden = !tplPanel.hidden;
+    document.getElementById('emTplToggle').setAttribute('aria-expanded', String(!tplPanel.hidden));
+    if (!tplPanel.hidden) { const i = document.getElementById('emTpl'); i.value = em.list?.ticketUrlTemplate || ''; i.focus(); }
+  });
+  document.getElementById('emTplSave').addEventListener('click', () => {
+    const v = document.getElementById('emTpl').value.trim(), field = document.getElementById('emTpl').closest('.field');
+    if (v && !(SAFE_URL_RE.test(v) && v.includes('{id}'))) { field.classList.add('invalid'); return; }
+    field.classList.remove('invalid');
+    em.list = { ...(em.list || {}), ticketUrlTemplate: v || undefined };
+    tplPanel.hidden = true;
+    document.getElementById('emTplToggle').setAttribute('aria-expanded', 'false');
+    emSetStatus(v ? 'Ticket link format set. Save the watch list to keep it.' : 'Ticket link format cleared.', true);
+    emRender();
+  });
+
+  // ---------- Add watch folder ----------
+  // All digits and dots = must be a real IPv4 address (so 10.0.0.300 is rejected); otherwise a host name
+  const IPV4_RE = /^(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.(?:25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+  const HOSTNAME_RE = /^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$/;
+  const HOST_RE = { test: h => /^[\d.]+$/.test(h) ? IPV4_RE.test(h) : HOSTNAME_RE.test(h) };
+  const SERVER_HINT = {
+    tomcat: 'Watches the exploded app folder and its .war.',
+    jboss: 'Also reads deployment markers (.isdeploying, .deployed, .failed) in the deployments folder.',
+    websphere: 'Watches the app folder under installedApps and its .ear.',
+    other: 'Watches the folder for file changes and size.',
+  };
+  const addForm = document.getElementById('emAddForm');
+  const $ = id => document.getElementById(id);
+  const toggleAdd = open => {
+    addForm.hidden = !open;
+    $('emAddToggle').setAttribute('aria-expanded', String(open));
+    if (open) $('emName').focus();
+  };
+  $('emAddToggle').addEventListener('click', () => toggleAdd(addForm.hidden));
+  $('emAddCancel').addEventListener('click', () => { addForm.reset(); clearAddErrors(); toggleAdd(false); });
+  $('emServer').addEventListener('change', e => { $('emServerHint').textContent = SERVER_HINT[e.target.value]; });
+  addForm.addEventListener('change', e => {
+    if (e.target.name !== 'emAuth') return;
+    const pw = e.target.value === 'password';
+    $('emPassField').hidden = !pw; $('emKeyField').hidden = pw;
+  });
+  // Suggest the artifact: Tomcat app folder /webapps/x -> /webapps/x.war; a folder already named .ear/.war is its own artifact
+  $('emPath').addEventListener('change', e => {
+    const p = e.target.value.trim().replace(/\/+$/, ''), art = $('emArtifact');
+    if (art.value.trim() || !p.startsWith('/')) return;
+    if (/\.(ear|war)$/i.test(p)) art.value = p;
+    else if ($('emServer').value === 'tomcat') art.value = `${p}.war`;
+  });
+  function clearAddErrors() { addForm.querySelectorAll('.field.invalid').forEach(f => f.classList.remove('invalid')); $('emAddStatus').textContent = ''; }
+
+  addForm.addEventListener('submit', e => {
+    e.preventDefault();
+    clearAddErrors();
+    const v = id => $(id).value.trim();
+    const bad = id => { $(id).closest('.field').classList.add('invalid'); return true; };
+    const auth = addForm.querySelector('input[name="emAuth"]:checked').value;
+    let err = false;
+    if (!v('emName')) err = bad('emName');
+    if (!HOST_RE.test(v('emHost'))) err = bad('emHost');
+    if (v('emPort') && !(/^\d+$/.test(v('emPort')) && +v('emPort') >= 1 && +v('emPort') <= 65535)) err = bad('emPort');
+    if (!v('emUser')) err = bad('emUser');
+    if (auth === 'password' && !$('emPass').value) err = bad('emPass');
+    if (!v('emPath').startsWith('/')) err = bad('emPath');
+    if (v('emArtifact') && !v('emArtifact').startsWith('/')) err = bad('emArtifact');
+    if (v('emSize') && !(+v('emSize') > 0)) err = bad('emSize');
+    if (err) { $('emAddStatus').textContent = 'Fix the highlighted fields.'; return; }
+
+    // id from the name, made unique
+    const slug = v('emName').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'app';
+    let id = slug, n = 2;
+    while (em.states.some(s => s.app.id === id)) id = `${slug}-${n++}`;
+    const app = { id, name: v('emName'), env: v('emEnv'), server: $('emServer').value, host: v('emHost'),
+      port: v('emPort') ? +v('emPort') : 22, user: v('emUser'), auth, path: v('emPath').replace(/\/+$/, '') };
+    if (auth === 'key' && v('emKey')) app.identityFile = v('emKey');
+    if (v('emArtifact')) app.artifact = v('emArtifact');
+    if (v('emSize')) app.baselineBytes = Math.round(+v('emSize') * 1024 * 1024);
+    if (auth === 'password') em.secrets.set(id, $('emPass').value);
+
+    const st = emNewState(app);
+    st.expanded = true;
+    em.states.push(st);
+    addForm.reset(); $('emPassField').hidden = true; $('emKeyField').hidden = false;
+    $('emServerHint').textContent = SERVER_HINT.tomcat;
+    toggleAdd(false);
+    emRender();
+    emSetStatus(`Added "${app.name}". Save the watch list to keep it.`, true);
+  });
+
+  // Re-render when the EMVT tab opens
+  document.querySelector('[data-tool="emvt"]').addEventListener('click', emRender);
+
+  emLoad(SAMPLE_WATCHLIST);
+  setInterval(emTick, SIM_CFG.pollSeconds * 1000);
+  // Start two deployments so the screen shows activity right away
+  setTimeout(() => { simStart(em.states[0]); simStart(em.states[1]); }, 800);
+
+  showStep(1);
+
+  syncExpanded();
+</script>
+</body>
+</html>

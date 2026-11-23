@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b0c0e">
+<link rel="icon" href="data:,">
+<title>MIDI Lane</title>
+
+
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="../app-nameplate.css">
+<script src="../android-tools.js"></script>
+<script src="../web-back.js" defer></script>
+</head>
+<body>
+<div id="app">
+  <header class="bar">
+    <button id="focusExit" class="ib focus-only" aria-label="Exit full-screen lane" title="Exit full screen (F)"><svg viewBox="0 0 24 24"><path d="M8 4h2v6H4V8h4zm6 0h2v4h4v2h-6zM4 14h6v6H8v-4H4zm10 0h6v2h-4v4h-2z"/></svg></button>
+    <div class="brand"><h1 class="app-nameplate" aria-label="MIDI Lane"><img class="nameplate-wordmark" src="../app-nameplates/midi-lane.png" alt=""></h1><span class="ver" id="ver"></span></div>
+    <div class="transport">
+      <button id="play" class="play" aria-label="Play"><svg viewBox="0 0 24 24"><path id="playIcon" d="M7 4.5v15l12-7.5z"/></svg></button>
+      <button id="recBtn" class="ib recb" aria-label="Record" title="Record (R)"><span></span></button>
+      <button id="toStart" class="ib" aria-label="Back to start"><svg viewBox="0 0 24 24"><path d="M6 5h2.4v14H6zM19 5v14L9.5 12z"/></svg></button>
+      <div class="pos"><b id="pos">1.1</b><small>bar.beat</small></div>
+      <label class="field"><small>BPM</small><input id="bpm" type="number" min="30" max="300" step="1" inputmode="decimal"></label>
+      <label class="field"><small>Bars</small><input id="bars" type="number" min="1" max="64" step="1" inputmode="numeric"></label>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tabR" data-tab="rhythm">Rhythm Lane</button>
+      <button role="tab" id="tabK" data-tab="keys">Key Lane</button>
+    </div>
+    <div id="focusTools" class="focus-tools"></div>
+    <div class="tools">
+      <button id="undo" class="ib" aria-label="Undo"><svg viewBox="0 0 24 24"><path d="M9 7V3L3 9l6 6v-4h5a4 4 0 010 8h-3v2h3a6 6 0 000-12z"/></svg></button>
+      <button id="redo" class="ib" aria-label="Redo"><svg viewBox="0 0 24 24"><path d="M15 7V3l6 6-6 6v-4h-5a4 4 0 000 8h3v2h-3a6 6 0 010-12z"/></svg></button>
+      <button id="fileBtn" class="tb">File</button>
+      <button id="liveBtn" class="tb live-btn" title="Live MIDI routing (L)">Live</button>
+      <button id="midiBtn" class="tb"><i id="midiLed" class="led"></i>MIDI</button>
+      <button id="fsBtn" class="ib" aria-label="Full screen"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4z"/></svg></button>
+    </div>
+  </header>
+
+  <div class="work">
+    <main class="stage">
+      <div class="tabbar">
+        <div class="edit" id="edit">
+          <div class="seg" id="toolSeg"><button data-tool="draw">Draw</button><button data-tool="select">Select</button></div>
+          <select id="snap" class="snapsel" aria-label="Snap"></select>
+          <div class="qpair">
+            <button class="feat" id="quant" title="Quantize (Q)"><b>Quantize</b><small>snap to grid</small></button>
+            <button class="feat half" id="half" title="Half quantize (Shift+Q)"><b><span class="hq-long">Half</span><span class="hq-short">½</span> Quantize</b><small>halfway, every press</small></button>
+          </div>
+        </div>
+      </div>
+      <div class="lanes">
+        <button id="autoBtn" class="lane-auto on" aria-pressed="true" title="Auto: fit the view to the notes. Tap again to go back to your own zoom."><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4zm10 0h6v6h-2V6h-4zM4 14h2v4h4v2H4zm14 0h2v6h-6v-2h4zM9 9h6v6H9z"/></svg>Auto</button>
+        <canvas id="cvR" class="lane" aria-label="Rhythm Lane"></canvas>
+        <canvas id="cvK" class="lane" aria-label="Key Lane"></canvas>
+      </div>
+      <div class="notebar" id="notebar">
+        <label class="vel"><span>Vel <b id="velVal">100</b></span><input id="vel" type="range" min="1" max="127" value="100" aria-label="Velocity"></label>
+        <button class="tb" id="dup" title="Duplicate (Ctrl+D)">Dup</button>
+        <button class="tb" id="octDn" title="Octave down">−Oct</button>
+        <button class="tb" id="octUp" title="Octave up">+Oct</button>
+        <button class="tb" id="selAll" title="Select all (Ctrl+A)">All</button>
+        <button class="tb" id="shL" title="Shift one beat left ([)" aria-label="Shift one beat left">◀<span class="lbl"> Beat</span></button>
+        <button class="tb" id="shR" title="Shift one beat right (])" aria-label="Shift one beat right"><span class="lbl">Beat </span>▶</button>
+        <button class="tb danger" id="del" title="Delete (Del)">Delete</button>
+        <button class="tb danger" id="clear" title="Clear every note on this track">Clear</button>
+        <select id="rowAdd" class="snapsel" aria-label="Add a pitch row"></select>
+        <i class="nb-break" aria-hidden="true"></i>
+        <span class="zoom"><button class="ib sm" id="zOut" aria-label="Zoom out">−</button><button class="ib sm" id="zIn" aria-label="Zoom in">+</button></span>
+      </div>
+      <div class="status" id="status" role="status"></div>
+    </main>
+    <aside class="side">
+      <div class="side-head"><h2>Tracks</h2><span id="trkCount" class="note"></span>
+        <button class="tb" id="addKeys">+ Keys</button><button class="tb" id="addDrums">+ Drums</button></div>
+      <ol id="tracks" class="tracks"></ol>
+      <div id="rack"></div>
+    </aside>
+  </div>
+
+  <div class="sheet" id="fileSheet" hidden>
+    <div class="sheet-card" role="dialog" aria-label="File">
+      <div class="sheet-head"><h2>File</h2><button class="ib" data-close aria-label="Close">×</button></div>
+      <label class="field wide"><small>Project name</small><input id="projName" maxlength="60"></label>
+      <div class="grid2">
+        <button class="big" id="newBtn"><b>New project</b><small>Empty Drums + Keys. Undo brings this one back.</small></button>
+        <button class="big" id="demoBtn"><b>Load demo</b><small>A short drums + chords groove to test the sounds.</small></button>
+        <label class="big"><b>Open…</b><small>.mlane project, or a .mid to map onto tracks. Drop a file anywhere too.</small><input type="file" id="openInput" accept=".mlane,.json,.mid,.midi,audio/midi" hidden></label>
+        <button class="big" id="saveBtn"><b>Save project</b><small>.mlane: every track, note, sound and setting.</small></button>
+        <button class="big" id="midBtn"><b>Export MIDI</b><small>.mid type 1, one track per lane, drums on their channel.</small></button>
+        <button class="big" id="mp3Btn"><b>Export MP3</b><small>Bounce the song through the built-in sounds, 192 kbps.</small></button>
+      </div>
+      <p class="note" id="fileMsg"></p>
+      <p class="note about">MIDI Lane <b id="verAbout"></b> · by Jerm747 · Avionyx, Drumway, Black Box, 747 Drive</p>
+    </div>
+  </div>
+
+  <div class="sheet" id="midiSheet" hidden>
+    <div class="sheet-card" role="dialog" aria-label="MIDI setup">
+      <div class="sheet-head"><h2>MIDI setup</h2><button class="ib" data-close aria-label="Close">×</button></div>
+      <div class="row"><button class="tb accent" id="connect">Connect USB MIDI</button><select id="outSel" aria-label="MIDI output"></select></div>
+      <p class="note" id="midiMsg">Plug in a USB MIDI device (USB OTG on a phone), then Connect. Needs Chrome or Edge.</p>
+      <div class="row">
+        <button class="tg" id="sBuiltIn"><i></i>Built-in sounds</button>
+        <button class="tg" id="sMidiOut"><i></i>Send to MIDI out</button>
+        <button class="tb" id="panic">All notes off</button>
+      </div>
+      <button class="big" id="liveOpen"><b>Open Live routing</b><small>Route any input to any output (A→B, B→A…), test each machine and watch the messages go by.</small></button>
+      <p class="note">Each track sends on its own channel (set it in the track list). Tick Drum to put a track on channel 10. Turn off a track's Out switch to keep it on the built-in sound only.</p>
+    </div>
+  </div>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
