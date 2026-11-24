@@ -1,3 +1,27 @@
+// Session activity is a rack indicator, independent of the tools' save behavior.
+(() => {
+  const key = 'patchbay.activity:' + location.pathname.replace(/\/$/, '/index.html');
+  function mark(event) {
+    if (!event.isTrusted) return;
+    try { sessionStorage.setItem(key, '1'); } catch {}
+  }
+
+  document.addEventListener('input', event => {
+    if (event.target.matches('select, textarea, input:not([type=search]):not([type=file])')) mark(event);
+  }, true);
+  document.addEventListener('change', event => {
+    if (event.target.matches('select') ||
+        (event.target.matches('input[type=file]') && event.target.files.length)) mark(event);
+  }, true);
+  document.addEventListener('click', event => {
+    const edit = event.target.closest(
+      '#rec, #recBtn, #clear, #rowAdd, #addKeys, #addDrums, #quant, #mclear, #mreset, ' +
+      '#reset, #grid .cell, [data-e], button[aria-label^="Step "]'
+    );
+    if (edit) mark(event);
+  }, true);
+})();
+
 (() => {
   if (!window.RackMidi || !window.RackExports) return;
 

@@ -10,6 +10,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.webkit.*;
@@ -33,7 +37,11 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
         web = new WebView(this);
-        setContentView(web);
+        FrameLayout content = new FrameLayout(this);
+        content.addView(web, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        setContentView(content);
+        if (state == null) showLaunchArtwork(content);
         web.setBackgroundColor(0xff0b1118);
         WebSettings settings = web.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -105,6 +113,24 @@ public final class MainActivity extends Activity {
             }
         });
         if (state == null || web.restoreState(state) == null) web.loadUrl(HOME);
+    }
+
+    private void showLaunchArtwork(FrameLayout content) {
+        ImageView artwork = new ImageView(this);
+        try (java.io.InputStream image = getAssets().open("apps/patchbay-splash.webp")) {
+            artwork.setImageDrawable(android.graphics.drawable.Drawable.createFromStream(image, null));
+        } catch (IOException ex) {
+            return;
+        }
+        artwork.setContentDescription("Patch Bay — MIDI CC Module");
+        artwork.setBackgroundColor(0xff0b1118);
+        artwork.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        int bezel = Math.round(16 * getResources().getDisplayMetrics().density);
+        artwork.setPadding(bezel, bezel, bezel, bezel);
+        artwork.setClickable(true);
+        content.addView(artwork, new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+        artwork.postDelayed(() -> content.removeView(artwork), 750);
     }
 
     private static boolean local(Uri uri) {

@@ -1,4 +1,4 @@
-# Jerm 747 Patch Bay 0.1.0
+# Jerm 747 Patch Bay 0.1.2
 
 Patch Bay is an Android studio rack for MIDI Lane, Beat Room, MIDI Check, Rhythm Box, Vox Lane and Patch Play. All six tools launch from local assets. Beat Room 1.1.0 was bundled from the Jerm 747 Games deployment. Its standalone APK link opens in the browser.
 
@@ -10,7 +10,9 @@ The APK uses a test signing certificate. Build a release with your own keystore 
 
 ## Build from source
 
-Use a JDK with javac, Android SDK Platform 35, Android Build Tools 35.0.0, and zip. Set ANDROID_HOME, PATCH_BAY_KEYSTORE, and PATCH_BAY_KEY_ALIAS. Run ./build-apk.sh. The APK is written to build/PatchBay-0.1.0.apk. The script prompts for the keystore password unless PATCH_BAY_KEY_PASS is supplied.
+Use a JDK with javac, Android SDK Platform 35, Android Build Tools 35.0.0, and zip. Set ANDROID_HOME, PATCH_BAY_KEYSTORE, and PATCH_BAY_KEY_ALIAS. Run ./build-apk.sh. The APK is written to build/PatchBay-0.1.2.apk. The script prompts for the keystore password unless PATCH_BAY_KEY_PASS is supplied.
+
+Run ./build-apk.sh --unsigned to produce an aligned APK for signing elsewhere. Use the original certificate to upgrade an existing installation.
 
 The native shell is in java/. The launcher and app payloads are in assets/apps/. For a desktop preview of the rack, serve assets/ through a static HTTP server and open /apps/.
 
