@@ -1,0 +1,13 @@
+.beat-title h1{
+  width:min(100%,30rem);
+  aspect-ratio:460 / 59;
+  background:url(beat-room-header.webp) center / contain no-repeat;
+  color:transparent;
+  font-size:0;
+  margin:.65rem 0 1rem;
+  user-select:none;
+}
+.beat-title h1::selection{background:transparent}
+@media(forced-colors:active){
+  .beat-title h1{background:none;color:CanvasText;font-size:clamp(2rem,8vw,4rem);aspect-ratio:auto}
+}
