@@ -11,7 +11,9 @@
    LAYOUT: one slim toolbar, lane takes the rest, fix bar under it, settings in a slide-up sheet */
 :root{color-scheme:dark;--bg:light-dark(#f6f1ec,#141217);--panel:light-dark(#fff,#201c26);--ink:light-dark(#1f1824,#f3ebf1);--mute:light-dark(#6a5f70,#ab9eb0);--line:light-dark(#e2d8dc,#37303f);--lane:light-dark(#fcf9f6,#191620);--key:light-dark(#f2ebe7,#160f1a);--note:light-dark(#70479b,#c6a1ee);--trace:#1fa797;--rec:#e3303d}
 :root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
-*{box-sizing:border-box;min-width:0}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+button,label,.ib,canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+:focus:not(:focus-visible){outline:none}
 html,body{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,sans-serif;overflow:hidden}
 .app{display:flex;flex-direction:column;gap:6px;height:100vh;height:100dvh;max-width:1600px;margin:0 auto;padding:8px max(10px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
@@ -23,7 +25,9 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-
 .util{display:flex;gap:5px;margin-left:auto}
 .ib{font:600 14px/1 Inter,sans-serif;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:9px;height:38px;min-width:38px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;white-space:nowrap;flex:none;position:relative}
 .ib svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.ib:focus-visible,select:focus-visible,input:focus-visible,.ib:focus-within{outline:3px solid var(--trace);outline-offset:1px}
+.ib:focus-visible,select:focus-visible,input:focus-visible,.ib:has(input:focus-visible){outline:3px solid var(--trace);outline-offset:1px}
+.rec.arming{opacity:.7}
+.clr{color:var(--rec)}
 .ib:disabled{opacity:.4}
 .rec{background:var(--rec);color:#fff;border-color:transparent}
 .rec.on{animation:pulse 1s infinite}
@@ -58,18 +62,20 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-
 .row .ib{flex:1}
 .small{font-size:12px;color:var(--mute);margin-top:3px;line-height:1.35}
 .note{font-size:13px;color:var(--mute);max-width:1200px;margin:10px auto 0}
-body.focus .status,body.focus h1{display:none}
-@media(max-width:640px){.tools{order:3;flex-basis:100%}.edit .lbl{display:none}.edit .ib{flex:1 0 38px;padding:0 6px}.hide-s{display:none}}
-</style><link rel="stylesheet" href="./app-nameplate.css"><script src="./android-tools.js"></script>
+body.focus .status,body.focus h1,body.focus .pb-up{display:none}
+@media(max-width:400px){.top .app-nameplate{width:140px}.tools{gap:4px}.tools .gl{display:none}.tools .ib{padding:0 6px;font-size:12px;min-width:32px}.util .ib{padding:0 8px}}
+@media(max-width:640px){.tools{order:3;flex-basis:100%}.tools .ib{flex:1 0 auto;padding:0 7px;font-size:13px;gap:4px}.tools .file svg{display:none}.tools .clr svg{width:14px;height:14px}.edit .lbl{display:none}.edit .ib{flex:1 0 38px;padding:0 6px}.hide-s{display:none}}
+</style><link rel="stylesheet" href="./app-nameplate.css"><script src="./android-tools.js"></script><script src="./tool-nav.js" defer></script>
 </head><body><div class="app" id="app">
 <div class="top">
  <h1 class="app-nameplate" aria-label="Vox Lane"><img class="nameplate-wordmark" src="./app-nameplates/vox-lane.png" alt=""></h1>
  <div class="tools">
   <button id="rec" class="ib rec" title="Record">● Rec</button>
   <label class="ib file" title="Load a voice memo"><svg viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>Memo<input type="file" id="file" accept="audio/*,video/*"></label>
-  <button id="play" class="ib" title="Play the MIDI line">▶ MIDI</button>
-  <button id="playTake" class="ib" title="Play your recording">▶ Take</button>
+  <button id="play" class="ib" title="Play the MIDI line"><span class="gl">▶ </span>MIDI</button>
+  <button id="playTake" class="ib" title="Play your recording"><span class="gl">▶ </span>Take</button>
   <button id="stop" class="ib" title="Stop" aria-label="Stop">■</button>
+  <button id="clear" class="ib clr" title="Clear the lane and start fresh"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>Clear</button>
  </div>
  <div class="util">
   <button id="export" class="ib primary" title="Export .mid"><svg viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M5 20h14"/></svg>.mid</button>
@@ -107,7 +113,7 @@ body.focus .status,body.focus h1{display:none}
 </div>
 <script>
 // ===== Vox Lane analysis core (pure functions, no DOM) =====
-const SR = 16000, HOP = 160, WIN = 512, TAUMAX = 240, TAUMIN = 14;
+const SR = 16000, HOP = 160, WIN = 512, TAUMAX = 240, TAUMIN = 8; // 66 Hz to 2 kHz
 const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const SCALES = { major: [0,2,4,5,7,9,11], minor: [0,2,3,5,7,8,10] };
 const noteName = m => NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
@@ -140,7 +146,7 @@ function yinFrames(x) {
   // voicing gate relative to the loudest part of the take
   let mx = 0; for (const fr of out) if (fr.rms > mx) mx = fr.rms;
   const gate = Math.max(0.006, mx * 0.07);
-  for (const fr of out) fr.voiced = fr.rms > gate && fr.ap < 0.3 && fr.f0 > 65 && fr.f0 < 1150;
+  for (const fr of out) fr.voiced = fr.rms > gate && fr.ap < 0.3 && fr.f0 > 65 && fr.f0 < 1950;
   // octave-jump repair + 5-frame median smoothing on voiced frames
   const raw = out.map(fr => fr.m);
   for (let i = 0; i < n; i++) {
@@ -172,7 +178,7 @@ function segment(fr) {
   const start = i => ({ idx: [i], peak: fr[i].rms, dipped: false });
   for (let i = 0; i < fr.length; i++) {
     const v = fr[i];
-    if (!v.voiced) { if (cur && ++gap > 2) { close(cur); cur = null; dev = []; } continue; }
+    if (!v.voiced) { if (cur) { cur.dipped = true; if (++gap > 2) { close(cur); cur = null; dev = []; } } continue; }
     gap = 0;
     if (!cur) { cur = start(i); continue; }
     // re-attack on the same pitch ("da-da-da"): energy dips then comes back
@@ -391,18 +397,28 @@ function labels() {
 
 // ---- analysis ----
 async function to16k(buf) {
-  const len = Math.ceil(buf.duration * SR);
-  const oc = new OfflineAudioContext(1, len, SR), src = oc.createBufferSource();
-  src.buffer = buf; src.connect(oc.destination); src.start();
-  return (await oc.startRendering()).getChannelData(0);
+  try {
+    const len = Math.ceil(buf.duration * SR);
+    const oc = new OfflineAudioContext(1, len, SR), src = oc.createBufferSource();
+    src.buffer = buf; src.connect(oc.destination); src.start();
+    return (await oc.startRendering()).getChannelData(0);
+  } catch (e) {   // plain box-filter resample if the offline renderer is unavailable
+    const d = buf.getChannelData(0), k = buf.sampleRate / SR, n = Math.floor(d.length / k), out = new Float32Array(n);
+    for (let i = 0; i < n; i++) { const a = Math.floor(i * k), b = Math.max(a + 1, Math.floor((i + 1) * k)); let t = 0; for (let j = a; j < b; j++) t += d[j] || 0; out[i] = t / (b - a); }
+    return out;
+  }
 }
 function analyze(x, info) {
   say('Listening for notes…');
   setTimeout(() => {
-    const frames = yinFrames(x), raw = segment(frames);
-    take = { ...info, x, frames, raw };
-    shiftQ = 0; undoStack = []; rebuild();
-    say(raw.length ? `Found ${notes.length} notes. Tap one to fix it, then export.` : 'No clear notes found. Try singing louder, closer, or on "da" or "doo".');
+    try {
+      const frames = yinFrames(x), raw = segment(frames);
+      take = { ...info, x, frames, raw };
+      shiftQ = 0; undoStack = []; rebuild();
+      say(notes.length ? `Found ${notes.length} notes. Tap one to fix it, then export.`
+        : raw.length ? 'Heard you, but nothing landed inside the bars (stopped during the count-in?). Tap Rec to go again.'
+        : 'No clear notes found. Try singing louder, closer, or on "da" or "doo".');
+    } catch (e) { say(`Something went wrong reading the notes (${e.message}). Tap Rec to try again.`); }
   }, 30);
 }
 function rebuild() {
@@ -544,6 +560,7 @@ const blip = m => { ensureCtx(); voice(m, ctx.currentTime + .01, .25, 90); };
 function stopAll() { playing.forEach(p => { try { p.stop(); } catch (e) {} }); playing = []; playKind = ''; cancelAnimationFrame(raf); draw(); }
 function animate() { draw(); if (playKind) raf = requestAnimationFrame(animate); }
 $('play').addEventListener('click', () => {
+  if (rec || arming) return say('Stop the recording first.');
   if (!notes.length) return say('No notes yet.');
   stopAll(); ensureCtx(); const s = S(), M = meter(s.sig, s.bpm), t0 = ctx.currentTime + .15;
   notes.forEach(n => voice(n.m, t0 + n.s / 480 * M.qSec, n.d / 480 * M.qSec, n.v));
@@ -552,6 +569,7 @@ $('play').addEventListener('click', () => {
   setTimeout(() => { if (playKind === 'midi') stopAll(); }, (s.bars * M.ticksPerBar / 480 * M.qSec + .6) * 1000);
 });
 $('playTake').addEventListener('click', () => {
+  if (rec || arming) return say('Stop the recording first.');
   if (!take) return say('No take yet.');
   stopAll(); ensureCtx();
   if (!take.buf) { take.buf = ctx.createBuffer(1, take.x.length, SR); take.buf.getChannelData(0).set(take.x); }
@@ -565,49 +583,124 @@ $('playTake').addEventListener('click', () => {
 $('stop').addEventListener('click', () => { if (rec) stopRec(); stopAll(); });
 
 // ---- recording from the mic ----
-let rec = null;
-$('rec').addEventListener('click', async () => {
+// Hardened for the Android app: instant feedback on tap, a fresh audio engine if the old one stalled,
+// a timeout on the mic request, a no-sound watchdog, and every failure reported in the status line.
+let rec = null, arming = false;
+const recBtn = $('rec');
+const recUI = mode => {
+  recBtn.classList.toggle('on', mode === 'on'); recBtn.classList.toggle('arming', mode === 'arming');
+  recBtn.textContent = mode === 'on' ? '■ Stop' : mode === 'arming' ? '… Mic' : '● Rec';
+};
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const fail = (name, msg) => Object.assign(new Error(msg || name), { name });
+async function healthyCtx() {
+  ensureCtx();
+  try { await Promise.race([ctx.resume(), wait(1500)]); } catch (e) {}
+  const t = ctx.currentTime; await wait(120);
+  if (ctx.state !== 'running' || ctx.currentTime === t) {   // stalled after the last mic session: start over
+    try { ctx.close(); } catch (e) {}
+    ctx = null; ensureCtx();
+    try { await Promise.race([ctx.resume(), wait(1500)]); } catch (e) {}
+  }
+  return ctx.state === 'running';
+}
+function getMic() {
+  let late = false;
+  const ask = navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  ask.then(st => { if (late) st.getTracks().forEach(t => t.stop()); }, () => {});
+  return Promise.race([ask, wait(12000).then(() => { late = true; throw fail('TimeoutError'); })]);
+}
+const micMsg = e => ({
+  NotAllowedError: 'Mic permission is off. Allow the microphone for Patch Bay (or this site), or load a voice memo.',
+  SecurityError: 'The mic is blocked on this page. Load a voice memo, or open Vox Lane from your own site.',
+  NotFoundError: 'No microphone found. Load a voice memo instead.',
+  NotReadableError: 'The mic is busy in another app. Close that app and tap Rec again.',
+  TimeoutError: 'The mic did not answer. Tap Rec again, or reopen Vox Lane.',
+  AudioError: 'The phone paused audio. Tap Rec again.',
+  NotSupportedError: 'Recording is not available here. Load a voice memo instead.'
+})[e && e.name] || `Could not start the mic (${e && (e.name || e.message)}). Tap Rec again.`;
+
+recBtn.addEventListener('click', async () => {
+  if (arming) return;
   if (rec) return stopRec();
-  stopAll(); ensureCtx();
-  let stream;
-  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
-  catch (e) { return say('The microphone is blocked here. Record a voice memo on your phone and tap Load voice memo, or open this page from your own site.'); }
+  stopAll(); arming = true; recUI('arming'); say('Opening the mic…');
+  let stream = null;
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw fail('NotSupportedError');
+    if (!(await healthyCtx())) throw fail('AudioError');
+    stream = await getMic();
+    const track = stream.getAudioTracks()[0];
+    if (!track || track.readyState !== 'live') throw fail('NotReadableError');
+    startRec(stream);
+  } catch (e) {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    recUI('off'); say(micMsg(e));
+  } finally { arming = false; }
+});
+function startRec(stream) {
   const s = S(), M = meter(s.sig, s.bpm), src = ctx.createMediaStreamSource(stream), proc = ctx.createScriptProcessor(4096, 1, 1), mute = ctx.createGain();
-  mute.gain.value = 0; rec = { stream, src, proc, mute, chunks: [], start: null, sr: ctx.sampleRate, timers: [] };
+  mute.gain.value = 0;
+  const r = rec = { stream, src, proc, mute, chunks: [], start: null, sr: ctx.sampleRate, timers: [] };
   proc.onaudioprocess = e => {
+    if (rec !== r) return;
     const d = e.inputBuffer.getChannelData(0);
-    if (rec.start === null) rec.start = (e.playbackTime || ctx.currentTime) - d.length / ctx.sampleRate;
-    rec.chunks.push(new Float32Array(d));
+    if (r.start === null) r.start = (e.playbackTime || ctx.currentTime) - d.length / ctx.sampleRate;
+    r.chunks.push(new Float32Array(d));
     let p = 0; for (let i = 0; i < d.length; i += 16) p = Math.max(p, Math.abs(d[i])); $('meter').style.width = Math.min(100, p * 140) + '%';
   };
   src.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
-  $('rec').classList.add('on'); $('rec').textContent = '■ Stop';
-  if (s.start === 'voice') { rec.downbeat = null; say('Recording. Count 1-2-3-4 at your tempo, then sing. Tap Stop when done.'); return; }
+  stream.getAudioTracks()[0].addEventListener('ended', () => { if (rec === r) { say('The mic was taken by another app.'); stopRec(); } });
+  recUI('on');
+  r.timers.push(setTimeout(() => { if (rec === r && !r.chunks.length) cancelRec('The mic opened but sent no sound. Tap Rec again.'); }, 2500));
+  if (s.start === 'voice') { say('Recording. Count 1-2-3-4 at your tempo, then sing. Tap Stop when done.'); return; }
   const t0 = ctx.currentTime + .4, cin = M.clicksPerBar, all = cin + s.bars * M.clicksPerBar;
   for (let i = 0; i < all; i++) {
     click(t0 + i * M.clickSec, i % M.clicksPerBar === 0);
     const lbl = i < cin ? String(i + 1) : '';
-    rec.timers.push(setTimeout(() => { $('big').style.display = lbl ? 'grid' : 'none'; $('big').textContent = lbl; if (!lbl) say('Sing now.'); }, (t0 + i * M.clickSec - ctx.currentTime) * 1000));
+    r.timers.push(setTimeout(() => { if (rec !== r) return; $('big').style.display = lbl ? 'grid' : 'none'; $('big').textContent = lbl; if (!lbl) say('Sing now.'); }, (t0 + i * M.clickSec - ctx.currentTime) * 1000));
   }
-  rec.downbeatCtx = t0 + cin * M.clickSec;
-  rec.timers.push(setTimeout(stopRec, (rec.downbeatCtx + s.bars * M.ticksPerBar / 480 * M.qSec + .5 - ctx.currentTime) * 1000));
+  r.downbeatCtx = t0 + cin * M.clickSec;
+  r.timers.push(setTimeout(() => { if (rec === r) stopRec(); }, (r.downbeatCtx + s.bars * M.ticksPerBar / 480 * M.qSec + .5 - ctx.currentTime) * 1000));
   say('Count-in…');
-});
-async function stopRec() {
-  const r = rec; if (!r) return; rec = null;
-  r.timers.forEach(clearTimeout); $('big').style.display = 'none'; $('meter').style.width = '0';
-  r.src.disconnect(); r.proc.disconnect(); r.mute.disconnect(); r.stream.getTracks().forEach(t => t.stop());
-  playing.forEach(p => { try { p.stop(); } catch (e) {} }); playing = [];
-  $('rec').classList.remove('on'); $('rec').textContent = '● Rec';
-  const n = r.chunks.reduce((a, c) => a + c.length, 0); if (n < r.sr * .5) return say('That take was too short.');
-  const buf = ctx.createBuffer(1, n, r.sr), d = buf.getChannelData(0); let o = 0; r.chunks.forEach(c => { d.set(c, o); o += c.length; });
-  const x = await to16k(buf);
-  analyze(x, { name: 'Mic take ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), source: 'mic', downbeat: r.downbeatCtx != null ? r.downbeatCtx - r.start : null });
 }
+function teardown(r) {
+  r.timers.forEach(clearTimeout); $('big').style.display = 'none'; $('meter').style.width = '0';
+  r.proc.onaudioprocess = null;
+  try { r.src.disconnect(); r.proc.disconnect(); r.mute.disconnect(); } catch (e) {}
+  r.stream.getTracks().forEach(t => t.stop());
+  playing.forEach(p => { try { p.stop(); } catch (e) {} }); playing = [];
+  recUI('off');
+}
+function cancelRec(msg) { const r = rec; if (!r) return; rec = null; teardown(r); if (msg) say(msg); }
+async function stopRec() {
+  const r = rec; if (!r) return; rec = null; teardown(r);
+  const n = r.chunks.reduce((a, c) => a + c.length, 0); if (n < r.sr * .5) return say('That take was too short. Tap Rec and sing a little longer.');
+  say('Listening for notes…');
+  try {
+    const buf = new AudioBuffer({ length: n, numberOfChannels: 1, sampleRate: r.sr }), d = buf.getChannelData(0); let o = 0; r.chunks.forEach(c => { d.set(c, o); o += c.length; });
+    const x = await to16k(buf);
+    analyze(x, { name: 'Mic take ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }), source: 'mic', downbeat: r.downbeatCtx != null ? r.downbeatCtx - r.start : null });
+  } catch (e) { say(`Could not read that take (${e.name || e.message}). Tap Rec to try again.`); }
+}
+// phone locked, app switched or screen off mid-take: finish cleanly, wake audio on return
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (rec) stopRec(); stopAll(); }
+  else if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+});
+
+// ---- clear: start fresh ----
+$('clear').addEventListener('click', () => {
+  if (rec) cancelRec();
+  stopAll();
+  if (notes.length) undoStack.push(JSON.stringify(notes));
+  take = null; notes = []; sel = -1; keyInfo = null; shiftQ = 0;
+  $('keyHint').textContent = ''; selLabel(); draw();
+  say('Lane cleared. Tap Rec or load a memo to start fresh. Undo brings the notes back.');
+});
 
 // ---- loading a voice memo ----
 $('file').addEventListener('change', async e => {
-  const f = e.target.files[0]; if (!f) return; ensureCtx(); stopAll(); say('Decoding ' + f.name + '…');
+  const f = e.target.files[0]; if (!f) return; if (rec) cancelRec(); ensureCtx(); stopAll(); say('Decoding ' + f.name + '…');
   try { const buf = await ctx.decodeAudioData(await f.arrayBuffer()); const x = await to16k(buf); analyze(x, { name: f.name.replace(/\.[^.]+$/, ''), source: 'file', downbeat: null }); }
   catch (err) { say('Could not read that file. Try an .m4a, .mp3 or .wav voice memo.'); }
   e.target.value = '';
