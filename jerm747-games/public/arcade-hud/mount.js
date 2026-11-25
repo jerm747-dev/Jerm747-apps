@@ -145,6 +145,75 @@ window.Jerm747HUD=(()=>{
       else launcher.focus({preventScroll:true});
       options.onAction?.(m.action,{context,gameId,command:m.command});
     }
+    /* HUD clearance: keep each game's own buttons (pause, camera, sound…) out from under the HUD icon,
+       wherever the player parks it. Every same-origin game frame gets CSS variables
+       (--j747-hud-top/right/bottom/left = px to keep clear on that side, plus data-j747-hud="top-right" etc.).
+       Games that lay themselves out with those set data-j747-hud-aware on <html>; for every other game the
+       control cluster under the icon is nudged just clear of it with the CSS translate property, and put back
+       when the icon moves away. Opt an element out with data-j747-hud-ignore. */
+    const CONTROLS='button,a[href],[role="button"],input,select,summary,[data-k]';
+    function clearIn(doc,win,box,hud){
+      const root=doc.documentElement;if(!root||!win)return;
+      const vw=win.innerWidth||box.width,vh=win.innerHeight||box.height;
+      const sx=box.width/vw||1,sy=box.height/vh||1,gap=6;
+      const r={left:(hud.left-box.left)/sx-gap,top:(hud.top-box.top)/sy-gap,right:(hud.right-box.left)/sx+gap,bottom:(hud.bottom-box.top)/sy+gap};
+      const inside=!launcher.hidden&&hud.width>0&&r.right>0&&r.left<vw&&r.bottom>0&&r.top<vh;
+      const cx=(r.left+r.right)/2,cy=(r.top+r.bottom)/2,px=n=>Math.max(0,Math.round(n))+'px';
+      root.style.setProperty('--j747-hud-top',inside&&cy<vh/2?px(r.bottom):'0px');
+      root.style.setProperty('--j747-hud-bottom',inside&&cy>=vh/2?px(vh-r.top):'0px');
+      root.style.setProperty('--j747-hud-left',inside&&cx<vw/2?px(r.right):'0px');
+      root.style.setProperty('--j747-hud-right',inside&&cx>=vw/2?px(vw-r.left):'0px');
+      root.dataset.j747Hud=inside?(cy<vh/2?'top':'bottom')+'-'+(cx<vw/2?'left':'right'):'off';
+      const moved=new Set(doc.querySelectorAll('[data-j747-nudge]'));
+      const offset=el=>({x:+el.dataset.j747Dx||0,y:+el.dataset.j747Dy||0});
+      const restore=el=>{el.style.translate=el.dataset.j747Nudge==='-'?'':el.dataset.j747Nudge;delete el.dataset.j747Nudge;delete el.dataset.j747Dx;delete el.dataset.j747Dy};
+      if(!inside||root.hasAttribute('data-j747-hud-aware')){moved.forEach(restore);return}
+      const groups=new Map();
+      for(const el of doc.querySelectorAll(CONTROLS)){
+        if(el===launcher||layer.contains(el)||el.closest('[data-j747-hud-ignore],dialog:not([open]),[hidden]')||!el.getClientRects().length)continue;
+        // Find the floating cluster the control belongs to (a fixed/absolute/sticky box).
+        let cluster=null,child=el;
+        for(let n=el;n&&n!==doc.body&&n!==root;child=n,n=n.parentElement){
+          const pos=win.getComputedStyle(n).position;
+          if(pos==='fixed'||pos==='absolute'||pos==='sticky'){cluster=n;break}
+        }
+        if(!cluster)continue;
+        const cb=cluster.getBoundingClientRect();
+        // A wide bar (title strip, HUD row): move only the group of controls under the icon.
+        if(cb.width>vw*.5&&child!==el&&child.parentElement===cluster)cluster=child;
+        else if(cb.width>vw*.5&&child===el)cluster=el;
+        const o=offset(cluster),b=cluster.getBoundingClientRect();
+        const base={left:b.left-o.x,right:b.right-o.x,top:b.top-o.y,bottom:b.bottom-o.y};
+        if((base.right-base.left)*(base.bottom-base.top)>vw*vh*.4)continue; // whole-screen panels stay put
+        const e=el.getBoundingClientRect(),eb={left:e.left-o.x,right:e.right-o.x,top:e.top-o.y,bottom:e.bottom-o.y};
+        if(eb.right<=r.left||eb.left>=r.right||eb.bottom<=r.top||eb.top>=r.bottom)continue;
+        groups.set(cluster,base);
+      }
+      for(const [el,g] of groups){
+        const options=[
+          [r.left-g.right,0,g.left+(r.left-g.right)>=2],
+          [r.right-g.left,0,g.right+(r.right-g.left)<=vw-2],
+          [0,r.bottom-g.top,g.bottom+(r.bottom-g.top)<=vh-2],
+          [0,r.top-g.bottom,g.top+(r.top-g.bottom)>=2]
+        ].filter(o=>o[2]).sort((a,b)=>Math.abs(a[0]+a[1])-Math.abs(b[0]+b[1]));
+        if(!options.length)continue;
+        const [dx,dy]=options[0];
+        if(!el.dataset.j747Nudge)el.dataset.j747Nudge=el.style.translate||'-';
+        el.dataset.j747Dx=Math.round(dx);el.dataset.j747Dy=Math.round(dy);
+        el.style.translate=Math.round(dx)+'px '+Math.round(dy)+'px';
+        moved.delete(el);
+      }
+      moved.forEach(restore);
+    }
+    function clearance(){
+      if(destroyed||launcher.classList.contains('is-moving'))return;
+      const hud=launcher.getBoundingClientRect();
+      const frames=[...document.querySelectorAll('iframe')].filter(f=>f!==frame&&f.offsetWidth>80&&f.getClientRects().length);
+      for(const f of frames){try{const d=f.contentDocument;if(d?.documentElement)clearIn(d,f.contentWindow,f.getBoundingClientRect(),hud)}catch{/* other origin */}}
+      if(!frames.length&&context==='game')clearIn(document,window,{left:0,top:0,width:innerWidth,height:innerHeight},hud);
+    }
+    const clearTimer=setInterval(clearance,600);
+    window.addEventListener('resize',clearance);
     launcher.addEventListener('click',onLauncher);
     options.cabinetButton?.addEventListener('click',onCabinet);
     window.addEventListener('message',receive);document.addEventListener('fullscreenchange',fullState);
@@ -159,7 +228,7 @@ window.Jerm747HUD=(()=>{
       },
       get isOpen(){return isOpen||!!queuedPanel;},
       destroy(){
-        destroyed=true;cancelDrag();window.removeEventListener('blur',cancelDrag);unblock();surface.classList.remove('j747-cabinet-positioned');window.removeEventListener('message',receive);document.removeEventListener('fullscreenchange',fullState);
+        destroyed=true;clearInterval(clearTimer);window.removeEventListener('resize',clearance);cancelDrag();window.removeEventListener('blur',cancelDrag);unblock();surface.classList.remove('j747-cabinet-positioned');window.removeEventListener('message',receive);document.removeEventListener('fullscreenchange',fullState);
         options.cabinetButton?.removeEventListener('click',onCabinet);layer.remove();launcher.remove();
       }
     };
