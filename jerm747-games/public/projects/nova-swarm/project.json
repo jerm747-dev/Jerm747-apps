@@ -1,0 +1,18 @@
+{
+  "title": "Nova Swarm A.R.C.",
+  "tagline": "Follow the stars. Mine the ore. Get your crew to G-47.",
+  "description": "A 3D Galaga-style shooter with a crew comedy. Story follows Officer Vale and Captain Rourke down the Ash Run Corridor. Swarm is endless formation waves of Hive Regents, Crimson Monarchs, Stripe Drones and the Ash Wasp. Flight Run is a straight corridor flyer through rocks and ore. Dogfight is the ore-hauler escort sortie with cockpit and chase cameras.",
+  "kind": "game",
+  "status": "in_progress",
+  "version": "0.2.0",
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "mouse",
+    "touch"
+  ],
+  "credit": "Game by Jerm747. Sky images: NASA, ESA, CSA, STScI.",
+  "accent": "#F2A35B",
+  "order": 6,
+  "new": true
+}
