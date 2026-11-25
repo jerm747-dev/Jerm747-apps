@@ -15,6 +15,9 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,sy
 .ib.on{background:var(--note);color:var(--bg);border-color:transparent}
 .rec{background:var(--rec);color:#fff;border-color:transparent}
 .rec.on{background:#fff;color:var(--rec)}
+.rec.arming{opacity:.7}
+.notice{position:absolute;left:10px;right:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;background:var(--panel);border:1px solid color-mix(in srgb,var(--note) 50%,var(--line));border-radius:10px;padding:10px 12px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.notice[hidden]{display:none}.notice b{flex:1 1 100%;font-size:14px}.notice span{flex:1 1 200px;color:var(--mute)}.notice a{color:var(--note);word-break:break-all}
 .tools{display:flex;gap:6px;flex-wrap:wrap}
 .clr{color:#ff8a92}
 .tools .sp{flex:1}
@@ -80,7 +83,8 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,sy
 </div>
 
 <div class="status" id="status">Put headphones on and tap Rec. You get one bar of clicks, then sing or clap the rhythm.</div>
-<div class="fig" id="fig"><canvas id="lane"></canvas><div class="count" id="count"></div></div>
+<div class="fig" id="fig"><canvas id="lane"></canvas><div class="count" id="count"></div>
+ <div class="notice" id="notice" hidden><b>Recording needs the mic, and this preview blocks it.</b><span>Open Rhythm Lab on your site to record: <a href="https://jerm747.dev/apps/rhythm-lab.html" target="_blank" rel="noopener">jerm747.dev/apps/rhythm-lab.html</a>. Or tap ⤒ Load to use a recording.</span><button class="ib" id="noticeX">OK</button></div></div>
 <div class="chips" id="chips"></div>
 <div class="scat" title="Where each hit landed against the grid: left of center is early, right is late"><canvas id="scat"></canvas></div>
 
@@ -264,15 +268,33 @@ function labels() {
 
 // ---- audio ----
 let ctx = null, out = null, noiseBuf = null;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const fail = (name, msg) => Object.assign(new Error(msg || name), { name });
+function freshOut() { out = ctx.createGain(); out.gain.value = 0.9; out.connect(ctx.destination); }
 function ensureCtx() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
-    out = ctx.createGain(); out.gain.value = 0.9; out.connect(ctx.destination);
+    freshOut();
     noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
-  if (ctx.state !== 'running') ctx.resume();
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
   return ctx;
+}
+// Phones can leave the audio engine "running" with a frozen clock after a mic session or a trip
+// to the background. Check the clock really moves; if not, throw the context away and start over.
+async function healthyCtx() {
+  ensureCtx();
+  try { await Promise.race([ctx.resume(), wait(1500)]); } catch (e) {}
+  const t = ctx.currentTime; await wait(120);
+  if (ctx.state !== 'running' || ctx.currentTime === t) {
+    try { ctx.close(); } catch (e) {}
+    ctx = null; ensureCtx();
+    try { await Promise.race([ctx.resume(), wait(1500)]); } catch (e) {}
+    const t2 = ctx.currentTime; await wait(120);
+    if (ctx.currentTime === t2) return false;
+  }
+  return ctx.state === 'running';
 }
 function tick(t, accent, freq) {
   const o = ctx.createOscillator(), g = ctx.createGain();
@@ -309,9 +331,12 @@ const CAP_SRC = `class RLCap extends AudioWorkletProcessor{constructor(){super()
 process(inp){if(!this.on)return false;const c=inp[0]&&inp[0][0];if(c){for(let i=0;i<c.length;i++){if(!this.n)this.s=currentFrame+i;this.b[this.n++]=c[i];if(this.n===this.b.length){const d=this.b.slice(0);this.port.postMessage({f:this.s,d},[d.buffer]);this.n=0}}}return true}}
 registerProcessor('rl-cap',RLCap)`;
 let capURL = null;
-async function openMic() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw Object.assign(new Error(), { name: 'NotSupportedError' });
-  return navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
+function getMic() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return Promise.reject(fail('NotSupportedError'));
+  let late = false;
+  const ask = navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1, latency: { ideal: 0 } } });
+  ask.then(st => { if (late) st.getTracks().forEach(t => t.stop()); }, () => {});
+  return Promise.race([ask, wait(12000).then(() => { late = true; throw fail('TimeoutError'); })]);
 }
 // Record `seconds` from now; buffer index i is context time startTime + i / sr.
 async function capture(stream, seconds) {
@@ -348,10 +373,24 @@ async function capture(stream, seconds) {
   cap.data = () => cap.buf.subarray(0, cap.filled);
   return cap;
 }
-const inPreview = () => !!window.claude;
-const micMsg = e => inPreview() ? 'The mic is blocked in this preview. Open jerm747.dev/apps/rhythm-lab.html to record, or tap Load to use a recording.'
-  : e && e.name === 'NotAllowedError' ? 'Mic permission was blocked. Allow the microphone for this site and try again.'
-  : e && e.name === 'NotFoundError' ? 'No microphone found.' : 'Could not open the mic' + (e && e.name ? ' (' + e.name + ').' : '.');
+// In Claude's preview (or any page framed on another site) the browser blocks the mic outright
+const inPreview = () => { try { return !!window.claude || (window.top !== window.self && !/jerm747/.test(location.hostname)); } catch (e) { return true; } };
+const MIC_MSG = {
+  NotAllowedError: 'Mic permission is off. Allow the microphone for this site (or Patch Bay), then tap Rec.',
+  SecurityError: 'The mic is blocked on this page.',
+  NotFoundError: 'No microphone found. Tap ⤒ Load to use a recording instead.',
+  NotReadableError: 'The mic is busy in another app. Close that app and tap Rec again.',
+  TimeoutError: 'The mic did not answer. Tap Rec again, or reload the page.',
+  AudioError: 'The phone paused audio. Tap Rec again.',
+  NoSignal: 'The mic opened but sent no sound. Tap Rec again; if it keeps happening, reload the page.',
+  NotSupportedError: 'Recording is not available here. Tap ⤒ Load to use a recording instead.'
+};
+const micMsg = e => {
+  const n = e && e.name;
+  if (inPreview() && /NotAllowed|Security|NotSupported|Timeout|NotFound/.test(n || 'NotAllowed')) return 'The mic is blocked in this preview. Open Rhythm Lab on your site to record, or tap ⤒ Load.';
+  return MIC_MSG[n] || `Could not start the mic (${n || (e && e.message) || 'unknown'}). Tap Rec again.`;
+};
+function notice(on) { $('notice').hidden = !on; }
 
 // ---- state ----
 let take = null, prevTake = null, det = null, hits = [], rec = null, play = null, raf = 0;
@@ -369,32 +408,62 @@ function analyze(live) {
 }
 
 // ---- record ----
-async function startRec() {
-  if (rec) return stopRec(true);
-  if (calibrating) return;
-  stopPlay(); ensureCtx();
-  say('Opening the mic…');
-  let stream, cap;
-  try { stream = await openMic(); }
-  catch (e) { return say(micMsg(e)); }
-  const p = P(), bs = 60 / bpm, L = p.L, now = ctx.currentTime + 0.35, t0 = now + 4 * bs, end = t0 + L * bs + 0.4;
-  try { cap = await capture(stream, end - ctx.currentTime + 0.5); }
-  catch (e) { stream.getTracks().forEach(t => t.stop()); return say('Could not start recording on this device.'); }
-  for (let i = 0; i < 4; i++) tick(now + i * bs, i === 0);
-  for (let i = 0; i < L; i++) tick(t0 + i * bs, i % 4 === 0);
-  rec = { stream, cap, bpm, t0, L, end, countFrom: now, sr: ctx.sampleRate };
-  rec.timer = setInterval(() => { if (!rec) return; if (ctx.currentTime >= rec.end) stopRec(false); else if (ctx.currentTime > rec.t0) analyze(true); }, 150);
-  $('recBtn').classList.add('on'); $('recBtn').textContent = '■ Cancel';
-  say(`Count-in… then ${L / 4} bar${L > 4 ? 's' : ''} of rhythm. Sing or clap on the clicks.`);
-  loop();
+let arming = false;
+function recUI(mode) {
+  const b = $('recBtn'); b.classList.toggle('on', mode === 'on'); b.classList.toggle('arming', mode === 'arming');
+  b.textContent = mode === 'on' ? '■ Cancel' : mode === 'arming' ? '… Mic' : '● Rec';
 }
-async function stopRec(cancel) {
+function bigCount(html) { const el = $('count'); el.classList.toggle('on', !!html); if (html) el.innerHTML = html; }
+async function startRec() {
+  if (arming || calibrating) return;          // ignore extra taps while the mic opens
+  if (rec) return stopRec(true);
+  stopPlay(); notice(false);
+  arming = true; recUI('arming'); say('Opening the mic…'); bigCount('<small>mic…</small>');
+  let stream = null, cap = null;
+  try {
+    if (!(await healthyCtx())) throw fail('AudioError');
+    stream = await getMic();
+    const tr = stream.getAudioTracks()[0];
+    if (!tr || tr.readyState !== 'live') throw fail('NotReadableError');
+    const p = P(), bs = 60 / bpm, L = p.L;
+    cap = await capture(stream, 3.5 + 4 * bs + L * bs + 0.8);
+    // only count in once sound is really arriving, so the clicks always mean "recording"
+    const w0 = performance.now(); while (!cap.filled && performance.now() - w0 < 2500) await wait(40);
+    if (!cap.filled) throw fail('NoSignal');
+    if (ctx.state !== 'running') throw fail('AudioError');
+    const now = ctx.currentTime + 0.3, t0 = now + 4 * bs, end = t0 + L * bs + 0.4;
+    for (let i = 0; i < 4; i++) tick(now + i * bs, i === 0);
+    for (let i = 0; i < L; i++) tick(t0 + i * bs, i % 4 === 0);
+    const r = rec = { stream, cap, bpm, t0, L, end, countFrom: now, sr: cap.sr, ct: ctx.currentTime, ctWall: performance.now(), fill: cap.filled, fillWall: performance.now() };
+    tr.addEventListener('ended', () => { if (rec === r) stopRec(true, 'The mic was taken by another app. Tap Rec again.'); });
+    r.timer = setInterval(() => recTick(r), 150);
+    r.backstop = setTimeout(() => { if (rec === r) stopRec(false); }, (end - ctx.currentTime) * 1000 + 1500);   // wall clock, in case the audio clock freezes
+    recUI('on'); bigCount('');
+    say(`Count-in… then ${L / 4} bar${L > 4 ? 's' : ''} of rhythm. Sing or clap on the clicks.`);
+    loop();
+  } catch (e) {
+    if (cap) { try { await cap.close(); } catch (er) {} }
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    recUI('off'); bigCount(''); say(micMsg(e)); if (inPreview()) notice(true);
+  } finally { arming = false; }
+}
+function recTick(r) {
+  if (rec !== r) return;
+  const ct = ctx.currentTime, now = performance.now();
+  if (ct !== r.ct) { r.ct = ct; r.ctWall = now; } else if (now - r.ctWall > 1200) return stopRec(true, 'The phone paused audio mid-take. Tap Rec again.');
+  if (r.cap.filled !== r.fill) { r.fill = r.cap.filled; r.fillWall = now; } else if (now - r.fillWall > 1200) return stopRec(true, 'The mic stopped sending sound. Tap Rec again.');
+  if (ct >= r.end) return stopRec(false);
+  if (ct > r.t0) analyze(true);
+}
+async function stopRec(cancel, msg) {
   const r = rec; if (!r) return;
-  rec = null; clearInterval(r.timer);
-  if (cancel) { out.disconnect(); out = ctx.createGain(); out.gain.value = 0.9; out.connect(ctx.destination); }   // silence the queued clicks
-  await r.cap.close(); r.stream.getTracks().forEach(t => t.stop());
-  $('recBtn').classList.remove('on'); $('recBtn').textContent = '● Rec'; $('count').classList.remove('on');
-  if (cancel) { say('Cancelled. The last take is still here.'); analyze(); return; }
+  rec = null; clearInterval(r.timer); clearTimeout(r.backstop);
+  if (cancel && ctx) { out.disconnect(); freshOut(); }   // silence the queued clicks
+  try { await r.cap.close(); } catch (e) {}
+  r.stream.getTracks().forEach(t => t.stop());
+  recUI('off'); bigCount('');
+  if (cancel) { say(msg || 'Cancelled. The last take is still here.'); analyze(); return; }
+  if (r.cap.filled < r.cap.sr) { analyze(); return say('That take came out too short. Tap Rec to go again.'); }
   const x = r.cap.data().slice();
   if (take && take.name !== 'Demo take') { prevTake = take; $('undoBtn').disabled = false; }
   take = { x, sr: r.cap.sr, startTime: r.cap.startTime, t0: r.t0, bpm: r.bpm, L: r.L };
@@ -404,13 +473,19 @@ async function stopRec(cancel) {
   else say(`Caught ${hits.length} hits, ${feel(st.mean)}.` + ($('autoplay').checked ? ' Looping it back.' : ' Tap Loop to hear it.') + (r.cap.exact ? '' : ' (Timing is approximate in this browser.)'));
   if (hits.length && $('autoplay').checked) startPlay();
 }
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (rec) stopRec(true, 'Recording stopped when the app went to the background. Tap Rec again.'); stopPlay(); }
+  else if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+});
 const feel = m => Math.abs(m) < 6 ? 'right on the beat on average' : `${Math.round(Math.abs(m))} ms ${m > 0 ? 'late' : 'early'} on average`;
 
 // ---- loop playback ----
-function startPlay() {
+async function startPlay() {
   if (!take) return say('Record a take first.');
-  if (rec || calibrating) return;
-  ensureCtx(); stopPlay();
+  if (rec || calibrating || arming) return;
+  stopPlay();
+  if (!(await healthyCtx())) return say('The phone paused audio. Tap Loop again.');
+  if (rec || play) return;
   play = { start: ctx.currentTime + 0.1, k: 0, srcs: [] };
   schedule(); play.timer = setInterval(schedule, 25);
   $('playBtn').classList.add('on'); loop();
@@ -436,21 +511,27 @@ function stopPlay() {
   if (!play) return;
   clearInterval(play.timer); play.srcs.forEach(s => { try { s.stop(); } catch (e) {} });
   play = null; $('playBtn').classList.remove('on');
-  if (out) { out.disconnect(); out = ctx.createGain(); out.gain.value = 0.9; out.connect(ctx.destination); }   // cut notes already queued
+  if (out) { out.disconnect(); freshOut(); }   // cut notes already queued
   render();
 }
 
 // ---- calibrate: 8 loud clicks through the speaker, timed on the mic ----
 let calibrating = false;
 async function calibrate() {
-  if (rec || calibrating) return;
-  stopPlay(); ensureCtx(); calibrating = true; $('calBtn').disabled = true;
+  if (rec || calibrating || arming) return;
+  stopPlay(); calibrating = true; $('calBtn').disabled = true;
   say('Calibrating: keep quiet for 5 seconds…');
+  let stream = null;
   try {
-    const stream = await openMic(), cap = await capture(stream, 5.5), t = ctx.currentTime + 0.5, times = [];
+    if (!(await healthyCtx())) throw fail('AudioError');
+    stream = await getMic();
+    const cap = await capture(stream, 6.5);
+    const w0 = performance.now(); while (!cap.filled && performance.now() - w0 < 2500) await wait(40);
+    if (!cap.filled) { await cap.close(); throw fail('NoSignal'); }
+    const t = ctx.currentTime + 0.5, times = [];
     for (let i = 0; i < 8; i++) { times.push(t + i * 0.5); tick(t + i * 0.5, false, 1500); }
     await new Promise(r => setTimeout(r, (t + 4.3 - ctx.currentTime) * 1000));
-    await cap.close(); stream.getTracks().forEach(tr => tr.stop());
+    await cap.close(); stream.getTracks().forEach(tr => tr.stop()); stream = null;
     const d = detect(cap.data(), cap.sr, { rise: 10, gateDb: -26, gapMs: 200, hitPt: 0.15, guard: false });
     const lags = times.map(s => { const h = d.hits.find(h => { const ht = cap.startTime + h.i / cap.sr; return ht > s - 0.005 && ht < s + 0.45; }); return h ? cap.startTime + h.i / cap.sr - s : null; }).filter(v => v != null).sort((a, b) => a - b);
     if (lags.length < 5) say(`Only heard ${lags.length} of 8 clicks. Unplug headphones, turn the volume up and try again.`);
@@ -460,7 +541,7 @@ async function calibrate() {
       say(`Device latency measured: ${Math.round(med * 1000)} ms` + (spread > 15 ? ` (it wobbled by ${Math.round(spread)} ms, so run it again to be sure).` : '.'));
       $('latHint').textContent = 'Measured with Calibrate on this device.';
     }
-  } catch (e) { say(micMsg(e)); }
+  } catch (e) { if (stream) stream.getTracks().forEach(tr => tr.stop()); say(micMsg(e)); if (inPreview()) notice(true); }
   calibrating = false; $('calBtn').disabled = false;
 }
 
@@ -569,6 +650,7 @@ $('tapBtn').addEventListener('click', () => {
   if (taps.length >= 3) { const d = (taps[taps.length - 1] - taps[0]) / (taps.length - 1); setBpm(60000 / d); }
 });
 $('recBtn').addEventListener('click', startRec);
+$('noticeX').addEventListener('click', () => notice(false));
 $('playBtn').addEventListener('click', () => play ? stopPlay() : startPlay());
 $('stopBtn').addEventListener('click', () => { if (rec) stopRec(true); stopPlay(); });
 $('clearBtn').addEventListener('click', () => {
