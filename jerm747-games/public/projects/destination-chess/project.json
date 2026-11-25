@@ -5,8 +5,14 @@
   "kind": "game",
   "status": "playable",
   "version": "0.2.0",
-  "controls": ["gamepad", "keyboard", "mouse", "touch"],
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "mouse",
+    "touch"
+  ],
   "credit": "Game by Jerm747.",
   "accent": "#EFD198",
-  "order": 7
+  "order": 7,
+  "new": true
 }

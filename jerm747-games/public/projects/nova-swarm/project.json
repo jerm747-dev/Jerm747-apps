@@ -5,8 +5,14 @@
   "kind": "game",
   "status": "in_progress",
   "version": "0.2.0",
-  "controls": ["gamepad", "keyboard", "mouse", "touch"],
+  "controls": [
+    "gamepad",
+    "keyboard",
+    "mouse",
+    "touch"
+  ],
   "credit": "Game by Jerm747. Sky images: NASA, ESA, CSA, STScI.",
   "accent": "#F2A35B",
-  "order": 6
+  "order": 6,
+  "new": true
 }

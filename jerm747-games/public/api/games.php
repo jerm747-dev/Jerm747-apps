@@ -67,6 +67,7 @@ foreach (glob($root . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
         'cover' => $cover,
         'listCover' => is_file("$dir/case.webp") ? "projects/$slug/case.webp?v=" . filemtime("$dir/case.webp") : $cover,
         'order' => (int)($m['order'] ?? 100),
+        'isNew' => !empty($m['new']),
         'gamepad' => (object)$bridge,
         'gamepadLabels' => (object)$labels,
         'download' => $download,

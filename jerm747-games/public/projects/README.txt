@@ -20,6 +20,7 @@ Optional files in a project folder:
   "credit": "Built for Example Co. All rights reserved.",
   "accent": "#8FA7BF",       tile color when there is no cover
   "order": 30,               lower numbers come first
+  "new": true,               shows the NEW badge on the shelf
   "hidden": true,            leave it on the server but off the shelf
 
   "gamepad": { "A": " ", "X": "j" },        controller bridge for keyboard-only projects:
