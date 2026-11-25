@@ -56,7 +56,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,sy
 </head><body>
 <div class="wrap">
 <header class="top">
- <a class="ib" href="./index.html" aria-label="Back to Patch Bay">‹</a>
+ <a class="ib" id="back" href="./index.html" aria-label="Back to Patch Bay">‹</a>
  <h1>Rhythm Lab<small>Vox Lane workshop · one note, sung or clapped · 0.1.0</small></h1>
 </header>
 
@@ -64,6 +64,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,sy
  <button class="ib rec" id="recBtn">● Rec</button>
  <button class="ib" id="playBtn">▶ Loop</button>
  <button class="ib" id="stopBtn" aria-label="Stop">■</button>
+ <button class="ib" id="loadBtn" title="Load a recording of you singing or clapping. Its first hit becomes beat 1.">⤒ Load</button><input type="file" id="fileIn" accept="audio/*,video/*" hidden>
  <span class="sp"></span>
  <button class="ib" id="undoBtn" title="Swap back to the previous take" disabled>↶ Take</button>
  <button class="ib" id="midBtn" title="Export the snapped rhythm as a one-note MIDI file">⤓ .mid</button>
@@ -189,7 +190,39 @@ function toMidi(hits, bpm, L) {
   const len = tr.length;
   return new Uint8Array([0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, PPQ >> 8, PPQ & 255, 0x4d, 0x54, 0x72, 0x6b, len >>> 24, len >> 16 & 255, len >> 8 & 255, len & 255, ...tr]);
 }
-if (typeof module !== 'undefined') module.exports = { detect, place, stats, toMidi, GRID };
+// Minimal store-only zip (the in-app save sheet does not accept .mid directly)
+function zipOne(name, data) {
+  const T = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; T[n] = c >>> 0; }
+  let crc = 0xffffffff; for (const b of data) crc = T[(crc ^ b) & 255] ^ (crc >>> 8); crc = (crc ^ 0xffffffff) >>> 0;
+  const nb = Array.from(name).map(c => c.charCodeAt(0)), sz = data.length;
+  const u16 = v => [v & 255, (v >> 8) & 255], u32 = v => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
+  const local = [...u32(0x04034b50), ...u16(20), 0, 0, 0, 0, 0, 0, ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nb.length), 0, 0, ...nb];
+  const cd = [...u32(0x02014b50), ...u16(20), ...u16(20), 0, 0, 0, 0, 0, 0, ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nb.length), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ...u32(0), ...nb];
+  const off = local.length + sz, end = [...u32(0x06054b50), 0, 0, 0, 0, ...u16(1), ...u16(1), ...u32(cd.length), ...u32(off), 0, 0];
+  const o = new Uint8Array(off + cd.length + end.length);
+  o.set(local, 0); o.set(data, local.length); o.set(cd, off); o.set(end, off + cd.length);
+  return o;
+}
+
+// Synthesized demo: a sung "dum" rhythm at 96 BPM, 2 bars, sitting a little behind the beat like a real take
+function demoTake(sr) {
+  const bpm = 96, bs = 60 / bpm, t0 = 0.6, x = new Float32Array(Math.ceil((t0 + 8 * bs + 0.8) * sr));
+  const pat = [0, 1, 1.5, 2, 3, 3.5, 3.75, 4.5, 5, 6, 6.5, 7];
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647 * 2 - 1;
+  pat.forEach((bt, k) => {
+    const st = t0 + bt * bs + 0.018 + rnd() * 0.012, i0 = Math.round(st * sr), a = 0.22 + 0.16 * ((k % 4) === 0) + 0.05 * rnd(), f = 140 + 25 * (k % 3);
+    let ph = 0;
+    for (let i = 0, n = Math.round(0.16 * sr); i < n; i++) {
+      const t = i / sr, env = Math.min(1, t / 0.02) * Math.exp(-t / 0.09);
+      ph += 2 * Math.PI * f / sr;
+      x[i0 + i] += (t < 0.007 ? 0.25 * a * rnd() * Math.exp(-t / 0.003) : 0) + a * env * (Math.sin(ph) + 0.45 * Math.sin(2 * ph) + 0.2 * Math.sin(3 * ph)) / 1.65;
+    }
+  });
+  for (let i = 0; i < x.length; i++) x[i] += rnd() * 0.002;
+  return { x, sr, startTime: 0, t0, bpm, L: 8, noLat: true, name: 'Demo take' };
+}
+if (typeof module !== 'undefined') module.exports = { detect, place, stats, toMidi, zipOne, demoTake, GRID };
 </script>
 <script>
 'use strict';
@@ -313,12 +346,15 @@ async function capture(stream, seconds) {
   cap.data = () => cap.buf.subarray(0, cap.filled);
   return cap;
 }
-const micMsg = e => e && e.name === 'NotAllowedError' ? 'Mic permission was blocked. Allow the microphone for this site and try again.'
+const inPreview = () => !!window.claude;
+const micMsg = e => inPreview() ? 'The mic is blocked in this preview. Open jerm747.dev/apps/rhythm-lab.html to record, or tap Load to use a recording.'
+  : e && e.name === 'NotAllowedError' ? 'Mic permission was blocked. Allow the microphone for this site and try again.'
   : e && e.name === 'NotFoundError' ? 'No microphone found.' : 'Could not open the mic' + (e && e.name ? ' (' + e.name + ').' : '.');
 
 // ---- state ----
 let take = null, prevTake = null, det = null, hits = [], rec = null, play = null, raf = 0;
 const loopBeats = () => take ? take.L : P().L;
+const latOf = (src, p) => src && src.noLat ? 0 : p.lat;
 
 function analyze(live) {
   const src = live ? rec : take;
@@ -326,7 +362,7 @@ function analyze(live) {
   const p = P(), x = live ? rec.cap.data() : take.x;
   det = detect(x, src.sr || rec.cap.sr, p);
   hits = place(det, { sr: live ? rec.cap.sr : take.sr, startTime: live ? rec.cap.startTime : take.startTime, t0: src.t0, bpm: src.bpm, L: src.L,
-    lat: p.lat, nudge: p.nudge, grid: p.grid, quant: p.quant, strength: p.strength, dyn: p.dyn });
+    lat: latOf(src, p), nudge: p.nudge, grid: p.grid, quant: p.quant, strength: p.strength, dyn: p.dyn });
   render();
 }
 
@@ -358,7 +394,7 @@ async function stopRec(cancel) {
   $('recBtn').classList.remove('on'); $('recBtn').textContent = '● Rec'; $('count').classList.remove('on');
   if (cancel) { say('Cancelled. The last take is still here.'); analyze(); return; }
   const x = r.cap.data().slice();
-  if (take) { prevTake = take; $('undoBtn').disabled = false; }
+  if (take && take.name !== 'Demo take') { prevTake = take; $('undoBtn').disabled = false; }
   take = { x, sr: r.cap.sr, startTime: r.cap.startTime, t0: r.t0, bpm: r.bpm, L: r.L };
   analyze();
   const st = stats(hits);
@@ -387,7 +423,7 @@ function schedule() {
     if (hear !== 'note' && take.bpm === bpm) {
       const p = P(), s = ctx.createBufferSource(), b = ctx.createBuffer(1, take.x.length, take.sr);
       b.copyToChannel(take.x, 0); s.buffer = b; s.connect(out);
-      let off = take.t0 + p.lat + p.nudge - take.startTime, at = L0;
+      let off = take.t0 + latOf(take, p) + p.nudge - take.startTime, at = L0;
       if (off < 0) { at -= off; off = 0; }
       s.start(Math.max(at, ctx.currentTime), off, Ls); play.srcs.push(s);
       if (play.srcs.length > 4) play.srcs.shift();
@@ -450,7 +486,7 @@ function drawLane() {
     c.fillStyle = 'rgba(198,161,238,.16)'; c.beginPath(); c.moveTo(X(0), mid);
     const cols = Math.floor(W - padL - padR), lower = [];
     for (let px = 0; px <= cols; px++) {
-      const b = px / cols * L, t = src.t0 + b * bs + p.lat + p.nudge, h = Math.round((t - st) * 1000);
+      const b = px / cols * L, t = src.t0 + b * bs + latOf(src, p) + p.nudge, h = Math.round((t - st) * 1000);
       const v = h >= 0 && h < det.env.length ? Math.min(1, Math.sqrt(det.env[h] / det.peak)) * (topH / 2 - 4) : 0;
       c.lineTo(X(b), mid - v); lower.push([X(b), mid + v]);
     }
@@ -497,6 +533,7 @@ function chips() {
   if (Math.abs(s32) >= 0.5) out.push([`≈ ${Math.abs(s32).toFixed(1)} 32nds ${st.mean > 0 ? 'late' : 'early'}`, '']);
   const dups = hits.filter(h => h.dup).length; if (dups) out.push([`${dups} doubled up (grey)`, 'warn']);
   if (take && take.bpm !== bpm) out.push([`take recorded at ${take.bpm} BPM`, 'warn']);
+  if (take && take.name) out.unshift([take.name, '']);
   $('chips').innerHTML = out.map(([t, k]) => `<span class="chip ${k}">${t}</span>`).join('');
 }
 function loop() {
@@ -544,12 +581,39 @@ $('learnBtn').addEventListener('click', () => {
 });
 $('nudgeZero').addEventListener('click', () => { $('nudge').value = 0; save(); labels(); analyze(); });
 $('calBtn').addEventListener('click', calibrate);
-$('midBtn').addEventListener('click', () => {
+$('midBtn').addEventListener('click', async () => {
   const live = hits.filter(h => !h.dup); if (!live.length) return say('No hits to export yet.');
-  const name = `rhythm-lab-${take.bpm}bpm.mid`, a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([toMidi(hits, take.bpm, take.L)], { type: 'audio/midi' })); a.download = name;
+  const name = `rhythm-lab-${take.bpm}bpm.mid`, mid = toMidi(hits, take.bpm, take.L);
+  if (inPreview()) {
+    let dl = null; try { dl = await window.claude.use('downloads'); } catch (e) {}
+    if (!dl) return say('Saving files isn\'t available in this view.');
+    try { await dl.save({ filename: name.replace('.mid', '.zip'), data: zipOne(name, mid) }); say(`Saved ${name.replace('.mid', '.zip')} with the .mid inside: one note (GM cowbell, channel 10), snapped.`); }
+    catch (e) { say(e && e.code === 'declined' ? 'Save cancelled.' : 'Saving isn\'t available in this view.'); }
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([mid], { type: 'audio/midi' })); a.download = name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   say(`Exported ${name}: one note (GM cowbell, channel 10), snapped.`);
+});
+// Load a recording: decode it, find the first hit, call that beat 1 at the current tempo
+$('loadBtn').addEventListener('click', () => $('fileIn').click());
+$('fileIn').addEventListener('change', async () => {
+  const f = $('fileIn').files[0]; $('fileIn').value = ''; if (!f) return;
+  if (rec) return; stopPlay(); ensureCtx(); say('Reading ' + f.name + '…');
+  try {
+    const ab = await ctx.decodeAudioData(await f.arrayBuffer()), n = ab.length, x = new Float32Array(n);
+    for (let c = 0; c < ab.numberOfChannels; c++) { const d = ab.getChannelData(c); for (let i = 0; i < n; i++) x[i] += d[i] / ab.numberOfChannels; }
+    const p = P(), d0 = detect(x, ab.sampleRate, p);
+    if (!d0.hits.length) return say('No hits found in ' + f.name + '. Try raising Sensitivity, then load it again.');
+    const tf = d0.hits[0].i / ab.sampleRate, bs = 60 / bpm, need = (n / ab.sampleRate - tf) / bs;
+    const L = [4, 8, 16].find(v => v >= need - 0.5) || 16;
+    $('bars').value = String(L / 4); save();
+    if (take) { prevTake = take; $('undoBtn').disabled = false; }
+    take = { x, sr: ab.sampleRate, startTime: 0, t0: tf, bpm, L, noLat: true, name: f.name };
+    analyze();
+    say(`Loaded ${f.name}: first hit is beat 1, read at ${bpm} BPM. Set the tempo you sang at before loading if it's off.`);
+  } catch (e) { say('Could not read that file. Try a .wav, .m4a or .mp3.'); }
 });
 document.addEventListener('keydown', e => {
   if (e.target.matches('input, select, textarea')) return;
@@ -560,6 +624,8 @@ if (store.get('latCal', false)) $('latHint').textContent = 'Measured with Calibr
 else if (voxLat != null && store.get('lat', null) == null) $('latHint').textContent = 'Taken from Vox Lane. Calibrate to measure it here.';
 new ResizeObserver(() => render()).observe($('fig'));
 labels(); render();
+if (!take) { take = demoTake(48000); analyze(); say('Demo take (synthesized): a sung rhythm sitting a little behind the beat. Tap Loop to hear it, then Rec your own.'); }
+setTimeout(() => { if (inPreview()) $('back').style.display = 'none'; }, 0);
 
 // test hook: load a synthetic take without a mic
 window.RhythmLab = { load(x, sr, startTime, t0, takeBpm, L) { take = { x, sr, startTime, t0, bpm: takeBpm, L }; analyze(); return { hits, stats: stats(hits) }; }, get hits() { return hits; } };
