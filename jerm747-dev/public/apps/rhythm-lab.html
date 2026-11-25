@@ -16,6 +16,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,sy
 .rec{background:var(--rec);color:#fff;border-color:transparent}
 .rec.on{background:#fff;color:var(--rec)}
 .tools{display:flex;gap:6px;flex-wrap:wrap}
+.clr{color:#ff8a92}
 .tools .sp{flex:1}
 .strip{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:4px;border:1px solid color-mix(in srgb,var(--note) 30%,var(--line));border-radius:12px;background:var(--tint)}
 .mod{display:flex;align-items:center;gap:4px;padding-right:6px;border-right:1px solid color-mix(in srgb,var(--note) 22%,var(--line))}
@@ -64,6 +65,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,sy
  <button class="ib rec" id="recBtn">● Rec</button>
  <button class="ib" id="playBtn">▶ Loop</button>
  <button class="ib" id="stopBtn" aria-label="Stop">■</button>
+ <button class="ib clr" id="clearBtn" title="Clear the lane. ↶ Take brings it back.">✕ Clear</button>
  <button class="ib" id="loadBtn" title="Load a recording of you singing or clapping. Its first hit becomes beat 1.">⤒ Load</button><input type="file" id="fileIn" accept="audio/*,video/*" hidden>
  <span class="sp"></span>
  <button class="ib" id="undoBtn" title="Swap back to the previous take" disabled>↶ Take</button>
@@ -569,7 +571,14 @@ $('tapBtn').addEventListener('click', () => {
 $('recBtn').addEventListener('click', startRec);
 $('playBtn').addEventListener('click', () => play ? stopPlay() : startPlay());
 $('stopBtn').addEventListener('click', () => { if (rec) stopRec(true); stopPlay(); });
-$('undoBtn').addEventListener('click', () => { if (!prevTake) return; [take, prevTake] = [prevTake, take]; analyze(); say('Swapped takes. Tap ↶ Take again to swap back.'); if (play) startPlay(); });
+$('clearBtn').addEventListener('click', () => {
+  if (rec) stopRec(true);
+  stopPlay();
+  if (!take) return say('Already clear. Tap Rec to record a take.');
+  prevTake = take; take = null; $('undoBtn').disabled = false; analyze();
+  say('Cleared. ↶ Take brings it back, or tap Rec for a new one.');
+});
+$('undoBtn').addEventListener('click', () => { if (!prevTake && !take) return; [take, prevTake] = [prevTake, take]; analyze(); say('Swapped takes. Tap ↶ Take again to swap back.'); if (play) startPlay(); });
 ['strength', 'nudge', 'lat', 'sens', 'gate', 'gap', 'hitpt', 'quant', 'guard', 'dyn'].forEach(id => $(id).addEventListener('input', () => { save(); labels(); if (!rec) analyze(); }));
 ['bars', 'sound', 'hear', 'clickPlay', 'autoplay'].forEach(id => $(id).addEventListener('input', () => { save(); labels(); render(); }));
 $('lat').addEventListener('input', () => { store.set('latCal', false); $('latHint').textContent = 'Set by hand.'; });
