@@ -1,0 +1,15 @@
+PATCH BAY PR LAUNCHER
+
+1. Extract these files directly into your local Jerm747-apps folder,
+   next to the PatchBay folder. This package includes the native audio
+   0.1.6 patch. For future updates, put the new PatchBay .patch file here.
+2. Windows: double-click PatchBay-PR.cmd (requires Git for Windows).
+   macOS: double-click PatchBay-PR.command. If Finder does not launch
+   it, open it from Terminal with bash.
+   Linux or Git Bash: run bash PatchBay-PR.command.
+3. If more than one PatchBay patch is present, choose its number.
+4. The launcher uses your existing GitHub login to push the branch and
+   opens the comparison page. On GitHub, review and create the PR.
+   Merge it yourself when you're ready.
+
+Leave these launcher files and patches out of your Git commits.

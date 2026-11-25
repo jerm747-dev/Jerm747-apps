@@ -29,7 +29,7 @@ const TOOLS = [
     icon:"rhythm"
   },
   {
-    id:"vox-lane", name:"Vox Lane", version:"0.1.0",
+    id:"vox-lane", name:"Vox Lane", version:"0.2.0",
     category:"music", status:"live", href:"./vox-lane.html",
     desc:"Turn a vocal take or voice memo into an editable piano-roll melody and export it as MIDI.",
     specs:["Voice recording","Pitch editing","MIDI export"],
