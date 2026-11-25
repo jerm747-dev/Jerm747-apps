@@ -1,10 +1,10 @@
 {
   "title": "Nova Swarm A.R.C.",
   "tagline": "Follow the stars. Mine the ore. Get your crew to G-47.",
-  "description": "A 3D Galaga-style shooter with a crew comedy. Story follows Officer Vale and Captain Rourke down the Ash Run Corridor. Swarm is endless formation waves of Hive Regents, Crimson Monarchs, Stripe Drones and the Ash Wasp. Flight Run is a straight corridor flyer through rocks and ore. Dogfight is the ore-hauler escort sortie with cockpit and chase cameras.",
+  "description": "An arcade formation shooter with a crew comedy. Story is a serial campaign with Officer Vale and Captain Rourke: swarm waves, third-person 3D corridor runs through rocks, ore and alien fighters, the Southern Ring boss, and the landing on G-47. Swarm is endless formation waves of Hive Regents, Crimson Monarchs, Stripe Drones and the Ash Wasp. Flight Run is the endless 3D corridor (2D on devices without WebGL). Dogfight is the ore-hauler escort sortie.",
   "kind": "game",
   "status": "in_progress",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "controls": [
     "gamepad",
     "keyboard",

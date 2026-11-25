@@ -30,7 +30,7 @@
    'plugin-twist':'.applet .controls','album-match':'.am-controls,.am-how',
    'flight-control-deck':'#controller-tools,#controller-view,#left,#right,.center-fire',
    'encore':'#game .deck','cd-man':'#game .deck,#cd-touch','returnity':'.touchdeck','big-bowl-smash':'.controls.deck','catalog-clash':'.climb-deck','gs-fighter-2':'#controller,.gd-ov-controller',
-   'tic-tac-steel':'#controller-guide'
+   'tic-tac-steel':'#controller-guide','nova-swarm':'.pad,.hint','destination-chess':'.pad'
  };
  function apply(){
    if(!frame)return;
@@ -108,7 +108,8 @@ window.createPocketGameMenu=function(host,api){
     'gs-fighter-2':'#gs-boot button,#lobby #start','gs-fighter-3':'#press-start','groove-squad-get-down':'#lobby #start',
     'encore':'#press-start,#selector button[data-mode]','sumi-sudoku':'#titleResume','big-bowl-smash':'#go',
     'catalog-clash':'.chapter-text button',
-    'cd-man':'#game[data-panel="title"] #primary'
+    'cd-man':'#game[data-panel="title"] #primary',
+    'nova-swarm':'#ov:not([hidden]) #go','destination-chess':'#cover:not([hidden]) #bStart,#sheet:not([hidden]) #bPlay'
   };
   const settings={
     'sumi-sudoku':'[data-lv],#artSel,#themeToggle,#fxBtn,#fxSpeed,#breakBtn,#tNew,#tUndo,#tHint',
