@@ -75,7 +75,10 @@ shelf. Browser Back also returns to the shelf.
   download page. See below.
 - **GS Fighter II** (1.0.17): the Android handheld edition in the browser, now branded GS Fighter II,
   plus its APK download page. See below.
-- **Flight Control Deck** (v7): Asteroid Blast, races and free flight.
+- **Nova Swarm A.R.C.** (0.2.0): 3D Galaga-style shooter with a crew story. Story, Swarm, Flight Run and
+  Dogfight modes. Enemy ships are pre-rendered from the GLB models (low-poly fallback: `?lowpoly=1` or G).
+- **Destination Chess** (0.2.0): chess at eight destinations, all open from level select, CPU Easy/Normal/Hard.
+- Retired from the shelf (`"hidden": true`, folders kept on the server): **Flight Control Deck**, **CD Man**.
 - **Cyborg Coliseum** (v0.2 Flight Systems) brings close combat, free flight and the rapid-fire chest cannon into the arena.
 - **Controller Check**: test buttons, sticks, triggers and rumble.
 - `cover-square.jpg` in the first two folders: your square cover art, kept as a backup.

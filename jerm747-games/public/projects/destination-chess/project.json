@@ -1,0 +1,12 @@
+{
+  "title": "Destination Chess",
+  "tagline": "Eight places to sit down for a game.",
+  "description": "Chess on a 3D walnut board at eight getaway spots: a cruise ship, an island, a busy city street, a quiet park, the desert, the arctic tundra, a campsite and a sports bar. Every level is open from level select, each with three scenes. Play the CPU on Easy, Normal or Hard, or pass and play with a friend.",
+  "kind": "game",
+  "status": "playable",
+  "version": "0.2.0",
+  "controls": ["gamepad", "keyboard", "mouse", "touch"],
+  "credit": "Game by Jerm747.",
+  "accent": "#EFD198",
+  "order": 7
+}
