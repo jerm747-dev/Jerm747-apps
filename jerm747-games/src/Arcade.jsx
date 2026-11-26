@@ -8,8 +8,10 @@ import './arcade-list.css';
 import './view-switch.css';
 import './cabinet.css';
 
-const NEW_TITLES = new Set(['747GP', 'sound-test', 'wave-run-747', 'pulse-runner', 'big-bowl-smash', 'tic-tac-steel', 'sumi-sudoku']);
-function NewBadge({slug}) { return NEW_TITLES.has(slug) ? <span className="game-new">NEW</span> : null; }
+const NEW_TITLES = new Set(['nova-swarm', 'destination-chess', '747GP', 'sound-test', 'wave-run-747', 'pulse-runner', 'big-bowl-smash', 'tic-tac-steel', 'sumi-sudoku']);
+// A game is New when it's listed here or its project.json has "new": true (no rebuild needed).
+const isNew = (p) => !!p && (NEW_TITLES.has(p.slug) || p.isNew === true);
+function NewBadge({project}) { return isNew(project) ? <span className="game-new">NEW</span> : null; }
 
 const KIND_LABEL = { game: 'Games', app: 'Apps', site: 'Sites', tool: 'Tools', music: 'Music', experiment: 'Experiments' };
 const KIND_COLOR = { game: '#A897C9', app: '#86B0A5', site: '#8DA4C4', tool: '#C2AE7E', music: '#C4909B', experiment: '#9A9FA8' };
@@ -371,10 +373,10 @@ export default function Arcade() {
           onScroll={e=>sessionStorage.setItem('j747.caseList.scroll',e.currentTarget.scrollTop)}
           onTouchStart={e=>{swipe.current=e.touches.length===1?[e.touches[0].clientX,e.touches[0].clientY]:null;}}
           onTouchEnd={e=>{if(!swipe.current)return;const [x,y]=swipe.current;swipe.current=null;const dx=e.changedTouches[0].clientX-x;if(Math.abs(dx)>64&&Math.abs(dx)>1.8*Math.abs(e.changedTouches[0].clientY-y)){e.preventDefault();changeView('cabinet');}}}>
-          {shown.map((p,i)=><button key={p.slug} className="sb-case" style={{'--case-accent':p.accent||KIND_COLOR[p.kind]}} aria-current={i===index} aria-label={'Open '+p.title+(NEW_TITLES.has(p.slug)?', new game':'')}
+          {shown.map((p,i)=><button key={p.slug} className="sb-case" style={{'--case-accent':p.accent||KIND_COLOR[p.kind]}} aria-current={i===index} aria-label={'Open '+p.title+(isNew(p)?', new game':'')}
             onClick={()=>{setIndex(i);launch(p);}} onFocus={()=>setIndex(i)}>
             {p.cover?<><img className="sb-case-wall" src={p.listCover||p.cover} alt="" loading="lazy"/><img className="sb-case-thumb" src={p.listCover||p.cover} alt="" loading="lazy"/></>:<span className="sb-case-thumb"><Art project={p}/></span>}
-            <strong>{p.title}<NewBadge slug={p.slug}/></strong><i aria-hidden="true">›</i></button>)}
+            <strong>{p.title}<NewBadge project={p}/></strong><i aria-hidden="true">›</i></button>)}
         </div>}
         {view==='cabinet' && current && (
           <div className="sb-slider">
@@ -388,7 +390,7 @@ export default function Arcade() {
                 <span className={`chip chip-status status-${current.status}`}>{STATUS_LABEL[current.status]}</span>
                 {current.version && <span className="chip chip-ghost">{current.version}</span>}
               </p>
-              <h1>{current.title}<NewBadge slug={current.slug}/></h1>
+              <h1>{current.title}<NewBadge project={current}/></h1>
               {current.tagline && <p className="sb-tagline">{current.tagline}</p>}
               {current.description && <p className="sb-desc">{current.description}</p>}
               {current.controls.length > 0 && (
@@ -432,7 +434,7 @@ export default function Arcade() {
             >
               <Art project={p} />
               <span className="tile-title">{p.title}</span>
-              <span className="tile-meta">{STATUS_LABEL[p.status]}<NewBadge slug={p.slug}/></span>
+              <span className="tile-meta">{STATUS_LABEL[p.status]}<NewBadge project={p}/></span>
             </button>
           ))}
           {admin && (
