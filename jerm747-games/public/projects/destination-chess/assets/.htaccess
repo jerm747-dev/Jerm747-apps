@@ -1,0 +1,4 @@
+# Content-hashed game art (made by scripts/split-assets.mjs): the name changes when the file does.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>

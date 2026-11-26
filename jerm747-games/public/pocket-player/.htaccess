@@ -1,0 +1,6 @@
+# Shared cabinet scripts and styles keep fixed names: make browsers check for a new copy each visit.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>
