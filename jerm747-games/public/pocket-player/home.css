@@ -18,3 +18,7 @@
 .swatch.arc { background:linear-gradient(145deg,#736ab1,#14192b 58%,#38709c);flex:none; }
 .arc-play { display:none; margin-top:10px; color:#352877; font-size:14px; font-weight:750; }
 .showcase[data-preview="nova-arc"] .arc-play { display:inline-block; }
+
+.swatch.red{background:linear-gradient(145deg,#ff5a55,#b3141f 58%,#5a070d);border-color:#5a070d;flex:none}
+.red-play{display:none;margin-top:10px;color:#9a0f19;font-size:14px;font-weight:750}
+.showcase[data-preview="candy-red"] .red-play{display:inline-block}

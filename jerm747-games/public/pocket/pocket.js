@@ -109,7 +109,7 @@ window.createPocketGameMenu=function(host,api){
     'encore':'#press-start,#selector button[data-mode]','sumi-sudoku':'#titleResume','big-bowl-smash':'#go',
     'catalog-clash':'.chapter-text button',
     'cd-man':'#game[data-panel="title"] #primary',
-    'nova-swarm':'#ov:not([hidden]) #startGame,#ov:not([hidden]) #go','destination-chess':'#cover:not([hidden]) #bStart,#sheet:not([hidden]) #bPlay'
+    'nova-swarm':'#ov:not([hidden]) #startGame,#ov:not([hidden]) #go','redleaf':'#title-screen:not([hidden]) #title-menu','destination-chess':'#cover:not([hidden]) #bStart,#sheet:not([hidden]) #bPlay'
   };
   const settings={
     'sumi-sudoku':'[data-lv],#artSel,#themeToggle,#fxBtn,#fxSpeed,#breakBtn,#tNew,#tUndo,#tHint',
@@ -286,9 +286,9 @@ window.createPocketGameMenu=function(host,api){
       else navigator.vibrate?.(duration);
     }catch{}
   }
-  const skins = {'wave-run-747':'ice', 'returnity':'returnity-amber', 'nova-swarm':'nova-arc'};
+  const skins = {'wave-run-747':'ice', 'returnity':'returnity-amber', 'nova-swarm':'nova-arc', 'redleaf':'candy-red'};
   const finishKey = 'jerm747.pocket.finish.v1';
-  const finishes = Object.freeze({auto: 'Game default', classic: 'Classic Gray', ice: 'Ice Blue', 'returnity-amber': 'Returnity Edition', 'returnity-violet': 'Returnity Violet', 'nova-arc': 'A.R.C. Deep Space'});
+  const finishes = Object.freeze({auto: 'Game default', classic: 'Classic Gray', ice: 'Ice Blue', 'returnity-amber': 'Returnity Edition', 'returnity-violet': 'Returnity Violet', 'nova-arc': 'A.R.C. Deep Space', 'candy-red': 'Candy Apple Red'});
   const finishLabel = value => site.labels?.[value] || finishes[value] || '';
   function configure(next = {}) {
     Object.assign(site, next || {});
@@ -345,7 +345,9 @@ window.createPocketGameMenu=function(host,api){
     violetSheet.href = stylesheet.replace('pocket-shell.css', 'pocket-violet.css');
     const arcSheet = link.cloneNode();
     arcSheet.href = stylesheet.replace('pocket-shell.css', 'pocket-arc.css');
-    shadow.append(link, finishSheet, amberSheet, violetSheet, arcSheet);
+    const redSheet = link.cloneNode();
+    redSheet.href = stylesheet.replace('pocket-shell.css', 'pocket-red.css');
+    shadow.append(link, finishSheet, amberSheet, violetSheet, arcSheet, redSheet);
 
     const shell = document.createElement('div');
     shell.className = 'safe';
@@ -571,7 +573,7 @@ window.createPocketGameMenu=function(host,api){
     function applyFinish() {
       const skin = skinFor(cartridge.id);
       $('.wordmark img').src=base+(skin==='ice'||skin==='returnity-violet'?'wordmark.svg':'wordmark-light.svg')+'?v=200';
-      $('.bezel-title').textContent=skin === 'nova-arc' ? 'NOVA SWARM A.R.C.' : site.bezelTitle || '';
+      $('.bezel-title').textContent=skin === 'nova-arc' ? 'NOVA SWARM A.R.C.' : skin === 'candy-red' && cartridge.id === 'redleaf' ? 'REDLEAF' : site.bezelTitle || '';
       device.setAttribute('aria-label',skin==='returnity-amber'?'Returnity Pocket Player':'747 Pocket handheld');
       if (skin) { device.dataset.skin = skin; root.dataset.skin = skin; }
       else { delete device.dataset.skin; delete root.dataset.skin; }
@@ -674,7 +676,7 @@ window.createPocketGameMenu=function(host,api){
     };
   }
   // Finishes to mark "New" in theme pickers.
-  const newFinishes = Object.freeze(['returnity-amber', 'returnity-violet', 'nova-arc']);
+  const newFinishes = Object.freeze(['candy-red', 'nova-arc', 'returnity-amber', 'returnity-violet']);
   window.Jerm747Pocket = {mount, finishes, newFinishes, finishLabel, configure, getFinish: () => finish, setFinish, skinFor, getControls:()=>({...controls}),saveControls,refreshControls};
 })();
 
@@ -726,6 +728,8 @@ window.createPocketGameMenu=function(host,api){
       'D-pad steers; Up adds throttle. Hold A or R for gas, B or L to brake. Y puts you back on the course. Start pauses with the full pause screen. Select switches between Chase and Rider camera.',{l:6,r:7,select:9}),
     'pulse-runner':profile('pad',{a:'Fire',b:'Dive',x:'Melee',y:'Grenade',l:'Run',r:'Fire',select:'Start'},
       'D-pad moves and picks an operator. A or R fires, B dives, X strikes, Y throws a grenade. Hold L to run. Select launches or pauses.',{r:7,select:9}),
+    'redleaf':profile('pad',{a:'Jump',b:'Dash',x:'Cut',y:'Heavy',l:'Pace',r:'Climb'},
+      'D-pad or stick runs. A jumps, B dashes, X cuts, Y swings heavy. L sets the pace, R climbs.'),
     'nova-swarm':profile('pad',{a:'Fire',b:'Boost / Back',x:'Reactor',y:'Lasers',l:'Camera',r:'Fire'},
       'Steer with the D-pad or stick. A fires or confirms, B boosts or goes back, and L changes camera. X and Y route ore.',{r:7}),
     'controller-check':profile('focus',{a:'Use',b:'Back'},'The checker reads the connected physical controller. D-pad and A navigate test options.'),

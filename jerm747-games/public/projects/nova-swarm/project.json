@@ -4,7 +4,7 @@
   "description": "An arcade formation shooter with a crew comedy. Story is a five-level campaign with Officer Vale and Captain Rourke: each level is a swarm round followed by a 3D corridor run through rocks, ore and alien fighters, with the Southern Ring boss in level 5 and the landing on G-47 at the end. Corridor Run is the endless Ash Run corridor (2D on devices without WebGL).",
   "kind": "game",
   "status": "in_progress",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "controls": [
     "gamepad",
     "keyboard",

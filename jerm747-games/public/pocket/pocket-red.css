@@ -1,0 +1,58 @@
+/* Candy Apple Red: deep red lacquer enclosure with black controls, made for Redleaf.
+   Loaded into the Pocket's shadow root next to the other finish sheets.
+   Everything is scoped to data-skin="candy-red", so the other finishes are untouched. */
+:host([data-skin="candy-red"]) {
+  background: radial-gradient(ellipse at 40% 22%, #3a1418, #170709 68%, #0d0405);
+}
+.device[data-skin="candy-red"] {
+  --ink: #fff1ee;
+  --ink-dim: #ffc6c0;
+  --bezel: #1c0d10;
+}
+.device[data-skin="candy-red"] .shell-body {
+  background-color: #b3141f;
+  background-image:
+    radial-gradient(ellipse at 18% 4%, rgba(255,214,206,.55), transparent 42%),
+    radial-gradient(ellipse at 70% 12%, rgba(255,120,120,.22), transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(60,2,8,.55), transparent 62%),
+    linear-gradient(160deg, #e2333b 0%, #c4111d 34%, #93070f 72%, #5e0309 100%);
+  border: 1px solid #5a070d;
+  box-shadow: inset 0 .42em .42em #ffb3ad99, inset .55em .2em .85em #ff6a6a55,
+    inset -.5em -.6em .9em #4a020896, inset 0 -1.2em 1.5em #3a020873,
+    0 .4em .08em #6e0a12, 0 .8em .12em #3a070b, 0 2em 3em #0a0204a0;
+  backdrop-filter: none;
+}
+.device[data-skin="candy-red"] .shell-body::before { content: none; }
+.device[data-skin="candy-red"] .shell-body::after { background: #5a070d6b; box-shadow: 0 .19em .1em #ffb3ad55; }
+.device[data-skin="candy-red"] .bezel {
+  background: linear-gradient(151deg, #2e1a1d, var(--bezel) 48%, #0f0607);
+  box-shadow: inset 0 .22em .28em #fff2, inset 0 -.4em .5em #0009, 0 .31em .18em #ff8f8f66, 0 -.25em .35em #4a0308b3;
+}
+.device[data-skin="candy-red"] :is(.bezel-title, .led-group b) { color: #ffcfc9; }
+.device[data-skin="candy-red"].ready .led.power { background: #ffd2c4; box-shadow: 0 0 1em #ff6a5a; }
+.device[data-skin="candy-red"] .system-btn span { color: #ffe3df; font-weight: 750; text-shadow: 0 1px 2px #570916; }
+.device[data-skin="candy-red"] .system-btn i {
+  background: linear-gradient(#3a1a20, #1a0b0f); border-color: #1a080c;
+  box-shadow: inset 0 .22em .18em #fff3, 0 .28em .28em #4a0308;
+}
+.device[data-skin="candy-red"] .system-btn:active i { box-shadow: inset 0 .2em .32em #0d0305c0; }
+.device[data-skin="candy-red"] .shoulder { border-color: #5a1a22; background: linear-gradient(#4a2a30, #2a1418 60%, #160a0c); color: #ffe3df; }
+.device[data-skin="candy-red"] .shoulder.held { background: linear-gradient(#7a2a32, #3a1418); }
+.device[data-skin="candy-red"] .cart-label { background: linear-gradient(100deg, #2a0d11, #4a141b); }
+.device[data-skin="candy-red"] .eject { background: linear-gradient(#4a2a30, #2a1418); }
+.device[data-skin="candy-red"] .pocket-stick {
+  background: repeating-radial-gradient(circle, #2a1418 0 .2em, #1c0d10 .22em .5em);
+  box-shadow: inset 0 0 0 .65em #170a0c, inset 0 0 0 .86em #7a2a32, inset 0 1.6em 2em #050203;
+}
+.device[data-skin="candy-red"] .pocket-stick span { background: radial-gradient(circle at 42% 34%, #6a4048, #3a1d22 52%, #1a0b0e 78%); }
+.device[data-skin="candy-red"] .faces .face { --c: #ffc6c0 !important; }
+.device[data-skin="candy-red"] .button-face {
+  background: radial-gradient(ellipse at 50% 85%, #4a2a30, #2a1418 55%, #160a0c);
+  border-color: #0e0507;
+  box-shadow: inset 0 .5em .6em #ffb3ad3a, inset 0 -.65em .65em #0a0204a6;
+}
+.device[data-skin="candy-red"] .face.held .button-face { background: radial-gradient(ellipse at 50% 85%, #7a3a42, #3a1a20 55%, #1e0c10); }
+.device[data-skin="candy-red"] .face-letter { color: #ffd6d0; }
+.device[data-skin="candy-red"] .action-name { color: #fff1ee; }
+.device[data-skin="candy-red"] :is(.direction-ring path.lit, .dpad button.held .cap-edge) { stroke: #ff8a7a; filter: drop-shadow(0 0 2px #ff4a4a); }
+.device[data-skin="candy-red"] .grille { opacity: .8; }

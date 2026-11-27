@@ -42,3 +42,20 @@ html[data-pocket-menu=classic] .pocket-drawer-link .pocket-drawer-logo::after{ba
 .pocket-drawer-arrow::after,.intro-arrow::after{content:"";position:absolute;top:0;right:0;width:1.23em;height:1.5px;background:currentColor;transform-origin:right center;transform:rotate(-45deg);font-size:inherit}.pocket-drawer-arrow::after{width:130%}.intro-arrow::after{width:130%}
 
 .intro-new{display:inline-block;margin-right:5px;padding:2px 6px 1px;border-radius:5px;transform:rotate(-5deg);background:linear-gradient(#ffd77d,#e8a463);color:#2a1606;font:800 9px/1.3 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 1px 3px #0005}
+
+/* v4 · two new finishes: A.R.C. Deep Space + Candy Apple Red */
+#pocket-intro{width:min(370px,calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)))}
+#pocket-intro a.intro-main{padding:16px 32px 8px 10px;min-height:0}
+#pocket-intro .intro-devices{position:relative;width:50%;flex:none;aspect-ratio:1.55}
+#pocket-intro .intro-device{position:absolute;width:86%;transform:none}
+#pocket-intro .intro-device.arc{left:0;top:0;transform:rotate(-7deg)}
+#pocket-intro .intro-device.red{right:-4%;bottom:-4%;transform:rotate(4deg)}
+#pocket-intro .intro-chips{display:flex;gap:6px;padding:4px 10px 12px;flex-wrap:wrap}
+#pocket-intro .intro-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font:700 11px/1.2 system-ui,sans-serif;color:#14394b;text-decoration:none;background:#ffffffb3;border:1px solid #9fcfe0}
+#pocket-intro .intro-chip i{width:11px;height:11px;border-radius:50%;flex:none}
+#pocket-intro .intro-chip.arc i{background:linear-gradient(145deg,#736ab1,#14192b 58%,#38709c)}
+#pocket-intro .intro-chip.red i{background:linear-gradient(145deg,#ff5a55,#b3141f 58%,#5a070d)}
+#pocket-intro .intro-chip:hover{background:#fff}
+@media(max-height:460px){#pocket-intro{width:330px}#pocket-intro a.intro-main{padding-block:10px 4px}#pocket-intro .intro-chips{padding-bottom:9px}}
+#pocket-intro a.intro-chip{min-height:0;padding:5px 10px;gap:6px;display:inline-flex}
+@media(max-height:460px){#pocket-intro{width:300px}#pocket-intro .intro-devices{width:44%}#pocket-intro .intro-chip{font-size:10px}}

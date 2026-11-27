@@ -2,9 +2,9 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>747 Pocket Player · Jerm747 Arcade</title>
-<meta name="description" content="Meet the 747 Pocket Player, now in A.R.C. Deep Space. Choose a cartridge and play the Jerm747 Arcade with a handheld controller in your browser.">
+<meta name="description" content="Meet the 747 Pocket Player, now in A.R.C. Deep Space and Candy Apple Red. Choose a cartridge and play the Jerm747 Arcade with a handheld controller in your browser.">
 <meta name="theme-color" content="#e4f4f8"><meta property="og:title" content="747 Pocket Player"><meta property="og:description" content="Try A.R.C. Deep Space, the Nova Swarm finish for 747 Pocket Player."><meta property="og:image" content="https://jerm747.games/pocket-player/handheld-nova-arc.webp?v=4">
-<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="home.css?v=3"><script src="/pocket/pocket.js?v=212"></script><script defer src="home.js?v=5"></script>
+<link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="home.css?v=4"><script src="/pocket/pocket.js?v=213"></script><script defer src="home.js?v=6"></script>
 </head><body>
 <header class="mast"><div class="wrap mast-inner"><a class="site-brand" href="/" aria-label="Jerm747 Games home">JERM<span>747</span><b>.GAMES</b></a><a class="back" href="/"><span aria-hidden="true">←</span> Arcade</a></div></header>
 <main>
@@ -14,21 +14,24 @@
 <a class="cta" href="#cartridges">Choose a cartridge <span aria-hidden="true">↓</span></a></div>
 <div class="showcase" data-preview="nova-arc"><div class="product"><img id="hero-device" src="handheld-nova-arc.webp?v=4" width="1427" height="706" alt="A.R.C. Deep Space 747 Pocket Player showing the Nova Swarm crew"></div>
 <fieldset class="finishes"><legend class="visually-hidden">Pocket Player finish</legend>
+<button type="button" data-finish="candy-red" aria-pressed="false"><i class="swatch red" aria-hidden="true"></i>Candy Apple Red<b class="new-sticker">New</b></button>
 <button type="button" data-finish="nova-arc" aria-pressed="true"><i class="swatch arc" aria-hidden="true"></i>A.R.C. Deep Space<b class="new-sticker">New</b></button>
 <button type="button" data-finish="ice" aria-pressed="false"><i class="swatch ice" aria-hidden="true"></i>Ice Blue</button>
 <button type="button" data-finish="classic" aria-pressed="false"><i class="swatch classic" aria-hidden="true"></i>Classic</button>
 <button type="button" data-finish="returnity-amber" aria-pressed="false"><i class="swatch amber" aria-hidden="true"></i>Returnity Edition<b class="new-sticker">New</b></button>
 <button type="button" data-finish="returnity-violet" aria-pressed="false"><i class="swatch violet" aria-hidden="true"></i>Returnity Violet<b class="new-sticker">New</b></button></fieldset>
 <a class="arc-play" href="/#/play/nova-swarm?pocket=nova-arc" data-game="nova-swarm">Play Nova Swarm <span aria-hidden="true">→</span></a>
+<a class="red-play" href="/#/play/redleaf?pocket=candy-red" data-game="redleaf">Play Redleaf <span aria-hidden="true">→</span></a>
 </div></div></section>
 <section class="library wrap" id="cartridges" aria-labelledby="shelf-title" tabindex="-1"><div class="section-heading"><h2 id="shelf-title">Cartridge shelf</h2><a class="workshop" href="/workshops/pocket/">Controller workshop <span class="out-arrow" aria-hidden="true"></span></a></div>
 <div class="cards">
 <a class="game-card is-new" href="/#/play/nova-swarm?pocket=nova-arc" data-game="nova-swarm"><img src="/projects/nova-swarm/cover.webp" width="1280" height="720" alt=""><div><small>New · Space shooter</small><h3>Nova Swarm</h3><span class="play" aria-hidden="true"></span></div></a>
+<a class="game-card is-new" href="/#/play/redleaf?pocket=candy-red" data-game="redleaf"><img src="/projects/redleaf/cover.webp" width="1280" height="720" alt=""><div><small>New · Ninja platformer</small><h3>Redleaf</h3><span class="play" aria-hidden="true"></span></div></a>
 <a class="game-card" href="/#/play/wave-run-747?pocket=ice" data-game="wave-run-747"><img src="/projects/wave-run-747/cover.webp" width="1280" height="720" alt=""><div><small>Jet ski racing</small><h3>Wave Run 747</h3><span class="play" aria-hidden="true"></span></div></a>
 <a class="game-card" href="/#/play/pulse-runner?pocket=ice" data-game="pulse-runner"><img src="/projects/pulse-runner/cover.webp" width="1280" height="720" alt=""><div><small>Run and gun</small><h3>Pulse Runner</h3><span class="play" aria-hidden="true"></span></div></a>
 <a class="game-card" href="/#/play/beat-room?pocket=ice" data-game="beat-room"><img src="/projects/beat-room/cover.jpg" width="1280" height="720" alt=""><div><small>Music studio</small><h3>Beat Room</h3><span class="play" aria-hidden="true"></span></div></a>
 </div>
-<form id="picker"><label for="game-select">Arcade library</label><select id="game-select"><option value="returnity">Returnity</option><option value="wave-run-747">Wave Run 747</option><option value="pulse-runner">Pulse Runner</option><option value="beat-room">Beat Room</option></select><button type="submit">Play in Pocket <span aria-hidden="true">→</span></button></form>
+<form id="picker"><label for="game-select">Arcade library</label><select id="game-select"><option value="redleaf">Redleaf</option><option value="nova-swarm">Nova Swarm A.R.C.</option><option value="returnity">Returnity</option><option value="wave-run-747">Wave Run 747</option><option value="pulse-runner">Pulse Runner</option><option value="beat-room">Beat Room</option></select><button type="submit">Play in Pocket <span aria-hidden="true">→</span></button></form>
 <p id="catalog-status" role="status" hidden></p>
 </section>
 </main><footer class="wrap"><span>Jerm747 Arcade</span><a href="/download/">Android downloads</a></footer>

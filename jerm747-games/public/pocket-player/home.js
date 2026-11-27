@@ -12,13 +12,14 @@
   const launchURL = slug => '/#/play/' + encodeURIComponent(slug) + '?pocket=' + selected;
   const shown = {
     'nova-arc': ['A.R.C. Deep Space', 'the Nova Swarm crew'],
+    'candy-red': ['Candy Apple Red', 'Redleaf'],
     ice: ['Ice Blue', 'Wave Run 747'], classic: ['Classic', 'Wave Run 747'],
     'returnity-amber': ['Returnity Edition', 'Returnity'], 'returnity-violet': ['Returnity Violet', 'Returnity']
   };
   function preview(finish) {
     selected = Object.hasOwn(shown, finish) ? finish : 'nova-arc';
     showcase.dataset.preview = selected;
-    device.src = 'handheld-' + selected + '.webp' + (selected === 'nova-arc' ? '?v=4' : '');
+    device.src = 'handheld-' + selected + '.webp' + (selected === 'nova-arc' ? '?v=4' : selected === 'candy-red' ? '?v=1' : '');
     device.alt = shown[selected][0] + ' 747 Pocket Player showing ' + shown[selected][1];
     for (const button of finishes) button.setAttribute('aria-pressed', String(button.dataset.finish === selected));
     for (const card of cards) card.href = launchURL(card.dataset.game);

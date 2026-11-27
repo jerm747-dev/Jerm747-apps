@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const key = 'jerm747.pocket.intro.seen.v2';
+  const key = 'jerm747.pocket.intro.seen.v3';
   const pocket = window.Jerm747Pocket;
   const card = document.getElementById('pocket-intro');
   if (!card || !pocket) return;
@@ -72,7 +72,7 @@
     if (!seen()&&!pending) pending=setTimeout(()=>{pending=0;show();},900);
   }
   card.querySelector('button').addEventListener('click',()=>dismiss(true));
-  card.querySelector('a').addEventListener('click',()=>dismiss());
+  card.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>dismiss()));
   card.addEventListener('pointerenter',event=>{if(event.pointerType==='mouse'){hovering=true;pause();}});
   card.addEventListener('pointerleave',()=>{hovering=false;resume();});
   card.addEventListener('focusin',pause);
