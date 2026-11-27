@@ -3,17 +3,20 @@ JERM747 GAMES · PATCH LAUNCHER
 Applies a .patch file to your Jerm747-apps repo, builds the GoDaddy upload zip, and opens a pull request.
 
 WINDOWS
-  Double-click Apply-Patch.bat and pick the patch, or drag the .patch file onto Apply-Patch.bat.
+  Put the .patch file in the same folder as Apply-Patch.bat and double-click Apply-Patch.bat.
+  (Or drag any .patch file onto Apply-Patch.bat. If none is found, it asks you to pick one.)
+  If anything goes wrong, the window stays open and tells you why.
 
 MAC / LINUX
   In Terminal:  ./apply-patch.sh ~/Downloads/the-update.patch
-  With no file named, it uses the newest .patch in Downloads.
+  With no file named, it uses the newest .patch next to the script, then the newest in Downloads.
   (First time only on Mac: chmod +x apply-patch.sh)
 
 WHAT IT DOES
-  1. Stops if the repo has uncommitted changes, so nothing of yours gets mixed in.
+  1. Stops if tracked files have uncommitted changes, so nothing of yours gets mixed in.
+     (Untracked files, like the launcher itself and the patch, are fine.)
   2. Updates main from GitHub.
-  3. Checks the patch fits. If it doesn't (already applied, or made for an older copy), it stops and changes nothing.
+  3. Checks the patch fits (against Git's stored copy, so Windows line endings don't matter). If it doesn't (already applied, or made for an older copy), it stops and changes nothing.
   4. Applies it on a new branch named patch/<file-name>-<date> and commits it.
   5. Puts jerm747-games-upload-<file-name>.zip on your Desktop: only the changed site files, laid out like
      the site root. Extract it into the jerm747.games folder on GoDaddy.
