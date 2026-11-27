@@ -11,3 +11,13 @@ RewriteRule ^api/data/ - [F,L]
 RewriteRule ^play/([A-Za-z0-9][A-Za-z0-9._-]{0,63})/?$ api/share.php?g=$1 [L,QSA]
 
 Options -Indexes
+
+# Compress text files on the way out (game pages, scripts, styles, JSON, SVG, GLB models).
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/javascript application/javascript application/json image/svg+xml model/gltf-binary
+</IfModule>
+<IfModule mod_mime.c>
+  AddType model/gltf-binary .glb
+  AddType image/webp .webp
+</IfModule>
+# Cache rules for the Pocket/HUD scripts and split-out game art live in .htaccess files in those folders.

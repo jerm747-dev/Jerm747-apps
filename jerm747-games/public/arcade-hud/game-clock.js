@@ -55,6 +55,8 @@
   addEventListener('keydown', e => keys.set(e.code, {key:e.key, code:e.code, target:e.target}), true);
   addEventListener('keyup', e => keys.delete(e.code), true);
   window.ArcadeGameClock = {
+    // The 747 Pocket calls this on its first button press so Web Audio can start (see pocket.js).
+    wakeAudio() { if (!paused) for (const ctx of sounds) if (ctx.state === 'suspended') ctx.resume().catch(() => {}); },
     hold() {
       if (paused) return;
       since = realNow(); paused = true;
