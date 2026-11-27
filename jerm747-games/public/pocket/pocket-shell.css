@@ -259,3 +259,15 @@ button:disabled { cursor:default; }
 .system-row,.wide .system-row{gap:.75em;justify-content:space-evenly}.system-btn[data-command=eject] i{width:3.6em;height:2.8em;border-radius:.75em}.system-row .system-btn span{letter-spacing:0}
 
 .device .wordmark img{display:block;object-fit:contain;object-position:left center;width:100%;height:100%}
+/* Legend sub-bar under the screen: what each button does right now (sent by the game). */
+.legend{position:absolute;display:flex;align-items:center;justify-content:center;gap:.4em 1.6em;flex-wrap:nowrap;overflow:hidden;
+  padding:0 1.2em;box-sizing:border-box;border-radius:.7em;background:#0b0f15e6;box-shadow:inset 0 .12em .25em #000a,0 .1em 0 #ffffff1a;
+  color:#e9f6ff;font:600 2.15em/1 system-ui,sans-serif;white-space:nowrap;pointer-events:none}
+.legend[hidden]{display:none}
+.legend span{display:inline-flex;align-items:center;gap:.4em;min-width:0}
+.legend .key{display:inline-grid;place-items:center;min-width:1.45em;height:1.45em;padding:0 .35em;box-sizing:border-box;border-radius:999px;
+  font:800 .78em/1 system-ui,sans-serif;color:#eafcff;background:radial-gradient(ellipse at 50% 30%,#d9fbff66,#3db7e666 55%,#0b4c7499);
+  border:.08em solid #d6f6ffbb;box-shadow:inset 0 .08em .1em #ffffff66}
+.legend .key-select,.legend .key-start,.legend .key-lr{border-radius:.35em;font-size:.6em;letter-spacing:.05em;height:1.9em}
+.legend .key-a{background:radial-gradient(ellipse at 50% 30%,#fff1c477,#d29a3c77 55%,#6b440f99);border-color:#ffe6aacc}
+.legend .key-dpad{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath fill='%23eafcff' d='M7 1h6v6h6v6h-6v6H7v-6H1V7h6z'/%3E%3C/svg%3E") center/62% no-repeat,radial-gradient(ellipse at 50% 30%,#d9fbff66,#3db7e666 55%,#0b4c7499);border-radius:.35em}

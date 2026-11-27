@@ -1,0 +1,13 @@
+{
+  "title": "Redleaf",
+  "tagline": "Shadow's Ascent · climb, cut, and claim the summit blade",
+  "description": "A red-lacquer handheld platformer. Run Shadow up the Redleaf forest trail, cut brush for silver, jump the stone steps to shrine caches, slip through lantern-lit tunnels as a silhouette, then climb Windbreak Mountain and pull the Windcleaver from the summit. Spend saved silver at the Silver Shrine.",
+  "kind": "game",
+  "status": "prototype",
+  "version": "0.1.0",
+  "controls": ["gamepad", "keyboard", "touch"],
+  "credit": "Game by Jerm747. Shadow from GS Fighter.",
+  "accent": "#d2232f",
+  "order": 3,
+  "new": true
+}

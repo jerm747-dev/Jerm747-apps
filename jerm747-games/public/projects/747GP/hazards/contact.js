@@ -74,7 +74,8 @@
   function surface(lat, fraction, track, corner, roadWidth, apron) {
     const edge = Math.abs(lat) - roadWidth/2;
     if (track.gravelZones?.some(z => inZone(fraction,z) && lat >= z.min && lat <= z.max)) return 'gravel';
-    if (edge <= 0) return 'asphalt';
+    if (edge <= 0) return track.surface || 'asphalt';
+    if (track.surface === 'dirt') return 'grass';
     if (track.oval) return lat*(track.outSide || 1) > 0 || edge <= apron ? 'asphalt' : 'grass';
     if (corner && edge <= 1.4) return 'curb';
     return 'grass';

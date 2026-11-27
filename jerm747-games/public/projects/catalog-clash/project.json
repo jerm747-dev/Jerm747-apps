@@ -1,6 +1,6 @@
 {
   "title": "Catalog Clash",
-  "tagline": "Groove Squad \u00b7 Story",
+  "tagline": "Groove Squad · Story",
   "description": "Follow Kiana up the mountain and take on the Manager.",
   "order": 13,
   "kind": "game",
@@ -11,5 +11,6 @@
     "touch"
   ],
   "credit": "Jerm747 original.",
-  "version": "Arcade 1.0.7"
+  "version": "Arcade 1.0.7",
+  "hidden": true
 }

@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const key = 'jerm747.pocket.intro.seen.v1';
+  const key = 'jerm747.pocket.intro.seen.v2';
   const pocket = window.Jerm747Pocket;
   const card = document.getElementById('pocket-intro');
   if (!card || !pocket) return;

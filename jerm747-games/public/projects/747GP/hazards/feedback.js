@@ -29,7 +29,7 @@
 
   function texture(ac, kind) {
     const n=rate*2, overlap=2000, wave=new Float32Array(n+overlap);
-    const noise=random({grass:12,gravel:31,curb:54,skid:87,scrape:105}[kind]);
+    const noise=random({grass:12,dirt:42,gravel:31,curb:54,skid:87,scrape:105}[kind]);
     let slow=0, grain=0, last=0;
     for(let i=0; i<wave.length; i++) {
       const t=i/rate, r=noise()*2-1;
@@ -38,6 +38,7 @@
       grain*=.976;
       switch(kind) {
         case 'grass': wave[i]=slow*(.65+.25*Math.sin(TAU*4.5*t))+.11*(r-last)*grain;break;
+        case 'dirt': wave[i]=.52*slow+.32*(r-last)*grain;break;
         case 'gravel': wave[i]=grain*(.29*r+.45*Math.sin(TAU*1350*t))+.22*slow;break;
         case 'curb': wave[i]=Math.exp(-((t*19)%1)*7)*(.5*Math.sin(TAU*102*t)+.35*slow);break;
         case 'scrape': wave[i]=(.30*(r-last)+.21*Math.sin(TAU*686*t))* (.65+.3*grain);break;
@@ -57,7 +58,7 @@
       this.ac=ac; this.out=ac.createGain(); this.out.gain.value=0; this.out.connect(ac.destination);
       this.hits={body:panels.map((x,i)=>impact(ac,x,false,2026+i)),wall:rails.map((x,i)=>impact(ac,x,true,747+i))};
       this.next={body:0,wall:0}; this.loops={};
-      for(const k of ['grass','gravel','curb','skid','scrape']) {
+      for(const k of ['grass','dirt','gravel','curb','skid','scrape']) {
         const gain=ac.createGain(), src=ac.createBufferSource();
         gain.gain.value=0; src.buffer=texture(ac,k);src.loop=true;src.connect(gain);gain.connect(this.out);
         src.start();this.loops[k]={gain,src,level:0,rate:1};
@@ -114,7 +115,7 @@
     hit(speed) { const p=unit(speed/19);this.pulse(.18+.78*p,Math.round(25+83*p),true); }
     road(kind,speed,slip,scrape) {
       const motion=unit((speed-1.5)/23);
-      let level={grass:.14,gravel:.32,curb:.27}[kind]||0;
+      let level={grass:.14,dirt:.19,gravel:.32,curb:.27}[kind]||0;
       if(kind==='asphalt')level=.17*unit((slip-.05)*6);
       level=Math.max(level,.38*unit(scrape))*motion;
       if(level>.025)this.pulse(level,Math.round(18+level*105));

@@ -1,0 +1,57 @@
+:host([data-skin="nova-arc"]) {
+  background: radial-gradient(ellipse at 24% 34%, #171632, transparent 58%),
+              radial-gradient(ellipse at 80% 76%, #101e38, #060810 74%);
+}
+
+.device[data-skin="nova-arc"] {
+  --ink: #f1f2ff;
+  --ink-dim: #afb9d8;
+  --bezel: #111624;
+}
+
+/* The artwork is printed on the case, beneath the hardware and overlaid by the clearcoat. */
+.device[data-skin="nova-arc"] .shell-body {
+  background:
+    linear-gradient(168deg, #a3aed230, transparent 25%, #07091019 60%, #03040c6e),
+    url("arc-paint.webp?v=3") center / 100% 100%;
+  box-shadow: inset 0 .43em .32em #c5ccfd5c, inset 0 0 0 .24em #6c73926b,
+              inset 0 -1.3em 2em #03050bc9, 0 1em 2em #0009, 0 3em 6em #000b;
+}
+
+.device[data-skin="nova-arc"].wide .shell-body {
+  background-image: linear-gradient(168deg, #a3aed230, transparent 25%, #07091019 60%, #03040c6e),
+                    url("arc-paint-wide.webp?v=3");
+}
+
+.device[data-skin="nova-arc"] .shoulder {
+  border-color: #444c6c;
+  background: linear-gradient(#474f69, #1e2436 55%, #121522);
+  color: #e1e7ff;
+}
+.device[data-skin="nova-arc"] .shoulder.held { background: linear-gradient(#545c9c, #242b56); }
+.device[data-skin="nova-arc"] .bezel {
+  background: linear-gradient(164deg, #262c42, var(--bezel) 50%, #090c17);
+}
+.device[data-skin="nova-arc"] :is(.bezel-title, .led-group b) { color: #b1bce5; }
+.device[data-skin="nova-arc"].ready .led.power {
+  background: #adddff;
+  box-shadow: 0 0 1em #72a9ff;
+}
+.device[data-skin="nova-arc"] .cart-label { background: linear-gradient(100deg, #141c31, #262644); }
+.device[data-skin="nova-arc"] .eject { background: linear-gradient(#464c69, #262b42); }
+.device[data-skin="nova-arc"] .pocket-stick {
+  background: repeating-radial-gradient(circle, #202947 0 .2em, #171c32 .22em .5em);
+  box-shadow: inset 0 0 0 .65em #151828, inset 0 0 0 .86em #6975a5, inset 0 1.6em 2em #080c25;
+}
+.device[data-skin="nova-arc"] .pocket-stick span {
+  background: radial-gradient(circle at 44% 36%, #657297, #384164 52%, #171f3a 76%);
+}
+.device[data-skin="nova-arc"] .faces .face { --c: #a8b8f4 !important; }
+.device[data-skin="nova-arc"] .button-face {
+  background: radial-gradient(ellipse at 55% 90%, #525587, #272e55 55%, #161c36);
+  border-color: #8e9bd08c;
+}
+.device[data-skin="nova-arc"] .face.held .button-face {
+  background: radial-gradient(ellipse at 55% 90%, #788ed5, #3e477c 55%, #222955);
+}
+.device[data-skin="nova-arc"] :is(.direction-ring path.lit, .dpad button.held .cap-edge) { stroke: #a9c6ff; }

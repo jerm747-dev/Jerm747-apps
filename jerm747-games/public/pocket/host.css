@@ -14,3 +14,8 @@
 .j747-game-menu[hidden]{display:none!important}.j747-game-menu strong{grid-column:1/-1;letter-spacing:.04em}.j747-game-menu button{font:inherit;min-height:28px;padding:5px;color:#eff9fa;border:1px solid #607a84;border-radius:5px;background:#233641}.j747-game-menu button:focus{outline:2px solid #95edef;outline-offset:-2px;background:#304d58}.j747-game-menu:has(iframe){display:flex;flex-wrap:wrap;align-content:stretch;align-items:center}.j747-game-menu iframe{width:100%;flex:1 0 100%;height:75%;border:0}
 
 .j747-game-menu button:focus-visible{outline-color:#ffd082}
+/* Loading card while a game page downloads (pocket.js sets data-game-loading on the stack). */
+.cabinet .game-stack[data-game-loading]::before{content:'';position:absolute;z-index:0;left:50%;top:50%;width:46px;height:46px;margin:-38px 0 0 -23px;border-radius:50%;border:3px solid #ffffff22;border-top-color:#ffd082;animation:j747-load-spin .9s linear infinite}
+.cabinet .game-stack[data-game-loading]::after{content:attr(data-game-loading);position:absolute;z-index:0;left:0;right:0;top:calc(50% + 22px);text-align:center;color:#f6ead6;font:600 13px/1.3 "Chakra Petch",system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+.cabinet .game-stack[data-game-loading] > iframe{opacity:0}
+@keyframes j747-load-spin{to{transform:rotate(360deg)}}

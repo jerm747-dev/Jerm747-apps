@@ -1,10 +1,10 @@
 {
   "title": "Nova Swarm A.R.C.",
   "tagline": "Follow the stars. Mine the ore. Get your crew to G-47.",
-  "description": "An arcade formation shooter with a crew comedy. Story is a serial campaign with Officer Vale and Captain Rourke: swarm waves, third-person 3D corridor runs through rocks, ore and alien fighters, the Southern Ring boss, and the landing on G-47. Swarm is endless formation waves of Hive Regents, Crimson Monarchs, Stripe Drones and the Ash Wasp. Flight Run is the endless 3D corridor (2D on devices without WebGL). Dogfight is the ore-hauler escort sortie.",
+  "description": "An arcade formation shooter with a crew comedy. Story is a five-level campaign with Officer Vale and Captain Rourke: each level is a swarm round followed by a 3D corridor run through rocks, ore and alien fighters, with the Southern Ring boss in level 5 and the landing on G-47 at the end. Corridor Run is the endless Ash Run corridor (2D on devices without WebGL).",
   "kind": "game",
   "status": "in_progress",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "controls": [
     "gamepad",
     "keyboard",
@@ -13,6 +13,6 @@
   ],
   "credit": "Game by Jerm747. Sky images: NASA, ESA, CSA, STScI.",
   "accent": "#F2A35B",
-  "order": 6,
+  "order": 1,
   "new": true
 }

@@ -97,7 +97,7 @@ window.watchMenuPad = function (onAction) {
         back: pressed(GPPad.phys(1)), confirm: pressed(GPPad.phys(0)) || pressed(9),
         up: GPPad.dpad(pad, 'u') || st[1] < -.6, down: GPPad.dpad(pad, 'd') || st[1] > .6,
         left: GPPad.dpad(pad, 'l') || st[0] < -.6, right: GPPad.dpad(pad, 'r') || st[0] > .6,
-        lb: pressed(4), rb: pressed(5)
+        lb: pressed(4), rb: pressed(5), y: pressed(GPPad.phys(3))
       };
       // ignore anything already held when the page opened
       if (!armed) { armed = !Object.values(buttons).some(Boolean); }

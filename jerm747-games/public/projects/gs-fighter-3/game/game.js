@@ -42,8 +42,10 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 let lastTouchEnd=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-lastTouchEnd<320&&!e.target.closest('input'))e.preventDefault();lastTouchEnd=n;},{passive:false});
 $('intro').addEventListener('load',()=>{try{const d=$('intro').contentDocument;const st=d.createElement('style');st.textContent='*{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}';d.head.append(st);for(const ev of ['copy','selectstart','contextmenu','dragstart'])d.addEventListener(ev,e=>e.preventDefault(),true);}catch{}});
 // ---------- fullscreen ----------
-function isFull(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
-function toggleFull(force){const el=document.documentElement;const want=force??!isFull();try{if(want&&!isFull())(el.requestFullscreen||el.webkitRequestFullscreen)?.call(el,{navigationUI:'hide'})?.catch?.(()=>{});else if(!want&&isFull())(document.exitFullscreen||document.webkitExitFullscreen)?.call(document);}catch{}}
+/* Inside the jerm747.games cabinet, full screen belongs to the cabinet page so the 747 Pocket and HUD stay around the game. */
+const fullDoc=(()=>{try{return window.top!==window&&window.top.Arcade?window.top.document:document;}catch{return document;}})();
+function isFull(){return !!(fullDoc.fullscreenElement||fullDoc.webkitFullscreenElement);}
+function toggleFull(force){const el=fullDoc.documentElement;const want=force??!isFull();try{if(want&&!isFull())(el.requestFullscreen||el.webkitRequestFullscreen)?.call(el,{navigationUI:'hide'})?.catch?.(()=>{});else if(!want&&isFull())(fullDoc.exitFullscreen||fullDoc.webkitExitFullscreen)?.call(fullDoc);}catch{}}
 const FS_ICON='<svg viewBox="0 0 24 24"><path d="M3 9V3h6v2H5v4H3zm12-6h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 0h2v6h-6v-2h4v-4z"/></svg>';
 // ---------- DOM: HUD, announcer, menus ----------
 const viewport=document.querySelector('.viewport');

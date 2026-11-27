@@ -170,6 +170,8 @@
   #trackList.open{display:grid}
   #trackList .tog{text-align:left;background:#0b0c0e;font-size:10px;padding:8px 10px}
   #trackList .tog.cur{border-left-color:#39e75f}
+  #trackList .trackTab{grid-column:1/-1;font:700 10px/1 system-ui,sans-serif;letter-spacing:.24em;color:#9aa1ac;padding:6px 2px 2px;border-bottom:1px solid #ffffff1f}
+  #trackList .trackTab.dirt{color:#d79a6b;margin-top:4px}
   @media (orientation:portrait){#trackList{top:calc(108px + env(safe-area-inset-top));grid-template-columns:1fr}}
 
   /* feedback bars */
@@ -265,6 +267,7 @@
 <script src="visuals/render.js"></script>
 <script src="finish/rewards.js"></script>
 <script src="intro/session.js"></script>
+<script src="dirt-tracks.js"></script>
 <script src="hazards/contact.js"></script>
 <script src="hazards/feedback.js"></script>
 <script src="hazards/classification.js"></script>
@@ -568,6 +571,17 @@ Object.assign(TRACKS.coatl_canyon.env,{grass:[0.66,0.53,0.24],tint:[1.35,1.08,0.
 Object.assign(TRACKS.nordschleife.env,{flora:{pine:0.65,birch:0.1,birch3d:0.15,maple:0.1}});
 TRACKS.nordschleife.env.treeCount=6000;
 const TRACK_ORDER=['test','coatl_canyon','nordschleife','monticello','brno','interlagos','suzuka','vir','watkins_glen','daytona','atlanta','charlotte'].filter(id=>TRACKS[id]);
+for(const dirt of GPDirt.tracks){
+  const base=TRACKS[dirt.base];
+  TRACKS[dirt.id]={
+    ...base,...dirt,RW:dirt.width,surface:'dirt',stands:null,pitWall:null,corners:[],gravelZones:[],
+    ctrl:null,gen:()=>GPDirt.orient(base.ctrl||base.gen(),dirt.reverse).map(([x,z,y])=>[x*dirt.scale,z*dirt.scale,y*dirt.scale,0])
+  };
+}
+const DIRT_ORDER=GPDirt.tracks.map(t=>t.id);
+// "Next track" stays on the surface you are racing (Road or Dirt).
+const tracksForRide=()=>typeof TRK!=='undefined'&&TRK&&GPDirt.isDirt(TRK.id)?DIRT_ORDER:TRACK_ORDER;
+const DIRT_GRIP=21, DIRT_DOWNFORCE=0.10, DIRT_DRIVE=0.82, DIRT_BRAKE=0.76, DIRT_ROLL=0.13;
 // control point = [x, z, height, bankDeg]
 function cr(a,b,c,d,t){const t2=t*t,t3=t2*t;return [0,1,2,3].map(k=>{const A=a[k]||0,B=b[k]||0,C=c[k]||0,D=d[k]||0;return 0.5*(2*B+(-A+C)*t+(2*A-5*B+4*C-D)*t2+(-A+3*B-3*C+D)*t3);});}
 function crc(p0,p1,p2,p3,t){ // centripetal (alpha 0.5) Catmull-Rom, parameterised in the x/z plane
@@ -617,7 +631,7 @@ function setupLine(def){
   COARSE=[];for(let i=0;i<S;i+=5)COARSE.push(T[i]);
   HASH=new Map();for(const p of COARSE){const kk=Math.floor(p.x/HCELL)+','+Math.floor(p.z/HCELL);let a=HASH.get(kk);if(!a)HASH.set(kk,a=[]);a.push(p);}
   CORNERS=(def.corners||[]).map(c=>{const p=ctrl[c.ctrl];let bi=0,bd=1e18;for(let i=0;i<S;i++){const d=(T[i].x-p[0])**2+(T[i].z-p[1])**2;if(d<bd){bd=d;bi=i;}}return {name:c.name,idx:bi};});
-  const info=TRACK_DB[def.id];
+  const info=TRACK_DB[def.base||def.id];
   TPHYS=info?{drag:info.physics.drag_mult,down:info.physics.downforce_mult,power:info.physics.na_engine_power_mult}:{drag:1,down:1,power:1};
   rlSolve();   // 1.2.18: racing line + speed plan for this track
 }
@@ -682,9 +696,10 @@ function rlSolve(){
 function rlProfile(){
   if(!RL.off||RL.track!==TRK.id)return;
   const key=TRK.id+'|'+VMAX.toFixed(2)+'|'+ACC.toFixed(2)+'|'+BRAKE+'|'+DRAG;if(RL.key===key)return;RL.key=key;
+  const dirt=TRK.surface==='dirt';
   const vc=new Float32Array(S),v=new Float32Array(S),acc=new Float32Array(S),brk=new Float32Array(S),down=TPHYS.down;
   for(let i=0;i<S;i++){
-    const k=Math.abs(RL.curv[i]),c=(30+12*Math.tan(T[i].bank||0))*RL_GRIP,b=0.2*down*RL_GRIP;
+    const k=Math.abs(RL.curv[i]),c=((dirt?DIRT_GRIP:30)+12*Math.tan(T[i].bank||0))*RL_GRIP,b=(dirt?DIRT_DOWNFORCE:0.2)*down*RL_GRIP;
     vc[i]=k<1e-6?VMAX*1.5:(b+Math.sqrt(b*b+4*k*c))/(2*k);   // κ·v² = c + b·v  →  the corner's top speed
   }
   // start from the slowest corner so one pass each way settles it; two laps to wrap
@@ -693,11 +708,11 @@ function rlProfile(){
   for(let i=0;i<S;i++)v[i]=vc[i];
   // forward: the engine (same push curve as step(): ACC·power·min(1,1.4·(1-(v/VMAX)^1.7)) less drag and the hill)
   {let sp=vc[i0];for(let n=1;n<=2*S;n++){const i=(i0+n-1)%S,j=(i0+n)%S;
-    const a=ACC*TPHYS.power*Math.min(1,Math.max(0,1.4*(1-Math.pow(sp/VMAX,1.7))))-DRAG*TPHYS.drag*sp*sp-g*T[i].grade;
+    const a=ACC*TPHYS.power*Math.min(1,Math.max(0,1.4*(1-Math.pow(sp/VMAX,1.7))))*(dirt?DIRT_DRIVE:1)-DRAG*TPHYS.drag*sp*sp-g*T[i].grade-(dirt?DIRT_ROLL*sp:0);
     sp=Math.min(vc[j],Math.sqrt(Math.max(1,sp*sp+2*a*RL.len[i])));if(n>S)v[j]=Math.min(v[j],sp);else v[j]=sp;}}
   // backward: braking (brake + drag; uphill helps, downhill fights it)
   {let sp=v[i0];for(let n=1;n<=2*S;n++){const j=(i0-n+1+2*S)%S,i=(i0-n+2*S)%S;
-    const d=BRAKE*RL_BRAKE+DRAG*TPHYS.drag*sp*sp+g*T[i].grade;
+    const d=BRAKE*RL_BRAKE*(dirt?DIRT_BRAKE:1)+DRAG*TPHYS.drag*sp*sp+g*T[i].grade;
     const lim=Math.sqrt(sp*sp+2*Math.max(4,d)*RL.len[i]);if(v[i]>lim){v[i]=lim;brk[i]=1;}sp=v[i];}}
   let t=0;for(let i=0;i<S;i++){const j=(i+1)%S;acc[i]=(v[j]*v[j]-v[i]*v[i])/(2*RL.len[i]);t+=RL.len[i]/Math.max(1,(v[i]+v[j])/2);}
   // zones for the guide colours: 0 = power (green), 1 = at the grip limit / easing (yellow), 2 = brake (red)
@@ -913,8 +928,27 @@ function roadTexFor(rw){
   },true);
   return roadTexCache[rw]=t;
 }
+const dirtTextures = new Map();
+function dirtTexture(color){
+  if(dirtTextures.has(color))return dirtTextures.get(color);
+  const texture=canvasTex(512,768,(g,w,h)=>{
+    g.fillStyle=color;g.fillRect(0,0,w,h);
+    for(const x of [.28,.72]){
+      const rut=g.createLinearGradient(w*(x-.14),0,w*(x+.14),0);
+      rut.addColorStop(0,'transparent');rut.addColorStop(.5,'rgba(54,26,12,.28)');rut.addColorStop(1,'transparent');
+      g.fillStyle=rut;g.fillRect(w*(x-.14),0,w*.28,h);
+    }
+    const random=seeded(color);
+    for(let i=0;i<26000;i++){
+      g.fillStyle=random()<.5?'rgba(255,220,166,.20)':'rgba(55,28,15,.20)';
+      g.fillRect(random()*w,random()*h,1+random()*4,1+random()*5);
+    }
+  },true);
+  dirtTextures.set(color,texture);
+  return texture;
+}
 function dressMaterials(){
-  roadMat.map=roadTexFor(RW);roadMat.needsUpdate=true;
+  roadMat.map=TRK.surface==='dirt'?dirtTexture(TRK.color):roadTexFor(RW);roadMat.needsUpdate=true;
   if(VEG.tex.rough){const t=VEG.tex.rough;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(6,5);vergeMat.map=t;vergeMat.color.setHex(0xe6ecdf);vergeMat.needsUpdate=true;}
   if(VEG.tex.service){const t=VEG.tex.service;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(4,5);apronMat.map=t;apronMat.color.setHex(0xb9bcc0);apronMat.needsUpdate=true;}
 }
@@ -989,7 +1023,7 @@ function buildTrackMeshes(){
   ribbon(RW/2,-RW/2,0.02,0.02,roadMat,24);
   rlBuildMesh();   // racing line overlay (its own group, so it survives the clear above)
   // curbs on corners (road courses)
-  if(!TRK.oval){raisedCurb(RW/2,RW/2+1.4,isCorner);raisedCurb(-RW/2,-RW/2-1.4,isCorner);}
+  if(!TRK.oval&&TRK.surface!=='dirt'){raisedCurb(RW/2,RW/2+1.4,isCorner);raisedCurb(-RW/2,-RW/2-1.4,isCorner);}
   const P=RW/2+VPOS,N=RW/2+VNEG;
   if(TRK.oval){
     // outside: asphalt run-off to a SAFER wall + catch fence; inside: apron then grass infield
@@ -1639,6 +1673,31 @@ const bestKey=(cc,id)=>(VEH?VEH.id:'')+'|'+cc+'@'+id+(MODE<3?'#'+MODES[MODE].n:'
 const contacts=new GPContact.ContactGate(), suspension=new GPContact.Suspension();
 const rumble=new GPFeedback.Haptics();
 let surfaceKind='asphalt', scrape=0, playerFlag=false, raceRecord=null;
+// Mud: racing on dirt (or running wide through gravel and grass) slowly dirties the paint.
+// It builds with distance covered off the asphalt and washes off at the start of each race.
+const MUD={level:0,shown:-1,car:null,t:0,orig:new WeakMap(),color:new THREE.Color(0x5a3a22),dust:new THREE.Color(0x3a2414)};
+function mudPaint(){
+  const lvl=MUD.level,skip=M.brakeLight&&M.brakeLight.material;
+  M.car.traverse(o=>{
+    if(!o.isMesh||!o.material)return;
+    for(const m of Array.isArray(o.material)?o.material:[o.material]){
+      if(m===skip||!m.color||m.transparent)continue;
+      let base=MUD.orig.get(m);if(!base){base={c:m.color.clone(),r:m.roughness,e:m.emissive?m.emissive.clone():null};MUD.orig.set(m,base);}
+      m.color.copy(base.c).lerp(MUD.color,lvl*0.42);
+      // a faint brown lift so the mud still reads on dark and textured paint
+      if(base.e)m.emissive.copy(base.e).lerp(MUD.dust,lvl*0.5);
+      if(typeof base.r==='number')m.roughness=base.r+(1-base.r)*lvl*0.55;
+    }
+  });
+  MUD.shown=lvl;MUD.car=M.car;
+}
+function mudStep(dt,speed){
+  const offRoad=surfaceKind==='dirt'||surfaceKind==='gravel'||st.off;
+  if(offRoad&&speed>3)MUD.level=Math.min(1,MUD.level+speed*dt/(surfaceKind==='dirt'?2600:1400));
+  MUD.t+=dt;
+  if(MUD.car!==M.car||(MUD.t>0.25&&Math.abs(MUD.level-MUD.shown)>0.01)){MUD.t=0;mudPaint();}
+}
+function mudWash(){MUD.level=0;if(MUD.car)mudPaint();}
 function hitCue(type,key,hit,near=1,player=true){
   if(!contacts.strike(key,hit.closing))return false;
   if(soundOn && !paused && audio){audio.hazards.volume(VOL*FXV);audio.hazards.hit(type,hit.closing,near);}
@@ -1697,6 +1756,7 @@ function step(dt){
   st.off=loc.lat>RW/2+TRK.edgePos||loc.lat<-(RW/2+TRK.edgeNeg);
   surfaceKind=GPContact.surface(loc.lat,st.idx/S,TRK,isCorner(st.idx),RW,APRON);
   const grass=st.off || surfaceKind==='gravel';
+  const dirt=surfaceKind==='dirt', lateralGrip=grass?7:dirt?15:26;
 
   // engine
   // partial throttle = less push AND a lower speed it settles at
@@ -1716,19 +1776,20 @@ function step(dt){
      const push=gasA-Math.pow(v/VMAX,1.7);
      const limiter=Math.min(1,Math.max(0,(1-v/GTOP[st.gear-1])/0.04));   // rev limiter holds you in this gear
      const lug=GEARBOX==='manual'&&st.gear>1?Math.min(1,0.25+0.75*v/(GTOP[st.gear-2]*0.85)):1;
-     if(push>0)vF+=ACC*TPHYS.power*Math.min(1,push*1.4)*limiter*lug*dt*(grass?0.5:1);
+     if(push>0)vF+=ACC*TPHYS.power*Math.min(1,push*1.4)*limiter*lug*dt*(grass?0.5:dirt?DIRT_DRIVE:1);
    }}
   st.braking=false;
   if(brk){
     // progressive pedal: the first part stays soft so you can feather it and keep rolling,
     // the last part digs in hard (full pedal = 1.4x the old full brake)
     const bite=0.62*brkA+0.78*brkA*brkA;
-    if(vF>1.5){vF-=BRAKE*bite*(grass?0.55:1)*dt;st.braking=true;if(vF<0)vF=0;}
+    if(vF>1.5){vF-=BRAKE*bite*(grass?0.55:dirt?DIRT_BRAKE:1)*dt;st.braking=true;if(vF<0)vF=0;}
     else if(!gas)vF=Math.max(vF-8*dt,-9);
   }
   // drag, rolling, grass
   vF-=(DRAG*TPHYS.drag*vF*Math.abs(vF)*(gas||brk?1:0.6)+Math.sign(vF)*(gas?0:0.4))*dt;
   if(grass)vF-=vF*0.9*dt;
+  if(dirt)vF-=vF*DIRT_ROLL*dt;
   // hills: gravity along the slope
   const slope=loc.grade*(fx*loc.p.tx+fz*loc.p.tz);
   vF-=9.8*slope*dt*0.9;
@@ -1740,7 +1801,7 @@ function step(dt){
   // loads the front tyres so the nose cuts in harder on corner entry
   const dig=Math.max(0,(Math.abs(st.steer)-0.6)/0.4);
   const trail=st.braking?brkA*Math.min(1,Math.abs(st.steer)*1.5):0;
-  const latMax=((grass?14:30+0.2*v*TPHYS.down)+12*Math.tan(loc.bank))*(1+0.16*dig+0.24*trail);   // m/s²; banking helps you round the turn
+  const latMax=((grass?14:dirt?DIRT_GRIP+DIRT_DOWNFORCE*v*TPHYS.down:30+0.2*v*TPHYS.down)+12*Math.tan(loc.bank))*(1+0.16*dig+0.24*trail);   // m/s²; banking helps you round the turn
   // At high speed the old lock asked for 10-40x more turn than the tyres could give, so the
   // first few % of stick used up all the grip and the rest did nothing. Now full lock is scaled
   // to ~1.25x the grip limit: the whole stick/tilt range stays useful, with a bit left for slides.
@@ -1770,13 +1831,13 @@ function step(dt){
   if(Math.abs(yawReq)>1e-4)yaw+=Math.sign(yawReq)*slideDrive;           // front leads, rear swings out
 
   // lateral grip: strong normally; lets go with power over the limit, during an unlock, or braking mid-corner
-  let grip=(grass?7:26);
+  let grip=lateralGrip;
   if(saturated)grip*=0.85;
   grip*=1-0.6*Math.min(1,power*1.2+0.6*st.unlock);
   if(st.braking&&Math.abs(st.steer)>0.3)grip*=0.9;
   // counter-steer / lift: tyres bite back; never let the slip angle run away into a spin
   const slipAng=Math.atan2(Math.abs(vR),Math.max(1,Math.abs(vF)));
-  if(gasA<0.05)grip=Math.max(grip,(grass?7:26)*0.9);
+  if(gasA<0.05)grip=Math.max(grip,lateralGrip*0.9);
   if(slipAng>0.5)grip=Math.max(grip,18+(slipAng-0.5)*60);
   vR*=Math.exp(-grip*dt);
   st.slip=slipAng;
@@ -2113,14 +2174,18 @@ function trackSigns(){
 }
 function aiProfile(skill){
   trackSigns();const key=TRK.id+'|'+VMAX.toFixed(1)+'|'+skill.toFixed(3);if(profCache[key])return profCache[key];
-  const v=new Float32Array(S),down=TPHYS.down,top=VMAX*(0.82+0.1*skill),b=0.2*down*skill;
-  for(let i=0;i<S;i++){const k=Math.max(1e-6,RL.track===TRK.id?Math.abs(RL.curv[i]):CURVS[i]),lat=(30+12*Math.tan(T[i].bank||0))*skill;v[i]=Math.min(top,(b+Math.sqrt(b*b+4*k*lat))/(2*k));}
-  const B=BRAKE*0.45*skill;   // brake for the next corner (two passes so the lap wraps)
+  const dirt=TRK.surface==='dirt';
+  const v=new Float32Array(S),down=TPHYS.down,top=VMAX*(0.82+0.1*skill),b=(dirt?DIRT_DOWNFORCE:0.2)*down*skill;
+  for(let i=0;i<S;i++){const k=Math.max(1e-6,RL.track===TRK.id?Math.abs(RL.curv[i]):CURVS[i]),lat=((dirt?DIRT_GRIP:30)+12*Math.tan(T[i].bank||0))*skill;v[i]=Math.min(top,(b+Math.sqrt(b*b+4*k*lat))/(2*k));}
+  const B=BRAKE*0.45*skill*(dirt?DIRT_BRAKE:1);   // brake for the next corner (two passes so the lap wraps)
   for(let n=2*S-1;n>=0;n--){const i=n%S,j=(i+1)%S,lim=Math.sqrt(v[j]*v[j]+2*B*DS);if(v[i]>lim)v[i]=lim;}
   return profCache[key]=v;
 }
 const AI_POWER=0.75;   /* 1.3.20: rivals pulled away 3-4x; a quarter less engine */
-function aiAccel(v,f){return Math.max(0,ACC*TPHYS.power*AI_POWER*(f||1)-DRAG*TPHYS.drag*v*v);}
+function aiAccel(v,f){
+  const dirt=TRK.surface==='dirt';
+  return Math.max(0,ACC*TPHYS.power*AI_POWER*(f||1)*(dirt?DIRT_DRIVE:1)-DRAG*TPHYS.drag*v*v-(dirt?DIRT_ROLL*v:0));
+}
 // a flying lap at a given skill (used for the simulated leaderboard)
 function lapTimeFor(skill){const v=aiProfile(skill);let sp=v[0]*0.8,t=0;
   for(let n=0;n<2*S;n++){const i=n%S,j=(i+1)%S;let nv=Math.sqrt(sp*sp+2*aiAccel(sp)*DS);nv=Math.min(nv,v[j]);if(n>=S)t+=DS/Math.max(1,(sp+nv)/2);sp=nv;}
@@ -2289,7 +2354,7 @@ function seeded(str){let h=2166136261;for(const ch of str)h=Math.imul(h^ch.charC
 function board(){
   const key=TRK.id+'|'+CC+'|'+MODES[MODE].n,rnd=seeded(key),ref=lapTimeFor(1.0);
   const INIT=['ACE','JRM','OGJ','MAX','SKY','VEE','REX','KAI','ZED','LOU','TAZ','NIA','GSX','BUT'];
-  const same=VEHICLES.filter(v=>v.cc===CC);
+  const same=VEHICLES.filter(v=>v.cc===CC&&GPDirt.allowed(v.id,TRK.id));
   const rows=[];for(let k=0;k<10;k++){const j=Math.floor(rnd()*INIT.length);rows.push({n:INIT.splice(j,1)[0],ride:same[Math.floor(rnd()*same.length)].name,t:ref*(1.01+k*0.022+rnd()*0.015)});}
   const mine={};for(const r of history())if(r.track===TRK.id&&r.cc===CC&&r.drive===MODES[MODE].n&&r.best){if(!mine[r.car]||r.best<mine[r.car].best)mine[r.car]=r;}
   for(const r of Object.values(mine))rows.push({me:true,n:'YOU',ride:(VEHMAP[r.car]||VEH).name,t:r.best,date:r.d});
@@ -2345,7 +2410,7 @@ function finishRace(){
   $('rTotK').textContent=arcade?'TOTAL':'SESSION';$('rTot').textContent=fmtT(raceTime);$('rBest').textContent=fmtT(bestLap);$('rTop').textContent=Math.round(topSpeed*2.23694)+' mph';
   $('rLaps').innerHTML=lapTimes.map((t,i)=>'<span'+(t===bestLap?' class="best"':'')+'>L'+(i+1)+' '+fmt(t)+'</span>').join('');
   $('tabOrder').textContent=arcade?'RACE ORDER':'LAPS';
-  const order=TRACK_ORDER,ni=order[(order.indexOf(TRK.id)+1)%order.length];RES.next=ni;
+  const order=tracksForRide(VEH.id),ni=order[(order.indexOf(TRK.id)+1)%order.length];RES.next=ni;
   $('rNextCap').innerHTML='Next race<small>'+TRACKS[ni].short+'</small>';
   setTab(arcade?'order':'board');updShare();
   resultsNav.active=true;setTimeout(()=>resultsNav.focus(0),60);
@@ -2370,7 +2435,7 @@ function rsPlaceCar(p,v){Object.assign(st,{x:p.x,z:p.z,y:p.y,h:p.h,vx:p.fx*v,vz:
 // Hold on a loading screen until your ride's 3D model (and its wheels) are in, so the intro never shows stand-ins.
 function rideReady(){return !useModels||(M.model&&M.kind===VEH.kind&&(!BASE_KINDS.has(M.kind)||M.wheeled));}
 function startRace(full){
-  closeField();contacts.reset();suspension.reset();scrape=0;surfaceKind='asphalt';playerFlag=false;
+  closeField();contacts.reset();suspension.reset();scrape=0;surfaceKind='asphalt';playerFlag=false;mudWash();
   reset();
   RSS.loading=!rideReady();RSS.loadT=0;rsSet('rs-loading',RSS.loading);if(RSS.loading)GPL.show(VEH.name+' · '+((TRACK_DB[TRK.id]&&TRACK_DB[TRK.id].game_name)||TRK.name||''));else GPL.hide();
   aiStop();resultsClose();
@@ -2732,6 +2797,7 @@ $('whlBtn').addEventListener('click',()=>{
 setModels(useModels);
 function setClass(cc,announce){setVehicle(VEHICLES.find(v=>v.cc===cc&&BASE_KINDS.has(v.kind)).id,announce);}
 function setVehicle(id,announce){
+  const previous=VEH.id;
   VEH=VEHMAP[id]||VEHMAP.f1;const cc=VEH.cc,want=VEH.kind;
   applyClass(cc);
   const wantModel=useModels&&!!MODEL_READY[want];
@@ -2745,12 +2811,16 @@ function setVehicle(id,announce){
   if(useModels&&!MODEL_READY[want]){
     requestModel(want)&&requestModel(want).then(m=>{if(m&&curKind()===want&&useModels&&!M.model){scene.remove(M.car);M=buildCar(want);scene.add(M.car);}});
   }
-  best=bests[bestKey(cc,TRK.id)]??null;if(typeof startRace==='function')startRace(true);else reset();
+  const nextTrack=announce?GPDirt.onRideChange(VEH.id,previous,TRK.id):TRK.id;
+  if(nextTrack!==TRK.id)loadTrack(nextTrack,false);
+  else {best=bests[bestKey(cc,TRK.id)]??null;if(typeof startRace==='function')startRace(true);else reset();}
+  GPLaunch.set('car',VEH.id);
   $('ccBtn').textContent='CAR: '+VEH.name.toUpperCase()+' · '+cc+'cc';$('sCC').textContent=cc;
-  try{localStorage.setItem('gp747cc',String(cc));localStorage.setItem('gp747car',VEH.id);}catch(_){}
+  try{localStorage.setItem('gp747cc',String(cc));}catch(_){}
   if(announce)showMsg(VEH.name,cc+'cc · '+(VEH.type==='car'?CLASSES[cc].tag:VEH.full.toUpperCase()),1800);
 }
 function loadTrack(id,announce){
+  if(!Object.hasOwn(TRACKS,id)||!GPDirt.allowed(VEH.id,id))return;
   closeField();
   setupLine(TRACKS[id]);applyEnv();buildTrackMeshes();
   best=bests[bestKey(CC,id)]??null;if(typeof startRace==='function')startRace(true);else reset();
@@ -2760,19 +2830,26 @@ function loadTrack(id,announce){
     const d=TRACK_DB[id];
     if(d){const mi=(d.length_m/1609.34).toFixed(2),bank=d.banking_deg?` · ${d.banking_deg}° banking`:'',elev=d.elev_range_m?` · ${Math.round(d.elev_range_m*3.281)} ft elevation`:'';
       showMsg(d.game_name||TRACKS[id].name,`${d.country==='fictional'?'Original circuit':d.country} · ${mi} mi · ${d.turns} turns${bank}${elev}<br>alt ${Math.round(d.alt_m*3.281)} ft · air ${d.air_density_kgm3} kg/m³ · engine ${Math.round(d.physics.na_engine_power_mult*100)}%`,4200);}
-    else showMsg(TRACKS[id].name,'Original layout · '+(TRACK_LEN/1609.34).toFixed(2)+' mi',2500);
+    else showMsg(TRACKS[id].name,(TRK.surface==='dirt'?'Dirt circuit · ':'Original layout · ')+(TRACK_LEN/1609.34).toFixed(2)+' mi',2500);
   }
 }
 const trackList=$('trackList');
 $('trackBtn').addEventListener('click',e=>{e.stopPropagation();
   trackList.innerHTML='';
-  for(const id of TRACK_ORDER){const b=document.createElement('button');b.className='tog'+(id===TRK.id?' cur':'');b.textContent=TRACKS[id].name.toUpperCase();
-    b.addEventListener('click',ev=>{ev.stopPropagation();trackList.classList.remove('open');menu.classList.remove('open');showMsg('LOADING',TRACKS[id].name,0);setTimeout(()=>loadTrack(id,true),30);});trackList.appendChild(b);}
+  for(const [label,ids] of [['ROAD',TRACK_ORDER],['DIRT',DIRT_ORDER]]){const h=document.createElement('div');h.className='trackTab'+(label==='DIRT'?' dirt':'');h.textContent=label;trackList.appendChild(h);
+  for(const id of ids){const b=document.createElement('button');b.className='tog'+(id===TRK.id?' cur':'');b.textContent=TRACKS[id].name.toUpperCase();
+    b.addEventListener('click',ev=>{ev.stopPropagation();trackList.classList.remove('open');menu.classList.remove('open');showMsg('LOADING',TRACKS[id].name,0);setTimeout(()=>loadTrack(id,true),30);});trackList.appendChild(b);}}
   trackList.classList.add('open');});
 document.addEventListener('pointerdown',e=>{if(trackList.classList.contains('open')&&!trackList.contains(e.target))trackList.classList.remove('open');});
 $('ccBtn').addEventListener('click',()=>{const i=VEHICLES.indexOf(VEH);setVehicle(VEHICLES[(i+1)%VEHICLES.length].id,true);});
 setRims(rimChrome);
-{let tid=GPLaunch.track||'test';if(!TRACKS[tid])tid='test';setupLine(TRACKS[tid]);applyEnv();buildTrackMeshes();$('trackBtn').textContent='TRACK: '+TRACKS[tid].short;}
+{
+  const car=Object.hasOwn(VEHMAP,GPLaunch.car)?GPLaunch.car:'';
+  const track=Object.hasOwn(TRACKS,GPLaunch.track)?GPLaunch.track:'';
+  const id=GPDirt.resolve(car,track);
+  setupLine(TRACKS[id]);applyEnv();buildTrackMeshes();$('trackBtn').textContent='TRACK: '+TRACKS[id].short;
+  GPLaunch.set('track',id);
+}
 {let car=GPLaunch.car,saved=1800;try{saved=+localStorage.getItem('gp747cc')||1800;}catch(_){}if(!CLASSES[saved])saved=1800;
  if(car&&VEHMAP[car])setVehicle(car,false);else setClass(saved,false);}
 setWheel(wheelOn);
@@ -3097,6 +3174,7 @@ function frame(now){
     const driving=running && !finished;
     const speed=driving?Math.hypot(st.vx,st.vz):0;
     rumble.road(surfaceKind,speed,st.slip,scrape);
+    mudStep(dt,speed);
     if(audio)audio.hazards.road(surfaceKind,speed,st.slip,scrape);
     // safety net: if the car is ever well off the course (bad start, fell through, flew off), put it back on the road
     const q=T[st.idx],off=Math.hypot(st.x-q.x,st.z-q.z);
